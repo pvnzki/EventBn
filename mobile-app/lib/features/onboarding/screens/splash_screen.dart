@@ -18,13 +18,13 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Logo animation controller
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     // Loading animation controller
     _loadingController = AnimationController(
       duration: const Duration(milliseconds: 1500),
@@ -53,10 +53,10 @@ class _SplashScreenState extends State<SplashScreen>
   void _startAnimations() async {
     // Start logo animation
     await _logoController.forward();
-    
+
     // Start loading animation
     _loadingController.forward();
-    
+
     // Navigate to onboarding after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -81,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            
+
             // Logo with animation
             AnimatedBuilder(
               animation: _logoAnimation,
@@ -128,9 +128,9 @@ class _SplashScreenState extends State<SplashScreen>
                 );
               },
             ),
-            
+
             const Spacer(flex: 1),
-            
+
             // Loading indicator with animation
             AnimatedBuilder(
               animation: _loadingAnimation,
@@ -145,7 +145,7 @@ class _SplashScreenState extends State<SplashScreen>
                 );
               },
             ),
-            
+
             const Spacer(flex: 2),
           ],
         ),

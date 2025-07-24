@@ -35,7 +35,7 @@ class AppRouter {
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-      
+
       // Authentication Routes
       GoRoute(
         path: '/welcome-login',

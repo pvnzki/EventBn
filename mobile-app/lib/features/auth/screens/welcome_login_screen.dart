@@ -22,7 +22,7 @@ class WelcomeLoginScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 40),
-              
+
               // Illustration
               Expanded(
                 flex: 3,
@@ -59,7 +59,7 @@ class WelcomeLoginScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
+
                       // Main illustration - Person working
                       Center(
                         child: Container(
@@ -89,11 +89,13 @@ class WelcomeLoginScreen extends StatelessWidget {
                                       CircleAvatar(
                                         radius: 20,
                                         backgroundColor: Color(0xFFFFB8B8),
-                                        child: Text('👩🏻', style: TextStyle(fontSize: 20)),
+                                        child: Text('👩🏻',
+                                            style: TextStyle(fontSize: 20)),
                                       ),
                                       SizedBox(height: 10),
                                       // Body
-                                      Icon(Icons.person, color: Colors.white, size: 30),
+                                      Icon(Icons.person,
+                                          color: Colors.white, size: 30),
                                     ],
                                   ),
                                 ),
@@ -140,9 +142,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Title
               const Text(
                 "Let's you in",
@@ -152,9 +154,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   color: Color(0xFF2D3436),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Social login buttons
               _buildSocialButton(
                 context,
@@ -167,9 +169,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   _handleSocialLogin(context, 'Facebook');
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildSocialButton(
                 context,
                 'Continue with Google',
@@ -182,9 +184,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                 },
                 hasBorder: true,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildSocialButton(
                 context,
                 'Continue with Apple',
@@ -196,9 +198,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   _handleSocialLogin(context, 'Apple');
                 },
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Or divider
               const Text(
                 'or',
@@ -207,9 +209,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   color: Color(0xFF636E72),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Sign in with password button
               SizedBox(
                 width: double.infinity,
@@ -235,9 +237,9 @@ class WelcomeLoginScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Sign up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -264,7 +266,7 @@ class WelcomeLoginScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 32),
             ],
           ),
@@ -292,9 +294,9 @@ class WelcomeLoginScreen extends StatelessWidget {
           foregroundColor: textColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
-            side: hasBorder 
-              ? const BorderSide(color: Color(0xFFE0E0E0), width: 1)
-              : BorderSide.none,
+            side: hasBorder
+                ? const BorderSide(color: Color(0xFFE0E0E0), width: 1)
+                : BorderSide.none,
           ),
           elevation: 0,
         ),
@@ -306,24 +308,24 @@ class WelcomeLoginScreen extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: text.contains('Facebook') 
-                  ? Colors.white 
-                  : text.contains('Google')
-                    ? const Color(0xFF4285F4)
-                    : Colors.white,
+                color: text.contains('Facebook')
+                    ? Colors.white
+                    : text.contains('Google')
+                        ? const Color(0xFF4285F4)
+                        : Colors.white,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                text.contains('Facebook') 
-                  ? Icons.facebook 
-                  : text.contains('Google')
-                    ? Icons.g_mobiledata
-                    : Icons.apple,
-                color: text.contains('Facebook') 
-                  ? const Color(0xFF1877F2)
-                  : text.contains('Google')
-                    ? Colors.white
-                    : Colors.black,
+                text.contains('Facebook')
+                    ? Icons.facebook
+                    : text.contains('Google')
+                        ? Icons.g_mobiledata
+                        : Icons.apple,
+                color: text.contains('Facebook')
+                    ? const Color(0xFF1877F2)
+                    : text.contains('Google')
+                        ? Colors.white
+                        : Colors.black,
                 size: 20,
               ),
             ),
@@ -350,7 +352,7 @@ class WelcomeLoginScreen extends StatelessWidget {
         backgroundColor: Colors.green,
       ),
     );
-    
+
     // Navigate to profile setup
     Future.delayed(const Duration(seconds: 1), () {
       context.go('/profile-setup');

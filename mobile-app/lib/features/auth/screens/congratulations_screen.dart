@@ -18,7 +18,7 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _dialogController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -34,7 +34,7 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
 
     // Start animation immediately
     _dialogController.forward();
-    
+
     // Auto-navigate to home after 4 seconds
     Timer(const Duration(seconds: 4), () {
       if (mounted) {
@@ -87,9 +87,9 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
                     children: [
                       // Success icon with decorative dots
                       _buildSuccessIcon(),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Success title
                       const Text(
                         'Congratulations!',
@@ -99,9 +99,9 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
                           color: Color(0xFF6C5CE7),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Success message
                       const Text(
                         'Your account is ready to use. You will\nbe redirected to the Home page in a\nfew seconds.',
@@ -112,14 +112,14 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
                           height: 1.5,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Loading indicator
                       const LoadingDotsIndicator(),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Action buttons
                       Row(
                         children: [
@@ -127,7 +127,8 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
                             child: TextButton(
                               onPressed: _skipToHome,
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                               child: const Text(
                                 'Skip',
@@ -146,7 +147,8 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF6C5CE7),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -199,7 +201,7 @@ class _CongratulationsScreenState extends State<CongratulationsScreen>
               ),
             );
           }),
-          
+
           // Main success icon
           Container(
             width: 80,
@@ -275,7 +277,8 @@ class _LoadingDotsIndicatorState extends State<LoadingDotsIndicator>
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: const Color(0xFF6C5CE7).withValues(alpha: _animations[index].value),
+                color: const Color(0xFF6C5CE7)
+                    .withValues(alpha: _animations[index].value),
                 shape: BoxShape.circle,
               ),
             );

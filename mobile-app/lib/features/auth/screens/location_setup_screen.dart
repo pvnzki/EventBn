@@ -58,7 +58,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         painter: MapPatternPainter(),
                       ),
                     ),
-                    
+
                     // Location markers and labels
                     const Positioned(
                       top: 60,
@@ -72,7 +72,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const Positioned(
                       bottom: 100,
                       left: 20,
@@ -85,7 +85,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const Positioned(
                       bottom: 20,
                       right: 30,
@@ -101,7 +101,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         ),
                       ),
                     ),
-                    
+
                     // User location pin
                     Center(
                       child: Container(
@@ -117,7 +117,8 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                           child: Container(
                             decoration: const BoxDecoration(
                               image: DecorationImage(
-                                image: NetworkImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'),
+                                image: NetworkImage(
+                                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -129,7 +130,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                 ),
               ),
             ),
-            
+
             // Location Info Section
             Expanded(
               flex: 2,
@@ -138,7 +139,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // Location label
                     const Text(
                       'Location',
@@ -148,9 +149,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         color: Color(0xFF2D3436),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 40),
-                    
+
                     // Location selector
                     Container(
                       width: double.infinity,
@@ -184,9 +185,9 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const Spacer(),
-                    
+
                     // Continue button
                     SizedBox(
                       width: double.infinity,
@@ -210,7 +211,7 @@ class _LocationSetupScreenState extends State<LocationSetupScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -233,7 +234,7 @@ class MapPatternPainter extends CustomPainter {
 
     // Draw grid pattern to simulate map
     const gridSize = 40.0;
-    
+
     // Vertical lines
     for (double x = 0; x < size.width; x += gridSize) {
       canvas.drawLine(
@@ -242,7 +243,7 @@ class MapPatternPainter extends CustomPainter {
         paint,
       );
     }
-    
+
     // Horizontal lines
     for (double y = 0; y < size.height; y += gridSize) {
       canvas.drawLine(
@@ -251,26 +252,26 @@ class MapPatternPainter extends CustomPainter {
         paint,
       );
     }
-    
+
     // Draw some diagonal lines to simulate streets
     final streetPaint = Paint()
       ..color = const Color(0xFFCCCCCC)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
-    
+
     // Diagonal streets
     canvas.drawLine(
       const Offset(0, 0),
       Offset(size.width * 0.7, size.height * 0.8),
       streetPaint,
     );
-    
+
     canvas.drawLine(
       Offset(size.width * 0.3, 0),
       Offset(size.width, size.height * 0.6),
       streetPaint,
     );
-    
+
     canvas.drawLine(
       Offset(0, size.height * 0.4),
       Offset(size.width * 0.8, size.height),

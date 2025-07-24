@@ -58,13 +58,17 @@ class Ticket {
         (s) => s.toString().split('.').last == json['status'],
         orElse: () => TicketStatus.active,
       ),
-      purchaseDate: json['purchaseDate'] != null ? DateTime.parse(json['purchaseDate']) : DateTime.now(),
-      eventStartDate: json['eventStartDate'] != null ? DateTime.parse(json['eventStartDate']) : DateTime.now(),
+      purchaseDate: json['purchaseDate'] != null
+          ? DateTime.parse(json['purchaseDate'])
+          : DateTime.now(),
+      eventStartDate: json['eventStartDate'] != null
+          ? DateTime.parse(json['eventStartDate'])
+          : DateTime.now(),
       venue: json['venue'] ?? '',
       address: json['address'] ?? '',
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

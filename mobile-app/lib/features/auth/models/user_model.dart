@@ -33,11 +33,15 @@ class User {
       email: json['email'] ?? '',
       phoneNumber: json['phoneNumber'],
       profileImageUrl: json['profileImageUrl'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

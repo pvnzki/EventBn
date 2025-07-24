@@ -15,7 +15,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // Navigate to OTP verification with the selected method
     context.push('/otp-verification', extra: {
       'method': _selectedMethod,
-      'contact': _selectedMethod == 'sms' ? '+1 111 ******99' : 'and***ley@yourdomain.com'
+      'contact': _selectedMethod == 'sms'
+          ? '+1 111 ******99'
+          : 'and***ley@yourdomain.com'
     });
   }
 
@@ -45,12 +47,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            
+
             // Illustration
             _buildIllustration(),
-            
+
             const SizedBox(height: 60),
-            
+
             // Instructions text
             const Text(
               'Select which contact details should we use to reset your password',
@@ -60,9 +62,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 height: 1.5,
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // SMS Option
             _buildContactOption(
               isSelected: _selectedMethod == 'sms',
@@ -71,9 +73,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               contact: '+1 111 ******99',
               onTap: () => setState(() => _selectedMethod = 'sms'),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Email Option
             _buildContactOption(
               isSelected: _selectedMethod == 'email',
@@ -82,9 +84,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               contact: 'and***ley@yourdomain.com',
               onTap: () => setState(() => _selectedMethod = 'email'),
             ),
-            
+
             const Spacer(),
-            
+
             // Continue Button
             SizedBox(
               width: double.infinity,
@@ -108,7 +110,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -190,7 +192,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ],
             ),
           ),
-          
+
           // Person sitting
           Positioned(
             left: 40,
@@ -264,7 +266,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
           ),
-          
+
           // Lock icons
           Positioned(
             left: 20,
@@ -315,7 +317,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6C5CE7).withValues(alpha: 0.1) : Colors.grey.shade50,
+          color: isSelected
+              ? const Color(0xFF6C5CE7).withValues(alpha: 0.1)
+              : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
@@ -327,7 +331,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                color:
+                    isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
                 shape: BoxShape.circle,
               ),
               child: Icon(

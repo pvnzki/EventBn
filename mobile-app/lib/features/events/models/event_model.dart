@@ -42,7 +42,7 @@ class Event {
     required this.updatedAt,
   });
 
-  // Temporary JSON methods  
+  // Temporary JSON methods
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       id: json['id'] ?? '',
@@ -52,19 +52,30 @@ class Event {
       category: json['category'] ?? '',
       venue: json['venue'] ?? '',
       address: json['address'] ?? '',
-      startDateTime: json['startDateTime'] != null ? DateTime.parse(json['startDateTime']) : DateTime.now(),
-      endDateTime: json['endDateTime'] != null ? DateTime.parse(json['endDateTime']) : DateTime.now(),
-      ticketTypes: (json['ticketTypes'] as List?)?.map((e) => TicketType.fromJson(e)).toList() ?? [],
+      startDateTime: json['startDateTime'] != null
+          ? DateTime.parse(json['startDateTime'])
+          : DateTime.now(),
+      endDateTime: json['endDateTime'] != null
+          ? DateTime.parse(json['endDateTime'])
+          : DateTime.now(),
+      ticketTypes: (json['ticketTypes'] as List?)
+              ?.map((e) => TicketType.fromJson(e))
+              .toList() ??
+          [],
       organizerId: json['organizerId'] ?? '',
       organizerName: json['organizerName'] ?? '',
       totalCapacity: json['totalCapacity'] ?? 0,
       soldTickets: json['soldTickets'] ?? 0,
       isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -126,7 +137,7 @@ class TicketType {
       maxPerOrder: json['maxPerOrder'] ?? 1,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
