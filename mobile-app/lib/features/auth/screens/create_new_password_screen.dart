@@ -5,12 +5,14 @@ class CreateNewPasswordScreen extends StatefulWidget {
   const CreateNewPasswordScreen({super.key});
 
   @override
-  State<CreateNewPasswordScreen> createState() => _CreateNewPasswordScreenState();
+  State<CreateNewPasswordScreen> createState() =>
+      _CreateNewPasswordScreenState();
 }
 
 class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _rememberMe = true;
@@ -30,14 +32,14 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
       );
       return;
     }
-    
+
     if (_passwordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password must be at least 6 characters')),
       );
       return;
     }
-    
+
     // Show success dialog and navigate to congratulations
     _showSuccessDialog();
   }
@@ -72,9 +74,9 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   size: 40,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               const Text(
                 'Congratulations!',
                 style: TextStyle(
@@ -83,9 +85,9 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   color: Color(0xFF6C5CE7),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               const Text(
                 'Your account is ready to use. You will\nbe redirected to the Home page in a\nfew seconds.',
                 textAlign: TextAlign.center,
@@ -95,9 +97,9 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   height: 1.5,
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Loading dots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -113,9 +115,9 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   );
                 }),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Continue button
               SizedBox(
                 width: double.infinity,
@@ -175,12 +177,12 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            
+
             // Illustration
             _buildIllustration(),
-            
+
             const SizedBox(height: 60),
-            
+
             // Title
             const Text(
               'Create Your New Password',
@@ -190,29 +192,31 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                 color: Color(0xFF212121),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Password Field
             _buildPasswordField(
               controller: _passwordController,
               hintText: 'Password',
               isVisible: _isPasswordVisible,
-              onToggleVisibility: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+              onToggleVisibility: () =>
+                  setState(() => _isPasswordVisible = !_isPasswordVisible),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Confirm Password Field
             _buildPasswordField(
               controller: _confirmPasswordController,
               hintText: 'Confirm Password',
               isVisible: _isConfirmPasswordVisible,
-              onToggleVisibility: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+              onToggleVisibility: () => setState(
+                  () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Remember me checkbox
             Row(
               children: [
@@ -222,9 +226,13 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: _rememberMe ? const Color(0xFF6C5CE7) : Colors.transparent,
+                      color: _rememberMe
+                          ? const Color(0xFF6C5CE7)
+                          : Colors.transparent,
                       border: Border.all(
-                        color: _rememberMe ? const Color(0xFF6C5CE7) : Colors.grey.shade400,
+                        color: _rememberMe
+                            ? const Color(0xFF6C5CE7)
+                            : Colors.grey.shade400,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(6),
@@ -248,9 +256,9 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                 ),
               ],
             ),
-            
+
             const Spacer(),
-            
+
             // Continue Button
             SizedBox(
               width: double.infinity,
@@ -274,7 +282,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -329,7 +337,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
               ],
             ),
           ),
-          
+
           // Person celebrating
           Positioned(
             right: 20,
@@ -458,7 +466,8 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
             onPressed: onToggleVisibility,
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

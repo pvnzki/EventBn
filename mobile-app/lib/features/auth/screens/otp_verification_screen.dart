@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final Map<String, dynamic>? extra;
-  
+
   const OtpVerificationScreen({super.key, this.extra});
 
   @override
@@ -12,7 +12,8 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
+  final List<TextEditingController> _controllers =
+      List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
   String _otpCode = '';
   int _resendTimer = 55;
@@ -52,7 +53,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (value.isNotEmpty && index < 3) {
       _focusNodes[index + 1].requestFocus();
     }
-    
+
     _updateOtpCode();
   }
 
@@ -61,7 +62,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _controllers[index - 1].clear();
       _focusNodes[index - 1].requestFocus();
     }
-    
+
     _updateOtpCode();
   }
 
@@ -116,7 +117,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final contact = widget.extra?['contact'] ?? '+1 111 ******99';
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -144,7 +145,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 60),
-                  
+
                   // Instructions
                   Text(
                     'Code has been send to $contact',
@@ -153,31 +154,36 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       color: Color(0xFF212121),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 60),
-                  
+
                   // OTP Input Fields
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (index) => _buildOtpField(index)),
+                    children:
+                        List.generate(4, (index) => _buildOtpField(index)),
                   ),
-                  
+
                   const SizedBox(height: 60),
-                  
+
                   // Resend timer
                   Text(
-                    _resendTimer > 0 
+                    _resendTimer > 0
                         ? 'Resend code in ${_resendTimer}s'
                         : 'Resend code',
                     style: TextStyle(
                       fontSize: 16,
-                      color: _resendTimer > 0 ? Colors.grey.shade600 : const Color(0xFF6C5CE7),
-                      fontWeight: _resendTimer > 0 ? FontWeight.normal : FontWeight.w600,
+                      color: _resendTimer > 0
+                          ? Colors.grey.shade600
+                          : const Color(0xFF6C5CE7),
+                      fontWeight: _resendTimer > 0
+                          ? FontWeight.normal
+                          : FontWeight.w600,
                     ),
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Verify Button
                   SizedBox(
                     width: double.infinity,
@@ -202,13 +208,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          
+
           // Custom Keypad
           _buildKeypad(),
         ],
@@ -222,8 +228,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       height: 60,
       decoration: BoxDecoration(
         border: Border.all(
-          color: _controllers[index].text.isNotEmpty 
-              ? const Color(0xFF6C5CE7) 
+          color: _controllers[index].text.isNotEmpty
+              ? const Color(0xFF6C5CE7)
               : Colors.grey.shade300,
           width: 2,
         ),
@@ -264,7 +270,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Second row: 4, 5, 6
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -275,7 +281,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Third row: 7, 8, 9
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -286,7 +292,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Fourth row: *, 0, X
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -296,7 +302,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               _buildKeypadButton('⌫', isDelete: true),
             ],
           ),
-          
+
           const SizedBox(height: 20),
         ],
       ),

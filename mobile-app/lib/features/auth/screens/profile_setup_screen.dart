@@ -15,7 +15,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _dobController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   String? _selectedGender;
   String _selectedCountryCode = '+1';
   String? _profileImagePath;
@@ -99,7 +99,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                
+
                 // Profile Image
                 Center(
                   child: Stack(
@@ -111,19 +111,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           shape: BoxShape.circle,
                           color: Colors.grey[200],
                           image: _profileImagePath != null
-                            ? const DecorationImage(
-                                image: NetworkImage('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                              ? const DecorationImage(
+                                  image: NetworkImage(
+                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
                         child: _profileImagePath == null
-                          ? Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.grey[400],
-                            )
-                          : null,
+                            ? Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Colors.grey[400],
+                              )
+                            : null,
                       ),
                       Positioned(
                         bottom: 0,
@@ -148,9 +149,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Full Name
                 _buildTextField(
                   controller: _fullNameController,
@@ -162,9 +163,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Nickname
                 _buildTextField(
                   controller: _nicknameController,
@@ -176,15 +177,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Date of Birth
                 _buildTextField(
                   controller: _dobController,
                   hint: 'Date of Birth',
                   readOnly: true,
-                  suffixIcon: const Icon(Icons.calendar_today, color: Color(0xFF636E72)),
+                  suffixIcon: const Icon(Icons.calendar_today,
+                      color: Color(0xFF636E72)),
                   onTap: () => _selectDate(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -193,14 +195,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Email
                 _buildTextField(
                   controller: _emailController,
                   hint: 'Email',
-                  suffixIcon: const Icon(Icons.email_outlined, color: Color(0xFF636E72)),
+                  suffixIcon: const Icon(Icons.email_outlined,
+                      color: Color(0xFF636E72)),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -212,9 +215,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Phone Number
                 Row(
                   children: [
@@ -265,20 +268,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Gender Dropdown
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F9FA),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButton<String>(
                     value: _selectedGender,
-                    hint: const Text('Gender', style: TextStyle(color: Color(0xFF636E72))),
+                    hint: const Text('Gender',
+                        style: TextStyle(color: Color(0xFF636E72))),
                     isExpanded: true,
                     underline: const SizedBox(),
                     items: _genders.map((gender) {
@@ -294,9 +299,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     },
                   ),
                 ),
-                
+
                 const SizedBox(height: 60),
-                
+
                 // Continue button
                 SizedBox(
                   width: double.infinity,
@@ -320,7 +325,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -354,7 +359,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           hintStyle: const TextStyle(color: Color(0xFF636E72)),
           suffixIcon: suffixIcon,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
         validator: validator,
       ),
@@ -378,7 +384,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _dobController.text = '${picked.month}/${picked.day}/${picked.year}';

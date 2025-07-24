@@ -15,17 +15,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       title: "Grab all events now only\nin your hands",
-      description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
+      description:
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
       illustration: OnboardingIllustration1(),
     ),
     OnboardingPage(
       title: "Discover amazing events\nnear you",
-      description: "Find concerts, festivals, workshops and more happening in your city.",
+      description:
+          "Find concerts, festivals, workshops and more happening in your city.",
       illustration: OnboardingIllustration2(),
     ),
     OnboardingPage(
       title: "Book tickets with\njust a few taps",
-      description: "Simple and secure ticket booking process with instant confirmation.",
+      description:
+          "Simple and secure ticket booking process with instant confirmation.",
       illustration: OnboardingIllustration3(),
     ),
   ];
@@ -77,7 +80,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-            
+
             // PageView
             Expanded(
               child: PageView.builder(
@@ -94,15 +97,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       children: [
                         const Spacer(flex: 1),
-                        
+
                         // Illustration
                         Expanded(
                           flex: 4,
                           child: _pages[index].illustration,
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
                         // Title
                         Text(
                           _pages[index].title,
@@ -114,9 +117,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 1.2,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Description
                         Text(
                           _pages[index].description,
@@ -127,9 +130,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 1.5,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
                         // Page indicators
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -148,9 +151,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
                         // Next button
                         SizedBox(
                           width: double.infinity,
@@ -166,7 +169,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               elevation: 0,
                             ),
                             child: Text(
-                              _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                              _currentPage == _pages.length - 1
+                                  ? 'Get Started'
+                                  : 'Next',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -174,7 +179,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -261,7 +266,7 @@ class OnboardingIllustration1 extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Main illustration area
           Center(
             child: Container(
@@ -358,7 +363,7 @@ class OnboardingIllustration2 extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Main illustration
           Center(
             child: Container(
@@ -426,7 +431,7 @@ class OnboardingIllustration3 extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Main illustration
           Center(
             child: Container(

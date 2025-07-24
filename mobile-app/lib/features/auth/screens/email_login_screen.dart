@@ -31,7 +31,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      
+
       // Navigate to profile setup
       Future.delayed(const Duration(seconds: 1), () {
         context.go('/profile-setup');
@@ -60,7 +60,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Logo
                 Container(
                   width: 100,
@@ -80,9 +80,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Title
                 const Text(
                   'Login to Your Account',
@@ -92,9 +92,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     color: Color(0xFF2D3436),
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Email field
                 Container(
                   decoration: BoxDecoration(
@@ -107,9 +107,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     decoration: const InputDecoration(
                       hintText: 'andrew_ainsley@yourdomain.com',
                       hintStyle: TextStyle(color: Color(0xFF636E72)),
-                      prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF636E72)),
+                      prefixIcon:
+                          Icon(Icons.email_outlined, color: Color(0xFF636E72)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -122,9 +124,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     },
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password field
                 Container(
                   decoration: BoxDecoration(
@@ -137,10 +139,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     decoration: InputDecoration(
                       hintText: '••••••••••••',
                       hintStyle: const TextStyle(color: Color(0xFF636E72)),
-                      prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF636E72)),
+                      prefixIcon: const Icon(Icons.lock_outline,
+                          color: Color(0xFF636E72)),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: const Color(0xFF636E72),
                         ),
                         onPressed: () {
@@ -150,7 +155,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                         },
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -163,9 +169,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     },
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Remember me checkbox
                 Row(
                   children: [
@@ -191,9 +197,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Sign in button
                 SizedBox(
                   width: double.infinity,
@@ -217,9 +223,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Forgot password
                 GestureDetector(
                   onTap: () {
@@ -235,9 +241,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Or continue with divider
                 const Text(
                   'or continue with',
@@ -246,18 +252,20 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     color: Color(0xFF636E72),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Social login icons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildSocialIcon(Icons.facebook, const Color(0xFF1877F2), () {
+                    _buildSocialIcon(Icons.facebook, const Color(0xFF1877F2),
+                        () {
                       _handleSocialLogin('Facebook');
                     }),
                     const SizedBox(width: 24),
-                    _buildSocialIcon(Icons.g_mobiledata, const Color(0xFF4285F4), () {
+                    _buildSocialIcon(
+                        Icons.g_mobiledata, const Color(0xFF4285F4), () {
                       _handleSocialLogin('Google');
                     }),
                     const SizedBox(width: 24),
@@ -266,9 +274,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     }),
                   ],
                 ),
-                
+
                 const Spacer(),
-                
+
                 // Sign up link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -295,7 +303,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -332,7 +340,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         backgroundColor: Colors.green,
       ),
     );
-    
+
     Future.delayed(const Duration(seconds: 1), () {
       context.go('/profile-setup');
     });
