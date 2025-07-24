@@ -15,6 +15,8 @@ import '../../features/auth/screens/create_new_password_screen.dart';
 import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/search_screen.dart';
+import '../../features/events/screens/notifications_screen.dart';
+import '../../features/events/screens/popular_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
@@ -88,6 +90,16 @@ class AppRouter {
         path: '/create-new-password',
         name: 'create-new-password',
         builder: (context, state) => const CreateNewPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/popular-events',
+        name: 'popular-events',
+        builder: (context, state) => const PopularEventsScreen(),
       ),
 
       // Main App Routes with Bottom Navigation
