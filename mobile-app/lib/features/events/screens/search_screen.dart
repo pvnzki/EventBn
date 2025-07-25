@@ -140,33 +140,51 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Search header with title
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Text(
+                    'Search Events',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6C5CE7),
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildSearchBar(),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Filter bar
+            _buildFilterBar(),
+            
+            // Filters panel (if expanded)
+            if (_showFilters) _buildFiltersPanel(),
+            
+            // Content based on search state
+            Expanded(
+              child: _searchQuery.isEmpty
+                  ? _buildSearchSuggestions()
+                  : _buildSearchResults(),
+            ),
+          ],
         ),
-        title: _buildSearchBar(),
-        titleSpacing: 0,
-      ),
-      body: Column(
-        children: [
-          // Filter bar
-          _buildFilterBar(),
-          
-          // Filters panel (if expanded)
-          if (_showFilters) _buildFiltersPanel(),
-          
-          // Content based on search state
-          Expanded(
-            child: _searchQuery.isEmpty
-                ? _buildSearchSuggestions()
-                : _buildSearchResults(),
-          ),
-        ],
       ),
     );
   }
