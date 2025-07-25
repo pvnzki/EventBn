@@ -5,34 +5,57 @@ class MyTicketsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Tickets'),
-        automaticallyImplyLeading: false,
-      ),
-      body: const Center(
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.confirmation_number,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'My Tickets',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Text(
+                    'My Tickets',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6C5CE7),
+                    ),
+                  ),
+                  const Spacer(),
+                ],
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'View your purchased tickets',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+            
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.confirmation_number,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'My Tickets',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'View your purchased tickets',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
