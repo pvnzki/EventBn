@@ -138,26 +138,28 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Popular Events',
           style: TextStyle(
-            color: Colors.black,
+            color: theme.colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
+            icon: Icon(Icons.search, color: theme.colorScheme.onSurface),
             onPressed: () => context.push('/search'),
           ),
         ],
@@ -165,18 +167,18 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       body: Column(
         children: [
           // Filter tabs
-          _buildFilterTabs(),
+          _buildFilterTabs(theme, isDark),
 
           // Events list
           Expanded(
             child: _filteredEvents.isEmpty
-                ? _buildEmptyState()
+                ? _buildEmptyState(theme)
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _filteredEvents.length,
                     itemBuilder: (context, index) {
                       final event = _filteredEvents[index];
-                      return _buildEventCard(event);
+                      return _buildEventCard(event, theme, isDark);
                     },
                   ),
           ),
@@ -185,7 +187,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     );
   }
 
-  Widget _buildFilterTabs() {
+  Widget _buildFilterTabs(ThemeData theme, bool isDark) {
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -207,22 +209,22 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color:
-                    isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade100,
+                color: isSelected
+                    ? const Color(0xFF32CD32)
+                    : (isDark ? theme.cardColor : Colors.white),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
                   color: isSelected
-                      ? const Color(0xFF6C5CE7)
-                      : Colors.grey.shade300,
+                      ? const Color(0xFF32CD32)
+                      : (isDark ? theme.dividerColor.withOpacity(0.3) : Colors.grey.shade300),
                 ),
               ),
               child: Center(
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -234,7 +236,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -242,7 +244,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
           Icon(
             Icons.event_busy,
             size: 80,
-            color: Colors.grey.shade400,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -250,7 +252,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -258,7 +260,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
             'Try selecting a different category or check back later.',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade500,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
             textAlign: TextAlign.center,
           ),
@@ -267,20 +269,20 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     );
   }
 
-  Widget _buildEventCard(Map<String, dynamic> event) {
+  Widget _buildEventCard(Map<String, dynamic> event, ThemeData theme, bool isDark) {
     return GestureDetector(
       onTap: () {
         // Navigate to event details
-        context.push('/event-details/${event['id']}', extra: event);
+        context.push('/event/${event['id']}');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: theme.colorScheme.onSurface.withOpacity(0.07),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -313,7 +315,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: theme.scaffoldBackgroundColor.withOpacity(0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -321,8 +323,8 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                             ? Icons.bookmark
                             : Icons.bookmark_border,
                         color: event['isBookmarked']
-                            ? const Color(0xFF6C5CE7)
-                            : Colors.grey.shade600,
+                            ? const Color(0xFF32CD32)
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
                         size: 20,
                       ),
                     ),
@@ -335,7 +337,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6C5CE7),
+                      color: const Color(0xFF32CD32),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -359,10 +361,10 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                 children: [
                   Text(
                     event['title'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -370,17 +372,17 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today,
                         size: 14,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         event['date'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -388,18 +390,18 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on,
                         size: 14,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           event['location'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -421,10 +423,10 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                           const SizedBox(width: 4),
                           Text(
                             '${event['rating']}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -435,17 +437,17 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       // Attendees
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.people,
                             size: 16,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${event['attendees']}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey,
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -456,10 +458,10 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       // Price
                       Text(
                         '\$${event['price'].toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF6C5CE7),
+                          color: const Color(0xFF32CD32),
                         ),
                       ),
                     ],

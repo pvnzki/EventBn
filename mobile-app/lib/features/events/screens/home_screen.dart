@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:developer';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +12,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    print('HomeScreen initialized - event cards should be tappable');
+  }
 
   final List<Map<String, String>> _bannerEvents = [
     {
@@ -39,11 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  final List<Map<String, String>> _categories = [
-    {'name': 'Sports', 'icon': '⚽', 'color': '0xFF6C5CE7'},
-    {'name': 'Music', 'icon': '🎵', 'color': '0xFFFF6B35'},
-    {'name': 'Food', 'icon': '🍕', 'color': '0xFF00D4AA'},
-    {'name': 'Art', 'icon': '🎨', 'color': '0xFFFF006E'},
+  final List<Map<String, dynamic>> _categories = [
+    {'name': 'Sports', 'icon': Icons.sports_soccer, 'color': 0xFF388E3C},
+    {'name': 'Music', 'icon': Icons.music_note, 'color': 0xFF1976D2},
+    {'name': 'Food', 'icon': Icons.restaurant, 'color': 0xFFD84315},
+    {'name': 'Art', 'icon': Icons.brush, 'color': 0xFF8E24AA},
   ];
 
   final List<Map<String, String>> _upcomingEvents = [
@@ -90,29 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               _buildHeader(),
-
               const SizedBox(height: 20),
-
-              // Search Bar
               _buildSearchBar(),
-
               const SizedBox(height: 24),
-
-              // Banner/Featured Events
               _buildFeaturedBanner(),
-
               const SizedBox(height: 24),
-
-              // Categories
               _buildCategories(),
-
               const SizedBox(height: 32),
-
-              // Upcoming Events
               _buildUpcomingEvents(),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -123,48 +116,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Location',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+            // Header Logo - Theme aware
+            Align(
+              alignment: Alignment.centerLeft, // Align to the left
+              child: SizedBox(
+              height: 30, // Reduced height
+              child: Image.asset(
+                isDark
+                  ? 'assets/images/White Header logo.png'
+                  : 'assets/images/Black header logo.png',
+                height: 30, // Reduced height
+                width: 120, // Increased width
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                // Fallback to text logo if image not found
+                return Text(
+                  'EventBn',
+                  style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                  ),
+                );
+                },
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: theme.primaryColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'New York, USA',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ],
               ),
-            ],
-          ),
+            ),
           const Spacer(),
           IconButton(
             onPressed: () => context.push('/notifications'),
@@ -281,106 +264,119 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: _bannerEvents.length,
             itemBuilder: (context, index) {
               final event = _bannerEvents[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  image: DecorationImage(
-                    image: NetworkImage(event['image']!),
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Colors.black.withValues(alpha: 0.3),
-                      BlendMode.darken,
-                    ),
-                  ),
-                ),
+              return GestureDetector(
+                onTap: () {
+                  log('Banner event tapped: ${index + 1}');
+                  log('Navigating to: /event/${index + 1}');
+                  try {
+                    context.push('/event/${index + 1}');
+                    log('Banner navigation called successfully');
+                  } catch (e) {
+                    log('Banner navigation error: $e');
+                  }
+                },
                 child: Container(
-                  padding: const EdgeInsets.all(20),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.7),
-                      ],
+                    image: DecorationImage(
+                      image: NetworkImage(event['image']!),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withValues(alpha: 0.3),
+                        BlendMode.darken,
+                      ),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        event['title']!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: Colors.white70,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            event['date']!,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            color: Colors.white70,
-                            size: 14,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          event['title']!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              event['location']!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              color: Colors.white70,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              event['date']!,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: Colors.white70,
+                              size: 14,
                             ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C5CE7),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              event['price']!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                event['location']!,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .primaryColor, // Theme-aware color
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                event['price']!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -399,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _currentBannerIndex == index
-                    ? const Color(0xFF6C5CE7)
+                    ? Theme.of(context).primaryColor // Theme-aware color
                     : Colors.grey.shade300,
               ),
             ),
@@ -411,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategories() {
     final theme = Theme.of(context);
-
+    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -451,6 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: _categories.length,
             itemBuilder: (context, index) {
               final category = _categories[index];
+              final catColor = Color(category['color']);
               return Container(
                 width: 80,
                 margin: const EdgeInsets.only(right: 16),
@@ -460,29 +457,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Color(int.parse(category['color']!))
-                            .withValues(alpha: 0.1),
+                        color: catColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Color(int.parse(category['color']!))
-                              .withValues(alpha: 0.3),
+                          color: catColor.withOpacity(0.3),
                         ),
                       ),
                       child: Center(
-                        child: Text(
-                          category['icon']!,
-                          style: const TextStyle(fontSize: 24),
+                        child: Icon(
+                          category['icon'],
+                          color: catColor,
+                          size: 28,
                         ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      category['name']!,
+                      category['name'],
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -537,116 +532,128 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: _upcomingEvents.length,
           itemBuilder: (context, index) {
             final event = _upcomingEvents[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      event['image']!,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
+            return GestureDetector(
+              onTap: () {
+                print('Upcoming event tapped: ${index + 1}');
+                print('Navigating to: /event/${index + 1}');
+                try {
+                  context.push('/event/${index + 1}');
+                  print('Navigation called successfully');
+                } catch (e) {
+                  print('Navigation error: $e');
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event['title']!,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 12,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
+                  ],
+                  border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        event['image']!,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event['title']!,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              event['date']!,
-                              style: TextStyle(
-                                fontSize: 12,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 12,
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.6),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                event['location']!,
+                              const SizedBox(width: 6),
+                              Text(
+                                event['date']!,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: theme.colorScheme.onSurface
                                       .withValues(alpha: 0.6),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                size: 12,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  event['location']!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      children: [
+                        Text(
+                          event['price']!,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: theme.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Icon(
+                          Icons.bookmark_border,
+                          size: 20,
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    children: [
-                      Text(
-                        event['price']!,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Icon(
-                        Icons.bookmark_border,
-                        size: 20,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

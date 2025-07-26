@@ -172,15 +172,15 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
         child: Column(
           children: [
-            // Search header with title
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   Text(
@@ -188,29 +188,20 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF6C5CE7),
+                      color: theme.primaryColor,
                     ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                 ],
               ),
             ),
-
-            // Search bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _buildSearchBar(),
+              child: _buildSearchBar(theme, isDark),
             ),
-
             const SizedBox(height: 16),
-
-            // Filter bar
-            _buildFilterBar(),
-
-            // Filters panel (if expanded)
-            if (_showFilters) _buildFiltersPanel(),
-
-            // Content based on search state
+            _buildFilterBar(theme, isDark),
+            if (_showFilters) _buildFiltersPanel(theme, isDark),
             Expanded(
               child: _searchQuery.isEmpty
                   ? _buildSearchSuggestions()
@@ -222,18 +213,18 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(ThemeData theme, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: isDark ? theme.cardColor : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: isDark ? theme.dividerColor.withOpacity(0.3) : Colors.grey.shade300),
       ),
       child: Row(
         children: [
-          const Icon(Icons.search, color: Colors.grey, size: 20),
+          Icon(Icons.search, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -241,31 +232,31 @@ class _SearchScreenState extends State<SearchScreen> {
               focusNode: _searchFocusNode,
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchSubmitted,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search events...',
-                hintStyle: TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
                 border: InputBorder.none,
               ),
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurface),
             ),
           ),
           if (_searchQuery.isNotEmpty)
             GestureDetector(
               onTap: _clearSearch,
-              child: const Icon(Icons.clear, color: Colors.grey, size: 20),
+              child: Icon(Icons.clear, color: theme.colorScheme.onSurface.withOpacity(0.6), size: 20),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterBar() {
+  Widget _buildFilterBar(ThemeData theme, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? theme.cardColor : Colors.white,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.2) : Colors.grey.shade200),
         ),
       ),
       child: Row(
@@ -276,13 +267,13 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: _showFilters
-                    ? const Color(0xFF6C5CE7)
-                    : Colors.grey.shade100,
+                    ? theme.primaryColor
+                    : (isDark ? theme.cardColor : Colors.grey.shade100),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: _showFilters
-                      ? const Color(0xFF6C5CE7)
-                      : Colors.grey.shade300,
+                      ? theme.primaryColor
+                      : (isDark ? theme.dividerColor.withOpacity(0.3) : Colors.grey.shade300),
                 ),
               ),
               child: Row(
@@ -291,13 +282,13 @@ class _SearchScreenState extends State<SearchScreen> {
                   Icon(
                     Icons.tune,
                     size: 16,
-                    color: _showFilters ? Colors.white : Colors.grey.shade600,
+                    color: _showFilters ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Filters',
                     style: TextStyle(
-                      color: _showFilters ? Colors.white : Colors.grey.shade600,
+                      color: _showFilters ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -314,14 +305,14 @@ class _SearchScreenState extends State<SearchScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: isDark ? Colors.red.withOpacity(0.1) : Colors.red.shade50,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
+                  border: Border.all(color: isDark ? Colors.red.withOpacity(0.3) : Colors.red.shade200),
                 ),
-                child: Text(
+                child: const Text(
                   'Clear filters',
                   style: TextStyle(
-                    color: Colors.red.shade600,
+                    color: Colors.red,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -333,7 +324,7 @@ class _SearchScreenState extends State<SearchScreen> {
             Text(
               '${_searchResults.length} results',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
                 fontSize: 14,
               ),
             ),
@@ -349,52 +340,40 @@ class _SearchScreenState extends State<SearchScreen> {
         _selectedPriceRange != 'All';
   }
 
-  Widget _buildFiltersPanel() {
+  Widget _buildFiltersPanel(ThemeData theme, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: isDark ? theme.cardColor : Colors.grey.shade50,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: isDark ? theme.dividerColor.withOpacity(0.2) : Colors.grey.shade200),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildFilterSection('Category', _categories, _selectedCategory,
-              (value) {
-            setState(() => _selectedCategory = value);
-          }),
+          _buildFilterSection('Category', _categories, _selectedCategory, (value) { setState(() => _selectedCategory = value); }, theme, isDark),
           const SizedBox(height: 16),
-          _buildFilterSection('Location', _locations, _selectedLocation,
-              (value) {
-            setState(() => _selectedLocation = value);
-          }),
+          _buildFilterSection('Location', _locations, _selectedLocation, (value) { setState(() => _selectedLocation = value); }, theme, isDark),
           const SizedBox(height: 16),
-          _buildFilterSection('Date', _dateRanges, _selectedDateRange, (value) {
-            setState(() => _selectedDateRange = value);
-          }),
+          _buildFilterSection('Date', _dateRanges, _selectedDateRange, (value) { setState(() => _selectedDateRange = value); }, theme, isDark),
           const SizedBox(height: 16),
-          _buildFilterSection('Price', _priceRanges, _selectedPriceRange,
-              (value) {
-            setState(() => _selectedPriceRange = value);
-          }),
+          _buildFilterSection('Price', _priceRanges, _selectedPriceRange, (value) { setState(() => _selectedPriceRange = value); }, theme, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildFilterSection(String title, List<String> options,
-      String selected, Function(String) onChanged) {
+  Widget _buildFilterSection(String title, List<String> options, String selected, Function(String) onChanged, ThemeData theme, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -406,23 +385,21 @@ class _SearchScreenState extends State<SearchScreen> {
             return GestureDetector(
               onTap: () => onChanged(option),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF6C5CE7) : Colors.white,
+                  color: isSelected ? theme.primaryColor : (isDark ? theme.cardColor : Colors.white),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF6C5CE7)
-                        : Colors.grey.shade300,
+                        ? theme.primaryColor
+                        : (isDark ? theme.dividerColor.withOpacity(0.3) : Colors.grey.shade300),
                   ),
                 ),
                 child: Text(
                   option,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -471,6 +448,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchSuggestionItem(String text, IconData icon) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         _searchController.text = text;
@@ -481,18 +459,18 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: Colors.grey.shade500),
+            Icon(icon, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.6)),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: Colors.black87,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
-            Icon(Icons.north_west, size: 16, color: Colors.grey.shade400),
+            Icon(Icons.north_west, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.4)),
           ],
         ),
       ),
@@ -515,6 +493,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildNoResults() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -522,7 +501,7 @@ class _SearchScreenState extends State<SearchScreen> {
           Icon(
             Icons.search_off,
             size: 80,
-            color: Colors.grey.shade400,
+            color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -530,7 +509,7 @@ class _SearchScreenState extends State<SearchScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -538,7 +517,7 @@ class _SearchScreenState extends State<SearchScreen> {
             'Try adjusting your search or filters',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade500,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
             ),
             textAlign: TextAlign.center,
           ),
@@ -548,24 +527,27 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildEventCard(Map<String, dynamic> event) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
-        context.push('/event-details/${event['id']}', extra: event);
+        print('Search result event tapped: ${event['id']} - ${event['title']}');
+        context.push('/event/${event['id']}');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: theme.colorScheme.onSurface.withOpacity(0.07),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: theme.dividerColor.withOpacity(0.15)),
         ),
         child: Row(
           children: [
@@ -585,10 +567,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 children: [
                   Text(
                     event['title'],
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -596,18 +578,18 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today,
                         size: 12,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           event['date'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -618,18 +600,18 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on,
                         size: 12,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           event['location'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -644,14 +626,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6C5CE7).withValues(alpha: 0.1),
+                          color: theme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           event['category'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Color(0xFF6C5CE7),
+                            color: theme.primaryColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -659,10 +641,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       const Spacer(),
                       Text(
                         '\$${event['price'].toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF6C5CE7),
+                          color: theme.primaryColor,
                         ),
                       ),
                     ],
