@@ -12,7 +12,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '1',
       'title': 'Event Reminder',
-      'message': 'Don\'t forget! International Band Music Concert starts in 2 hours.',
+      'message':
+          'Don\'t forget! International Band Music Concert starts in 2 hours.',
       'time': '2 hours ago',
       'isRead': false,
       'type': 'reminder',
@@ -22,7 +23,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '2',
       'title': 'New Event Alert',
-      'message': 'Jazz Night Live has been added to your wishlist area. Check it out!',
+      'message':
+          'Jazz Night Live has been added to your wishlist area. Check it out!',
       'time': '5 hours ago',
       'isRead': false,
       'type': 'new_event',
@@ -32,7 +34,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '3',
       'title': 'Booking Confirmed',
-      'message': 'Your booking for Summer Music Festival has been confirmed. Ticket #SM2024001',
+      'message':
+          'Your booking for Summer Music Festival has been confirmed. Ticket #SM2024001',
       'time': '1 day ago',
       'isRead': true,
       'type': 'booking',
@@ -42,7 +45,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '4',
       'title': 'Payment Successful',
-      'message': 'Payment of \$45.00 for Summer Music Festival has been processed successfully.',
+      'message':
+          'Payment of \$45.00 for Summer Music Festival has been processed successfully.',
       'time': '1 day ago',
       'isRead': true,
       'type': 'payment',
@@ -52,7 +56,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '5',
       'title': 'Event Cancelled',
-      'message': 'Unfortunately, Comedy Night Live on Dec 15 has been cancelled. Full refund processed.',
+      'message':
+          'Unfortunately, Comedy Night Live on Dec 15 has been cancelled. Full refund processed.',
       'time': '2 days ago',
       'isRead': true,
       'type': 'cancellation',
@@ -62,7 +67,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '6',
       'title': 'Special Offer',
-      'message': 'Get 20% off on all weekend events! Use code WEEKEND20. Valid until Dec 31.',
+      'message':
+          'Get 20% off on all weekend events! Use code WEEKEND20. Valid until Dec 31.',
       'time': '3 days ago',
       'isRead': true,
       'type': 'offer',
@@ -72,7 +78,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '7',
       'title': 'Event Update',
-      'message': 'Food Festival 2024 venue has been changed to Central Park. Please check your ticket.',
+      'message':
+          'Food Festival 2024 venue has been changed to Central Park. Please check your ticket.',
       'time': '4 days ago',
       'isRead': true,
       'type': 'update',
@@ -82,7 +89,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     {
       'id': '8',
       'title': 'New Events Near You',
-      'message': '5 new events have been added in your area. Discover them now!',
+      'message':
+          '5 new events have been added in your area. Discover them now!',
       'time': '1 week ago',
       'isRead': true,
       'type': 'discovery',
@@ -118,7 +126,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final unreadCount = _notifications.where((n) => !n['isRead']).length;
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -245,10 +253,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification['isRead'] ? theme.colorScheme.surface : theme.primaryColor.withValues(alpha: 0.05),
+            color: notification['isRead']
+                ? theme.colorScheme.surface
+                : theme.primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: notification['isRead'] ? theme.colorScheme.outline.withValues(alpha: 0.2) : theme.primaryColor.withValues(alpha: 0.2),
+              color: notification['isRead']
+                  ? theme.colorScheme.outline.withValues(alpha: 0.2)
+                  : theme.primaryColor.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
@@ -275,9 +287,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   size: 24,
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Content
               Expanded(
                 child: Column(
@@ -290,7 +302,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             notification['title'],
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: notification['isRead'] ? FontWeight.w600 : FontWeight.bold,
+                              fontWeight: notification['isRead']
+                                  ? FontWeight.w600
+                                  : FontWeight.bold,
                               color: theme.colorScheme.onSurface,
                             ),
                           ),
@@ -306,33 +320,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                       ],
                     ),
-                    
                     const SizedBox(height: 8),
-                    
                     Text(
                       notification['message'],
                       style: TextStyle(
                         fontSize: 14,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.4,
                       ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
                     const SizedBox(height: 8),
-                    
                     Text(
                       notification['time'],
                       style: TextStyle(
                         fontSize: 12,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               // More options
               PopupMenuButton<String>(
                 icon: Icon(

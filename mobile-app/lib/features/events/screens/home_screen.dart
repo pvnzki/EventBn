@@ -18,21 +18,24 @@ class _HomeScreenState extends State<HomeScreen> {
       'date': 'Wed, Dec 18 • 6:00 PM',
       'location': 'Times Square NYC, Manhattan',
       'price': '\$25',
-      'image': 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=200&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=200&fit=crop',
     },
     {
       'title': 'Summer Music Festival',
       'date': 'Sat, Dec 21 • 8:00 PM',
       'location': 'Central Park, NYC',
       'price': '\$45',
-      'image': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=200&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=200&fit=crop',
     },
     {
       'title': 'Jazz Night Live',
       'date': 'Sun, Dec 22 • 7:30 PM',
       'location': 'Blue Note, Manhattan',
       'price': '\$35',
-      'image': 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=400&h=200&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=400&h=200&fit=crop',
     },
   ];
 
@@ -49,21 +52,24 @@ class _HomeScreenState extends State<HomeScreen> {
       'date': 'Tue, Dec 17 • 6:00 PM',
       'location': 'Palace Theatre, NYC',
       'price': '\$30',
-      'image': 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=180&fit=crop',
     },
     {
       'title': 'Comedy Night Live',
       'date': 'Thu, Dec 19 • 8:00 PM',
       'location': 'Comedy Cellar, NYC',
       'price': '\$20',
-      'image': 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=300&h=180&fit=crop',
     },
     {
       'title': 'Food Festival 2024',
       'date': 'Fri, Dec 20 • 5:00 PM',
       'location': 'Madison Square Park',
       'price': '\$15',
-      'image': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&h=180&fit=crop',
     },
   ];
 
@@ -76,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
@@ -86,27 +92,27 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Header
               _buildHeader(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Search Bar
               _buildSearchBar(),
-              
+
               const SizedBox(height: 24),
-              
+
               // Banner/Featured Events
               _buildFeaturedBanner(),
-              
+
               const SizedBox(height: 24),
-              
+
               // Categories
               _buildCategories(),
-              
+
               const SizedBox(height: 32),
-              
+
               // Upcoming Events
               _buildUpcomingEvents(),
-              
+
               const SizedBox(height: 20),
             ],
           ),
@@ -117,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
@@ -209,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSearchBar() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GestureDetector(
@@ -220,9 +226,9 @@ class _HomeScreenState extends State<HomeScreen> {
             color: isDark ? theme.cardColor : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark 
-                ? theme.dividerColor.withValues(alpha: 0.3)
-                : Colors.grey.shade300,
+              color: isDark
+                  ? theme.dividerColor.withValues(alpha: 0.3)
+                  : Colors.grey.shade300,
             ),
           ),
           child: Row(
@@ -405,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategories() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -454,10 +460,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Color(int.parse(category['color']!)).withValues(alpha: 0.1),
+                        color: Color(int.parse(category['color']!))
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Color(int.parse(category['color']!)).withValues(alpha: 0.3),
+                          color: Color(int.parse(category['color']!))
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                       child: Center(
@@ -473,7 +481,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -489,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildUpcomingEvents() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -541,7 +550,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     offset: const Offset(0, 4),
                   ),
                 ],
-                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -575,14 +585,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(
                               Icons.calendar_today,
                               size: 12,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 6),
                             Text(
                               event['date']!,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                             ),
                           ],
@@ -593,7 +605,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(
                               Icons.location_on,
                               size: 12,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -601,7 +614,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 event['location']!,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -627,7 +641,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.bookmark_border,
                         size: 20,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ],
                   ),

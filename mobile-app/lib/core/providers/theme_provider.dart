@@ -11,7 +11,8 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode {
     if (_themeMode == ThemeMode.system) {
       // Get system brightness
-      return WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark;
     }
     return _themeMode == ThemeMode.dark;
   }
@@ -26,7 +27,7 @@ class ThemeProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final themeIndex = prefs.getInt(_themeKey) ?? 0; // Default to system
-      
+
       switch (themeIndex) {
         case 0:
           _themeMode = ThemeMode.system;
@@ -40,7 +41,7 @@ class ThemeProvider extends ChangeNotifier {
         default:
           _themeMode = ThemeMode.system;
       }
-      
+
       notifyListeners();
     } catch (e) {
       // If there's an error loading preferences, use system default

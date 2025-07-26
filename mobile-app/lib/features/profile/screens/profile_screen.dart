@@ -9,7 +9,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
@@ -32,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
@@ -46,7 +46,9 @@ class ProfileScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: isDark ? Colors.black26 : Colors.grey.withValues(alpha: 0.1),
+                            color: isDark
+                                ? Colors.black26
+                                : Colors.grey.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -56,7 +58,8 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                            backgroundColor:
+                                theme.primaryColor.withValues(alpha: 0.1),
                             child: Icon(
                               Icons.person,
                               size: 50,
@@ -77,15 +80,16 @@ class ProfileScreen extends StatelessWidget {
                             'john.doe@example.com',
                             style: TextStyle(
                               fontSize: 16,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Settings Section
                     Container(
                       decoration: BoxDecoration(
@@ -93,7 +97,9 @@ class ProfileScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: isDark ? Colors.black26 : Colors.grey.withValues(alpha: 0.1),
+                            color: isDark
+                                ? Colors.black26
+                                : Colors.grey.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -113,19 +119,23 @@ class ProfileScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          
+
                           // Theme Toggle
                           Consumer<ThemeProvider>(
                             builder: (context, themeProvider, child) {
                               return _buildSettingsTile(
                                 context: context,
-                                icon: isDark ? Icons.dark_mode : Icons.light_mode,
+                                icon:
+                                    isDark ? Icons.dark_mode : Icons.light_mode,
                                 title: 'Theme',
-                                subtitle: 'Current: ${themeProvider.currentThemeName}',
+                                subtitle:
+                                    'Current: ${themeProvider.currentThemeName}',
                                 trailing: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: theme.primaryColor.withValues(alpha: 0.1),
+                                    color: theme.primaryColor
+                                        .withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -137,74 +147,83 @@ class ProfileScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                onTap: () => _showThemeDialog(context, themeProvider),
+                                onTap: () =>
+                                    _showThemeDialog(context, themeProvider),
                               );
                             },
                           ),
-                          
+
                           _buildDivider(theme),
-                          
+
                           // Notifications
                           _buildSettingsTile(
                             context: context,
                             icon: Icons.notifications_outlined,
                             title: 'Notifications',
                             subtitle: 'Manage your notifications',
-                            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5)),
                             onTap: () {
                               // TODO: Navigate to notifications settings
                             },
                           ),
-                          
+
                           _buildDivider(theme),
-                          
+
                           // Account Settings
                           _buildSettingsTile(
                             context: context,
                             icon: Icons.account_circle_outlined,
                             title: 'Account Settings',
                             subtitle: 'Manage your account',
-                            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5)),
                             onTap: () {
                               // TODO: Navigate to account settings
                             },
                           ),
-                          
+
                           _buildDivider(theme),
-                          
+
                           // Privacy & Security
                           _buildSettingsTile(
                             context: context,
                             icon: Icons.security_outlined,
                             title: 'Privacy & Security',
                             subtitle: 'Control your privacy',
-                            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5)),
                             onTap: () {
                               // TODO: Navigate to privacy settings
                             },
                           ),
-                          
+
                           _buildDivider(theme),
-                          
+
                           // Help & Support
                           _buildSettingsTile(
                             context: context,
                             icon: Icons.help_outline,
                             title: 'Help & Support',
                             subtitle: 'Get help and support',
-                            trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                            trailing: Icon(Icons.chevron_right,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.5)),
                             onTap: () {
                               // TODO: Navigate to help & support
                             },
                           ),
-                          
+
                           const SizedBox(height: 20),
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Logout Button
                     SizedBox(
                       width: double.infinity,
@@ -229,7 +248,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -250,7 +269,7 @@ class ProfileScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -365,7 +384,7 @@ class ProfileScreen extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final isSelected = themeProvider.themeMode == mode;
-    
+
     return InkWell(
       onTap: () {
         themeProvider.setThemeMode(mode);
@@ -383,7 +402,8 @@ class ProfileScreen extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
+              color:
+                  isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -394,14 +414,18 @@ class ProfileScreen extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
+                      color: isSelected
+                          ? theme.primaryColor
+                          : theme.colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: (isSelected ? theme.primaryColor : theme.colorScheme.onSurface)
+                      color: (isSelected
+                              ? theme.primaryColor
+                              : theme.colorScheme.onSurface)
                           .withValues(alpha: 0.7),
                     ),
                   ),

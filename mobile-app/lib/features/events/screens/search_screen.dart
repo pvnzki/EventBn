@@ -13,18 +13,46 @@ class _SearchScreenState extends State<SearchScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   bool _showFilters = false;
-  
+
   // Filter options
   String _selectedCategory = 'All';
   String _selectedLocation = 'All';
   String _selectedDateRange = 'All';
   String _selectedPriceRange = 'All';
-  
-  final List<String> _categories = ['All', 'Music', 'Sports', 'Food', 'Comedy', 'Art', 'Business', 'Technology'];
-  final List<String> _locations = ['All', 'Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
-  final List<String> _dateRanges = ['All', 'Today', 'Tomorrow', 'This Week', 'This Month'];
-  final List<String> _priceRanges = ['All', 'Free', '\$0-\$25', '\$25-\$50', '\$50+'];
-  
+
+  final List<String> _categories = [
+    'All',
+    'Music',
+    'Sports',
+    'Food',
+    'Comedy',
+    'Art',
+    'Business',
+    'Technology'
+  ];
+  final List<String> _locations = [
+    'All',
+    'Manhattan',
+    'Brooklyn',
+    'Queens',
+    'Bronx',
+    'Staten Island'
+  ];
+  final List<String> _dateRanges = [
+    'All',
+    'Today',
+    'Tomorrow',
+    'This Week',
+    'This Month'
+  ];
+  final List<String> _priceRanges = [
+    'All',
+    'Free',
+    '\$0-\$25',
+    '\$25-\$50',
+    '\$50+'
+  ];
+
   final List<String> _recentSearches = [
     'Music concert',
     'Food festival',
@@ -32,7 +60,7 @@ class _SearchScreenState extends State<SearchScreen> {
     'Art exhibition',
     'Sports event',
   ];
-  
+
   final List<String> _popularSearches = [
     'Jazz night',
     'Basketball game',
@@ -52,7 +80,8 @@ class _SearchScreenState extends State<SearchScreen> {
       'location': 'Times Square NYC, Manhattan',
       'price': 25.0,
       'category': 'Music',
-      'image': 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=180&fit=crop',
       'rating': 4.8,
       'attendees': 1245,
     },
@@ -63,7 +92,8 @@ class _SearchScreenState extends State<SearchScreen> {
       'location': 'Central Park, NYC',
       'price': 45.0,
       'category': 'Music',
-      'image': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=180&fit=crop',
       'rating': 4.9,
       'attendees': 2840,
     },
@@ -74,7 +104,8 @@ class _SearchScreenState extends State<SearchScreen> {
       'location': 'Blue Note, Manhattan',
       'price': 35.0,
       'category': 'Music',
-      'image': 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=300&h=180&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=300&h=180&fit=crop',
       'rating': 4.7,
       'attendees': 567,
     },
@@ -141,7 +172,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
@@ -164,21 +195,21 @@ class _SearchScreenState extends State<SearchScreen> {
                 ],
               ),
             ),
-            
+
             // Search bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: _buildSearchBar(),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Filter bar
             _buildFilterBar(),
-            
+
             // Filters panel (if expanded)
             if (_showFilters) _buildFiltersPanel(),
-            
+
             // Content based on search state
             Expanded(
               child: _searchQuery.isEmpty
@@ -244,10 +275,14 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: _showFilters ? const Color(0xFF6C5CE7) : Colors.grey.shade100,
+                color: _showFilters
+                    ? const Color(0xFF6C5CE7)
+                    : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _showFilters ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                  color: _showFilters
+                      ? const Color(0xFF6C5CE7)
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Row(
@@ -271,14 +306,13 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
-          
           const SizedBox(width: 12),
-          
           if (_hasActiveFilters())
             GestureDetector(
               onTap: _clearFilters,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
                   borderRadius: BorderRadius.circular(8),
@@ -294,9 +328,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-          
           const Spacer(),
-          
           if (_searchQuery.isNotEmpty)
             Text(
               '${_searchResults.length} results',
@@ -312,9 +344,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   bool _hasActiveFilters() {
     return _selectedCategory != 'All' ||
-           _selectedLocation != 'All' ||
-           _selectedDateRange != 'All' ||
-           _selectedPriceRange != 'All';
+        _selectedLocation != 'All' ||
+        _selectedDateRange != 'All' ||
+        _selectedPriceRange != 'All';
   }
 
   Widget _buildFiltersPanel() {
@@ -329,11 +361,13 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildFilterSection('Category', _categories, _selectedCategory, (value) {
+          _buildFilterSection('Category', _categories, _selectedCategory,
+              (value) {
             setState(() => _selectedCategory = value);
           }),
           const SizedBox(height: 16),
-          _buildFilterSection('Location', _locations, _selectedLocation, (value) {
+          _buildFilterSection('Location', _locations, _selectedLocation,
+              (value) {
             setState(() => _selectedLocation = value);
           }),
           const SizedBox(height: 16),
@@ -341,7 +375,8 @@ class _SearchScreenState extends State<SearchScreen> {
             setState(() => _selectedDateRange = value);
           }),
           const SizedBox(height: 16),
-          _buildFilterSection('Price', _priceRanges, _selectedPriceRange, (value) {
+          _buildFilterSection('Price', _priceRanges, _selectedPriceRange,
+              (value) {
             setState(() => _selectedPriceRange = value);
           }),
         ],
@@ -349,7 +384,8 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildFilterSection(String title, List<String> options, String selected, Function(String) onChanged) {
+  Widget _buildFilterSection(String title, List<String> options,
+      String selected, Function(String) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -370,19 +406,23 @@ class _SearchScreenState extends State<SearchScreen> {
             return GestureDetector(
               onTap: () => onChanged(option),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF6C5CE7) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                    color: isSelected
+                        ? const Color(0xFF6C5CE7)
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Text(
                   option,
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -410,10 +450,10 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ...(_recentSearches.map((search) => _buildSearchSuggestionItem(search, Icons.history))),
+            ...(_recentSearches.map(
+                (search) => _buildSearchSuggestionItem(search, Icons.history))),
             const SizedBox(height: 24),
           ],
-          
           const Text(
             'Popular Searches',
             style: TextStyle(
@@ -423,7 +463,8 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ...(_popularSearches.map((search) => _buildSearchSuggestionItem(search, Icons.trending_up))),
+          ...(_popularSearches.map((search) =>
+              _buildSearchSuggestionItem(search, Icons.trending_up))),
         ],
       ),
     );
@@ -462,7 +503,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_searchResults.isEmpty) {
       return _buildNoResults();
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _searchResults.length,
@@ -600,7 +641,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFF6C5CE7).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
