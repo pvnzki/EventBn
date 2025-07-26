@@ -119,7 +119,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildIllustration() {
-    return Container(
+    return SizedBox(
       height: 200,
       width: double.infinity,
       child: Stack(
@@ -197,7 +197,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Positioned(
             left: 40,
             bottom: 20,
-            child: Container(
+            child: SizedBox(
               width: 80,
               height: 100,
               child: Stack(

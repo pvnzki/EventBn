@@ -9,7 +9,7 @@ class LocationSetupScreen extends StatefulWidget {
 }
 
 class _LocationSetupScreenState extends State<LocationSetupScreen> {
-  String _selectedLocation = 'Times Square NYC, Manhattan';
+  final String _selectedLocation = 'Times Square NYC, Manhattan';
 
   void _handleContinue() {
     // Navigate to congratulations screen
