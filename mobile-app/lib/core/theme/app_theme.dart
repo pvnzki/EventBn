@@ -15,11 +15,16 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
 
-  // Dark Theme Colors
-  static const Color darkBackgroundColor = Color(0xFF111827);
-  static const Color darkSurfaceColor = Color(0xFF1F2937);
-  static const Color darkTextPrimary = Color(0xFFF9FAFB);
-  static const Color darkTextSecondary = Color(0xFFD1D5DB);
+  // Dark Theme Colors - More black, less grey
+  static const Color darkBackgroundColor = Color(0xFF000000); // Pure black
+  static const Color darkSurfaceColor =
+      Color(0xFF0A0A0A); // Very dark grey, almost black
+  static const Color darkCardColor =
+      Color(0xFF151515); // Slightly lighter for cards
+  static const Color darkTextPrimary = Color(0xFFFFFFFF); // Pure white text
+  static const Color darkTextSecondary = Color(0xFFE0E0E0); // Light grey text
+  static const Color darkTextTertiary = Color(0xFFB0B0B0); // Medium grey text
+  static const Color darkBorderColor = Color(0xFF2A2A2A); // Dark border color
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -144,13 +149,15 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkCardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF374151)),
+          borderSide: const BorderSide(color: darkBorderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF374151)),
+          borderSide: const BorderSide(color: darkBorderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -166,7 +173,7 @@ class AppTheme {
         ),
       ),
       cardTheme: const CardThemeData(
-        color: darkSurfaceColor,
+        color: darkCardColor,
         elevation: 2,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12))),
@@ -177,6 +184,10 @@ class AppTheme {
         unselectedItemColor: darkTextSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+      ),
+      dividerColor: darkBorderColor,
+      iconTheme: const IconThemeData(
+        color: darkTextSecondary,
       ),
     );
   }

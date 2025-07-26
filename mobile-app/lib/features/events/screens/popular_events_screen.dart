@@ -10,8 +10,15 @@ class PopularEventsScreen extends StatefulWidget {
 
 class _PopularEventsScreenState extends State<PopularEventsScreen> {
   String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'Music', 'Sports', 'Food', 'Comedy', 'Art'];
-  
+  final List<String> _filters = [
+    'All',
+    'Music',
+    'Sports',
+    'Food',
+    'Comedy',
+    'Art'
+  ];
+
   final List<Map<String, dynamic>> _allEvents = [
     {
       'id': '1',
@@ -22,10 +29,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.8,
       'attendees': 1245,
       'category': 'Music',
-      'image': 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=250&fit=crop',
       'isBookmarked': false,
       'organizer': 'NYC Events',
-      'description': 'Join us for an unforgettable night of international music featuring bands from around the world.',
+      'description':
+          'Join us for an unforgettable night of international music featuring bands from around the world.',
     },
     {
       'id': '2',
@@ -36,10 +45,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.9,
       'attendees': 2840,
       'category': 'Music',
-      'image': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
       'isBookmarked': true,
       'organizer': 'Summer Beats',
-      'description': 'The biggest summer music festival featuring top artists and emerging talents.',
+      'description':
+          'The biggest summer music festival featuring top artists and emerging talents.',
     },
     {
       'id': '3',
@@ -50,10 +61,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.7,
       'attendees': 890,
       'category': 'Sports',
-      'image': 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=250&fit=crop',
       'isBookmarked': false,
       'organizer': 'Sports Central',
-      'description': 'Watch the NBA Finals with fellow fans in the ultimate viewing party experience.',
+      'description':
+          'Watch the NBA Finals with fellow fans in the ultimate viewing party experience.',
     },
     {
       'id': '4',
@@ -64,10 +77,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.6,
       'attendees': 456,
       'category': 'Comedy',
-      'image': 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=400&h=250&fit=crop',
       'isBookmarked': true,
       'organizer': 'Laugh Factory',
-      'description': 'An evening of stand-up comedy featuring NYC\'s funniest comedians.',
+      'description':
+          'An evening of stand-up comedy featuring NYC\'s funniest comedians.',
     },
     {
       'id': '5',
@@ -78,10 +93,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.5,
       'attendees': 1678,
       'category': 'Food',
-      'image': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=250&fit=crop',
       'isBookmarked': false,
       'organizer': 'NYC Food Tours',
-      'description': 'Taste the best of NYC with food vendors from across the five boroughs.',
+      'description':
+          'Taste the best of NYC with food vendors from across the five boroughs.',
     },
     {
       'id': '6',
@@ -92,10 +109,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
       'rating': 4.4,
       'attendees': 324,
       'category': 'Art',
-      'image': 'https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=400&h=250&fit=crop',
+      'image':
+          'https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=400&h=250&fit=crop',
       'isBookmarked': false,
       'organizer': 'MoMA',
-      'description': 'Explore contemporary artworks from emerging and established artists.',
+      'description':
+          'Explore contemporary artworks from emerging and established artists.',
     },
   ];
 
@@ -103,7 +122,9 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     if (_selectedFilter == 'All') {
       return _allEvents;
     }
-    return _allEvents.where((event) => event['category'] == _selectedFilter).toList();
+    return _allEvents
+        .where((event) => event['category'] == _selectedFilter)
+        .toList();
   }
 
   void _toggleBookmark(String eventId) {
@@ -145,7 +166,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
         children: [
           // Filter tabs
           _buildFilterTabs(),
-          
+
           // Events list
           Expanded(
             child: _filteredEvents.isEmpty
@@ -175,7 +196,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final isSelected = _selectedFilter == filter;
-          
+
           return GestureDetector(
             onTap: () {
               setState(() {
@@ -186,10 +207,13 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade100,
+                color:
+                    isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF6C5CE7) : Colors.grey.shade300,
+                  color: isSelected
+                      ? const Color(0xFF6C5CE7)
+                      : Colors.grey.shade300,
                 ),
               ),
               child: Center(
@@ -197,7 +221,8 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                   filter,
                   style: TextStyle(
                     color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -292,8 +317,12 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        event['isBookmarked'] ? Icons.bookmark : Icons.bookmark_border,
-                        color: event['isBookmarked'] ? const Color(0xFF6C5CE7) : Colors.grey.shade600,
+                        event['isBookmarked']
+                            ? Icons.bookmark
+                            : Icons.bookmark_border,
+                        color: event['isBookmarked']
+                            ? const Color(0xFF6C5CE7)
+                            : Colors.grey.shade600,
                         size: 20,
                       ),
                     ),
@@ -303,7 +332,8 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                   bottom: 16,
                   left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF6C5CE7),
                       borderRadius: BorderRadius.circular(20),
@@ -320,7 +350,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                 ),
               ],
             ),
-            
+
             // Event details
             Padding(
               padding: const EdgeInsets.all(16),
@@ -337,9 +367,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
                   const SizedBox(height: 8),
-                  
                   Row(
                     children: [
                       const Icon(
@@ -357,9 +385,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 6),
-                  
                   Row(
                     children: [
                       const Icon(
@@ -381,9 +407,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 12),
-                  
                   Row(
                     children: [
                       // Rating
@@ -405,9 +429,9 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(width: 16),
-                      
+
                       // Attendees
                       Row(
                         children: [
@@ -426,9 +450,9 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const Spacer(),
-                      
+
                       // Price
                       Text(
                         '\$${event['price'].toStringAsFixed(0)}',
