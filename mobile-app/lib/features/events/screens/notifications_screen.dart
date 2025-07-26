@@ -17,7 +17,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': false,
       'type': 'reminder',
       'icon': Icons.schedule,
-      'color': Color(0xFF6C5CE7),
+      'color': const Color(0xFF6C5CE7),
     },
     {
       'id': '2',
@@ -27,7 +27,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': false,
       'type': 'new_event',
       'icon': Icons.favorite,
-      'color': Color(0xFFFF6B35),
+      'color': const Color(0xFFFF6B35),
     },
     {
       'id': '3',
@@ -37,7 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'booking',
       'icon': Icons.check_circle,
-      'color': Color(0xFF00D4AA),
+      'color': const Color(0xFF00D4AA),
     },
     {
       'id': '4',
@@ -47,7 +47,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'payment',
       'icon': Icons.payment,
-      'color': Color(0xFF00D4AA),
+      'color': const Color(0xFF00D4AA),
     },
     {
       'id': '5',
@@ -57,7 +57,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'cancellation',
       'icon': Icons.cancel,
-      'color': Color(0xFFFF006E),
+      'color': const Color(0xFFFF006E),
     },
     {
       'id': '6',
@@ -67,7 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'offer',
       'icon': Icons.local_offer,
-      'color': Color(0xFFFF6B35),
+      'color': const Color(0xFFFF6B35),
     },
     {
       'id': '7',
@@ -77,7 +77,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'update',
       'icon': Icons.info,
-      'color': Color(0xFF6C5CE7),
+      'color': const Color(0xFF6C5CE7),
     },
     {
       'id': '8',
@@ -87,7 +87,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'isRead': true,
       'type': 'discovery',
       'icon': Icons.explore,
-      'color': Color(0xFF00D4AA),
+      'color': const Color(0xFF00D4AA),
     },
   ];
 
@@ -116,24 +116,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final unreadCount = _notifications.where((n) => !n['isRead']).length;
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Notifications',
               style: TextStyle(
-                color: Colors.black,
+                color: theme.colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -141,8 +142,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             if (unreadCount > 0)
               Text(
                 '$unreadCount new notifications',
-                style: const TextStyle(
-                  color: Colors.grey,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 12,
                 ),
               ),
@@ -152,10 +153,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (unreadCount > 0)
             TextButton(
               onPressed: _markAllAsRead,
-              child: const Text(
+              child: Text(
                 'Mark all read',
                 style: TextStyle(
-                  color: Color(0xFF6C5CE7),
+                  color: theme.primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -176,30 +177,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    final theme = Theme.of(context);
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.notifications_none,
             size: 80,
-            color: Colors.grey,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'No Notifications',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.grey,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'You\'re all caught up! Check back later for updates.',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
           ),
@@ -209,6 +211,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildNotificationItem(Map<String, dynamic> notification) {
+    final theme = Theme.of(context);
     return Dismissible(
       key: Key(notification['id']),
       direction: DismissDirection.endToStart,
@@ -242,14 +245,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification['isRead'] ? Colors.white : const Color(0xFF6C5CE7).withValues(alpha: 0.05),
+            color: notification['isRead'] ? theme.colorScheme.surface : theme.primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: notification['isRead'] ? Colors.grey.shade200 : const Color(0xFF6C5CE7).withValues(alpha: 0.2),
+              color: notification['isRead'] ? theme.colorScheme.outline.withValues(alpha: 0.2) : theme.primaryColor.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -268,7 +271,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 child: Icon(
                   notification['icon'],
-                  color: notification['color'],
+                  color: theme.primaryColor,
                   size: 24,
                 ),
               ),
@@ -288,7 +291,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: notification['isRead'] ? FontWeight.w600 : FontWeight.bold,
-                              color: Colors.black,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -296,8 +299,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF6C5CE7),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -310,7 +313,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       notification['message'],
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         height: 1.4,
                       ),
                       maxLines: 3,
@@ -323,7 +326,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       notification['time'],
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -334,7 +337,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert,
-                  color: Colors.grey.shade400,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   size: 20,
                 ),
                 onSelected: (value) {
