@@ -1,7 +1,9 @@
 # Dark Theme Implementation 🌙
 
 ## Overview
+
 The Event Booking App now supports both Light and Dark themes with a user-friendly toggle switch. Users can choose between:
+
 - **System** - Follows device system preference (default)
 - **Light Theme** - Clean, bright interface with white backgrounds
 - **Dark Theme** - Sleek, black interface with minimal white elements
@@ -9,11 +11,13 @@ The Event Booking App now supports both Light and Dark themes with a user-friend
 ## Features
 
 ### 🎨 Theme Options
+
 1. **System Theme** - Automatically adapts to device settings
 2. **Light Theme** - Clean, professional light interface
 3. **Dark Theme** - Deep black interface with excellent contrast
 
 ### 🔄 Theme Persistence
+
 - User's theme preference is saved locally using SharedPreferences
 - Theme choice persists across app restarts
 - Smooth transitions when switching themes
@@ -21,12 +25,14 @@ The Event Booking App now supports both Light and Dark themes with a user-friend
 ### 🎯 Design Philosophy
 
 #### Light Theme
+
 - **Background**: Light grey (#F8FAFC) for comfortable viewing
-- **Surface**: Pure white (#FFFFFF) for cards and components  
+- **Surface**: Pure white (#FFFFFF) for cards and components
 - **Text**: Dark grey (#1F2937) for optimal readability
 - **Accent**: Purple (#6366F1) for interactive elements
 
-#### Dark Theme  
+#### Dark Theme
+
 - **Background**: Pure black (#000000) for true dark experience
 - **Surface**: Very dark grey (#0A0A0A) for subtle contrast
 - **Cards**: Slightly lighter (#151515) for component separation
@@ -36,6 +42,7 @@ The Event Booking App now supports both Light and Dark themes with a user-friend
 ## Implementation Details
 
 ### 📁 File Structure
+
 ```
 lib/
 ├── core/
@@ -53,16 +60,19 @@ lib/
 ### 🔧 Technical Components
 
 #### ThemeProvider
+
 - Manages theme state using ChangeNotifier
 - Handles persistence with SharedPreferences
 - Provides theme switching methods
 
 #### Theme Definitions
+
 - Comprehensive light and dark ColorSchemes
 - Material Design 3 compatibility
 - Custom colors for dark theme optimization
 
 #### UI Components
+
 - Theme-aware widgets throughout the app
 - Glassmorphic bottom navigation adapts to theme
 - Profile screen includes elegant theme selector
@@ -70,6 +80,7 @@ lib/
 ## How to Use
 
 ### For Users
+
 1. Navigate to the **Profile** tab in the bottom navigation
 2. Tap on the **Theme** setting
 3. Choose from:
@@ -79,6 +90,7 @@ lib/
 4. Selection is saved automatically
 
 ### For Developers
+
 ```dart
 // Access theme provider
 final themeProvider = Provider.of<ThemeProvider>(context);
@@ -97,12 +109,14 @@ await themeProvider.toggleTheme();
 ## UI/UX Benefits
 
 ### 🌙 Dark Theme Advantages
+
 - **Better for low-light environments** - Reduces eye strain
 - **Battery saving** - Especially on OLED displays
 - **Modern aesthetic** - Sleek, professional appearance
 - **Focus enhancement** - Reduces distractions
 
-### ☀️ Light Theme Advantages  
+### ☀️ Light Theme Advantages
+
 - **Better readability** - High contrast text
 - **Familiar interface** - Traditional app appearance
 - **Photo/content viewing** - Better for colorful content
@@ -111,6 +125,7 @@ await themeProvider.toggleTheme();
 ## Customization
 
 ### Adding New Theme Colors
+
 ```dart
 // In app_theme.dart
 static const Color newDarkColor = Color(0xFF123456);
@@ -123,11 +138,12 @@ ColorScheme.dark(
 ```
 
 ### Making Widgets Theme-Aware
+
 ```dart
 Widget build(BuildContext context) {
   final theme = Theme.of(context);
   final isDark = theme.brightness == Brightness.dark;
-  
+
   return Container(
     color: theme.scaffoldBackgroundColor,
     child: Text(
@@ -143,6 +159,7 @@ Widget build(BuildContext context) {
 ## Testing
 
 ### Manual Testing Checklist
+
 - [ ] Theme persists after app restart
 - [ ] All screens adapt to theme changes
 - [ ] Text remains readable in both themes
@@ -151,24 +168,25 @@ Widget build(BuildContext context) {
 - [ ] System theme follows device settings
 
 ### Automated Testing
+
 ```dart
 testWidgets('Theme toggle works correctly', (tester) async {
   // Test theme switching functionality
   await tester.pumpWidget(MyApp());
-  
+
   // Verify initial theme
   expect(find.byType(MaterialApp), findsOneWidget);
-  
+
   // Test theme change
   final themeProvider = tester.widget<ChangeNotifierProvider>(
     find.byType(ChangeNotifierProvider),
   ).create(tester.element(find.byType(ChangeNotifierProvider)));
-  
+
   await themeProvider.setThemeMode(ThemeMode.dark);
   await tester.pump();
-  
+
   // Verify dark theme applied
-  expect(Theme.of(tester.element(find.byType(Scaffold))).brightness, 
+  expect(Theme.of(tester.element(find.byType(Scaffold))).brightness,
          equals(Brightness.dark));
 });
 ```
@@ -176,12 +194,14 @@ testWidgets('Theme toggle works correctly', (tester) async {
 ## Performance Considerations
 
 ### Optimizations Implemented
+
 - **Lazy loading** - ThemeProvider loads preferences asynchronously
 - **Efficient updates** - Only rebuilds when theme actually changes
 - **Minimal overhead** - Theme detection uses lightweight checks
 - **Smooth transitions** - Built-in Material Design theme transitions
 
 ### Memory Usage
+
 - SharedPreferences: ~1KB for theme storage
 - Provider state: Minimal memory footprint
 - Theme objects: Cached by Flutter framework
@@ -189,12 +209,14 @@ testWidgets('Theme toggle works correctly', (tester) async {
 ## Accessibility
 
 ### Features Included
+
 - **High contrast** - Optimized color ratios for readability
 - **System integration** - Respects user's system accessibility settings
 - **Screen reader support** - All theme controls are properly labeled
 - **Focus indicators** - Clear focus states in both themes
 
 ### WCAG Compliance
+
 - Text contrast ratios meet WCAG AA standards
 - Interactive elements have sufficient contrast
 - Focus indicators are visible in both themes
@@ -202,12 +224,14 @@ testWidgets('Theme toggle works correctly', (tester) async {
 ## Future Enhancements
 
 ### Planned Features
+
 - [ ] **Custom theme colors** - User-selectable accent colors
 - [ ] **Auto theme scheduling** - Time-based theme switching
 - [ ] **Theme animations** - Enhanced transition effects
 - [ ] **Theme presets** - Multiple dark/light variants
 
 ### Advanced Customization
+
 - [ ] **Per-screen themes** - Different themes for different sections
 - [ ] **Gradient themes** - Support for gradient backgrounds
 - [ ] **Seasonal themes** - Holiday and seasonal color schemes
@@ -217,14 +241,17 @@ testWidgets('Theme toggle works correctly', (tester) async {
 ### Common Issues
 
 #### Theme not persisting
+
 - **Cause**: SharedPreferences not working
 - **Solution**: Check device storage permissions
 
 #### Colors not updating
+
 - **Cause**: Widget not rebuilding
 - **Solution**: Wrap with Consumer<ThemeProvider> or use Theme.of(context)
 
 #### System theme not working
+
 - **Cause**: Platform brightness detection issue
 - **Solution**: Restart app or manually select theme
 
@@ -232,8 +259,8 @@ testWidgets('Theme toggle works correctly', (tester) async {
 
 ```yaml
 dependencies:
-  provider: ^6.1.1        # State management
-  shared_preferences: ^2.2.2  # Theme persistence
+  provider: ^6.1.1 # State management
+  shared_preferences: ^2.2.2 # Theme persistence
 ```
 
 ## Conclusion

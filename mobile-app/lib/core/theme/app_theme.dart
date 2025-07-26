@@ -17,8 +17,10 @@ class AppTheme {
 
   // Dark Theme Colors - More black, less grey
   static const Color darkBackgroundColor = Color(0xFF000000); // Pure black
-  static const Color darkSurfaceColor = Color(0xFF0A0A0A); // Very dark grey, almost black
-  static const Color darkCardColor = Color(0xFF151515); // Slightly lighter for cards
+  static const Color darkSurfaceColor =
+      Color(0xFF0A0A0A); // Very dark grey, almost black
+  static const Color darkCardColor =
+      Color(0xFF151515); // Slightly lighter for cards
   static const Color darkTextPrimary = Color(0xFFFFFFFF); // Pure white text
   static const Color darkTextSecondary = Color(0xFFE0E0E0); // Light grey text
   static const Color darkTextTertiary = Color(0xFFB0B0B0); // Medium grey text

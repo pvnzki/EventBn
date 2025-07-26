@@ -6,7 +6,7 @@ class MyTicketsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
@@ -29,7 +29,7 @@ class MyTicketsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: Center(
                 child: Column(
@@ -54,7 +54,8 @@ class MyTicketsScreen extends StatelessWidget {
                       'View your purchased tickets',
                       style: TextStyle(
                         fontSize: 16,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
