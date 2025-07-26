@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  const OnboardingScreen({super.key}); // Removed const to allow theme access
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -110,10 +110,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           _pages[index].title,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF6C5CE7),
+                            color: Theme.of(context)
+                                .primaryColor, // Theme-aware color
                             height: 1.2,
                           ),
                         ),
@@ -144,8 +145,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               height: 8,
                               decoration: BoxDecoration(
                                 color: index == _currentPage
-                                    ? const Color(0xFF6C5CE7)
-                                    : const Color(0xFFDDD6FE),
+                                    ? Theme.of(context)
+                                        .primaryColor // Theme-aware color
+                                    : Theme.of(context)
+                                        .primaryColor
+                                        .withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -161,7 +165,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: ElevatedButton(
                             onPressed: _nextPage,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6C5CE7),
+                              backgroundColor: Theme.of(context)
+                                  .primaryColor, // Theme-aware color
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(28),
@@ -238,8 +243,8 @@ class OnboardingIllustration1 extends StatelessWidget {
             child: Container(
               width: 30,
               height: 30,
-              decoration: const BoxDecoration(
-                color: Color(0xFF6C5CE7),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor, // Theme-aware color
                 shape: BoxShape.circle,
               ),
             ),
@@ -275,7 +280,7 @@ class OnboardingIllustration1 extends StatelessWidget {
               width: 280,
               height: 280,
               decoration: BoxDecoration(
-                color: const Color(0xFF6C5CE7),
+                color: Theme.of(context).primaryColor, // Theme-aware color
                 borderRadius: BorderRadius.circular(140),
               ),
               child: Stack(

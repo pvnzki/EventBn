@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:math' as math;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,6 +19,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    print('SplashScreen initialized');
 
     // Logo animation controller
     _logoController = AnimationController(
@@ -60,7 +62,8 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate to onboarding after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        context.go('/onboarding');
+        print('SplashScreen: Navigating to home for testing');
+        context.go('/home');
       }
     });
   }
@@ -74,8 +77,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor, // Theme-aware background
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -90,39 +97,38 @@ class _SplashScreenState extends State<SplashScreen>
                   scale: _logoAnimation.value,
                   child: Opacity(
                     opacity: _logoAnimation.value,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo circle with 'e'
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF6C5CE7),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'e',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: Image.asset(
+                        isDark
+                            ? 'assets/images/White icon logo transparent.png'
+                            : 'assets/images/Black icon logo transparent.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to circular logo if image not found
+                          return Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'E',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // "Eveno" text
-                        const Text(
-                          'Eveno',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2D3436),
-                          ),
-                        ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );
@@ -138,8 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                 return Opacity(
                   opacity: _loadingAnimation.value,
                   child: const SizedBox(
-                    width: 60,
-                    height: 60,
+                    height: 120,
                     child: LoadingIndicator(),
                   ),
                 );
@@ -164,65 +169,160 @@ class LoadingIndicator extends StatefulWidget {
 class _LoadingIndicatorState extends State<LoadingIndicator>
     with TickerProviderStateMixin {
   late AnimationController _controller;
-  late List<Animation<double>> _animations;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
+
+    // Main loading animation
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
-    _animations = List.generate(8, (index) {
-      return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Interval(
-            index * 0.1,
-            (index * 0.1) + 0.3,
-            curve: Curves.easeInOut,
-          ),
-        ),
-      );
-    });
+    // Pulse animation for the container
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
 
     _controller.repeat();
+    _pulseController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final loadingColor = isDark ? Colors.white : theme.primaryColor;
+    final loadingBgColor =
+        isDark ? Colors.white24 : theme.primaryColor.withOpacity(0.2);
+    final loadingShadow =
+        isDark ? Colors.white30 : theme.primaryColor.withOpacity(0.3);
+    final loadingGradient = isDark
+        ? [Colors.white60, Colors.white, Colors.white60]
+        : [
+            theme.primaryColor.withOpacity(0.6),
+            theme.primaryColor,
+            theme.primaryColor.withOpacity(0.6)
+          ];
+
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_controller, _pulseAnimation]),
       builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: List.generate(8, (index) {
-            final angle = (index * 45.0) * (3.14159 / 180);
-            return Transform.rotate(
-              angle: angle,
-              child: Transform.translate(
-                offset: const Offset(0, -20),
-                child: Transform.scale(
-                  scale: _animations[index].value,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF6C5CE7),
-                      shape: BoxShape.circle,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Modern dot loading animation
+            SizedBox(
+              width: 80,
+              height: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(3, (index) {
+                  final animationValue =
+                      (_controller.value * 3 - index).clamp(0.0, 1.0);
+                  final scale =
+                      (math.sin(animationValue * math.pi) * 0.5) + 0.5;
+                  final opacity =
+                      (math.sin(animationValue * math.pi) * 0.7) + 0.3;
+                  return Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: loadingColor.withOpacity(opacity),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: loadingShadow,
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Elegant progress bar
+            Container(
+              width: 120,
+              height: 3,
+              decoration: BoxDecoration(
+                color: loadingBgColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 120 * _controller.value,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: loadingGradient,
+                      ),
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: loadingShadow,
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Loading text with subtle animation
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              child: Text(
+                'Loading...',
+                style: TextStyle(
+                  color: loadingColor.withOpacity(0.8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
                 ),
               ),
-            );
-          }),
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: 1.0 + (_pulseAnimation.value - 1.0) * 0.1,
+                  child: Opacity(
+                    opacity: 0.6 + (_pulseAnimation.value - 0.8) * 0.4,
+                    child: child,
+                  ),
+                );
+              },
+            ),
+          ],
         );
       },
     );

@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Colors
-  static const Color primaryColor = Color(0xFF6366F1);
-  static const Color secondaryColor = Color(0xFF8B5CF6);
+  // Colors - Updated to black/white theme
+  static const Color primaryColor = Color(0xFF000000); // Black for light mode
+  static const Color secondaryColor =
+      Color(0xFF1A1A1A); // Dark grey for light mode
   static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color successColor = Color(0xFF10B981);
   static const Color warningColor = Color(0xFFF59E0B);
+
+  // Dark mode colors - White theme
+  static const Color darkPrimaryColor =
+      Color(0xFFFFFFFF); // White for dark mode
+  static const Color darkSecondaryColor =
+      Color(0xFFE5E5E5); // Light grey for dark mode
 
   // Text Colors
   static const Color textPrimary = Color(0xFF1F2937);
@@ -30,8 +37,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: const ColorScheme.light(
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: primaryColor, // Black
+        secondary: secondaryColor, // Dark grey
         surface: surfaceColor,
         error: errorColor,
         onPrimary: Colors.white,
@@ -53,7 +60,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primaryColor, // Black
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -62,8 +69,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          foregroundColor: primaryColor, // Black
+          side: const BorderSide(color: primaryColor), // Black
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -79,7 +86,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: primaryColor, width: 2), // Black
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -98,7 +105,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
-        selectedItemColor: primaryColor,
+        selectedItemColor: primaryColor, // Black
         unselectedItemColor: textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
@@ -110,12 +117,12 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: const ColorScheme.dark(
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: darkPrimaryColor, // White
+        secondary: darkSecondaryColor, // Light grey
         surface: darkSurfaceColor,
         error: errorColor,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
+        onPrimary: Colors.black, // Black text on white primary
+        onSecondary: Colors.black, // Black text on light grey secondary
         onSurface: darkTextPrimary,
         onError: Colors.white,
       ),
@@ -133,8 +140,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: darkPrimaryColor, // White
+          foregroundColor: Colors.black, // Black text on white button
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -142,8 +149,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          foregroundColor: darkPrimaryColor, // White
+          side: const BorderSide(color: darkPrimaryColor), // White
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -161,7 +168,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide:
+              const BorderSide(color: darkPrimaryColor, width: 2), // White
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -180,7 +188,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: darkSurfaceColor,
-        selectedItemColor: primaryColor,
+        selectedItemColor: darkPrimaryColor, // White
         unselectedItemColor: darkTextSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
