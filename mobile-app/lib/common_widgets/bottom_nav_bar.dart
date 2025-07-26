@@ -87,8 +87,26 @@ class _BottomNavBarState extends State<BottomNavBar>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Update selected index based on current route
-    final currentLocation = GoRouterState.of(context).uri.toString();
+    // Get the current route more reliably
+    final routerState =
+        GoRouter.of(context).routerDelegate.currentConfiguration;
+    final currentLocation = routerState.uri.toString();
+
+    // Debug: Print current location
+    print('BottomNavBar - Current location: $currentLocation');
+    print(
+        'BottomNavBar - Route matches: ${routerState.matches.map((m) => m.matchedLocation).toList()}');
+
+    // Don't show bottom nav on event detail pages or other specific pages
+    if (currentLocation.startsWith('/event/') ||
+        currentLocation.startsWith('/checkout/') ||
+        currentLocation.startsWith('/organizer/') ||
+        routerState.matches
+            .any((match) => match.matchedLocation.startsWith('/event/'))) {
+      print('BottomNavBar - Hiding bottom nav for: $currentLocation');
+      return widget.child;
+    }
+
     for (int i = 0; i < _navItems.length; i++) {
       if (currentLocation.contains(_navItems[i].route)) {
         _selectedIndex = i;
@@ -100,7 +118,7 @@ class _BottomNavBarState extends State<BottomNavBar>
       extendBody: true,
       body: widget.child,
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        // Removed margin for true floating effect
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
@@ -169,8 +187,10 @@ class _BottomNavBarState extends State<BottomNavBar>
 
   Widget _buildNavItem(int index) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final item = _navItems[index];
     final isSelected = _selectedIndex == index;
+    final activeColor = isDark ? Colors.white : Colors.black;
 
     return GestureDetector(
       onTap: () => _onItemTapped(index),
@@ -204,7 +224,7 @@ class _BottomNavBarState extends State<BottomNavBar>
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
                       color: isSelected
-                          ? theme.primaryColor
+                          ? activeColor
                           : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 24,
                     ),
@@ -219,7 +239,7 @@ class _BottomNavBarState extends State<BottomNavBar>
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
-                    ? theme.primaryColor
+                    ? activeColor
                     : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               child: Text(item.label),

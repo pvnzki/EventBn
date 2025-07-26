@@ -1,4 +1,7 @@
 import 'package:go_router/go_router.dart';
+import '../../features/payment/screens/seat_selection_screen.dart';
+import '../../features/payment/screens/contact_info_screen.dart';
+import '../../features/payment/screens/payment_screen.dart';
 
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
@@ -14,6 +17,8 @@ import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/create_new_password_screen.dart';
 import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
+import '../../features/events/screens/event_attendees_screen.dart';
+import '../../features/events/screens/organizer_profile_screen.dart';
 import '../../features/events/screens/search_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/popular_events_screen.dart';
@@ -35,7 +40,7 @@ class AppRouter {
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const OnboardingScreen(), // Removed const
       ),
 
       // Authentication Routes
@@ -102,6 +107,113 @@ class AppRouter {
         builder: (context, state) => const PopularEventsScreen(),
       ),
 
+      // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
+      GoRoute(
+        path: '/event/:eventId',
+        name: 'event-details',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          print('Router: Building EventDetailsScreen for eventId: $eventId');
+          return EventDetailsScreen(eventId: eventId);
+        },
+      ),
+
+      // Event Attendees Route
+      GoRoute(
+        path: '/event/:eventId/attendees',
+        name: 'event-attendees',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          return EventAttendeesScreen(eventId: eventId);
+        },
+      ),
+
+      // Organizer Profile Route
+      GoRoute(
+        path: '/organizer/:organizerId',
+        name: 'organizer-profile',
+        builder: (context, state) {
+          final organizerId = state.pathParameters['organizerId']!;
+          return OrganizerProfileScreen(organizerId: organizerId);
+        },
+      ),
+
+      // Checkout Route
+      GoRoute(
+        path: '/checkout/:eventId',
+        name: 'checkout',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final ticketType = state.uri.queryParameters['ticketType'] ?? '';
+          final quantity =
+              int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
+          return CheckoutScreen(
+            eventId: eventId,
+            ticketType: ticketType,
+            quantity: quantity,
+          );
+        },
+      ),
+
+      // Booking Flow: Seat Selection
+      GoRoute(
+        path: '/checkout/:eventId/seat-selection',
+        name: 'seat-selection',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final ticketType = state.uri.queryParameters['ticketType'] ?? 'Economy';
+          final initialCount = int.tryParse(state.uri.queryParameters['seatCount'] ?? '1') ?? 1;
+          return SeatSelectionScreen(
+            eventId: eventId,
+            ticketType: ticketType,
+            initialCount: initialCount,
+          );
+        },
+      ),
+
+      // Booking Flow: Contact Info
+      GoRoute(
+        path: '/checkout/:eventId/contact',
+        name: 'contact-info',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final ticketType = state.extra is Map && (state.extra as Map).containsKey('ticketType')
+              ? (state.extra as Map)['ticketType'] as String
+              : '';
+          final seatCount = state.extra is Map && (state.extra as Map).containsKey('seatCount')
+              ? (state.extra as Map)['seatCount'] as int
+              : 1;
+          final selectedSeats = state.extra is Map && (state.extra as Map).containsKey('selectedSeats')
+              ? (state.extra as Map)['selectedSeats'] as List<String>
+              : <String>[];
+          return ContactInfoScreen(
+            eventId: eventId,
+            ticketType: ticketType,
+            seatCount: seatCount,
+            selectedSeats: selectedSeats,
+          );
+        },
+      ),
+
+      // Booking Flow: Payment
+      GoRoute(
+        path: '/checkout/:eventId/payment',
+        name: 'payment',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentScreen(
+            eventId: eventId,
+            ticketType: extra['ticketType'] ?? '',
+            seatCount: extra['seatCount'] ?? 1,
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            name: extra['name'] ?? '',
+            email: extra['email'] ?? '',
+            phone: extra['phone'] ?? '',
+          );
+        },
+      ),
+
       // Main App Routes with Bottom Navigation
       ShellRoute(
         builder: (context, state, child) => BottomNavBar(child: child),
@@ -127,33 +239,6 @@ class AppRouter {
             builder: (context, state) => const ProfileScreen(),
           ),
         ],
-      ),
-
-      // Event Detail Route
-      GoRoute(
-        path: '/event/:eventId',
-        name: 'event-details',
-        builder: (context, state) {
-          final eventId = state.pathParameters['eventId']!;
-          return EventDetailsScreen(eventId: eventId);
-        },
-      ),
-
-      // Checkout Route
-      GoRoute(
-        path: '/checkout/:eventId',
-        name: 'checkout',
-        builder: (context, state) {
-          final eventId = state.pathParameters['eventId']!;
-          final ticketType = state.uri.queryParameters['ticketType'] ?? '';
-          final quantity =
-              int.tryParse(state.uri.queryParameters['quantity'] ?? '1') ?? 1;
-          return CheckoutScreen(
-            eventId: eventId,
-            ticketType: ticketType,
-            quantity: quantity,
-          );
-        },
       ),
     ],
   );
