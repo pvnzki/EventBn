@@ -17,19 +17,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: "Grab all events now only\nin your hands",
       description:
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
-      illustration: OnboardingIllustration1(),
+      illustration: const OnboardingIllustration1(),
     ),
     OnboardingPage(
       title: "Discover amazing events\nnear you",
       description:
           "Find concerts, festivals, workshops and more happening in your city.",
-      illustration: OnboardingIllustration2(),
+      illustration: const OnboardingIllustration2(),
     ),
     OnboardingPage(
       title: "Book tickets with\njust a few taps",
       description:
           "Simple and secure ticket booking process with instant confirmation.",
-      illustration: OnboardingIllustration3(),
+      illustration: const OnboardingIllustration3(),
     ),
   ];
 
@@ -208,6 +208,8 @@ class OnboardingPage {
 
 // Illustration widgets
 class OnboardingIllustration1 extends StatelessWidget {
+  const OnboardingIllustration1({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -332,6 +334,8 @@ class OnboardingIllustration1 extends StatelessWidget {
 }
 
 class OnboardingIllustration2 extends StatelessWidget {
+  const OnboardingIllustration2({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -400,6 +404,8 @@ class OnboardingIllustration2 extends StatelessWidget {
 }
 
 class OnboardingIllustration3 extends StatelessWidget {
+  const OnboardingIllustration3({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(

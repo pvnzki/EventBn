@@ -140,17 +140,19 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      color: Colors.white,
+      color: theme.scaffoldBackgroundColor,
       child: SafeArea(
         child: Column(
           children: [
             // Search header with title
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Search Events',
                     style: TextStyle(
                       fontSize: 24,
@@ -158,7 +160,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       color: Color(0xFF6C5CE7),
                     ),
                   ),
-                  const Spacer(),
+                  Spacer(),
                 ],
               ),
             ),

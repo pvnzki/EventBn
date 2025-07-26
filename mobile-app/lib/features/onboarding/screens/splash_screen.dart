@@ -208,7 +208,7 @@ class _LoadingIndicatorState extends State<LoadingIndicator>
             return Transform.rotate(
               angle: angle,
               child: Transform.translate(
-                offset: Offset(0, -20),
+                offset: const Offset(0, -20),
                 child: Transform.scale(
                   scale: _animations[index].value,
                   child: Container(

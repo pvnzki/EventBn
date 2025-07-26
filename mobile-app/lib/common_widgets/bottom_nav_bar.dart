@@ -83,6 +83,9 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     // Update selected index based on current route
     final currentLocation = GoRouterState.of(context).uri.toString();
     for (int i = 0; i < _navItems.length; i++) {
@@ -101,13 +104,17 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: isDark 
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
               spreadRadius: 0,
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: isDark 
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.05),
               blurRadius: 40,
               offset: const Offset(0, 16),
               spreadRadius: 0,
@@ -121,19 +128,28 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
             child: Container(
               height: 75,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: isDark 
+                  ? Colors.black.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: isDark 
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.white.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.9),
-                    Colors.white.withValues(alpha: 0.7),
-                  ],
+                  colors: isDark 
+                    ? [
+                        Colors.black.withValues(alpha: 0.9),
+                        Colors.black.withValues(alpha: 0.7),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.9),
+                        Colors.white.withValues(alpha: 0.7),
+                      ],
                 ),
               ),
               child: Row(
@@ -151,6 +167,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
   }
 
   Widget _buildNavItem(int index) {
+    final theme = Theme.of(context);
     final item = _navItems[index];
     final isSelected = _selectedIndex == index;
     
@@ -162,7 +179,7 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
-              ? const Color(0xFF6C5CE7).withValues(alpha: 0.15)
+              ? theme.primaryColor.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -186,8 +203,8 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
                       color: isSelected 
-                          ? const Color(0xFF6C5CE7)
-                          : Colors.grey.shade600,
+                          ? theme.primaryColor
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 24,
                     ),
                   ),
@@ -201,8 +218,8 @@ class _BottomNavBarState extends State<BottomNavBar> with TickerProviderStateMix
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected 
-                    ? const Color(0xFF6C5CE7)
-                    : Colors.grey.shade600,
+                    ? theme.primaryColor
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               child: Text(item.label),
             ),

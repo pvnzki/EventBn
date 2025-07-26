@@ -5,8 +5,10 @@ class MyTicketsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      color: Colors.white,
+      color: theme.scaffoldBackgroundColor,
       child: SafeArea(
         child: Column(
           children: [
@@ -15,12 +17,12 @@ class MyTicketsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'My Tickets',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF6C5CE7),
+                      color: theme.primaryColor,
                     ),
                   ),
                   const Spacer(),
@@ -33,25 +35,26 @@ class MyTicketsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.confirmation_number,
                       size: 64,
-                      color: Colors.grey,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'My Tickets',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'View your purchased tickets',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

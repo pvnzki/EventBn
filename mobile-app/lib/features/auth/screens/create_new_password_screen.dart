@@ -291,7 +291,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   }
 
   Widget _buildIllustration() {
-    return Container(
+    return SizedBox(
       height: 200,
       width: double.infinity,
       child: Stack(
@@ -342,7 +342,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
           Positioned(
             right: 20,
             bottom: 20,
-            child: Container(
+            child: SizedBox(
               width: 80,
               height: 120,
               child: Stack(

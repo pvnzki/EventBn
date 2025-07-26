@@ -42,9 +42,9 @@ class StripeService {
     try {
       final result = await Stripe.instance.confirmPayment(
         paymentIntentClientSecret: clientSecret,
-        data: PaymentMethodParams.card(
+        data: const PaymentMethodParams.card(
           paymentMethodData: PaymentMethodData(
-            billingDetails: const BillingDetails(email: 'customer@example.com'),
+            billingDetails: BillingDetails(email: 'customer@example.com'),
           ),
         ),
       );
