@@ -161,8 +161,10 @@ class AppRouter {
         name: 'seat-selection',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
-          final ticketType = state.uri.queryParameters['ticketType'] ?? 'Economy';
-          final initialCount = int.tryParse(state.uri.queryParameters['seatCount'] ?? '1') ?? 1;
+          final ticketType =
+              state.uri.queryParameters['ticketType'] ?? 'Economy';
+          final initialCount =
+              int.tryParse(state.uri.queryParameters['seatCount'] ?? '1') ?? 1;
           return SeatSelectionScreen(
             eventId: eventId,
             ticketType: ticketType,
@@ -177,13 +179,16 @@ class AppRouter {
         name: 'contact-info',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
-          final ticketType = state.extra is Map && (state.extra as Map).containsKey('ticketType')
+          final ticketType = state.extra is Map &&
+                  (state.extra as Map).containsKey('ticketType')
               ? (state.extra as Map)['ticketType'] as String
               : '';
-          final seatCount = state.extra is Map && (state.extra as Map).containsKey('seatCount')
+          final seatCount = state.extra is Map &&
+                  (state.extra as Map).containsKey('seatCount')
               ? (state.extra as Map)['seatCount'] as int
               : 1;
-          final selectedSeats = state.extra is Map && (state.extra as Map).containsKey('selectedSeats')
+          final selectedSeats = state.extra is Map &&
+                  (state.extra as Map).containsKey('selectedSeats')
               ? (state.extra as Map)['selectedSeats'] as List<String>
               : <String>[];
           return ContactInfoScreen(
@@ -206,7 +211,8 @@ class AppRouter {
             eventId: eventId,
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeats:
+                (extra['selectedSeats'] as List<String>?) ?? <String>[],
             name: extra['name'] ?? '',
             email: extra['email'] ?? '',
             phone: extra['phone'] ?? '',
@@ -226,7 +232,7 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => const SearchScreen(),
+            builder: (context, state) => SearchScreen(),
           ),
           GoRoute(
             path: '/my-tickets',

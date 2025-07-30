@@ -122,32 +122,32 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Row(
         children: [
-            // Header Logo - Theme aware
-            Align(
-              alignment: Alignment.centerLeft, // Align to the left
-              child: SizedBox(
+          // Header Logo - Theme aware
+          Align(
+            alignment: Alignment.centerLeft, // Align to the left
+            child: SizedBox(
               height: 30, // Reduced height
               child: Image.asset(
                 isDark
-                  ? 'assets/images/White Header logo.png'
-                  : 'assets/images/Black header logo.png',
+                    ? 'assets/images/White Header logo.png'
+                    : 'assets/images/Black header logo.png',
                 height: 30, // Reduced height
                 width: 120, // Increased width
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                // Fallback to text logo if image not found
-                return Text(
-                  'EventBn',
-                  style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                  ),
-                );
+                  // Fallback to text logo if image not found
+                  return Text(
+                    'EventBn',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                    ),
+                  );
                 },
               ),
-              ),
             ),
+          ),
           const Spacer(),
           IconButton(
             onPressed: () => context.push('/notifications'),
@@ -407,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategories() {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    // final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
