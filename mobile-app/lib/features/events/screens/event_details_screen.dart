@@ -14,6 +14,7 @@ class EventDetailsScreen extends StatefulWidget {
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool isBookmarked = false;
   bool isFollowing = false;
+  bool isAboutExpanded = false;
 
   @override
   void initState() {
@@ -84,10 +85,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
+      
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+        child: Stack(
         children: [
           CustomScrollView(
             slivers: [
@@ -112,14 +119,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
-              color: theme.scaffoldBackgroundColor,
-              padding: const EdgeInsets.all(20),
-              child: _buildBookEventButton(theme),
-            ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.shadow.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(20),
+                child: _buildBookEventButton(theme),
+              ),
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -297,359 +314,462 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildEventHeader(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  eventData['date'],
-                  style: TextStyle(
-                    color: theme.primaryColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  eventData['time'],
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            eventData['price'],
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    // Widget _buildCircleIcon(BuildContext context,
+    //     {required IconData icon,
+    //     Color? iconColor,
+    //     required VoidCallback onTap,
+    //     required ThemeData theme}) {
+    //   final colorScheme = theme.colorScheme;
+    //   return Container(
+    //     margin: const EdgeInsets.all(8),
+    //     decoration: BoxDecoration(
+    //       color: colorScheme.surface.withValues(alpha: 0.9),
+    //       borderRadius: BorderRadius.circular(12),
+    //       boxShadow: [
+    //         BoxShadow(
+    //           color: colorScheme.shadow.withValues(alpha: 0.08),
+    //           blurRadius: 8,
+    //           offset: const Offset(0, 2),
+    //         ),
+    //       ],
+    //     ),
+    //     child: IconButton(
+    //       icon: Icon(icon, color: iconColor ?? colorScheme.onSurface),
+    //       onPressed: onTap,
+    //       tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+    //     ),
+    //   );
+    // }
 
-  Widget _buildOrganizerSection(ThemeData theme) {
-    final organizer = eventData['organizer'];
-
-    return GestureDetector(
-      onTap: () => context.push('/organizer/world-of-music'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+    Widget _buildEventHeader(ThemeData theme) {
+      final colorScheme = theme.colorScheme;
+      final textTheme = theme.textTheme;
+      return Padding(
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(organizer['avatar']),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    organizer['name'],
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 16,
+                    eventData['date'],
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    organizer['role'],
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontSize: 14,
+                    eventData['time'],
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ],
               ),
             ),
-            ElevatedButton(
-              onPressed: () => setState(() => isFollowing = !isFollowing),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing
-                    ? theme.colorScheme.surface
-                    : theme.primaryColor,
-                foregroundColor:
-                    isFollowing ? theme.primaryColor : Colors.white,
-                side:
-                    isFollowing ? BorderSide(color: theme.primaryColor) : null,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            Text(
+              eventData['price'],
+              style: textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
               ),
-              child: Text(isFollowing ? 'Following' : 'Follow'),
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildAboutSection(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'About Event',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            eventData['about'],
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Read more...',
-              style: TextStyle(color: theme.primaryColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    Widget _buildOrganizerSection(ThemeData theme) {
+      final organizer = eventData['organizer'];
+      final colorScheme = theme.colorScheme;
+      final textTheme = theme.textTheme;
 
-  Widget _buildGallerySection(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      return GestureDetector(
+        onTap: () => context.push('/organizer/world-of-music'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
             children: [
-              Text(
-                'Gallery (Pre-Event)',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              CircleAvatar(
+                radius: 24,
+                backgroundImage: NetworkImage(organizer['avatar']),
               ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'See All',
-                  style: TextStyle(color: theme.primaryColor),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: eventData['gallery'].length + 1,
-              itemBuilder: (context, index) {
-                if (index < eventData['gallery'].length) {
-                  return Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: NetworkImage(eventData['gallery'][index]),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                } else {
-                  return Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color:
-                              theme.colorScheme.outline.withValues(alpha: 0.3)),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add,
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
-                          ),
-                          Text(
-                            '20+',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationSection(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Location',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: theme.primaryColor,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  eventData['location']['address'],
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    fontSize: 14,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      organizer['name'],
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      organizer['role'],
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              ElevatedButton(
+                onPressed: () => setState(() => isFollowing = !isFollowing),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isFollowing
+                    ? colorScheme.surface
+                    : colorScheme.primary,
+                  foregroundColor: isFollowing
+                    ? colorScheme.primary
+                    : colorScheme.onPrimary,
+                  side: isFollowing
+                    ? BorderSide(color: colorScheme.primary)
+                    : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                  padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  elevation: 0,
+                ),
+                child: Text(isFollowing ? 'Following' : 'Follow'),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Container(
-            height: 150,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+        ),
+      );
+    }
+
+    Widget _buildAboutSection(ThemeData theme) {
+      final colorScheme = theme.colorScheme;
+      final textTheme = theme.textTheme;
+      final aboutText = eventData['about'] as String;
+
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'About Event',
+              style: textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: theme.colorScheme.surface,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.map,
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Map View',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.5),
-                              fontSize: 14,
+            const SizedBox(height: 12),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 250),
+              crossFadeState: isAboutExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: Text(
+                aboutText,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.8),
+                  height: 1.5,
+                ),
+              ),
+              secondChild: Text(
+                aboutText,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.8),
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () =>
+                  setState(() => isAboutExpanded = !isAboutExpanded),
+              child: Text(
+                isAboutExpanded ? 'Show less' : 'Read more...',
+                style: TextStyle(color: colorScheme.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildGallerySection(ThemeData theme) {
+      final colorScheme = theme.colorScheme;
+      final textTheme = theme.textTheme;
+      final gallery = eventData['gallery'] as List<String>;
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Gallery (Pre-Event)',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Optionally show all images in a dialog
+                    showDialog(
+                      context: context,
+                      builder: (context) => Dialog(
+                        backgroundColor: colorScheme.surface,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            itemCount: gallery.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12),
+                            itemBuilder: (context, index) => ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                gallery[index],
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
+                    );
+                  },
+                  child: Text(
+                    'See All',
+                    style: TextStyle(color: colorScheme.primary),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: gallery.length + 1,
+                itemBuilder: (context, index) {
+                  if (index < gallery.length) {
+                    return GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => Dialog(
+                            backgroundColor: colorScheme.surface,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                gallery[index],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.shadow.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          image: DecorationImage(
+                            image: NetworkImage(gallery[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: colorScheme.outline.withOpacity(0.3)),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            Text(
+                              '20+',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.6),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildLocationSection(ThemeData theme) {
+      final colorScheme = theme.colorScheme;
+      final textTheme = theme.textTheme;
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Location',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    eventData['location']['address'],
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.8),
                     ),
                   ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.primaryColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: CircleAvatar(
-                        radius: 12,
-                        backgroundImage:
-                            NetworkImage(eventData['organizer']['avatar']),
-                      ),
-                    ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.shadow.withOpacity(0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: colorScheme.surface,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.map,
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                              size: 48,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Map View (Coming Soon)',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage(eventData['organizer']['avatar']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget _buildBookEventButton(ThemeData theme) {
+      final colorScheme = theme.colorScheme;
+      final isDark = theme.brightness == Brightness.dark;
+      final buttonBg = isDark ? Colors.white : Colors.black;
+      final buttonFg = isDark ? Colors.black : Colors.white;
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () {
+            context.push('/checkout/${widget.eventId}/seat-selection');
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: buttonBg,
+            foregroundColor: buttonFg,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25),
+            ),
+            elevation: 4,
+            shadowColor: colorScheme.shadow.withOpacity(0.12),
+          ),
+          child: const Text(
+            'Book Event',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBookEventButton(ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
-    final buttonBg = isDark ? Colors.white : Colors.black;
-    final buttonFg = isDark ? Colors.black : Colors.white;
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Navigate to seat selection screen
-          context.push('/checkout/${widget.eventId}/seat-selection');
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: buttonBg,
-          foregroundColor: buttonFg,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          elevation: 4,
         ),
-        child: const Text(
-          'Book Event',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
+      );
+    }
 
   void _showShareModal(BuildContext context, ThemeData theme) {
     showModalBottomSheet(
