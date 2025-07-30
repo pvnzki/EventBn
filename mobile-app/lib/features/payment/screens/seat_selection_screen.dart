@@ -5,7 +5,11 @@ class SeatSelectionScreen extends StatefulWidget {
   final String eventId;
   final String ticketType;
   final int initialCount;
-  const SeatSelectionScreen({super.key, required this.eventId, required this.ticketType, this.initialCount = 1});
+  const SeatSelectionScreen(
+      {super.key,
+      required this.eventId,
+      required this.ticketType,
+      this.initialCount = 1});
 
   @override
   State<SeatSelectionScreen> createState() => _SeatSelectionScreenState();
@@ -44,7 +48,10 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
-        title: Text('Book Event', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+        title: Text('Book Event',
+            style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold)),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -62,7 +69,11 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
             const SizedBox(height: 16),
             Divider(color: theme.dividerColor, thickness: 2),
             const SizedBox(height: 24),
-            Text('Choose number of seats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: theme.colorScheme.onSurface)),
+            Text('Choose number of seats',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: theme.colorScheme.onSurface)),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +84,11 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                 }, theme),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text('$seatCount', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+                  child: Text('$seatCount',
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface)),
                 ),
                 _buildCountButton('+', () {
                   setState(() => seatCount++);
@@ -81,7 +96,11 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               ],
             ),
             const SizedBox(height: 32),
-            Text('Select your seats', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.onSurface)),
+            Text('Select your seats',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: theme.colorScheme.onSurface)),
             const SizedBox(height: 16),
             _buildSeatMap(theme),
             const Spacer(),
@@ -90,7 +109,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                 backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
                 elevation: 4,
               ),
               onPressed: selectedSeats.length == seatCount && seatCount > 0
@@ -107,7 +127,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                       );
                     }
                   : null,
-              child: Text('Continue'),
+              child: const Text('Continue'),
             ),
           ],
         ),
@@ -121,7 +141,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
     return GestureDetector(
       onTap: () {
         if (!isSelected) {
-          Navigator.of(context).pushReplacementNamed('/checkout/${widget.eventId}?ticketType=$type');
+          Navigator.of(context).pushReplacementNamed(
+              '/checkout/${widget.eventId}?ticketType=$type');
         }
       },
       child: Column(
@@ -129,7 +150,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
           Text(
             type,
             style: TextStyle(
-              color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface.withOpacity(0.6),
+              color: isSelected
+                  ? theme.primaryColor
+                  : theme.colorScheme.onSurface.withOpacity(0.6),
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -196,7 +219,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? theme.primaryColor : theme.cardColor,
                 border: Border.all(
-                  color: isSelected ? theme.primaryColor : theme.dividerColor.withOpacity(0.3),
+                  color: isSelected
+                      ? theme.primaryColor
+                      : theme.dividerColor.withOpacity(0.3),
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(8),
@@ -205,7 +230,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                 child: Text(
                   seatId,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                    color:
+                        isSelected ? Colors.white : theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
