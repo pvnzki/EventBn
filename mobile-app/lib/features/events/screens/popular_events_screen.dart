@@ -216,15 +216,20 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                 border: Border.all(
                   color: isSelected
                       ? const Color(0xFF32CD32)
-                      : (isDark ? theme.dividerColor.withOpacity(0.3) : Colors.grey.shade300),
+                      : (isDark
+                          ? theme.dividerColor.withOpacity(0.3)
+                          : Colors.grey.shade300),
                 ),
               ),
               child: Center(
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : theme.colorScheme.onSurface.withOpacity(0.8),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
@@ -269,7 +274,8 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     );
   }
 
-  Widget _buildEventCard(Map<String, dynamic> event, ThemeData theme, bool isDark) {
+  Widget _buildEventCard(
+      Map<String, dynamic> event, ThemeData theme, bool isDark) {
     return GestureDetector(
       onTap: () {
         // Navigate to event details
@@ -447,7 +453,8 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                             '${event['attendees']}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color:
+                                  theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -458,10 +465,10 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
                       // Price
                       Text(
                         '\$${event['price'].toStringAsFixed(0)}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF32CD32),
+                          color: Color(0xFF32CD32),
                         ),
                       ),
                     ],
