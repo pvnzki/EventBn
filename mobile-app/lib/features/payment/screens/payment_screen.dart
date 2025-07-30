@@ -8,7 +8,15 @@ class PaymentScreen extends StatelessWidget {
   final String name;
   final String email;
   final String phone;
-  const PaymentScreen({super.key, required this.eventId, required this.ticketType, required this.seatCount, required this.selectedSeats, required this.name, required this.email, required this.phone});
+  const PaymentScreen(
+      {super.key,
+      required this.eventId,
+      required this.ticketType,
+      required this.seatCount,
+      required this.selectedSeats,
+      required this.name,
+      required this.email,
+      required this.phone});
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +27,21 @@ class PaymentScreen extends StatelessWidget {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
-        title: Text('Payment', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+        title: Text('Payment',
+            style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold)),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Confirm and Pay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: theme.colorScheme.onSurface)),
+            Text('Confirm and Pay',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: theme.colorScheme.onSurface)),
             const SizedBox(height: 24),
             _buildSummary(theme),
             const Spacer(),
@@ -35,7 +50,8 @@ class PaymentScreen extends StatelessWidget {
                 backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
                 elevation: 4,
               ),
               onPressed: () {
@@ -47,14 +63,15 @@ class PaymentScreen extends StatelessWidget {
                     content: const Text('Your booking is confirmed!'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                        onPressed: () => Navigator.of(context)
+                            .popUntil((route) => route.isFirst),
                         child: const Text('OK'),
                       ),
                     ],
                   ),
                 );
               },
-              child: Text('Pay Now'),
+              child: const Text('Pay Now'),
             ),
           ],
         ),
@@ -77,7 +94,8 @@ class PaymentScreen extends StatelessWidget {
             _buildSummaryRow('Phone', phone, theme),
             _buildSummaryRow('Ticket Type', ticketType, theme),
             _buildSummaryRow('Seats', selectedSeats.join(', '), theme),
-            _buildSummaryRow('Total', '\u20B9${seatCount * 500}', theme), // Example price
+            _buildSummaryRow(
+                'Total', '\u20B9${seatCount * 500}', theme), // Example price
           ],
         ),
       ),
@@ -90,8 +108,14 @@ class PaymentScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7), fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  fontWeight: FontWeight.w500)),
+          Text(value,
+              style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
