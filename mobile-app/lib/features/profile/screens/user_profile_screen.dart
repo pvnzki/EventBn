@@ -31,9 +31,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       'id': widget.userId,
       'name': 'John Smith',
       'username': '@johnsmith',
-      'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-      'coverImage': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-      'bio': 'Event enthusiast and photographer. Love exploring new places and meeting new people through amazing events.',
+      'avatar':
+          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+      'coverImage':
+          'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+      'bio':
+          'Event enthusiast and photographer. Love exploring new places and meeting new people through amazing events.',
       'posts': 45,
       'followers': '2.1K',
       'following': 156,
@@ -109,18 +112,23 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                   ),
                                   child: CircleAvatar(
                                     radius: 40,
-                                    backgroundImage: NetworkImage(userData['avatar']),
+                                    backgroundImage:
+                                        NetworkImage(userData['avatar']),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
                                 // Stats
                                 Expanded(
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      _buildStatColumn('Posts', userData['posts'].toString()),
-                                      _buildStatColumn('Followers', userData['followers']),
-                                      _buildStatColumn('Following', userData['following'].toString()),
+                                      _buildStatColumn('Posts',
+                                          userData['posts'].toString()),
+                                      _buildStatColumn(
+                                          'Followers', userData['followers']),
+                                      _buildStatColumn('Following',
+                                          userData['following'].toString()),
                                     ],
                                   ),
                                 ),
@@ -132,7 +140,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                               children: [
                                 Text(
                                   userData['name'],
-                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -247,7 +256,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: isFollowing ? colorScheme.primary : null,
-                  foregroundColor: isFollowing ? colorScheme.onPrimary : colorScheme.primary,
+                  foregroundColor:
+                      isFollowing ? colorScheme.onPrimary : colorScheme.primary,
                 ),
                 child: Text(isFollowing ? 'Following' : 'Follow'),
               ),
@@ -360,7 +370,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                     return Chip(
                       label: Text(interest),
                       backgroundColor: colorScheme.primaryContainer,
-                      labelStyle: TextStyle(color: colorScheme.onPrimaryContainer),
+                      labelStyle:
+                          TextStyle(color: colorScheme.onPrimaryContainer),
                     );
                   }).toList(),
                 ),
@@ -391,7 +402,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          margin: const EdgeInsets.only(
+              bottom: 90), // Account for bottom nav height + padding
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -409,7 +421,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 },
               ),
               ListTile(
-                leading: Icon(Icons.block, color: Theme.of(context).colorScheme.error),
+                leading: Icon(Icons.block,
+                    color: Theme.of(context).colorScheme.error),
                 title: Text('Block User'),
                 onTap: () {
                   Navigator.pop(context);
@@ -417,7 +430,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 },
               ),
               ListTile(
-                leading: Icon(Icons.report, color: Theme.of(context).colorScheme.error),
+                leading: Icon(Icons.report,
+                    color: Theme.of(context).colorScheme.error),
                 title: Text('Report User'),
                 onTap: () {
                   Navigator.pop(context);
@@ -451,7 +465,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Theme.of(context).colorScheme.surface,
       child: tabBar,

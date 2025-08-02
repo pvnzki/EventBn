@@ -676,7 +676,8 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+        margin: const EdgeInsets.only(
+            bottom: 90), // Account for bottom nav height + padding
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: theme.scaffoldBackgroundColor,

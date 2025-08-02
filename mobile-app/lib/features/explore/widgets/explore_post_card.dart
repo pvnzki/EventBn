@@ -523,7 +523,8 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          margin: const EdgeInsets.only(
+              bottom: 90), // Account for bottom nav height + padding
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),

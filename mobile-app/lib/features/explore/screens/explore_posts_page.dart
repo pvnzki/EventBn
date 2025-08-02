@@ -412,17 +412,25 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                post.isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
                                 size: 16,
-                                color: post.isLiked ? colorScheme.error : colorScheme.onSurfaceVariant,
+                                color: post.isLiked
+                                    ? colorScheme.error
+                                    : colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '${post.likesCount}',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: post.isLiked ? colorScheme.error : colorScheme.onSurfaceVariant,
-                                  fontWeight: post.isLiked ? FontWeight.w600 : FontWeight.w500,
+                                  color: post.isLiked
+                                      ? colorScheme.error
+                                      : colorScheme.onSurfaceVariant,
+                                  fontWeight: post.isLiked
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -753,7 +761,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
       (p) => p.id == postId,
       orElse: () => throw Exception('Post not found'),
     );
-    
+
     final shareText = '''
 Check out this post by ${post.userDisplayName}:
 
@@ -771,7 +779,8 @@ Shared from EventBn App
       ),
       builder: (context) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          margin: const EdgeInsets.only(
+              bottom: 90), // Account for bottom nav height + padding
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -904,9 +913,10 @@ Shared from EventBn App
       builder: (context) {
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
-        
+
         return Container(
-          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          margin: const EdgeInsets.only(
+              bottom: 90), // Account for bottom nav height + padding
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -969,10 +979,13 @@ Shared from EventBn App
               // Options
               ListTile(
                 leading: Icon(
-                  post.isBookmarked ? Icons.bookmark_remove : Icons.bookmark_add,
+                  post.isBookmarked
+                      ? Icons.bookmark_remove
+                      : Icons.bookmark_add,
                   color: colorScheme.primary,
                 ),
-                title: Text(post.isBookmarked ? 'Remove Bookmark' : 'Save Post'),
+                title:
+                    Text(post.isBookmarked ? 'Remove Bookmark' : 'Save Post'),
                 onTap: () {
                   Navigator.pop(context);
                   _handleBookmark(post.id);
@@ -1031,8 +1044,10 @@ Shared from EventBn App
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Post reported. Thank you for your feedback.'),
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  content:
+                      const Text('Post reported. Thank you for your feedback.'),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
                 ),
               );
             },

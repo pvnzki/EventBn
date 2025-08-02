@@ -24,10 +24,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isLoading = true;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
-  
+
   // Comments management
   List<Map<String, dynamic>> _comments = [];
-  final String _currentUserId = 'current_user_001'; // In real app, get from auth service
+  final String _currentUserId =
+      'current_user_001'; // In real app, get from auth service
   final String _currentUserName = 'You'; // In real app, get from user profile
   final String _currentUserAvatar = ''; // In real app, get from user profile
 
@@ -254,14 +255,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               shape: BoxShape.circle,
                             ),
                             child: Center(
                               child: Text(
                                 _post!.userDisplayName[0].toUpperCase(),
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -281,7 +286,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         child: Text(
                           _post!.userDisplayName[0].toUpperCase(),
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -585,7 +592,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
         onTap: () {
-          print('🔍 PostDetail: Tapping comment user profile ${comment['userId']}');
+          print(
+              '🔍 PostDetail: Tapping comment user profile ${comment['userId']}');
           // Navigate to user profile
           context.push('/user/${comment['userId']}');
         },
@@ -877,7 +885,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Post content skeleton
           _buildShimmerBox(double.infinity, 16, 8), // Content line 1
           const SizedBox(height: 8),
@@ -885,11 +893,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           const SizedBox(height: 8),
           _buildShimmerBox(200, 16, 8), // Content line 3 (shorter)
           const SizedBox(height: 16),
-          
+
           // Image skeleton
           _buildShimmerBox(double.infinity, 300, 12),
           const SizedBox(height: 16),
-          
+
           // Engagement bar skeleton
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -900,7 +908,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Related event skeleton (if applicable)
           Container(
             padding: const EdgeInsets.all(16),
@@ -928,14 +936,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Comments header skeleton
           _buildShimmerBox(100, 18, 8),
           const SizedBox(height: 16),
-          
+
           // Comment skeleton items
           ...List.generate(3, (index) => _buildCommentSkeleton()),
-          
+
           // Comment input skeleton
           const SizedBox(height: 16),
           Row(
