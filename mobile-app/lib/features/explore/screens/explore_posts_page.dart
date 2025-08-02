@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import '../models/post_model.dart';
@@ -92,16 +93,14 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
-      child: !_isInitialized 
-          ? _buildLoadingSkeleton()
-          : _buildMainContent(),
+      child: !_isInitialized ? _buildLoadingSkeleton() : _buildMainContent(),
     );
   }
 
   Widget _buildMainContent() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
@@ -135,8 +134,10 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                       },
                       decoration: InputDecoration(
                         hintText: 'Search posts, events, users...',
-                        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                        prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+                        hintStyle:
+                            TextStyle(color: colorScheme.onSurfaceVariant),
+                        prefixIcon: Icon(Icons.search,
+                            color: colorScheme.onSurfaceVariant),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -157,12 +158,18 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                           child: FilterChip(
                             label: Text(_getCategoryDisplayName(category)),
                             selected: isSelected,
-                            onSelected: (selected) => _onCategoryChanged(category),
-                            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.3),
+                            onSelected: (selected) =>
+                                _onCategoryChanged(category),
+                            backgroundColor:
+                                colorScheme.surfaceVariant.withOpacity(0.3),
                             selectedColor: colorScheme.primaryContainer,
                             labelStyle: TextStyle(
-                              color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              color: isSelected
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
                         );
@@ -226,7 +233,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             crossAxisCount: 2,
             itemBuilder: (context, index) {
               final post = _postService.posts[index];
-              
+
               return _buildModernPostCard(post, index);
             },
             childCount: _postService.posts.length,
@@ -234,7 +241,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             crossAxisSpacing: 12,
           ),
         ),
-        if (_postService.isLoading) 
+        if (_postService.isLoading)
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.all(20),
@@ -251,14 +258,15 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   Widget _buildModernPostCard(ExplorePost post, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return GestureDetector(
       key: ValueKey(post.id),
       onTap: () {
         print('🔍 Explore: Tapping post ${post.id}');
-        // Keep the existing navigation functionality
-        _handleComment(post.id);
+        // Navigate to post details using correct route
+        context.push('/explore/post/${post.id}');
       },
+      onLongPress: () => _showPostOptions(post),
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surface,
@@ -276,7 +284,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
           children: [
             // Post Image
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               child: AspectRatio(
                 aspectRatio: _getAspectRatio(index),
                 child: Container(
@@ -284,9 +293,18 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        [colorScheme.primaryContainer, colorScheme.primary.withOpacity(0.7)],
-                        [colorScheme.secondaryContainer, colorScheme.secondary.withOpacity(0.7)],
-                        [colorScheme.tertiaryContainer, colorScheme.tertiary.withOpacity(0.7)],
+                        [
+                          colorScheme.primaryContainer,
+                          colorScheme.primary.withOpacity(0.7)
+                        ],
+                        [
+                          colorScheme.secondaryContainer,
+                          colorScheme.secondary.withOpacity(0.7)
+                        ],
+                        [
+                          colorScheme.tertiaryContainer,
+                          colorScheme.tertiary.withOpacity(0.7)
+                        ],
                       ][index % 3],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -296,7 +314,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                       ? Image.network(
                           post.imageUrls.first,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
                             color: colorScheme.surfaceVariant,
                             child: Icon(
                               Icons.image_not_supported,
@@ -307,7 +326,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                         )
                       : Icon(
                           Icons.image,
-                          color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                          color:
+                              colorScheme.onPrimaryContainer.withOpacity(0.7),
                           size: 32,
                         ),
                 ),
@@ -320,44 +340,51 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Author info
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: colorScheme.primaryContainer,
-                        backgroundImage: post.userAvatarUrl.isNotEmpty 
-                            ? NetworkImage(post.userAvatarUrl) 
-                            : null,
-                        child: post.userAvatarUrl.isEmpty
-                            ? Text(
-                                post.userDisplayName[0].toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          post.userDisplayName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
+                  GestureDetector(
+                    onTap: () {
+                      print('🔍 Explore: Tapping user profile ${post.userId}');
+                      // Navigate to user profile
+                      context.push('/user/${post.userId}');
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: colorScheme.primaryContainer,
+                          backgroundImage: post.userAvatarUrl.isNotEmpty
+                              ? NetworkImage(post.userAvatarUrl)
+                              : null,
+                          child: post.userAvatarUrl.isEmpty
+                              ? Text(
+                                  post.userDisplayName[0].toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            post.userDisplayName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      if (post.isUserVerified)
-                        Icon(
-                          Icons.verified,
-                          size: 14,
-                          color: colorScheme.primary,
-                        ),
-                    ],
+                        if (post.isUserVerified)
+                          Icon(
+                            Icons.verified,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   // Post content
@@ -372,43 +399,60 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  // Engagement stats
+                  // Simplified like and comment buttons
                   Row(
                     children: [
-                      Icon(
-                        post.isLiked ? Icons.favorite : Icons.favorite_border,
-                        size: 14,
-                        color: post.isLiked ? colorScheme.error : colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.likesCount}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
+                      // Like button
+                      GestureDetector(
+                        onTap: () => _handleLike(post.id),
+                        child: AnimatedScale(
+                          scale: post.isLiked ? 1.1 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                size: 16,
+                                color: post.isLiked ? colorScheme.error : colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${post.likesCount}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: post.isLiked ? colorScheme.error : colorScheme.onSurfaceVariant,
+                                  fontWeight: post.isLiked ? FontWeight.w600 : FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.chat_bubble_outline,
-                        size: 14,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.commentsCount}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
+                      const SizedBox(width: 16),
+                      // Comment button
+                      GestureDetector(
+                        onTap: () => context.push('/explore/post/${post.id}'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${post.commentsCount}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
-                      if (post.isBookmarked)
-                        Icon(
-                          Icons.bookmark,
-                          size: 14,
-                          color: colorScheme.primary,
-                        ),
                     ],
                   ),
                 ],
@@ -429,7 +473,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   Widget _buildLoadingSkeleton() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
@@ -450,7 +494,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   Widget _buildHeaderLoadingSkeleton() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -473,14 +517,16 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
           const SizedBox(height: 16),
           // Filter Chips Skeleton
           Row(
-            children: List.generate(4, (index) => Padding(
-              padding: EdgeInsets.only(right: index < 3 ? 8 : 0),
-              child: _buildShimmerContainer(
-                width: 60 + (index * 10),
-                height: 32,
-                borderRadius: 16,
-              ),
-            )),
+            children: List.generate(
+                4,
+                (index) => Padding(
+                      padding: EdgeInsets.only(right: index < 3 ? 8 : 0),
+                      child: _buildShimmerContainer(
+                        width: 60 + (index * 10),
+                        height: 32,
+                        borderRadius: 16,
+                      ),
+                    )),
           ),
         ],
       ),
@@ -531,7 +577,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   Widget _buildPostSkeletonCard({required double height}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -633,7 +679,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 1500),
       tween: Tween(begin: 0.0, end: 1.0),
@@ -695,15 +741,302 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     );
   }
 
-  Future<void> _handleComment(String postId) async {
-    // Navigate to post detail with comments
-    print('🎯 Post tapped! Post ID: $postId');
-    print('🚀 Navigating to: /explore/post/$postId');
+  Future<void> _handleLike(String postId) async {
+    // Add haptic feedback for better user experience
+    HapticFeedback.lightImpact();
+    await _postService.toggleLike(postId);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _handleShare(String postId) async {
+    final post = _postService.posts.firstWhere(
+      (p) => p.id == postId,
+      orElse: () => throw Exception('Post not found'),
+    );
+    
+    final shareText = '''
+Check out this post by ${post.userDisplayName}:
+
+${post.content}
+
+Shared from EventBn App
+''';
+
+    // Show share options
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Share Post',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildShareOption(
+                    icon: Icons.copy,
+                    label: 'Copy Link',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _copyToClipboard(shareText);
+                    },
+                  ),
+                  _buildShareOption(
+                    icon: Icons.message,
+                    label: 'Message',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showComingSoon('Messaging');
+                    },
+                  ),
+                  _buildShareOption(
+                    icon: Icons.share,
+                    label: 'More',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showComingSoon('Social sharing');
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copyToClipboard(String text) async {
     try {
-      context.push('/explore/post/$postId');
-      print('✅ Navigation call successful');
+      await Clipboard.setData(ClipboardData(text: text));
+      if (mounted) {
+        HapticFeedback.mediumImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Post content copied to clipboard!'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      print('❌ Navigation failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to copy to clipboard'),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          ),
+        );
+      }
     }
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature coming soon!'),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      ),
+    );
+  }
+
+  void _showPostOptions(ExplorePost post) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.outline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Post preview
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/user/${post.userId}');
+                },
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: colorScheme.primaryContainer,
+                      child: Text(
+                        post.userDisplayName[0].toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            post.userDisplayName,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          Text(
+                            post.content,
+                            style: theme.textTheme.bodySmall,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Options
+              ListTile(
+                leading: Icon(
+                  post.isBookmarked ? Icons.bookmark_remove : Icons.bookmark_add,
+                  color: colorScheme.primary,
+                ),
+                title: Text(post.isBookmarked ? 'Remove Bookmark' : 'Save Post'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleBookmark(post.id);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.share, color: colorScheme.secondary),
+                title: const Text('Share Post'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleShare(post.id);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.link, color: colorScheme.tertiary),
+                title: const Text('Copy Link'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyPostLink(post);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.report, color: colorScheme.error),
+                title: const Text('Report Post'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _reportPost(post);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _copyPostLink(ExplorePost post) {
+    final postLink = 'https://eventbn.app/post/${post.id}';
+    _copyToClipboard(postLink);
+  }
+
+  void _reportPost(ExplorePost post) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Post'),
+        content: const Text('Why are you reporting this post?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Post reported. Thank you for your feedback.'),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                ),
+              );
+            },
+            child: const Text('Report'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleBookmark(String postId) async {
+    // Add haptic feedback for better user experience
+    HapticFeedback.lightImpact();
+    await _postService.toggleBookmark(postId);
+    if (mounted) setState(() {});
   }
 }

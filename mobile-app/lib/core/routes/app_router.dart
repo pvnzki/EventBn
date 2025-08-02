@@ -150,6 +150,17 @@ class AppRouter {
         },
       ),
 
+      // User Profile Route
+      GoRoute(
+        path: '/user/:userId',
+        name: 'user-profile',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          print('🛣️ Router: Building OrganizerProfileScreen for userId: $userId');
+          return OrganizerProfileScreen(organizerId: userId);
+        },
+      ),
+
       // Checkout Route
       GoRoute(
         path: '/checkout/:eventId',

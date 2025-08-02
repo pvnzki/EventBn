@@ -182,9 +182,12 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
 
   Widget _buildSingleImage() {
     // Calculate appropriate height based on cell count for varying aspect ratios
-    final imageHeight = widget.mainAxisCellCount == 1 ? 100.0 : 
-                       widget.mainAxisCellCount == 2 ? 140.0 : 180.0;
-    
+    final imageHeight = widget.mainAxisCellCount == 1
+        ? 100.0
+        : widget.mainAxisCellCount == 2
+            ? 140.0
+            : 180.0;
+
     return SizedBox(
       height: imageHeight,
       child: ClipRRect(
