@@ -24,6 +24,7 @@ import '../../features/events/screens/popular_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/explore_posts_page.dart';
 import '../../common_widgets/bottom_nav_bar.dart';
@@ -156,8 +157,8 @@ class AppRouter {
         name: 'user-profile',
         builder: (context, state) {
           final userId = state.pathParameters['userId']!;
-          print('🛣️ Router: Building OrganizerProfileScreen for userId: $userId');
-          return OrganizerProfileScreen(organizerId: userId);
+          print('🛣️ Router: Building UserProfileScreen for userId: $userId');
+          return UserProfileScreen(userId: userId);
         },
       ),
 
