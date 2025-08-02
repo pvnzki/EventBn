@@ -25,9 +25,9 @@ class _BottomNavBarState extends State<BottomNavBar>
       route: '/home',
     ),
     NavItem(
-      icon: Icons.search_outlined,
-      activeIcon: Icons.search,
-      label: 'Search',
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
+      label: 'Explore',
       route: '/search',
     ),
     NavItem(

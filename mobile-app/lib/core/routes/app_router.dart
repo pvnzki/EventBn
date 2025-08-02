@@ -19,12 +19,13 @@ import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/event_attendees_screen.dart';
 import '../../features/events/screens/organizer_profile_screen.dart';
-import '../../features/events/screens/search_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/popular_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/explore/screens/post_detail_screen.dart';
+import '../../features/explore/screens/explore_posts_page.dart';
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -138,6 +139,17 @@ class AppRouter {
         },
       ),
 
+      // Post Detail Route
+      GoRoute(
+        path: '/explore/post/:postId',
+        name: 'post-detail',
+        builder: (context, state) {
+          final postId = state.pathParameters['postId']!;
+          print('🛣️ Router: Building PostDetailScreen for postId: $postId');
+          return PostDetailScreen(postId: postId);
+        },
+      ),
+
       // Checkout Route
       GoRoute(
         path: '/checkout/:eventId',
@@ -232,7 +244,7 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => SearchScreen(),
+            builder: (context, state) => const ExplorePostsPage(),
           ),
           GoRoute(
             path: '/my-tickets',
