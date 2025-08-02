@@ -765,12 +765,17 @@ Shared from EventBn App
     // Show share options
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Container(
+          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -892,7 +897,7 @@ Shared from EventBn App
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -901,6 +906,11 @@ Shared from EventBn App
         final colorScheme = theme.colorScheme;
         
         return Container(
+          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,

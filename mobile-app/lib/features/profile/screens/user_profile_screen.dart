@@ -388,8 +388,14 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   void _showProfileOptions() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
+          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
