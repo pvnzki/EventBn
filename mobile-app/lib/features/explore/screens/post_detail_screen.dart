@@ -5,7 +5,7 @@ import '../services/explore_post_service.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
-  
+
   const PostDetailScreen({
     super.key,
     required this.postId,
@@ -45,14 +45,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       // Load posts and find the specific post
       await _postService.loadPosts(refresh: true);
       print('📚 Posts loaded. Total count: ${_postService.posts.length}');
-      print('📋 Available post IDs: ${_postService.posts.map((p) => p.id).toList()}');
-      
+      print(
+          '📋 Available post IDs: ${_postService.posts.map((p) => p.id).toList()}');
+
       final post = _postService.posts.firstWhere(
         (p) => p.id == widget.postId,
         orElse: () => throw Exception('Post not found'),
       );
-      
-      print('✅ Post found: ${post.userDisplayName} - ${post.content.substring(0, 50)}...');
+
+      print(
+          '✅ Post found: ${post.userDisplayName} - ${post.content.substring(0, 50)}...');
       setState(() {
         _post = post;
         _isLoading = false;
@@ -168,7 +170,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         IconButton(
           icon: Icon(
             _post!.isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-            color: _post!.isBookmarked ? colorScheme.primary : colorScheme.onSurface,
+            color: _post!.isBookmarked
+                ? colorScheme.primary
+                : colorScheme.onSurface,
           ),
           onPressed: () => _handleBookmark(),
         ),
@@ -454,11 +458,23 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget _buildCommentItem(int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     final comments = [
-      {'user': 'Alice Johnson', 'comment': 'This looks amazing! Can\'t wait to attend.', 'time': '2h'},
-      {'user': 'Bob Smith', 'comment': 'Thanks for sharing! This event is going to be epic.', 'time': '4h'},
-      {'user': 'Carol Davis', 'comment': 'Love the energy in this post! 🔥', 'time': '6h'},
+      {
+        'user': 'Alice Johnson',
+        'comment': 'This looks amazing! Can\'t wait to attend.',
+        'time': '2h'
+      },
+      {
+        'user': 'Bob Smith',
+        'comment': 'Thanks for sharing! This event is going to be epic.',
+        'time': '4h'
+      },
+      {
+        'user': 'Carol Davis',
+        'comment': 'Love the energy in this post! 🔥',
+        'time': '6h'
+      },
     ];
 
     if (index >= comments.length) return const SizedBox.shrink();
@@ -617,7 +633,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     setState(() {
       _post = _post!.copyWith(
         isLiked: !_post!.isLiked,
-        likesCount: _post!.isLiked ? _post!.likesCount - 1 : _post!.likesCount + 1,
+        likesCount:
+            _post!.isLiked ? _post!.likesCount - 1 : _post!.likesCount + 1,
       );
     });
   }
@@ -637,12 +654,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   void _postComment() {
     if (_commentController.text.trim().isEmpty) return;
-    
+
     // Here you would typically send the comment to your backend
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Comment posted!')),
     );
-    
+
     _commentController.clear();
     FocusScope.of(context).unfocus();
   }
