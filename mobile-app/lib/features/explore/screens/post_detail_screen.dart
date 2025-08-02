@@ -24,12 +24,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isLoading = true;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _commentController = TextEditingController();
+  
+  // Comments management
+  List<Map<String, dynamic>> _comments = [];
+  final String _currentUserId = 'current_user_001'; // In real app, get from auth service
+  final String _currentUserName = 'You'; // In real app, get from user profile
+  final String _currentUserAvatar = ''; // In real app, get from user profile
 
   @override
   void initState() {
     super.initState();
     print('🎬 PostDetailScreen initState called for postId: ${widget.postId}');
     _loadPost();
+    _initializeComments();
   }
 
   @override
@@ -69,6 +76,36 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         );
       }
     }
+  }
+
+  void _initializeComments() {
+    // Initialize with mock comments - in real app, these would come from the API
+    _comments = [
+      {
+        'id': 'comment_001',
+        'user': 'Alice Johnson',
+        'userId': 'alice_001',
+        'comment': 'This looks amazing! Can\'t wait to attend.',
+        'time': '2h',
+        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
+      },
+      {
+        'id': 'comment_002',
+        'user': 'Bob Smith',
+        'userId': 'bob_002',
+        'comment': 'Thanks for sharing! This event is going to be epic.',
+        'time': '4h',
+        'timestamp': DateTime.now().subtract(const Duration(hours: 4)),
+      },
+      {
+        'id': 'comment_003',
+        'user': 'Carol Davis',
+        'userId': 'carol_003',
+        'comment': 'Love the energy in this post! 🔥',
+        'time': '6h',
+        'timestamp': DateTime.now().subtract(const Duration(hours: 6)),
+      },
+    ];
   }
 
   @override
@@ -499,47 +536,50 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Divider(color: colorScheme.outlineVariant),
           const SizedBox(height: 16),
           Text(
-            'Comments (${_post!.commentsCount})',
+            'Comments (${_comments.length})',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
-          // Mock comments for demonstration
-          ...List.generate(3, (index) => _buildCommentItem(index)),
+          // Dynamic comments list
+          if (_comments.isNotEmpty)
+            ..._comments.map((comment) => _buildCommentItem(comment))
+          else
+            Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 48,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No comments yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Be the first to comment!',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildCommentItem(int index) {
+  Widget _buildCommentItem(Map<String, dynamic> comment) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    final comments = [
-      {
-        'user': 'Alice Johnson',
-        'userId': 'alice_001',
-        'comment': 'This looks amazing! Can\'t wait to attend.',
-        'time': '2h'
-      },
-      {
-        'user': 'Bob Smith',
-        'userId': 'bob_002',
-        'comment': 'Thanks for sharing! This event is going to be epic.',
-        'time': '4h'
-      },
-      {
-        'user': 'Carol Davis',
-        'userId': 'carol_003',
-        'comment': 'Love the energy in this post! 🔥',
-        'time': '6h'
-      },
-    ];
-
-    if (index >= comments.length) return const SizedBox.shrink();
-
-    final comment = comments[index];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -722,11 +762,30 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   void _postComment() {
     if (_commentController.text.trim().isEmpty) return;
 
-    // Here you would typically send the comment to your backend
+    // Create new comment object
+    final newComment = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'user': _currentUserName,
+      'userId': _currentUserId,
+      'comment': _commentController.text.trim(),
+      'time': 'now',
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    // Add comment to the beginning of the list
+    setState(() {
+      _comments.insert(0, newComment);
+    });
+
+    // Show success feedback
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comment posted!')),
+      const SnackBar(
+        content: Text('Comment posted!'),
+        duration: Duration(seconds: 2),
+      ),
     );
 
+    // Clear the input and unfocus
     _commentController.clear();
     FocusScope.of(context).unfocus();
   }

@@ -520,35 +520,43 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
   void _showPostOptions() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.bookmark_border),
-              title: const Text('Save Post'),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onBookmark?.call();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onShare?.call();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.report),
-              title: const Text('Report'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
+        return Container(
+          margin: const EdgeInsets.only(bottom: 90), // Account for bottom nav height + padding
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.bookmark_border),
+                title: const Text('Save Post'),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onBookmark?.call();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share),
+                title: const Text('Share'),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onShare?.call();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.report),
+                title: const Text('Report'),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         );
       },
     );
