@@ -87,7 +87,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: _buildLoadingSkeleton(),
       );
     }
 
@@ -186,59 +186,119 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundImage: NetworkImage(_post!.userAvatarUrl),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      _post!.userDisplayName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+      child: GestureDetector(
+        onTap: () {
+          print('🔍 PostDetail: Tapping user profile ${_post!.userId}');
+          // Navigate to user profile
+          context.push('/user/${_post!.userId}');
+        },
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              child: _post!.userAvatarUrl.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        _post!.userAvatarUrl,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: _buildShimmerBox(48, 48, 24),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                _post!.userDisplayName[0].toUpperCase(),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _post!.userDisplayName[0].toUpperCase(),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                    if (_post!.isUserVerified) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.verified,
-                        size: 16,
-                        color: colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _post!.userDisplayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+                      if (_post!.isUserVerified) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.verified,
+                          size: 16,
+                          color: colorScheme.primary,
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                Text(
-                  '@${_post!.userId} • ${_getTimeAgo(_post!.createdAt)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getPostTypeColor().withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _getPostTypeText(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: _getPostTypeColor(),
-                fontWeight: FontWeight.w600,
+                  Text(
+                    '@${_post!.userId} • ${_getTimeAgo(_post!.createdAt)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getPostTypeColor().withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _getPostTypeText(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: _getPostTypeColor(),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -303,10 +363,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             if (loadingProgress == null) return child;
             return AspectRatio(
               aspectRatio: 16 / 9,
-              child: Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: CircularProgressIndicator()),
-              ),
+              child: _buildShimmerBox(double.infinity, double.infinity, 16),
             );
           },
           errorBuilder: (context, error, stackTrace) {
@@ -462,16 +519,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final comments = [
       {
         'user': 'Alice Johnson',
+        'userId': 'alice_001',
         'comment': 'This looks amazing! Can\'t wait to attend.',
         'time': '2h'
       },
       {
         'user': 'Bob Smith',
+        'userId': 'bob_002',
         'comment': 'Thanks for sharing! This event is going to be epic.',
         'time': '4h'
       },
       {
         'user': 'Carol Davis',
+        'userId': 'carol_003',
         'comment': 'Love the energy in this post! 🔥',
         'time': '6h'
       },
@@ -483,51 +543,58 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: colorScheme.primary.withOpacity(0.1),
-            child: Text(
-              comment['user']![0],
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
+      child: GestureDetector(
+        onTap: () {
+          print('🔍 PostDetail: Tapping comment user profile ${comment['userId']}');
+          // Navigate to user profile
+          context.push('/user/${comment['userId']}');
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: colorScheme.primary.withOpacity(0.1),
+              child: Text(
+                comment['user']![0],
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      comment['user']!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        comment['user']!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      comment['time']!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(width: 8),
+                      Text(
+                        comment['time']!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  comment['comment']!,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    comment['comment']!,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -721,5 +788,183 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     } else {
       return count.toString();
     }
+  }
+
+  Widget _buildLoadingSkeleton() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // User header skeleton
+          Row(
+            children: [
+              _buildShimmerBox(48, 48, 24), // Avatar
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildShimmerBox(120, 20, 8), // Username
+                    const SizedBox(height: 4),
+                    _buildShimmerBox(80, 14, 6), // Time and ID
+                  ],
+                ),
+              ),
+              _buildShimmerBox(60, 24, 12), // Post type badge
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Post content skeleton
+          _buildShimmerBox(double.infinity, 16, 8), // Content line 1
+          const SizedBox(height: 8),
+          _buildShimmerBox(double.infinity, 16, 8), // Content line 2
+          const SizedBox(height: 8),
+          _buildShimmerBox(200, 16, 8), // Content line 3 (shorter)
+          const SizedBox(height: 16),
+          
+          // Image skeleton
+          _buildShimmerBox(double.infinity, 300, 12),
+          const SizedBox(height: 16),
+          
+          // Engagement bar skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildEngagementButtonSkeleton(),
+              _buildEngagementButtonSkeleton(),
+              _buildEngagementButtonSkeleton(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Related event skeleton (if applicable)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _buildShimmerBox(60, 60, 8), // Event image
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildShimmerBox(150, 16, 8), // Event name
+                      const SizedBox(height: 4),
+                      _buildShimmerBox(100, 14, 6), // Event date
+                      const SizedBox(height: 4),
+                      _buildShimmerBox(120, 14, 6), // Event location
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Comments header skeleton
+          _buildShimmerBox(100, 18, 8),
+          const SizedBox(height: 16),
+          
+          // Comment skeleton items
+          ...List.generate(3, (index) => _buildCommentSkeleton()),
+          
+          // Comment input skeleton
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildShimmerBox(32, 32, 16), // User avatar
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildShimmerBox(double.infinity, 40, 20), // Input field
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerBox(double width, double height, double borderRadius) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 1500),
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, value, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(borderRadius),
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.surfaceVariant.withOpacity(0.3),
+                colorScheme.surfaceVariant.withOpacity(0.1),
+                colorScheme.surfaceVariant.withOpacity(0.3),
+              ],
+              stops: [
+                (value - 0.3).clamp(0.0, 1.0),
+                value,
+                (value + 0.3).clamp(0.0, 1.0),
+              ],
+              begin: const Alignment(-1.0, 0.0),
+              end: const Alignment(1.0, 0.0),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEngagementButtonSkeleton() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildShimmerBox(20, 20, 4), // Icon
+        const SizedBox(width: 4),
+        _buildShimmerBox(30, 16, 4), // Count
+      ],
+    );
+  }
+
+  Widget _buildCommentSkeleton() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildShimmerBox(32, 32, 16), // Avatar
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _buildShimmerBox(80, 16, 8), // Username
+                    const SizedBox(width: 8),
+                    _buildShimmerBox(30, 12, 6), // Time
+                  ],
+                ),
+                const SizedBox(height: 4),
+                _buildShimmerBox(double.infinity, 14, 6), // Comment line 1
+                const SizedBox(height: 4),
+                _buildShimmerBox(150, 14, 6), // Comment line 2
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
