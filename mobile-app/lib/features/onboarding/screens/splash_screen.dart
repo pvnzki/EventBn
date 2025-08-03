@@ -75,20 +75,22 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _checkAuthAndNavigate() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     print('========== SplashScreen Authentication Check ==========');
     print('SplashScreen: Checking authentication status...');
     print('SplashScreen: isAuthenticated: ${authProvider.isAuthenticated}');
     print('SplashScreen: User object: ${authProvider.user}');
-    print('SplashScreen: User null check: ${authProvider.user == null ? "NULL" : "NOT NULL"}');
-    
+    print(
+        'SplashScreen: User null check: ${authProvider.user == null ? "NULL" : "NOT NULL"}');
+
     if (authProvider.isAuthenticated && authProvider.user != null) {
       print('SplashScreen: ✅ User is authenticated, navigating to home');
       print('SplashScreen: User email: ${authProvider.user!.email}');
       context.go('/home');
     } else {
       print('SplashScreen: ❌ User not authenticated, navigating to login');
-      print('SplashScreen: Reason - isAuthenticated: ${authProvider.isAuthenticated}, user: ${authProvider.user}');
+      print(
+          'SplashScreen: Reason - isAuthenticated: ${authProvider.isAuthenticated}, user: ${authProvider.user}');
       context.go('/login');
     }
     print('========== End Authentication Check ==========');

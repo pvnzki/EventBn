@@ -1,88 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../../../services/api_service.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isUploadingImage = false;
-
-  Future<void> _uploadProfilePicture() async {
-    setState(() {
-      _isUploadingImage = true;
-    });
-
-    try {
-      // Show image source selection dialog
-      final ImageSource? source = await showDialog<ImageSource>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Select Image Source'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Camera'),
-                  onTap: () => Navigator.of(context).pop(ImageSource.camera),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Gallery'),
-                  onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-
-      if (source != null) {
-        final result =
-            await ApiService.pickAndUploadProfilePicture(source: source);
-
-        if (result['success'] == true) {
-          // Refresh user data to show updated profile picture
-          final authProvider =
-              Provider.of<AuthProvider>(context, listen: false);
-          await authProvider.refreshUserData();
-
-          Fluttertoast.showToast(
-            msg: result['message'] ?? 'Profile picture updated successfully!',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-          );
-        } else {
-          Fluttertoast.showToast(
-            msg: result['error'] ?? 'Failed to update profile picture',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-          );
-        }
-      }
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Error: $e',
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-      );
-    } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,86 +64,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Profile Picture and Info
                         Row(
                           children: [
-                            GestureDetector(
-                              onTap: _isUploadingImage
-                                  ? null
-                                  : _uploadProfilePicture,
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 3,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 40,
-                                      backgroundColor: Colors.white,
-                                      backgroundImage: user?.profilePicture !=
-                                              null
-                                          ? NetworkImage(user!.profilePicture!)
-                                          : null,
-                                      child: user?.profilePicture == null
-                                          ? Text(
-                                              user?.name.isNotEmpty == true
-                                                  ? user!.name[0].toUpperCase()
-                                                  : 'U',
-                                              style: TextStyle(
-                                                fontSize: 32,
-                                                fontWeight: FontWeight.bold,
-                                                color: theme.primaryColor,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
-                                  // Camera icon overlay
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: theme.primaryColor,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  // Loading overlay
-                                  if (_isUploadingImage)
-                                    Positioned.fill(
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.5),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
                                 ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.white,
+                                backgroundImage: user?.profilePicture != null
+                                    ? NetworkImage(user!.profilePicture!)
+                                    : null,
+                                child: user?.profilePicture == null
+                                    ? Text(
+                                        user?.name.isNotEmpty == true
+                                            ? user!.name[0].toUpperCase()
+                                            : 'U',
+                                        style: TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.primaryColor,
+                                        ),
+                                      )
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 20),
@@ -229,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    user?.name ?? 'User',
+                                    user?.fullName ?? 'User',
                                     style: const TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
@@ -665,19 +541,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                print('ProfileScreen: Logout button pressed');
                 Navigator.of(context).pop();
-                print('ProfileScreen: Dialog dismissed, calling logout...');
                 await authProvider.logout();
-                print(
-                    'ProfileScreen: Logout completed, checking mounted status...');
                 if (context.mounted) {
-                  print(
-                      'ProfileScreen: Context mounted, navigating to login...');
                   context.go('/login');
-                  print('ProfileScreen: Navigation to login completed');
-                } else {
-                  print('ProfileScreen: Context not mounted, cannot navigate');
                 }
               },
               style: ElevatedButton.styleFrom(

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../core/constants.dart';
 
 class ApiService {
@@ -73,7 +74,7 @@ class ApiService {
         );
 
         print('ApiService: Response status: ${response.statusCode}');
-        
+
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           if (data['success'] == true) {
@@ -83,9 +84,10 @@ class ApiService {
             return data['user'];
           }
         }
-        
+
         // If backend verification fails, check locally stored data
-        print('ApiService: Backend verification failed, checking local storage...');
+        print(
+            'ApiService: Backend verification failed, checking local storage...');
         final prefs = await SharedPreferences.getInstance();
         final userDataString = prefs.getString(_userKey);
         if (userDataString != null) {
@@ -93,7 +95,8 @@ class ApiService {
           return jsonDecode(userDataString);
         }
       } catch (e) {
-        print('ApiService: Backend verification error: $e, checking local storage...');
+        print(
+            'ApiService: Backend verification error: $e, checking local storage...');
         // If backend is unreachable, check locally stored data
         final prefs = await SharedPreferences.getInstance();
         final userDataString = prefs.getString(_userKey);
@@ -102,7 +105,7 @@ class ApiService {
           return jsonDecode(userDataString);
         }
       }
-      
+
       print('ApiService: No valid user data found, clearing stored data');
       // No valid data found, clear everything
       await clearToken();
@@ -314,6 +317,112 @@ class ApiService {
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Profile picture upload
+  static Future<Map<String, dynamic>> uploadProfilePicture({
+    required String imagePath,
+    String? userId,
+  }) async {
+    try {
+      final token = await getTokenAsync();
+      if (token == null) {
+        return {
+          'success': false,
+          'error': 'No authentication token found. Please log in again.',
+        };
+      }
+
+      // Get user data to extract user ID if not provided
+      if (userId == null) {
+        final userData = await getUserData();
+        if (userData == null || userData['user_id'] == null) {
+          return {
+            'success': false,
+            'error': 'Unable to get user information. Please log in again.',
+          };
+        }
+        userId = userData['user_id'].toString();
+      }
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(Constants.profilePicUploadUrl),
+      );
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add user ID field
+      request.fields['userId'] = userId;
+
+      // Add the image file
+      request.files.add(
+        await http.MultipartFile.fromPath('profilePic', imagePath),
+      );
+
+      // Send the request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Update stored user data with new profile picture URL
+        if (data['success'] == true && data['profilePictureUrl'] != null) {
+          final currentUserData = await getUserData();
+          if (currentUserData != null) {
+            currentUserData['profile_picture'] = data['profilePictureUrl'];
+            await saveUserData(currentUserData);
+          }
+        }
+
+        return {
+          'success': true,
+          'data': data,
+          'message': 'Profile picture uploaded successfully!',
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': errorData['error'] ?? 'Failed to upload profile picture',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  // Pick and upload profile picture (convenience method)
+  static Future<Map<String, dynamic>> pickAndUploadProfilePicture({
+    ImageSource source = ImageSource.gallery,
+    String? userId,
+  }) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+
+      if (picked == null) {
+        return {
+          'success': false,
+          'error': 'No image selected',
+        };
+      }
+
+      return await uploadProfilePicture(
+        imagePath: picked.path,
+        userId: userId,
+      );
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Error picking image: $e',
+      };
     }
   }
 }
