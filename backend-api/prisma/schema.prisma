@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Event {
+  event_id         Int           @id @default(autoincrement())
+  organizer_id     Int?
+  organization_id  Int?
+  title            String        @db.VarChar(150)
+  description      String?
+  category         String?       @db.VarChar(100)
+  venue            String?       @db.VarChar(150)
+  location         String?       @db.VarChar(150)
+  start_time       DateTime      @db.Timestamp(6)
+  end_time         DateTime      @db.Timestamp(6)
+  capacity         Int?
+  status           event_status? @default(draft)
+  cover_image_url  String?       @db.VarChar(255)
+  other_images_url String?       @db.VarChar(255)
+  created_at       DateTime?     @default(now()) @db.Timestamp(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Event_Report {
+  report_id            Int       @id @default(autoincrement())
+  event_id             Int?
+  generated_at         DateTime? @default(now()) @db.Timestamp(6)
+  total_tickets_sold   Int?
+  total_revenue        Decimal?  @db.Decimal(10, 2)
+  attendees_checked_in Int?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Order {
+  order_id       Int       @id @default(autoincrement())
+  user_id        Int?
+  event_id       Int?
+  order_date     DateTime? @default(now()) @db.Timestamp(6)
+  total_amount   Decimal?  @db.Decimal(10, 2)
+  transaction_id String?   @db.VarChar(100)
+  ticket_count   Int?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Organization {
+  organization_id Int       @id @default(autoincrement())
+  user_id         Int?
+  name            String    @db.VarChar(150)
+  description     String?
+  logo_url        String?   @db.VarChar(255)
+  contact_email   String?   @db.VarChar(255)
+  contact_number  String?   @db.VarChar(20)
+  website_url     String?   @db.VarChar(255)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Search_Log {
+  log_id          Int       @id @default(autoincrement())
+  user_id         Int?
+  search_query    String?
+  search_time     DateTime? @default(now()) @db.Timestamp(6)
+  filters_applied String?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Ticket {
+  ticket_id       Int       @id @default(autoincrement())
+  ticket_type_id  Int?
+  order_id        Int?
+  attendee_name   String?   @db.VarChar(100)
+  attendee_email  String?   @db.VarChar(255)
+  qr_code_data    String?
+  check_in_status Boolean?  @default(false)
+  checked_in_at   DateTime? @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Ticket_Type {
+  ticket_type_id     Int       @id @default(autoincrement())
+  event_id           Int?
+  name               String    @db.VarChar(50)
+  price              Decimal?  @db.Decimal(10, 2)
+  quantity_available Int?
+  sales_start        DateTime? @db.Timestamp(6)
+  sales_end          DateTime? @db.Timestamp(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model User {
+  user_id           Int       @id @default(autoincrement())
+  name              String    @db.VarChar(100)
+  email             String    @unique @db.VarChar(255)
+  password_hash     String    @db.VarChar(255)
+  role              user_role @default(customer)
+  phone_number      String?   @db.VarChar(20)
+  profile_picture   String?   @db.VarChar(255)
+  is_active         Boolean?  @default(true)
+  is_email_verified Boolean?  @default(false)
+}
+
+enum event_status {
+  draft
+  published
+  cancelled
+  completed
+}
+
+enum user_role {
+  customer
+  organizer
+  admin
+}
