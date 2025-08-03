@@ -11,102 +11,246 @@ datasource db {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Event {
-  event_id         Int           @id @default(autoincrement())
+  event_id         Int            @id @default(autoincrement())
   organizer_id     Int?
   organization_id  Int?
-  title            String        @db.VarChar(150)
+  title            String         @db.VarChar
   description      String?
-  category         String?       @db.VarChar(100)
-  venue            String?       @db.VarChar(150)
-  location         String?       @db.VarChar(150)
-  start_time       DateTime      @db.Timestamp(6)
-  end_time         DateTime      @db.Timestamp(6)
+  category         String?        @db.VarChar
+  venue            String?        @db.VarChar
+  location         String?        @db.VarChar
+  start_time       DateTime       @db.Timestamp(6)
+  end_time         DateTime       @db.Timestamp(6)
   capacity         Int?
-  status           event_status? @default(draft)
-  cover_image_url  String?       @db.VarChar(255)
-  other_images_url String?       @db.VarChar(255)
-  created_at       DateTime?     @default(now()) @db.Timestamp(6)
+  status           event_status?  @default(draft)
+  cover_image_url  String?        @db.VarChar
+  other_images_url String?        @db.VarChar
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  Organization     Organization?  @relation(fields: [organization_id], references: [organization_id], onUpdate: NoAction)
+  User             User?          @relation(fields: [organizer_id], references: [user_id], onUpdate: NoAction)
+  Event_Report     Event_Report[]
+  Order            Order[]
+  Post             Post[]
+  Seat_Map         Seat_Map[]
+  Ticket_Type      Ticket_Type[]
+
+  @@index([organization_id], map: "idx_event_organization_id")
+  @@index([organizer_id], map: "idx_event_organizer_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Event_Report {
   report_id            Int       @id @default(autoincrement())
-  event_id             Int?
+  event_id             Int
   generated_at         DateTime? @default(now()) @db.Timestamp(6)
   total_tickets_sold   Int?
-  total_revenue        Decimal?  @db.Decimal(10, 2)
+  total_revenue        Decimal?  @db.Decimal
   attendees_checked_in Int?
+  Event                Event     @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([event_id], map: "idx_event_report_event_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Order {
   order_id       Int       @id @default(autoincrement())
-  user_id        Int?
-  event_id       Int?
+  user_id        Int
+  event_id       Int
   order_date     DateTime? @default(now()) @db.Timestamp(6)
-  total_amount   Decimal?  @db.Decimal(10, 2)
-  transaction_id String?   @db.VarChar(100)
+  total_amount   Decimal?  @db.Decimal
+  transaction_id String?   @db.VarChar
   ticket_count   Int?
+  Event          Event     @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  User           User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  Ticket         Ticket[]
+
+  @@index([event_id], map: "idx_order_event_id")
+  @@index([user_id], map: "idx_order_user_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Organization {
   organization_id Int       @id @default(autoincrement())
-  user_id         Int?
-  name            String    @db.VarChar(150)
+  user_id         Int
+  name            String    @db.VarChar
   description     String?
-  logo_url        String?   @db.VarChar(255)
-  contact_email   String?   @db.VarChar(255)
-  contact_number  String?   @db.VarChar(20)
-  website_url     String?   @db.VarChar(255)
+  logo_url        String?   @db.VarChar
+  contact_email   String?   @db.VarChar
+  contact_number  String?   @db.VarChar
+  website_url     String?   @db.VarChar
   created_at      DateTime? @default(now()) @db.Timestamp(6)
+  Event           Event[]
+  User            User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_organization_user_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Search_Log {
   log_id          Int       @id @default(autoincrement())
-  user_id         Int?
+  user_id         Int
   search_query    String?
   search_time     DateTime? @default(now()) @db.Timestamp(6)
   filters_applied String?
+  User            User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_search_log_user_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Ticket {
-  ticket_id       Int       @id @default(autoincrement())
-  ticket_type_id  Int?
-  order_id        Int?
-  attendee_name   String?   @db.VarChar(100)
-  attendee_email  String?   @db.VarChar(255)
+  ticket_id       Int         @id @default(autoincrement())
+  ticket_type_id  Int
+  order_id        Int
+  attendee_name   String?     @db.VarChar
+  attendee_email  String?     @db.VarChar
   qr_code_data    String?
-  check_in_status Boolean?  @default(false)
-  checked_in_at   DateTime? @db.Timestamp(6)
+  check_in_status Boolean?    @default(false)
+  checked_in_at   DateTime?   @db.Timestamp(6)
+  Seat            Seat[]
+  Order           Order       @relation(fields: [order_id], references: [order_id], onDelete: Cascade, onUpdate: NoAction)
+  Ticket_Type     Ticket_Type @relation(fields: [ticket_type_id], references: [ticket_type_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_ticket_order_id")
+  @@index([ticket_type_id], map: "idx_ticket_ticket_type_id")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Ticket_Type {
   ticket_type_id     Int       @id @default(autoincrement())
-  event_id           Int?
-  name               String    @db.VarChar(50)
-  price              Decimal?  @db.Decimal(10, 2)
+  event_id           Int
+  name               String    @db.VarChar
+  price              Decimal?  @db.Decimal
   quantity_available Int?
   sales_start        DateTime? @db.Timestamp(6)
   sales_end          DateTime? @db.Timestamp(6)
+  Ticket             Ticket[]
+  Event              Event     @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([event_id], map: "idx_ticket_type_event_id")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model User {
-  user_id           Int       @id @default(autoincrement())
-  name              String    @db.VarChar(100)
-  email             String    @unique @db.VarChar(255)
-  password_hash     String    @db.VarChar(255)
-  role              user_role @default(customer)
-  phone_number      String?   @db.VarChar(20)
-  profile_picture   String?   @db.VarChar(255)
-  is_active         Boolean?  @default(true)
-  is_email_verified Boolean?  @default(false)
+  user_id           Int            @id @default(autoincrement())
+  name              String         @db.VarChar
+  email             String         @unique @db.VarChar
+  password_hash     String         @db.VarChar
+  role              user_role      @default(customer)
+  phone_number      String?        @db.VarChar
+  profile_picture   String?        @db.VarChar
+  is_active         Boolean?       @default(true)
+  is_email_verified Boolean?       @default(false)
+  Event             Event[]
+  Order             Order[]
+  Organization      Organization[]
+  Post              Post[]
+  Post_Comment      Post_Comment[]
+  Post_Like         Post_Like[]
+  Search_Log        Search_Log[]
+}
+
+model Post {
+  post_id      Int            @id @default(autoincrement())
+  user_id      Int
+  event_id     Int?
+  content      String?
+  image_url    String?        @db.VarChar
+  created_at   DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?      @default(now()) @db.Timestamp(6)
+  Event        Event?         @relation(fields: [event_id], references: [event_id], onUpdate: NoAction)
+  User         User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  Post_Comment Post_Comment[]
+  Post_Like    Post_Like[]
+
+  @@index([event_id], map: "idx_post_event_id")
+  @@index([user_id], map: "idx_post_user_id")
+}
+
+model Post_Comment {
+  comment_id         Int            @id @default(autoincrement())
+  post_id            Int
+  user_id            Int
+  parent_comment_id  Int?
+  content            String
+  created_at         DateTime?      @default(now()) @db.Timestamp(6)
+  Post_Comment       Post_Comment?  @relation("Post_CommentToPost_Comment", fields: [parent_comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  other_Post_Comment Post_Comment[] @relation("Post_CommentToPost_Comment")
+  Post               Post           @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  User               User           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([post_id], map: "idx_post_comment_post_id")
+  @@index([user_id], map: "idx_post_comment_user_id")
+}
+
+model Post_Like {
+  post_id  Int
+  user_id  Int
+  liked_at DateTime? @default(now()) @db.Timestamp(6)
+  Post     Post      @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+  User     User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([post_id, user_id])
+}
+
+model Seat {
+  seat_id     Int      @id @default(autoincrement())
+  map_id      Int
+  label       String   @db.VarChar
+  is_reserved Boolean? @default(false)
+  ticket_id   Int?
+  Seat_Map    Seat_Map @relation(fields: [map_id], references: [map_id], onDelete: Cascade, onUpdate: NoAction)
+  Ticket      Ticket?  @relation(fields: [ticket_id], references: [ticket_id], onUpdate: NoAction)
+
+  @@unique([map_id, label])
+  @@index([map_id], map: "idx_seat_map_id")
+  @@index([ticket_id], map: "idx_seat_ticket_id")
+}
+
+model Seat_Map {
+  map_id      Int       @id @default(autoincrement())
+  event_id    Int
+  layout_json Json
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  Seat        Seat[]
+  Event       Event     @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([event_id], map: "idx_seat_map_event_id")
+}
+
+model post {
+  post_id      Int            @id @default(autoincrement())
+  user_id      Int
+  event_id     Int?
+  content      String?
+  image_url    String?        @db.VarChar
+  created_at   DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?      @default(now()) @db.Timestamp(6)
+  post_comment post_comment[]
+  post_like    post_like[]
+}
+
+model post_comment {
+  comment_id         Int            @id @default(autoincrement())
+  post_id            Int
+  user_id            Int
+  parent_comment_id  Int?
+  content            String
+  created_at         DateTime?      @default(now()) @db.Timestamp(6)
+  post_comment       post_comment?  @relation("post_commentTopost_comment", fields: [parent_comment_id], references: [comment_id], onDelete: Cascade, onUpdate: NoAction)
+  other_post_comment post_comment[] @relation("post_commentTopost_comment")
+  post               post           @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model post_like {
+  post_id  Int
+  user_id  Int
+  liked_at DateTime? @default(now()) @db.Timestamp(6)
+  post     post      @relation(fields: [post_id], references: [post_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([post_id, user_id])
 }
 
 enum event_status {
@@ -118,6 +262,6 @@ enum event_status {
 
 enum user_role {
   customer
-  organizer
   admin
+  organizer
 }
