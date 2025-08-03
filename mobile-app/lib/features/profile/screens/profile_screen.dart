@@ -61,7 +61,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(result['message'] ?? 'Profile picture updated successfully!'),
+                content: Text(result['message'] ??
+                    'Profile picture updated successfully!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -70,7 +71,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(result['error'] ?? 'Failed to update profile picture'),
+                content:
+                    Text(result['error'] ?? 'Failed to update profile picture'),
                 backgroundColor: Colors.red,
               ),
             );
