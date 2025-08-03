@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../core/constants.dart';
 
 class ApiService {
@@ -357,10 +360,13 @@ class ApiService {
       // Add user ID field
       request.fields['userId'] = userId;
 
-      // Add the image file
-      request.files.add(
-        await http.MultipartFile.fromPath('profilePic', imagePath),
+      // Add the image file with explicit content type
+      final file = await http.MultipartFile.fromPath(
+        'profilePic',
+        imagePath,
+        contentType: MediaType('image', _getFileExtension(imagePath)),
       );
+      request.files.add(file);
 
       // Send the request
       var streamedResponse = await request.send();
@@ -414,15 +420,73 @@ class ApiService {
         };
       }
 
+      print('🖼️ Image picked: ${picked.path}');
+      print('🖼️ Starting image cropping...');
+
+      // Crop the image using v7.x API
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Profile Picture',
+            toolbarColor: const Color(0xFF6C5CE7),
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+            showCropGrid: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Profile Picture',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+            rotateButtonsHidden: false,
+            rotateClockwiseButtonHidden: false,
+          ),
+        ],
+      );
+
+      print(
+          '🖼️ Cropping result: ${croppedFile?.path ?? 'null - user cancelled'}');
+
+      if (croppedFile == null) {
+        return {
+          'success': false,
+          'error': 'Image cropping was cancelled',
+        };
+      }
+
       return await uploadProfilePicture(
-        imagePath: picked.path,
+        imagePath: croppedFile.path,
         userId: userId,
       );
     } catch (e) {
       return {
         'success': false,
-        'error': 'Error picking image: $e',
+        'error': 'Error picking/cropping image: $e',
       };
+    }
+  }
+
+  // Helper method to get file extension for content type
+  static String _getFileExtension(String path) {
+    final extension = path.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'jpeg';
+      case 'png':
+        return 'png';
+      case 'gif':
+        return 'gif';
+      case 'webp':
+        return 'webp';
+      case 'bmp':
+        return 'bmp';
+      default:
+        return 'jpeg'; // Default to jpeg
     }
   }
 }
