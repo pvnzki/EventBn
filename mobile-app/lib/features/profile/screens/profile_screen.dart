@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/theme_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -10,253 +12,415 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Text(
-                    'Profile',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.user;
+        
+        return Container(
+          color: theme.scaffoldBackgroundColor,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header with gradient
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.primaryColor,
+                        theme.primaryColor.withOpacity(0.8),
+                      ],
                     ),
                   ),
-                  const Spacer(),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Profile Picture and Info
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black26
-                                : Colors.grey.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor:
-                                theme.primaryColor.withValues(alpha: 0.1),
-                            child: Icon(
-                              Icons.person,
-                              size: 50,
-                              color: theme.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'John Doe',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'john.doe@example.com',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Settings Section
-                    Container(
-                      decoration: BoxDecoration(
-                        color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black26
-                                : Colors.grey.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Text(
-                              'Settings',
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Profile',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurface,
+                                color: Colors.white,
                               ),
                             ),
-                          ),
-
-                          // Theme Toggle
-                          Consumer<ThemeProvider>(
-                            builder: (context, themeProvider, child) {
-                              return _buildSettingsTile(
-                                context: context,
-                                icon:
-                                    isDark ? Icons.dark_mode : Icons.light_mode,
-                                title: 'Theme',
-                                subtitle:
-                                    'Current: ${themeProvider.currentThemeName}',
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: theme.primaryColor
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () => _showEditProfileDialog(context, user),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // Profile Picture and Info
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
-                                  child: Text(
-                                    themeProvider.currentThemeName,
-                                    style: TextStyle(
-                                      color: theme.primaryColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.white,
+                                backgroundImage: user?.profilePicture != null 
+                                  ? NetworkImage(user!.profilePicture!)
+                                  : null,
+                                child: user?.profilePicture == null 
+                                  ? Text(
+                                      user?.name.isNotEmpty == true 
+                                        ? user!.name[0].toUpperCase()
+                                        : 'U',
+                                      style: TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.primaryColor,
+                                      ),
+                                    )
+                                  : null,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user?.name ?? 'User',
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                ),
-                                onTap: () =>
-                                    _showThemeDialog(context, themeProvider),
-                              );
-                            },
-                          ),
-
-                          _buildDivider(theme),
-
-                          // Notifications
-                          _buildSettingsTile(
-                            context: context,
-                            icon: Icons.notifications_outlined,
-                            title: 'Notifications',
-                            subtitle: 'Manage your notifications',
-                            trailing: Icon(Icons.chevron_right,
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.5)),
-                            onTap: () {
-                              // TODO: Navigate to notifications settings
-                            },
-                          ),
-
-                          _buildDivider(theme),
-
-                          // Account Settings
-                          _buildSettingsTile(
-                            context: context,
-                            icon: Icons.account_circle_outlined,
-                            title: 'Account Settings',
-                            subtitle: 'Manage your account',
-                            trailing: Icon(Icons.chevron_right,
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.5)),
-                            onTap: () {
-                              // TODO: Navigate to account settings
-                            },
-                          ),
-
-                          _buildDivider(theme),
-
-                          // Privacy & Security
-                          _buildSettingsTile(
-                            context: context,
-                            icon: Icons.security_outlined,
-                            title: 'Privacy & Security',
-                            subtitle: 'Control your privacy',
-                            trailing: Icon(Icons.chevron_right,
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.5)),
-                            onTap: () {
-                              // TODO: Navigate to privacy settings
-                            },
-                          ),
-
-                          _buildDivider(theme),
-
-                          // Help & Support
-                          _buildSettingsTile(
-                            context: context,
-                            icon: Icons.help_outline,
-                            title: 'Help & Support',
-                            subtitle: 'Get help and support',
-                            trailing: Icon(Icons.chevron_right,
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.5)),
-                            onTap: () {
-                              // TODO: Navigate to help & support
-                            },
-                          ),
-
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Logout Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement logout
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user?.email ?? 'user@example.com',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                  if (user?.phoneNumber != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      user!.phoneNumber!,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Log Out',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-
-                    const SizedBox(height: 40),
-                  ],
+                  ),
                 ),
-              ),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+
+                        // Quick Stats Section
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark
+                                    ? Colors.black26
+                                    : Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStatItem(context, 'Events', '12', Icons.event),
+                              _buildStatDivider(theme),
+                              _buildStatItem(context, 'Tickets', '8', Icons.confirmation_number),
+                              _buildStatDivider(theme),
+                              _buildStatItem(context, 'Favorites', '24', Icons.favorite),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Settings Section
+                        Container(
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isDark
+                                    ? Colors.black26
+                                    : Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Text(
+                                  'Settings',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              
+                              // Theme Settings
+                              Consumer<ThemeProvider>(
+                                builder: (context, themeProvider, child) {
+                                  return _buildSettingsTile(
+                                    context: context,
+                                    icon: isDark ? Icons.dark_mode : Icons.light_mode,
+                                    title: 'Appearance',
+                                    subtitle: isDark ? 'Dark Mode' : 'Light Mode',
+                                    trailing: Switch(
+                                      value: isDark,
+                                      onChanged: (value) {
+                                        themeProvider.toggleTheme();
+                                      },
+                                      activeColor: theme.primaryColor,
+                                    ),
+                                    onTap: () => themeProvider.toggleTheme(),
+                                  );
+                                },
+                              ),
+
+                              _buildDivider(theme),
+
+                              // Account Settings
+                              _buildSettingsTile(
+                                context: context,
+                                icon: Icons.account_circle_outlined,
+                                title: 'Account Settings',
+                                subtitle: 'Manage your account details',
+                                trailing: Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5)),
+                                onTap: () {
+                                  _showEditProfileDialog(context, user);
+                                },
+                              ),
+
+                              _buildDivider(theme),
+
+                              // Notifications
+                              _buildSettingsTile(
+                                context: context,
+                                icon: Icons.notifications_outlined,
+                                title: 'Notifications',
+                                subtitle: 'Manage your notifications',
+                                trailing: Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5)),
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Notification settings coming soon!'),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              _buildDivider(theme),
+
+                              // Privacy & Security
+                              _buildSettingsTile(
+                                context: context,
+                                icon: Icons.security_outlined,
+                                title: 'Privacy & Security',
+                                subtitle: 'Control your privacy settings',
+                                trailing: Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5)),
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Privacy settings coming soon!'),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              _buildDivider(theme),
+
+                              // Help & Support
+                              _buildSettingsTile(
+                                context: context,
+                                icon: Icons.help_outline,
+                                title: 'Help & Support',
+                                subtitle: 'Get help and contact support',
+                                trailing: Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5)),
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Help & Support coming soon!'),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              _buildDivider(theme),
+
+                              // About
+                              _buildSettingsTile(
+                                context: context,
+                                icon: Icons.info_outline,
+                                title: 'About',
+                                subtitle: 'App version and information',
+                                trailing: Icon(Icons.chevron_right,
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5)),
+                                onTap: () {
+                                  _showAboutDialog(context);
+                                },
+                              ),
+
+                              const SizedBox(height: 20),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Logout Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: authProvider.isLoading 
+                              ? null
+                              : () => _showLogoutDialog(context, authProvider),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: authProvider.isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.logout, size: 20),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Sign Out',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: theme.primaryColor,
+            size: 24,
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatDivider(ThemeData theme) {
+    return Container(
+      height: 40,
+      width: 1,
+      color: theme.colorScheme.onSurface.withOpacity(0.1),
     );
   }
 
@@ -272,6 +436,7 @@ class ProfileScreen extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
@@ -279,7 +444,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: theme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -297,16 +462,15 @@ class ProfileScreen extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -321,52 +485,70 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildDivider(ThemeData theme) {
     return Divider(
-      color: theme.dividerColor.withValues(alpha: 0.3),
       height: 1,
-      indent: 20,
-      endIndent: 20,
+      color: theme.colorScheme.onSurface.withOpacity(0.1),
     );
   }
 
-  void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
+  void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
             children: [
-              _buildThemeOption(
-                context,
-                'System',
-                'Follow system setting',
-                Icons.settings,
-                ThemeMode.system,
-                themeProvider,
+              Icon(
+                Icons.logout,
+                color: Colors.red,
+                size: 24,
               ),
-              _buildThemeOption(
-                context,
-                'Light',
-                'Light theme',
-                Icons.light_mode,
-                ThemeMode.light,
-                themeProvider,
-              ),
-              _buildThemeOption(
-                context,
-                'Dark',
-                'Dark theme',
-                Icons.dark_mode,
-                ThemeMode.dark,
-                themeProvider,
-              ),
+              const SizedBox(width: 8),
+              const Text('Sign Out'),
             ],
+          ),
+          content: const Text(
+            'Are you sure you want to sign out of your account?',
+            style: TextStyle(fontSize: 16),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                print('ProfileScreen: Logout button pressed');
+                Navigator.of(context).pop();
+                print('ProfileScreen: Dialog dismissed, calling logout...');
+                await authProvider.logout();
+                print('ProfileScreen: Logout completed, checking mounted status...');
+                if (context.mounted) {
+                  print('ProfileScreen: Context mounted, navigating to login...');
+                  context.go('/login');
+                  print('ProfileScreen: Navigation to login completed');
+                } else {
+                  print('ProfileScreen: Context not mounted, cannot navigate');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Sign Out'),
             ),
           ],
         );
@@ -374,73 +556,93 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeOption(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-    ThemeMode mode,
-    ThemeProvider themeProvider,
-  ) {
+  void _showEditProfileDialog(BuildContext context, user) {
     final theme = Theme.of(context);
-    final isSelected = themeProvider.themeMode == mode;
-
-    return InkWell(
-      onTap: () {
-        themeProvider.setThemeMode(mode);
-        Navigator.of(context).pop();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.primaryColor.withValues(alpha: 0.1) : null,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected ? Border.all(color: theme.primaryColor) : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color:
-                  isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? theme.primaryColor
-                          : theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: (isSelected
-                              ? theme.primaryColor
-                              : theme.colorScheme.onSurface)
-                          .withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Edit Profile'),
+          content: const Text(
+            'Profile editing functionality coming soon!',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(color: theme.primaryColor),
               ),
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: theme.primaryColor,
-                size: 20,
-              ),
           ],
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: theme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text('About EventBn'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'EventBn - Your Event Booking Companion',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Version: 1.0.0'),
+              const SizedBox(height: 8),
+              const Text('Built with Flutter'),
+              const SizedBox(height: 12),
+              Text(
+                'Discover, book, and manage events with ease.',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(color: theme.primaryColor),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

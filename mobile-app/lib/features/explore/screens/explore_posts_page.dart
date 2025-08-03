@@ -612,39 +612,40 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
           Expanded(
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(6), // Reduced from 8 to 6
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // User info skeleton
                   Row(
                     children: [
                       _buildShimmerContainer(
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
+                        width: 18, // Reduced from 20 to 18
+                        height: 18, // Reduced from 20 to 18
+                        borderRadius: 9,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4), // Reduced from 6 to 4
                       _buildShimmerContainer(
-                        width: 80,
-                        height: 14,
+                        width: 50, // Reduced from 60 to 50
+                        height: 10, // Reduced from 12 to 10
                         borderRadius: 4,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 2), // Reduced from 4 to 2
                   // Content lines skeleton
                   _buildShimmerContainer(
-                    height: 14,
+                    height: 8, // Reduced from 10 to 8
                     borderRadius: 4,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 1), // Reduced from 2 to 1
                   _buildShimmerContainer(
-                    width: double.infinity * 0.7,
-                    height: 14,
+                    width: double.infinity * 0.5, // Reduced from 0.6 to 0.5
+                    height: 8, // Reduced from 10 to 8
                     borderRadius: 4,
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 2), // Reduced from 4 to 2
                   // Action buttons skeleton
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -652,21 +653,21 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                       Row(
                         children: [
                           _buildShimmerContainer(
-                            width: 40,
-                            height: 20,
-                            borderRadius: 10,
+                            width: 20, // Reduced from 24 to 20
+                            height: 12, // Reduced from 14 to 12
+                            borderRadius: 6,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 4), // Reduced from 6 to 4
                           _buildShimmerContainer(
-                            width: 40,
-                            height: 20,
-                            borderRadius: 10,
+                            width: 20, // Reduced from 24 to 20
+                            height: 12, // Reduced from 14 to 12
+                            borderRadius: 6,
                           ),
                         ],
                       ),
                       _buildShimmerContainer(
-                        width: 20,
-                        height: 20,
+                        width: 12, // Reduced from 14 to 12
+                        height: 12, // Reduced from 14 to 12
                         borderRadius: 4,
                       ),
                     ],
