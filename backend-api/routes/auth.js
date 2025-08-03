@@ -49,6 +49,7 @@ router.post(
           email: true,
           name: true,
           phone_number: true,
+          profile_picture: true,
           role: true,
           is_active: true,
           is_email_verified: true,
@@ -90,6 +91,17 @@ router.post(
       // Find user
       const user = await prisma.user.findUnique({
         where: { email },
+        select: {
+          user_id: true,
+          email: true,
+          name: true,
+          phone_number: true,
+          profile_picture: true,
+          role: true,
+          password_hash: true,
+          is_active: true,
+          is_email_verified: true,
+        },
       });
 
       if (!user) {
@@ -115,11 +127,14 @@ router.post(
       res.json({
         message: "Login successful",
         user: {
-          id: user.user_id,
+          user_id: user.user_id,
           email: user.email,
           name: user.name,
-          phone: user.phone_number,
+          phone_number: user.phone_number,
+          profile_picture: user.profile_picture,
           role: user.role,
+          is_active: user.is_active,
+          is_email_verified: user.is_email_verified,
         },
         token,
       });
