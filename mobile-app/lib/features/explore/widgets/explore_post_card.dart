@@ -78,7 +78,7 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
             child: CircleAvatar(
               radius: 16,
               backgroundImage: NetworkImage(widget.post.userAvatarUrl),
-              backgroundColor: colorScheme.surfaceVariant,
+              backgroundColor: colorScheme.surfaceContainerHighest,
             ),
           ),
           const SizedBox(width: 8),
@@ -209,7 +209,7 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
             }
             return Container(
               height: imageHeight,
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
@@ -373,7 +373,7 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: colorScheme.outline.withOpacity(0.2),

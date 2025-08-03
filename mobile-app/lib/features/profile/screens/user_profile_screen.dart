@@ -303,7 +303,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
@@ -325,14 +325,14 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundImage: NetworkImage(
                 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100',
               ),
             ),
             title: Text('Event ${index + 1}'),
-            subtitle: Text('Event description'),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            subtitle: const Text('Event description'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               // Navigate to event details
             },
@@ -386,7 +386,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             child: ListTile(
               leading: Icon(Icons.language, color: colorScheme.primary),
               title: Text(userData['website']),
-              trailing: Icon(Icons.open_in_new, size: 16),
+              trailing: const Icon(Icons.open_in_new, size: 16),
               onTap: () {
                 // Open website
               },
@@ -413,8 +413,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.share),
-                title: Text('Share Profile'),
+                leading: const Icon(Icons.share),
+                title: const Text('Share Profile'),
                 onTap: () {
                   Navigator.pop(context);
                   // Share profile
@@ -423,7 +423,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ListTile(
                 leading: Icon(Icons.block,
                     color: Theme.of(context).colorScheme.error),
-                title: Text('Block User'),
+                title: const Text('Block User'),
                 onTap: () {
                   Navigator.pop(context);
                   // Block user
@@ -432,7 +432,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ListTile(
                 leading: Icon(Icons.report,
                     color: Theme.of(context).colorScheme.error),
-                title: Text('Report User'),
+                title: const Text('Report User'),
                 onTap: () {
                   Navigator.pop(context);
                   // Report user

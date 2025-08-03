@@ -92,7 +92,7 @@ class AuthProvider with ChangeNotifier {
       print('========== AuthProvider: Starting Auth Check ==========');
       print('AuthProvider: Checking auth status...');
       final userData = await ApiService.getUserData();
-      
+
       if (userData != null) {
         print('AuthProvider: ✅ User data found, user is authenticated');
         print('AuthProvider: User data keys: ${userData.keys.toList()}');
@@ -105,7 +105,7 @@ class AuthProvider with ChangeNotifier {
         _user = null;
         notifyListeners();
       }
-      print('AuthProvider: Final isAuthenticated status: ${isAuthenticated}');
+      print('AuthProvider: Final isAuthenticated status: $isAuthenticated');
       print('========== AuthProvider: Auth Check Complete ==========');
     } catch (e) {
       print('========== AuthProvider: Auth Check ERROR ==========');
@@ -115,6 +115,25 @@ class AuthProvider with ChangeNotifier {
       _user = null;
       notifyListeners();
       print('========== AuthProvider: Auth Check ERROR END ==========');
+    }
+  }
+
+  // Refresh user data (e.g., after profile picture upload)
+  Future<void> refreshUserData() async {
+    try {
+      print('AuthProvider: Refreshing user data...');
+      final userData = await ApiService.getUserData();
+
+      if (userData != null) {
+        print('AuthProvider: ✅ User data refreshed successfully');
+        _user = User.fromJson(userData);
+        notifyListeners();
+      } else {
+        print('AuthProvider: ❌ Failed to refresh user data');
+      }
+    } catch (e) {
+      print('AuthProvider: Error refreshing user data: $e');
+      // Don't log out on refresh error, just log it
     }
   }
 
