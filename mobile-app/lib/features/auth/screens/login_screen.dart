@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       // Show loading state
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
