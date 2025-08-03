@@ -42,7 +42,7 @@ class _PostSearchBarState extends State<PostSearchBar> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.7),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.7),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _isSearchActive
@@ -211,7 +211,7 @@ class _PostTypeFilterBarState extends State<PostTypeFilterBar> {
           return ActionChip(
             label: Text(_getPostTypeDisplayName(postType)),
             backgroundColor:
-                isSelected ? colorScheme.primary : colorScheme.surfaceVariant,
+                isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
             labelStyle: TextStyle(
               color: isSelected
                   ? colorScheme.onPrimary

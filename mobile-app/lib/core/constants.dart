@@ -16,6 +16,8 @@ class Constants {
   static const String loginUrl = '$baseUrl$authEndpoint/login';
   static const String registerUrl = '$baseUrl$authEndpoint/register';
   static const String eventsUrl = '$baseUrl$eventsEndpoint';
+  static const String profilePicUploadUrl =
+      '$baseUrl$usersEndpoint/upload-profile-pic';
   static const String healthUrl = '$baseUrl/health';
 
   // Validation

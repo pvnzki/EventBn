@@ -24,6 +24,10 @@ app.use(cors(corsOptions));
 // Routes
 const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
+const userRoutes = require("./routes/users");
+
+// Serve static files (for uploaded images)
+app.use("/uploads", express.static("uploads"));
 
 // Basic route
 app.get("/", (req, res) => {
@@ -61,10 +65,7 @@ app.get("/health", async (req, res) => {
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
-
-app.use("/api/users", (req, res) => {
-  res.json({ message: "User routes will be implemented here" });
-});
+app.use("/api/users", userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
