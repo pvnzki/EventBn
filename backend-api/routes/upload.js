@@ -1,13 +1,15 @@
-// routes/upload.js
+//This file handles the upload of profile pictures to Cloudinary and updates the user's profile picture URL in the Supabase database.
+
+
 const express = require('express');
-const multer = require('multer');
+// const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 const router = express.Router();
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+// const storage = multer.memoryStorage();
+// const upload = multer({ storage });
 
 router.post('/upload-profile-pic', upload.single('profilePic'), async (req, res) => {
   try {
