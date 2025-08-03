@@ -1,34 +1,35 @@
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/database");
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = "uploads/profile-pictures/";
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "profile-" + uniqueSuffix + path.extname(file.originalname));
-  },
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Configure multer for memory storage (we'll upload to Cloudinary)
+const storage = multer.memoryStorage();
+
 const fileFilter = (req, file, cb) => {
+  console.log("File filter - File info:", {
+    fieldname: file.fieldname,
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    encoding: file.encoding,
+  });
+
   // Allow only image files
-  if (file.mimetype.startsWith("image/")) {
+  if (file.mimetype && file.mimetype.startsWith("image/")) {
+    console.log("File accepted:", file.originalname);
     cb(null, true);
   } else {
+    console.log("File rejected - not an image:", file.mimetype);
     cb(new Error("Only image files are allowed!"), false);
   }
 };
@@ -37,7 +38,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit (Cloudinary can handle larger files)
   },
 });
 
@@ -63,7 +64,36 @@ const authenticateToken = (req, res, next) => {
 router.post(
   "/upload-profile-pic",
   authenticateToken,
-  upload.single("profilePic"),
+  (req, res, next) => {
+    console.log("Upload request received");
+    console.log("Request headers:", req.headers);
+    console.log("Request content-type:", req.get("content-type"));
+
+    upload.single("profilePic")(req, res, (err) => {
+      if (err) {
+        console.error("Multer error:", err);
+        if (err instanceof multer.MulterError) {
+          if (err.code === "LIMIT_FILE_SIZE") {
+            return res.status(400).json({
+              success: false,
+              error: "File too large. Maximum size is 10MB.",
+            });
+          }
+          return res.status(400).json({
+            success: false,
+            error: `Upload error: ${err.message}`,
+          });
+        }
+        // Custom file filter error
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+      console.log("File upload successful, proceeding to next middleware");
+      next();
+    });
+  },
   async (req, res) => {
     try {
       if (!req.file) {
@@ -76,15 +106,38 @@ router.post(
         return res.status(400).json({ error: "User ID is required" });
       }
 
-      // Construct the file URL (you might want to use a CDN or cloud storage in production)
-      const fileUrl = `${req.protocol}://${req.get(
-        "host"
-      )}/uploads/profile-pictures/${req.file.filename}`;
+      console.log("Uploading to Cloudinary...");
+
+      // Upload to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              resource_type: "image",
+              folder: "profile-pictures",
+              public_id: `user-${userId}-${Date.now()}`,
+              transformation: [
+                { width: 400, height: 400, crop: "fill", gravity: "face" },
+                { quality: "auto", fetch_format: "auto" },
+              ],
+            },
+            (error, result) => {
+              if (error) {
+                console.error("Cloudinary upload error:", error);
+                reject(error);
+              } else {
+                console.log("Cloudinary upload successful:", result.secure_url);
+                resolve(result);
+              }
+            }
+          )
+          .end(req.file.buffer);
+      });
 
       // Update user's profile picture in database
       const updatedUser = await prisma.user.update({
         where: { user_id: parseInt(userId) },
-        data: { profile_picture: fileUrl },
+        data: { profile_picture: result.secure_url },
         select: {
           user_id: true,
           name: true,
@@ -100,20 +153,11 @@ router.post(
       res.json({
         success: true,
         message: "Profile picture uploaded successfully",
-        profilePictureUrl: fileUrl,
+        profilePictureUrl: result.secure_url,
         user: updatedUser,
       });
     } catch (error) {
       console.error("Profile picture upload error:", error);
-
-      // Delete uploaded file if database update fails
-      if (req.file && req.file.path) {
-        try {
-          fs.unlinkSync(req.file.path);
-        } catch (deleteError) {
-          console.error("Error deleting file:", deleteError);
-        }
-      }
 
       res.status(500).json({
         error: "Failed to upload profile picture",
