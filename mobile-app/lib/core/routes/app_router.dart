@@ -27,6 +27,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/explore_posts_page.dart';
+import '../../features/events/screens/events_test_screen.dart';
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -160,6 +161,13 @@ class AppRouter {
           print('🛣️ Router: Building UserProfileScreen for userId: $userId');
           return UserProfileScreen(userId: userId);
         },
+      ),
+
+      // Events Test Route (for backend testing)
+      GoRoute(
+        path: '/events-test',
+        name: 'events-test',
+        builder: (context, state) => const EventsTestScreen(),
       ),
 
       // Checkout Route
