@@ -13,7 +13,7 @@ class PostDetailScreen extends StatefulWidget {
 
   @override
   State<PostDetailScreen> createState() {
-    print('🏭 Creating PostDetailScreen state for postId: ${postId}');
+    print('🏭 Creating PostDetailScreen state for postId: $postId');
     return _PostDetailScreenState();
   }
 }
@@ -234,7 +234,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: _post!.userAvatarUrl.isNotEmpty
                   ? ClipOval(
                       child: Image.network(
@@ -514,7 +514,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event, size: 20),
+            const Icon(Icons.event, size: 20),
             const SizedBox(width: 8),
             Text(
               'Go to Event',
@@ -524,7 +524,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.arrow_forward, size: 20),
+            const Icon(Icons.arrow_forward, size: 20),
           ],
         ),
       ),
@@ -913,7 +913,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -975,9 +975,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             borderRadius: BorderRadius.circular(borderRadius),
             gradient: LinearGradient(
               colors: [
-                colorScheme.surfaceVariant.withOpacity(0.3),
-                colorScheme.surfaceVariant.withOpacity(0.1),
-                colorScheme.surfaceVariant.withOpacity(0.3),
+                colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                colorScheme.surfaceContainerHighest.withOpacity(0.1),
+                colorScheme.surfaceContainerHighest.withOpacity(0.3),
               ],
               stops: [
                 (value - 0.3).clamp(0.0, 1.0),

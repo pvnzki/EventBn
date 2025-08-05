@@ -124,7 +124,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
@@ -161,7 +161,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                             onSelected: (selected) =>
                                 _onCategoryChanged(category),
                             backgroundColor:
-                                colorScheme.surfaceVariant.withOpacity(0.3),
+                                colorScheme.surfaceContainerHighest.withOpacity(0.3),
                             selectedColor: colorScheme.primaryContainer,
                             labelStyle: TextStyle(
                               color: isSelected
@@ -316,7 +316,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
-                            color: colorScheme.surfaceVariant,
+                            color: colorScheme.surfaceContainerHighest,
                             child: Icon(
                               Icons.image_not_supported,
                               color: colorScheme.onSurfaceVariant,
@@ -699,9 +699,9 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             borderRadius: BorderRadius.circular(borderRadius),
             gradient: LinearGradient(
               colors: [
-                colorScheme.surfaceVariant.withOpacity(0.3),
-                colorScheme.surfaceVariant.withOpacity(0.1),
-                colorScheme.surfaceVariant.withOpacity(0.3),
+                colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                colorScheme.surfaceContainerHighest.withOpacity(0.1),
+                colorScheme.surfaceContainerHighest.withOpacity(0.3),
               ],
               stops: [
                 (value - 0.3).clamp(0.0, 1.0),
