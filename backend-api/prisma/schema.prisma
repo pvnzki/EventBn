@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DIRECT_URL")
+}
+
+// User model - matching existing SQL schema
+model User {
+  user_id       Int       @id @default(autoincrement()) @map("user_id")
+  name          String
+  email         String    @unique
+  password_hash String    @map("password_hash")
+  role          String    @default("customer")
+  phone_number  String?   @map("phone_number")
+  profile_picture String? @map("profile_picture")
+  is_active     Boolean?  @default(true) @map("is_active")
+  is_email_verified Boolean? @default(false) @map("is_email_verified")
+
+  // Relations
+  organizations Organization[]
+  search_logs   SearchLog[]
+
+  @@map("User")
+}
+
+// Organization model - matching existing SQL schema
+model Organization {
+  organization_id Int       @id @default(autoincrement()) @map("organization_id")
+  user_id         Int       @map("user_id")
+  name            String
+  description     String?
+  logo_url        String?   @map("logo_url")
+  contact_email   String?   @map("contact_email")
+  contact_number  String?   @map("contact_number")
+  website_url     String?   @map("website_url")
+  created_at      DateTime? @default(now()) @map("created_at")
+
+  // Relations
+  user            User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  events          Event[]
+
+  @@map("Organization")
+}
+
+// Search Log model - matching existing SQL schema
+model SearchLog {
+  log_id         Int       @id @default(autoincrement()) @map("log_id")
+  user_id        Int       @map("user_id")
+  search_query   String?   @map("search_query")
+  search_time    DateTime? @default(now()) @map("search_time")
+  filters_applied String?  @map("filters_applied")
+
+  // Relations
+  user           User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("Search_Log")
+}
+
+// Event model - matching your SQL schema exactly
+model Event {
+  event_id          Int       @id @default(autoincrement()) @map("event_id")
+  organization_id   Int?      @map("organization_id")
+  title             String
+  description       String?
+  category          String?
+  venue             String?
+  location          String?
+  start_time        DateTime  @map("start_time")
+  end_time          DateTime  @map("end_time")
+  capacity          Int?
+  status            String?   @default("draft")
+  cover_image_url   String?   @map("cover_image_url")
+  other_images_url  String?   @map("other_images_url")
+  created_at        DateTime? @default(now()) @map("created_at")
+
+  // Relations
+  organization      Organization? @relation(fields: [organization_id], references: [organization_id], onDelete: SetNull)
+
+  @@map("Event")
+}
