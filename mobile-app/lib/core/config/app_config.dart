@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   // API Configuration
   static String get baseUrl =>
-      dotenv.env['BASE_URL'] ?? 'http://localhost:3000/api';
+      dotenv.env['BASE_URL'] ?? 'http://localhost:3001/api/v1';
 
   // Stripe Configuration
   static String get stripePublishableKey =>

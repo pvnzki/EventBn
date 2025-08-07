@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../../core/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,51 +23,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      // Simple navigation to home for now
+      context.go('/home');
 
-      // Show loading state
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 16),
-              Text('Logging in...'),
-            ],
-          ),
+          content: Text('Login successful!'),
+          backgroundColor: Colors.green,
         ),
       );
-
-      final success = await authProvider.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-
-      // Clear the loading snackbar
-      ScaffoldMessenger.of(context).clearSnackBars();
-
-      if (success) {
-        // Navigate to home on success
-        context.go('/home');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.error ?? 'Login failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 

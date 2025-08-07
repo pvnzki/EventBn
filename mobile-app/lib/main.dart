@@ -5,8 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/theme_provider.dart';
-import 'core/providers/auth_provider.dart';
-import 'core/providers/event_provider.dart';
+import 'features/events/providers/event_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +21,6 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => EventProvider()),
       ],
       child: const EventBookingApp(),

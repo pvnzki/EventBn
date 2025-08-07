@@ -1,108 +1,160 @@
 import 'package:json_annotation/json_annotation.dart';
 
-// part 'event_model.g.dart';
+// Organization model to match backend response
+class Organization {
+  final int organizationId;
+  final String name;
+  final String? description;
+  final String? type;
+  final String? email;
+  final String? phone;
+  final String? address;
+  final String? website;
+  final String? logo;
+  final String? status;
+  final DateTime? createdAt;
 
-@JsonSerializable()
-class Event {
-  final String id;
-  final String title;
-  final String description;
-  final String imageUrl;
-  final String category;
-  final String venue;
-  final String address;
-  final DateTime startDateTime;
-  final DateTime endDateTime;
-  final List<TicketType> ticketTypes;
-  final String organizerId;
-  final String organizerName;
-  final int totalCapacity;
-  final int soldTickets;
-  final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  const Event({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.imageUrl,
-    required this.category,
-    required this.venue,
-    required this.address,
-    required this.startDateTime,
-    required this.endDateTime,
-    required this.ticketTypes,
-    required this.organizerId,
-    required this.organizerName,
-    required this.totalCapacity,
-    required this.soldTickets,
-    required this.isActive,
-    required this.createdAt,
-    required this.updatedAt,
+  const Organization({
+    required this.organizationId,
+    required this.name,
+    this.description,
+    this.type,
+    this.email,
+    this.phone,
+    this.address,
+    this.website,
+    this.logo,
+    this.status,
+    this.createdAt,
   });
 
-  // Temporary JSON methods
-  factory Event.fromJson(Map<String, dynamic> json) {
-    return Event(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      category: json['category'] ?? '',
-      venue: json['venue'] ?? '',
-      address: json['address'] ?? '',
-      startDateTime: json['startDateTime'] != null
-          ? DateTime.parse(json['startDateTime'])
-          : DateTime.now(),
-      endDateTime: json['endDateTime'] != null
-          ? DateTime.parse(json['endDateTime'])
-          : DateTime.now(),
-      ticketTypes: (json['ticketTypes'] as List?)
-              ?.map((e) => TicketType.fromJson(e))
-              .toList() ??
-          [],
-      organizerId: json['organizerId'] ?? '',
-      organizerName: json['organizerName'] ?? '',
-      totalCapacity: json['totalCapacity'] ?? 0,
-      soldTickets: json['soldTickets'] ?? 0,
-      isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : DateTime.now(),
+  factory Organization.fromJson(Map<String, dynamic> json) {
+    return Organization(
+      organizationId: json['organization_id'] ?? 0,
+      name: json['name'] ?? '',
+      description: json['description'],
+      type: json['type'],
+      email: json['email'],
+      phone: json['phone'],
+      address: json['address'],
+      website: json['website'],
+      logo: json['logo'],
+      status: json['status'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'organization_id': organizationId,
+      'name': name,
+      'description': description,
+      'type': type,
+      'email': email,
+      'phone': phone,
+      'address': address,
+      'website': website,
+      'logo': logo,
+      'status': status,
+      'created_at': createdAt?.toIso8601String(),
+    };
+  }
+}
+
+// part 'event_model.g.dart';
+
+@JsonSerializable()
+class Event {
+  final int eventId;
+  final int? organizationId;
+  final String title;
+  final String? description;
+  final String? category;
+  final String? venue;
+  final String? location;
+  final DateTime startTime;
+  final DateTime endTime;
+  final int? capacity;
+  final String? status;
+  final String? coverImageUrl;
+  final String? otherImagesUrl;
+  final DateTime? createdAt;
+  final Organization? organization;
+
+  const Event({
+    required this.eventId,
+    this.organizationId,
+    required this.title,
+    this.description,
+    this.category,
+    this.venue,
+    this.location,
+    required this.startTime,
+    required this.endTime,
+    this.capacity,
+    this.status,
+    this.coverImageUrl,
+    this.otherImagesUrl,
+    this.createdAt,
+    this.organization,
+  });
+
+  // Temporary JSON methods
+  factory Event.fromJson(Map<String, dynamic> json) {
+    return Event(
+      eventId: json['event_id'] ?? 0,
+      organizationId: json['organization_id'],
+      title: json['title'] ?? '',
+      description: json['description'],
+      category: json['category'],
+      venue: json['venue'],
+      location: json['location'],
+      startTime: json['start_time'] != null
+          ? DateTime.parse(json['start_time'])
+          : DateTime.now(),
+      endTime: json['end_time'] != null
+          ? DateTime.parse(json['end_time'])
+          : DateTime.now(),
+      capacity: json['capacity'],
+      status: json['status'],
+      coverImageUrl: json['cover_image_url'],
+      otherImagesUrl: json['other_images_url'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      organization: json['organization'] != null
+          ? Organization.fromJson(json['organization'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'event_id': eventId,
+      'organization_id': organizationId,
       'title': title,
       'description': description,
-      'imageUrl': imageUrl,
       'category': category,
       'venue': venue,
-      'address': address,
-      'startDateTime': startDateTime.toIso8601String(),
-      'endDateTime': endDateTime.toIso8601String(),
-      'ticketTypes': ticketTypes.map((e) => e.toJson()).toList(),
-      'organizerId': organizerId,
-      'organizerName': organizerName,
-      'totalCapacity': totalCapacity,
-      'soldTickets': soldTickets,
-      'isActive': isActive,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'location': location,
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      'capacity': capacity,
+      'status': status,
+      'cover_image_url': coverImageUrl,
+      'other_images_url': otherImagesUrl,
+      'created_at': createdAt?.toIso8601String(),
+      'organization': organization?.toJson(),
     };
   }
 
-  bool get isSoldOut => soldTickets >= totalCapacity;
-  int get availableTickets => totalCapacity - soldTickets;
-  double get cheapestPrice => ticketTypes.isEmpty
-      ? 0.0
-      : ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+  // Helper getters based on available fields
+  bool get hasCapacity => capacity != null && capacity! > 0;
+  bool get isActive => status == 'active';
+  String get organizerName => organization?.name ?? 'Unknown Organizer';
+  String get displayLocation => location ?? venue ?? 'TBD';
 }
 
 @JsonSerializable()

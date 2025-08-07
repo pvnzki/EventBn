@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'dart:math' as math;
-import '../../../core/providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -61,39 +59,13 @@ class _SplashScreenState extends State<SplashScreen>
     // Start loading animation
     _loadingController.forward();
 
-    // Check authentication status
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.checkAuthStatus();
-
-    // Navigate after checking auth
-    Future.delayed(const Duration(seconds: 1), () {
+    // Navigate to onboarding after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        _checkAuthAndNavigate();
+        print('SplashScreen: Navigating to home for testing');
+        context.go('/home');
       }
     });
-  }
-
-  void _checkAuthAndNavigate() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    print('========== SplashScreen Authentication Check ==========');
-    print('SplashScreen: Checking authentication status...');
-    print('SplashScreen: isAuthenticated: ${authProvider.isAuthenticated}');
-    print('SplashScreen: User object: ${authProvider.user}');
-    print(
-        'SplashScreen: User null check: ${authProvider.user == null ? "NULL" : "NOT NULL"}');
-
-    if (authProvider.isAuthenticated && authProvider.user != null) {
-      print('SplashScreen: ✅ User is authenticated, navigating to home');
-      print('SplashScreen: User email: ${authProvider.user!.email}');
-      context.go('/home');
-    } else {
-      print('SplashScreen: ❌ User not authenticated, navigating to login');
-      print(
-          'SplashScreen: Reason - isAuthenticated: ${authProvider.isAuthenticated}, user: ${authProvider.user}');
-      context.go('/login');
-    }
-    print('========== End Authentication Check ==========');
   }
 
   @override

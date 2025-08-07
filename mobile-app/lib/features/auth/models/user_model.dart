@@ -5,25 +5,21 @@ import 'package:json_annotation/json_annotation.dart';
 @JsonSerializable()
 class User {
   final String id;
-  final String name;
+  final String firstName;
+  final String lastName;
   final String email;
   final String? phoneNumber;
-  final String? profilePicture;
-  final String role;
-  final bool isActive;
-  final bool isEmailVerified;
+  final String? profileImageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   const User({
     required this.id,
-    required this.name,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     this.phoneNumber,
-    this.profilePicture,
-    required this.role,
-    required this.isActive,
-    required this.isEmailVerified,
+    this.profileImageUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -31,55 +27,53 @@ class User {
   // Temporary JSON methods
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['user_id']?.toString() ?? json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
+      id: json['id'] ?? '',
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
       email: json['email'] ?? '',
-      phoneNumber: json['phone_number'],
-      profilePicture: json['profile_picture'],
-      role: json['role'] ?? 'customer',
-      isActive: json['is_active'] ?? true,
-      isEmailVerified: json['is_email_verified'] ?? false,
-      createdAt: DateTime.now(), // These might not be in the response
-      updatedAt: DateTime.now(),
+      phoneNumber: json['phoneNumber'],
+      profileImageUrl: json['profileImageUrl'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'user_id': id,
-      'name': name,
+      'id': id,
+      'firstName': firstName,
+      'lastName': lastName,
       'email': email,
-      'phone_number': phoneNumber,
-      'profile_picture': profilePicture,
-      'role': role,
-      'is_active': isActive,
-      'is_email_verified': isEmailVerified,
+      'phoneNumber': phoneNumber,
+      'profileImageUrl': profileImageUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
-  String get fullName => name;
+  String get fullName => '$firstName $lastName';
 
   User copyWith({
     String? id,
-    String? name,
+    String? firstName,
+    String? lastName,
     String? email,
     String? phoneNumber,
-    String? profilePicture,
-    String? role,
-    bool? isActive,
-    bool? isEmailVerified,
+    String? profileImageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
-      name: name ?? this.name,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      profilePicture: profilePicture ?? this.profilePicture,
-      role: role ?? this.role,
-      isActive: isActive ?? this.isActive,
-      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

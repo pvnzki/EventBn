@@ -1,24 +1,10 @@
 class Constants {
-  // Base URL - Change this to your backend URL
-  static const String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
-  // static const String baseUrl = 'http://localhost:3000'; // iOS simulator
-  // static const String baseUrl = 'https://your-production-url.com'; // Production
-
   // API Endpoints
-  static const String apiPrefix = '/api';
-  static const String authEndpoint = '$apiPrefix/auth';
-  static const String eventsEndpoint = '$apiPrefix/events';
-  static const String ticketsEndpoint = '$apiPrefix/tickets';
-  static const String paymentsEndpoint = '$apiPrefix/payments';
-  static const String usersEndpoint = '$apiPrefix/users';
-
-  // Full API URLs
-  static const String loginUrl = '$baseUrl$authEndpoint/login';
-  static const String registerUrl = '$baseUrl$authEndpoint/register';
-  static const String eventsUrl = '$baseUrl$eventsEndpoint';
-  static const String profilePicUploadUrl =
-      '$baseUrl$usersEndpoint/upload-profile-pic';
-  static const String healthUrl = '$baseUrl/health';
+  static const String authEndpoint = '/auth';
+  static const String eventsEndpoint = '/events';
+  static const String ticketsEndpoint = '/tickets';
+  static const String paymentsEndpoint = '/payments';
+  static const String usersEndpoint = '/users';
 
   // Validation
   static const int minPasswordLength = 8;
