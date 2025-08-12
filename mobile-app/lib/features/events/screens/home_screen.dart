@@ -309,9 +309,9 @@ class _HomeScreenState extends State<HomeScreen> {
               return GestureDetector(
                 onTap: () {
                   log('Banner event tapped: ${index + 1}');
-                  log('Navigating to: /event/${index + 1}');
+                  log('Navigating to: /events/${index + 1}');
                   try {
-                    context.push('/event/${index + 1}');
+                    context.push('/events/${index + 1}');
                     log('Banner navigation called successfully');
                   } catch (e) {
                     log('Banner navigation error: $e');
@@ -641,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           print('Fallback event tapped: ${event.id}');
                           try {
-                            context.push('/event/${event.id}');
+                            context.push('/events/${event.id}');
                           } catch (e) {
                             print('Navigation error: $e');
                           }
@@ -782,9 +782,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 return GestureDetector(
                   onTap: () {
                     print('Real event tapped: ${event.id}');
-                    print('Navigating to: /event/${event.id}');
+                    print('Navigating to: /events/${event.id}');
                     try {
-                      context.push('/event/${event.id}');
+                      context.push('/events/${event.id}');
                       print('Navigation called successfully');
                     } catch (e) {
                       print('Navigation error: $e');

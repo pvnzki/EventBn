@@ -1,8 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
 import '../models/event_model.dart';
 import '../../../core/config/app_config.dart';
+
+// Get event attendees
+Future<List<dynamic>> getEventAttendees(String eventId) async {
+
+  final String baseUrl = AppConfig.baseUrl;
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/events/$eventId/attendees'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        return data['data'] as List<dynamic>;
+      } else {
+        throw Exception(
+            'API Error: ${data['message'] ?? 'No attendees found'}');
+      }
+    } else {
+      throw Exception('Failed to fetch attendees: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Network error: $e');
+  }
+}
 
 class EventService {
   final String baseUrl = AppConfig.baseUrl;
@@ -11,12 +35,35 @@ class EventService {
     print('🔧 EventService initialized with baseUrl: $baseUrl');
   }
 
-    // Get all events
+  // Get event attendees
+  Future<List<dynamic>> getEventAttendees(String eventId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/events/$eventId/attendees'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return data['data'] as List<dynamic>;
+        } else {
+          throw Exception(
+              'API Error: ${data['message'] ?? 'No attendees found'}');
+        }
+      } else {
+        throw Exception('Failed to fetch attendees: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Get all events
   Future<List<Event>> getAllEvents() async {
     try {
       final url = '$baseUrl/api/events';
       print('🌐 EventService: Making API call to: $url');
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -27,36 +74,40 @@ class EventService {
 
       print('📡 EventService: Response status code: ${response.statusCode}');
       print('📡 EventService: Response headers: ${response.headers}');
-      
+
       if (response.statusCode == 200) {
         print('📡 EventService: Response body: ${response.body}');
         final data = jsonDecode(response.body);
         print('📦 EventService: Decoded data: $data');
-        
+
         if (data['success'] == true) {
           final List<dynamic> eventsJson = data['data'];
           print('✅ EventService: Found ${eventsJson.length} events');
-          
+
           // Parse each event and log any parsing errors
           final List<Event> events = [];
           for (int i = 0; i < eventsJson.length; i++) {
             try {
               final event = Event.fromJson(eventsJson[i]);
               events.add(event);
-              print('✅ EventService: Successfully parsed event ${i + 1}: ${event.title}');
+              print(
+                  '✅ EventService: Successfully parsed event ${i + 1}: ${event.title}');
             } catch (parseError) {
-              print('❌ EventService: Failed to parse event ${i + 1}: $parseError');
+              print(
+                  '❌ EventService: Failed to parse event ${i + 1}: $parseError');
               print('❌ EventService: Event data: ${eventsJson[i]}');
             }
           }
-          
+
           return events;
         } else {
-          print('❌ EventService: API returned success=false: ${data['message']}');
+          print(
+              '❌ EventService: API returned success=false: ${data['message']}');
           throw Exception('API Error: ${data['message'] ?? 'Unknown error'}');
         }
       } else {
-        print('❌ EventService: HTTP error ${response.statusCode}: ${response.body}');
+        print(
+            '❌ EventService: HTTP error ${response.statusCode}: ${response.body}');
         throw Exception('Failed to fetch events: HTTP ${response.statusCode}');
       }
     } catch (e) {
@@ -106,7 +157,8 @@ class EventService {
           throw Exception('API Error: ${data['message'] ?? 'Event not found'}');
         }
       } else {
-        throw Exception('Failed to fetch event details: ${response.statusCode}');
+        throw Exception(
+            'Failed to fetch event details: ${response.statusCode}');
       }
     } catch (e) {
       print('EventService Error: $e'); // Debug log

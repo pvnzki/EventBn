@@ -70,7 +70,7 @@ class _ExploreEventCardState extends State<ExploreEventCard>
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       onTap: () {
-        context.push('/event/${widget.event.id}');
+  context.push('/events/${widget.event.id}');
       },
       child: AnimatedBuilder(
         animation: _scaleAnimation,

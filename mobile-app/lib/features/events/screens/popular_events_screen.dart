@@ -279,7 +279,7 @@ class _PopularEventsScreenState extends State<PopularEventsScreen> {
     return GestureDetector(
       onTap: () {
         // Navigate to event details
-        context.push('/event/${event['id']}');
+  context.push('/events/${event['id']}');
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

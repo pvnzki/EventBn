@@ -111,7 +111,7 @@ class AppRouter {
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
       GoRoute(
-        path: '/event/:eventId',
+        path: '/events/:eventId',
         name: 'event-details',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
