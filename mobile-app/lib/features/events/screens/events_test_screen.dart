@@ -41,7 +41,7 @@ class _EventsTestScreenState extends State<EventsTestScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline,
                     size: 64,
                     color: Colors.red,
@@ -108,11 +108,10 @@ class _EventsTestScreenState extends State<EventsTestScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            if (event.description != null)
-              Text(
-                event.description!,
-                style: const TextStyle(fontSize: 14),
-              ),
+            Text(
+              event.description!,
+              style: const TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -143,22 +142,22 @@ class _EventsTestScreenState extends State<EventsTestScreen> {
                 ),
               ],
             ),
-            if (event.category != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.category, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    event.category!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+            ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.category, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  event.category!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
+          ],
             if (event.organization != null) ...[
               const SizedBox(height: 8),
               Container(

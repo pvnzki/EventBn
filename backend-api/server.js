@@ -4,62 +4,70 @@ const express = require("express");
 const cors = require("cors");
 const prisma = require("./lib/database");
 
-// Import services
-const coreService = require("./services/core-service");
-const postService = require("./services/post-service");
-
-// Import routes
-const apiRoutes = require("./routes/api");
-
 const app = express();
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // CORS Configuration
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN?.split(",") || [
-    "http://localhost:3000",
-    "http://10.0.2.2:3000", // Android emulator
-  ],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
+let corsOptions = {};
+
+if (process.env.NODE_ENV === "development") {
+  // Development → allow all origins
+  corsOptions = { origin: true, credentials: true };
+} else {
+  // Production → only allow origins from .env
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+    : [
+        "http://localhost:3000",
+        "http://localhost:8080", // Flutter web default
+        "http://localhost:54321",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8080",
+        "http://10.0.2.2:3000", // Android emulator
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/,
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:5000",
+        "http://localhost:5173", // Vite default
+      ];
+
+  corsOptions = {
+    origin: allowedOrigins,
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  };
+}
+
 app.use(cors(corsOptions));
+
+// Routes
+const authRoutes = require("./routes/auth");
+const eventRoutes = require("./routes/events");
+const userRoutes = require("./routes/users");
+const organizationRoutes = require("./routes/organizations");
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static("uploads"));
 
-// API Routes
-app.use("/api/v1", apiRoutes);
-
-// Root route
+// Basic route
 app.get("/", (req, res) => {
   res.json({
-    message: "EventBn Backend API",
-    version: "1.0.0",
+    message: "EventBn API Server",
     environment: process.env.NODE_ENV,
-    services: {
-      "core-service": "running",
-      "post-service": "running",
-    },
-    endpoints: {
-      health: "/api/v1/health",
-      auth: "/api/v1/auth/*",
-      users: "/api/v1/users/*",
-      organizations: "/api/v1/organizations/*",
-      events: "/api/v1/events/*",
-      tickets: "/api/v1/tickets/*",
-      posts: "/api/v1/posts/*",
-    }
+    port: process.env.PORT,
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Legacy health check (keep for compatibility)
+// Health check endpoint
 app.get("/health", async (req, res) => {
   try {
-    // Test database connection
     await prisma.$queryRaw`SELECT 1`;
 
     res.json({
@@ -79,6 +87,22 @@ app.get("/health", async (req, res) => {
   }
 });
 
+// API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/organizations", organizationRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: "Something went wrong!",
+    message:
+      process.env.NODE_ENV === "Dev" ? err.message : "Internal Server Error",
+  });
+});
+
 // 404 handler
 app.use("*", (req, res) => {
   res.status(404).json({
@@ -88,97 +112,19 @@ app.use("*", (req, res) => {
   });
 });
 
-// Global error handler
-app.use((error, req, res, next) => {
-  console.error("Global error handler:", error);
-  
-  // Prisma error handling
-  if (error.code === 'P2002') {
-    return res.status(400).json({
-      error: "Duplicate entry",
-      field: error.meta?.target?.[0] || "unknown",
-    });
-  }
-  
-  if (error.code === 'P2025') {
-    return res.status(404).json({
-      error: "Record not found",
-    });
-  }
-
-  // JWT error handling
-  if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({
-      error: "Invalid token",
-    });
-  }
-
-  if (error.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      error: "Token expired",
-    });
-  }
-
-  // Default error
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'Dev' ? error.message : "Internal server error",
-  });
-});
-
-// Initialize services and start server
 const PORT = process.env.PORT || 3000;
 
-async function startServer() {
-  try {
-    // Test database connection
-    await prisma.$connect();
-    console.log("✅ Database connected successfully");
-
-    // Initialize services
-    await coreService.initialize();
-    await postService.initialize();
-    console.log("✅ All services initialized");
-
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🌐 API Base URL: http://localhost:${PORT}/api/v1`);
-      console.log(`📖 API Documentation: http://localhost:${PORT}`);
-      
-      if (process.env.NODE_ENV === 'Dev') {
-        console.log('\n🔧 Available Services:');
-        console.log('   - Core Service: Users, Organizations, Events, Tickets, Auth');
-        console.log('   - Post Service: Posts, Comments, Likes, Shares');
-        console.log('\n📋 Key Endpoints:');
-        console.log('   - Health: GET /api/v1/health');
-        console.log('   - Register: POST /api/v1/auth/register');
-        console.log('   - Login: POST /api/v1/auth/login');
-        console.log('   - Events: GET /api/v1/events');
-        console.log('   - Posts Feed: GET /api/v1/posts/feed');
-      }
-    });
-  } catch (error) {
-    console.error("❌ Failed to start server:", error);
-    process.exit(1);
-  }
-}
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🔄 Shutting down gracefully...');
-  await prisma.$disconnect();
-  console.log('✅ Database disconnected');
-  process.exit(0);
+app.listen(PORT, () => {
+  console.log(`
+\x1b[36m==============================\x1b[0m
+\x1b[35m EventBn API Server Started \x1b[0m
+\x1b[36m------------------------------\x1b[0m
+\x1b[32mEnv:\x1b[0m ${process.env.NODE_ENV || "development"}
+\x1b[32mPort:\x1b[0m ${PORT}
+\x1b[32mURL:\x1b[0m http://localhost:${PORT}
+\x1b[32mHealth:\x1b[0m /health
+\x1b[36m==============================\x1b[0m
+`);
 });
-
-process.on('SIGTERM', async () => {
-  console.log('\n� Shutting down gracefully...');
-  await prisma.$disconnect();
-  console.log('✅ Database disconnected');
-  process.exit(0);
-});
-
-startServer();
 
 module.exports = app;

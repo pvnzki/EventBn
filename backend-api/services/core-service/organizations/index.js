@@ -1,59 +1,94 @@
-// Organizations service module within core-service
+// Organizations module
 const prisma = require('../../../lib/database');
 
-class OrganizationService {
-  // Get organization by ID
+module.exports = {
+  // Get single organization by ID
   async getOrganizationById(id) {
     try {
       return await prisma.organization.findUnique({ 
-        where: { id },
+        where: { organization_id: parseInt(id) },
         include: {
-          members: {
+          user: {
             select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              avatar: true,
+              user_id: true,
+              name: true,
+              email: true
             }
           },
           events: {
             select: {
-              id: true,
+              event_id: true,
               title: true,
-              startDate: true,
-              endDate: true,
+              start_time: true,
+              end_time: true,
               status: true,
-            }
+              capacity: true
+            },
+            orderBy: { start_time: 'asc' }
+          },
+          _count: {
+            select: { events: true }
           }
         }
       });
     } catch (error) {
-      throw new Error(`Failed to get organization: ${error.message}`);
+      throw new Error(`Failed to fetch organization: ${error.message}`);
     }
-  }
+  },
+
+  // Get all organizations with optional filtering
+  async getAllOrganizations(filters = {}) {
+    try {
+      const where = {};
+      
+      if (filters.name) {
+        where.name = { contains: filters.name, mode: 'insensitive' };
+      }
+      
+      if (filters.user_id) {
+        where.user_id = parseInt(filters.user_id);
+      }
+
+      return await prisma.organization.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              name: true,
+              email: true
+            }
+          },
+          _count: {
+            select: { events: true }
+          }
+        },
+        orderBy: { created_at: 'desc' }
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch organizations: ${error.message}`);
+    }
+  },
 
   // Create new organization
-  async createOrganization(orgData, ownerId) {
+  async createOrganization(data) {
     try {
-      const { name, description, website, logo, contactEmail } = orgData;
-      
       return await prisma.organization.create({
         data: {
-          name,
-          description,
-          website,
-          logo,
-          contactEmail,
-          ownerId,
+          user_id: parseInt(data.user_id),
+          name: data.name,
+          description: data.description || null,
+          logo_url: data.logo_url || null,
+          contact_email: data.contact_email || null,
+          contact_number: data.contact_number || null,
+          website_url: data.website_url || null
         },
         include: {
-          owner: {
+          user: {
             select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+              user_id: true,
+              name: true,
+              email: true
             }
           }
         }
@@ -61,155 +96,112 @@ class OrganizationService {
     } catch (error) {
       throw new Error(`Failed to create organization: ${error.message}`);
     }
-  }
+  },
 
   // Update organization
-  async updateOrganization(id, updateData) {
+  async updateOrganization(id, data) {
     try {
+      const updateData = { ...data };
+      delete updateData.organization_id; // Remove ID from update data
+      delete updateData.created_at; // Remove created_at from update data
+
       return await prisma.organization.update({
-        where: { id },
+        where: { organization_id: parseInt(id) },
         data: updateData,
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              name: true,
+              email: true
+            }
+          },
+          _count: {
+            select: { events: true }
+          }
+        }
       });
     } catch (error) {
       throw new Error(`Failed to update organization: ${error.message}`);
     }
-  }
+  },
 
   // Delete organization
   async deleteOrganization(id) {
     try {
       return await prisma.organization.delete({
-        where: { id }
+        where: { organization_id: parseInt(id) }
       });
     } catch (error) {
       throw new Error(`Failed to delete organization: ${error.message}`);
     }
-  }
+  },
 
-  // Add member to organization
-  async addMember(orgId, userId, role = 'MEMBER') {
+  // Get organization events
+  async getOrganizationEvents(organizationId, status = null) {
     try {
-      return await prisma.organizationMember.create({
-        data: {
-          organizationId: orgId,
-          userId,
-          role,
+      const where = { organization_id: parseInt(organizationId) };
+      if (status) where.status = status;
+
+      return await prisma.event.findMany({
+        where,
+        include: {
+          organization: {
+            select: {
+              organization_id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { start_time: 'asc' }
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch organization events: ${error.message}`);
+    }
+  },
+
+  // Search organizations
+  async searchOrganizations(query) {
+    try {
+      return await prisma.organization.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } }
+          ]
         },
         include: {
           user: {
             select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              avatar: true,
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to add member: ${error.message}`);
-    }
-  }
-
-  // Remove member from organization
-  async removeMember(orgId, userId) {
-    try {
-      return await prisma.organizationMember.deleteMany({
-        where: {
-          organizationId: orgId,
-          userId,
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to remove member: ${error.message}`);
-    }
-  }
-
-  // Get organization members
-  async getOrganizationMembers(orgId) {
-    try {
-      return await prisma.organizationMember.findMany({
-        where: { organizationId: orgId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              avatar: true,
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to get organization members: ${error.message}`);
-    }
-  }
-
-  // Get user's organizations
-  async getUserOrganizations(userId) {
-    try {
-      return await prisma.organizationMember.findMany({
-        where: { userId },
-        include: {
-          organization: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              logo: true,
-              createdAt: true,
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to get user organizations: ${error.message}`);
-    }
-  }
-
-  // Get all organizations (with pagination)
-  async getAllOrganizations(page = 1, limit = 10) {
-    try {
-      const skip = (page - 1) * limit;
-      
-      const [organizations, total] = await Promise.all([
-        prisma.organization.findMany({
-          skip,
-          take: limit,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            logo: true,
-            website: true,
-            createdAt: true,
-            _count: {
-              select: {
-                members: true,
-                events: true,
-              }
+              user_id: true,
+              name: true
             }
           },
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.organization.count()
-      ]);
-
-      return {
-        organizations,
-        pagination: {
-          current: page,
-          total: Math.ceil(total / limit),
-          count: total
-        }
-      };
+          _count: {
+            select: { events: true }
+          }
+        },
+        orderBy: { created_at: 'desc' }
+      });
     } catch (error) {
-      throw new Error(`Failed to get organizations: ${error.message}`);
+      throw new Error(`Failed to search organizations: ${error.message}`);
+    }
+  },
+
+  // Get organizations by user
+  async getOrganizationsByUser(userId) {
+    try {
+      return await prisma.organization.findMany({
+        where: { user_id: parseInt(userId) },
+        include: {
+          _count: {
+            select: { events: true }
+          }
+        },
+        orderBy: { created_at: 'desc' }
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch user organizations: ${error.message}`);
     }
   }
-}
-
-module.exports = new OrganizationService();
+};

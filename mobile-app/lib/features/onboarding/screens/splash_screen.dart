@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'dart:math' as math;
+
+import '../../auth/providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -54,16 +57,26 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startAnimations() async {
     // Start logo animation
+    // Start animations
     await _logoController.forward();
 
     // Start loading animation
     _loadingController.forward();
 
-    // Navigate to onboarding after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    // Initialize auth and navigate after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () async {
       if (mounted) {
-        print('SplashScreen: Navigating to home for testing');
-        context.go('/home');
+        print('SplashScreen: Checking authentication status');
+        final authProvider = context.read<AuthProvider>();
+        await authProvider.initializeAuth();
+        
+        if (authProvider.isAuthenticated) {
+          print('SplashScreen: User is authenticated, navigating to home');
+          context.go('/home');
+        } else {
+          print('SplashScreen: User is not authenticated, navigating to login');
+          context.go('/login');
+        }
       }
     });
   }
