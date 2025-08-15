@@ -128,7 +128,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
 
   Widget _buildSliverAppBar(ThemeData theme) {
     return SliverAppBar(
-  expandedHeight: 50,
+      expandedHeight: 50,
       pinned: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       leading: Container(
@@ -194,7 +194,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (organizationData?['website_url'] != null && organizationData?['website_url'] != '')
+                if (organizationData?['website_url'] != null &&
+                    organizationData?['website_url'] != '')
                   Text(
                     organizationData?['website_url'] ?? '',
                     style: TextStyle(
@@ -204,19 +205,22 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
                     ),
                   ),
                 const SizedBox(height: 8),
-                if (organizationData?['contact_email'] != null && organizationData?['contact_email'] != '')
+                if (organizationData?['contact_email'] != null &&
+                    organizationData?['contact_email'] != '')
                   Row(
                     children: [
                       Icon(
                         Icons.email,
                         size: 16,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         organizationData?['contact_email'] ?? '',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                           fontSize: 12,
                         ),
                       ),

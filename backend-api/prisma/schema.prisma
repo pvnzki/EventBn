@@ -64,6 +64,7 @@ model Event {
   capacity          Int?
   cover_image_url   String?
   other_images_url  String?
+  video_url         String?
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now()) @updatedAt
   status            String   @default("ACTIVE")

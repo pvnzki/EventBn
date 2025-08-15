@@ -16,7 +16,6 @@ module.exports = {
               contact_email: true,
             },
           },
-          // creator relation removed, not present in DB
         },
       });
     } catch (error) {
@@ -63,7 +62,6 @@ module.exports = {
               logo_url: true,
             },
           },
-          // creator relation removed, not present in DB
         },
         orderBy: { start_time: "asc" },
       });
@@ -80,7 +78,6 @@ module.exports = {
           organization_id: data.organization_id
             ? parseInt(data.organization_id)
             : null,
-          // creator_id removed, not present in DB
           title: data.title,
           description: data.description || null,
           category: data.category || null,
@@ -91,6 +88,7 @@ module.exports = {
           capacity: data.capacity ? parseInt(data.capacity) : null,
           cover_image_url: data.cover_image_url || null,
           other_images_url: data.other_images_url || null,
+          video_url: data.video_url || null,
           status: data.status || "ACTIVE",
         },
         include: {
@@ -101,7 +99,6 @@ module.exports = {
               logo_url: true,
             },
           },
-          // creator relation removed, not present in DB
         },
       });
     } catch (error) {
@@ -128,9 +125,13 @@ module.exports = {
       if (updateData.organization_id) {
         updateData.organization_id = parseInt(updateData.organization_id);
       }
-      // creator_id update removed, not present in DB
       if (updateData.capacity) {
         updateData.capacity = parseInt(updateData.capacity);
+      }
+
+      // Ensure video_url is present
+      if (!("video_url" in updateData)) {
+        updateData.video_url = null;
       }
 
       return await prisma.event.update({
@@ -144,7 +145,6 @@ module.exports = {
               logo_url: true,
             },
           },
-          // creator relation removed, not present in DB
         },
       });
     } catch (error) {

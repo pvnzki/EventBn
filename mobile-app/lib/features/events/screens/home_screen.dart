@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'dart:developer';
 
 import '../providers/event_provider.dart';
-import '../models/event_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +16,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
-
 
   @override
   void initState() {
@@ -457,7 +455,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.1),
@@ -466,7 +465,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                        const Icon(Icons.warning_amber,
+                            color: Colors.orange, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -492,7 +492,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         TextButton(
                           onPressed: () => eventProvider.fetchEvents(),
-                          child: const Text('Retry', style: TextStyle(fontSize: 12)),
+                          child: const Text('Retry',
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -514,7 +515,8 @@ class _HomeScreenState extends State<HomeScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: eventProvider.events.length.clamp(0, 5), // Show max 5 events on home
+              itemCount: eventProvider.events.length
+                  .clamp(0, 5), // Show max 5 events on home
               itemBuilder: (context, index) {
                 final event = eventProvider.events[index];
                 return GestureDetector(
@@ -536,13 +538,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                       border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                          color:
+                              theme.colorScheme.outline.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
@@ -554,16 +558,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(12),
                             image: event.imageUrl.isNotEmpty
                                 ? DecorationImage(
-                                    image: CachedNetworkImageProvider(event.imageUrl),
+                                    image: CachedNetworkImageProvider(
+                                        event.imageUrl),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
-                            color: event.imageUrl.isEmpty ? theme.colorScheme.outline.withOpacity(0.3) : null,
+                            color: event.imageUrl.isEmpty
+                                ? theme.colorScheme.outline.withOpacity(0.3)
+                                : null,
                           ),
                           child: event.imageUrl.isEmpty
                               ? Icon(
                                   Icons.event,
-                                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5),
                                   size: 32,
                                 )
                               : null,
@@ -589,7 +597,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 '${event.startDateTime.month}/${event.startDateTime.day}/${event.startDateTime.year} • ${event.startDateTime.hour}:${event.startDateTime.minute.toString().padLeft(2, '0')}',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -598,15 +607,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.location_on,
                                     size: 16,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      event.address.isNotEmpty ? event.address : event.venue,
+                                      event.address.isNotEmpty
+                                          ? event.address
+                                          : event.venue,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.7),
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -617,7 +630,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (event.category.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: theme.primaryColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
