@@ -1,92 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class OrganizerProfileScreen extends StatefulWidget {
-  final String organizerId;
+class OrganizationProfileScreen extends StatefulWidget {
+  final String organizationId;
 
-  const OrganizerProfileScreen({super.key, required this.organizerId});
+  const OrganizationProfileScreen({super.key, required this.organizationId});
 
   @override
-  State<OrganizerProfileScreen> createState() => _OrganizerProfileScreenState();
+  State<OrganizationProfileScreen> createState() =>
+      _OrganizationProfileScreenState();
 }
 
-class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
+class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool isFollowing = false;
 
-  final Map<String, dynamic> organizerData = {
-    'name': 'World of Music',
-    'username': '@worldofmusic',
-    'avatar':
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200',
-    'coverImage':
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-    'bio':
-        'Leading music event organizer bringing you the best concerts and festivals worldwide. Follow for exclusive events and early bird tickets.',
-    'events': 24,
-    'followers': '967K',
-    'following': 20,
-    'website': 'worldofmusic.com',
-    'location': 'New York, USA',
-    'joinDate': 'Jan 2020',
-  };
+  bool isLoading = true;
+  bool hasError = false;
+  String errorMessage = '';
+  Map<String, dynamic>? organizationData;
+  List<dynamic> upcomingEvents = [];
+  List<dynamic> pastEvents = [];
 
-  final List<Map<String, dynamic>> upcomingEvents = [
-    {
-      'title': 'National Music Festival',
-      'date': 'Dec 23, 2024',
-      'location': 'Madison Square Garden',
-      'image':
-          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300',
-      'attendees': '20K+',
-      'price': 'FROM \$25',
-    },
-    {
-      'title': 'Jazz Night Live',
-      'date': 'Dec 30, 2024',
-      'location': 'Blue Note Jazz Club',
-      'image':
-          'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300',
-      'attendees': '500+',
-      'price': 'FROM \$15',
-    },
-    {
-      'title': 'Electronic Dreams',
-      'date': 'Jan 15, 2025',
-      'location': 'Warehouse District',
-      'image':
-          'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300',
-      'attendees': '5K+',
-      'price': 'FROM \$35',
-    },
-  ];
-
-  final List<Map<String, dynamic>> pastEvents = [
-    {
-      'title': 'Summer Music Fest 2024',
-      'date': 'Jul 15, 2024',
-      'location': 'Central Park',
-      'image':
-          'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300',
-      'attendees': '50K+',
-      'rating': 4.8,
-    },
-    {
-      'title': 'Rock Concert Series',
-      'date': 'May 20, 2024',
-      'location': 'Madison Square Garden',
-      'image':
-          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300',
-      'attendees': '15K+',
-      'rating': 4.9,
-    },
-  ];
+  Future<void> fetchOrganizationData() async {
+    setState(() {
+      isLoading = true;
+      hasError = false;
+      errorMessage = '';
+    });
+    try {
+      final baseUrl = dotenv.env['BASE_URL'] ?? '';
+      final url = '$baseUrl/api/organizations/${widget.organizationId}';
+      final response = await http.get(Uri.parse(url));
+      print('API Request: GET $url');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          organizationData = data;
+          upcomingEvents = data['upcomingEvents'] ?? [];
+          pastEvents = data['pastEvents'] ?? [];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          hasError = true;
+          errorMessage =
+              'Failed to load organization data. Status: ${response.statusCode}\nBody: ${response.body}';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('API Error: $e');
+      setState(() {
+        hasError = true;
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    fetchOrganizationData();
   }
 
   @override
@@ -99,6 +82,26 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Organization Profile')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Organization Profile')),
+        body: Center(child: Text('Error: $errorMessage')),
+      );
+    }
+    if (organizationData == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Organization Profile')),
+        body: const Center(child: Text('No data found.')),
+      );
+    }
+
+    // Use organizationData and event lists below
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
@@ -108,6 +111,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Pass organizationData to your widgets
                 _buildProfileHeader(theme),
                 _buildActionButtons(theme),
                 _buildStatsRow(theme),
@@ -156,7 +160,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
           fit: StackFit.expand,
           children: [
             Image.network(
-              organizerData['coverImage'],
+              organizationData?['coverImage'] ?? '',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 color: theme.colorScheme.surface,
@@ -191,7 +195,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(organizerData['avatar']),
+            backgroundImage: NetworkImage(organizationData?['avatar'] ?? ''),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -199,7 +203,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  organizerData['name'],
+                  organizationData?['name'] ?? '',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: 22,
@@ -207,7 +211,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
                   ),
                 ),
                 Text(
-                  organizerData['username'],
+                  organizationData?['username'] ?? '',
                   style: TextStyle(
                     color: theme.primaryColor,
                     fontSize: 14,
@@ -224,7 +228,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      organizerData['location'],
+                      organizationData?['location'] ?? '',
                       style: TextStyle(
                         color:
                             theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -296,10 +300,12 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('Events', organizerData['events'].toString(), theme),
-          _buildStatItem('Followers', organizerData['followers'], theme),
           _buildStatItem(
-              'Following', organizerData['following'].toString(), theme),
+              'Events', organizationData?['events']?.toString() ?? '0', theme),
+          _buildStatItem(
+              'Followers', organizationData?['followers'] ?? '0', theme),
+          _buildStatItem('Following',
+              organizationData?['following']?.toString() ?? '0', theme),
         ],
       ),
     );
@@ -335,7 +341,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            organizerData['bio'],
+            organizationData?['bio'] ?? '',
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               fontSize: 14,
@@ -352,7 +358,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
               ),
               const SizedBox(width: 4),
               Text(
-                organizerData['website'],
+                organizationData?['website'] ?? '',
                 style: TextStyle(
                   color: theme.primaryColor,
                   fontSize: 14,
@@ -361,7 +367,7 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
               ),
               const Spacer(),
               Text(
-                'Joined ${organizerData['joinDate']}',
+                'Joined ${organizationData?['joinDate'] ?? ''}',
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize: 12,

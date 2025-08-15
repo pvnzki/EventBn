@@ -1,395 +1,235 @@
-// Tickets service module within core-service
+// Search Logs module
 const prisma = require('../../../lib/database');
 
-class TicketService {
-  // Get ticket by ID
-  async getTicketById(id) {
+module.exports = {
+  // Create new search log
+  async createSearchLog(data) {
     try {
-      return await prisma.ticket.findUnique({ 
-        where: { id },
-        include: {
-          event: {
-            select: {
-              id: true,
-              title: true,
-              startDate: true,
-              endDate: true,
-              location: true,
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to get ticket: ${error.message}`);
-    }
-  }
-
-  // Create new ticket type for event
-  async createTicket(ticketData) {
-    try {
-      const { 
-        eventId, type, name, description, price, 
-        quantity, available, saleStartDate, saleEndDate,
-        maxPerUser, isTransferable, benefits 
-      } = ticketData;
-      
-      return await prisma.ticket.create({
+      return await prisma.search_Log.create({
         data: {
-          eventId,
-          type,
-          name,
-          description,
-          price,
-          quantity,
-          available: available || quantity,
-          saleStartDate: saleStartDate ? new Date(saleStartDate) : new Date(),
-          saleEndDate: saleEndDate ? new Date(saleEndDate) : null,
-          maxPerUser: maxPerUser || 10,
-          isTransferable: isTransferable || true,
-          benefits: benefits || [],
+          user_id: data.user_id ? parseInt(data.user_id) : null,
+          search_query: data.search_query,
+          search_time: data.search_time ? new Date(data.search_time) : new Date(),
+          filters_applied: data.filters_applied || null
         },
         include: {
-          event: {
-            select: {
-              id: true,
-              title: true,
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to create ticket: ${error.message}`);
-    }
-  }
-
-  // Update ticket
-  async updateTicket(id, updateData) {
-    try {
-      return await prisma.ticket.update({
-        where: { id },
-        data: {
-          ...updateData,
-          updatedAt: new Date(),
-        },
-      });
-    } catch (error) {
-      throw new Error(`Failed to update ticket: ${error.message}`);
-    }
-  }
-
-  // Delete ticket
-  async deleteTicket(id) {
-    try {
-      return await prisma.ticket.delete({
-        where: { id }
-      });
-    } catch (error) {
-      throw new Error(`Failed to delete ticket: ${error.message}`);
-    }
-  }
-
-  // Get tickets for an event
-  async getEventTickets(eventId) {
-    try {
-      return await prisma.ticket.findMany({
-        where: { eventId },
-        orderBy: { price: 'asc' }
-      });
-    } catch (error) {
-      throw new Error(`Failed to get event tickets: ${error.message}`);
-    }
-  }
-
-  // Purchase tickets
-  async purchaseTickets(ticketPurchaseData) {
-    try {
-      const { ticketId, userId, quantity, paymentDetails } = ticketPurchaseData;
-
-      // Get ticket information
-      const ticket = await this.getTicketById(ticketId);
-      if (!ticket) {
-        throw new Error('Ticket not found');
-      }
-
-      // Check availability
-      if (ticket.available < quantity) {
-        throw new Error('Not enough tickets available');
-      }
-
-      // Check sale period
-      const now = new Date();
-      if (ticket.saleStartDate && now < ticket.saleStartDate) {
-        throw new Error('Ticket sale has not started yet');
-      }
-      if (ticket.saleEndDate && now > ticket.saleEndDate) {
-        throw new Error('Ticket sale has ended');
-      }
-
-      // Check max per user limit
-      const userTickets = await prisma.ticketPurchase.count({
-        where: {
-          ticketId,
-          userId,
-        }
-      });
-
-      if (userTickets + quantity > ticket.maxPerUser) {
-        throw new Error(`Maximum ${ticket.maxPerUser} tickets allowed per user`);
-      }
-
-      const totalAmount = ticket.price * quantity;
-
-      // Create ticket purchase transaction
-      return await prisma.$transaction(async (tx) => {
-        // Create purchase record
-        const purchase = await tx.ticketPurchase.create({
-          data: {
-            ticketId,
-            userId,
-            quantity,
-            totalAmount,
-            paymentStatus: 'PENDING',
-            paymentDetails,
-            purchaseDate: new Date(),
-          },
-        });
-
-        // Update ticket availability
-        await tx.ticket.update({
-          where: { id: ticketId },
-          data: {
-            available: {
-              decrement: quantity,
-            }
-          }
-        });
-
-        // Generate ticket codes for each purchased ticket
-        const ticketCodes = [];
-        for (let i = 0; i < quantity; i++) {
-          const ticketCode = await tx.userTicket.create({
-            data: {
-              purchaseId: purchase.id,
-              userId,
-              ticketId,
-              eventId: ticket.eventId,
-              code: this.generateTicketCode(),
-              status: 'ACTIVE',
-            }
-          });
-          ticketCodes.push(ticketCode);
-        }
-
-        return {
-          purchase,
-          ticketCodes,
-        };
-      });
-    } catch (error) {
-      throw new Error(`Failed to purchase tickets: ${error.message}`);
-    }
-  }
-
-  // Confirm payment and activate tickets
-  async confirmPayment(purchaseId, paymentConfirmation) {
-    try {
-      return await prisma.$transaction(async (tx) => {
-        // Update purchase status
-        const purchase = await tx.ticketPurchase.update({
-          where: { id: purchaseId },
-          data: {
-            paymentStatus: 'COMPLETED',
-            paymentConfirmation,
-          }
-        });
-
-        // Activate all tickets for this purchase
-        await tx.userTicket.updateMany({
-          where: { purchaseId },
-          data: {
-            status: 'ACTIVE',
-          }
-        });
-
-        return purchase;
-      });
-    } catch (error) {
-      throw new Error(`Failed to confirm payment: ${error.message}`);
-    }
-  }
-
-  // Get user's tickets
-  async getUserTickets(userId, status = 'ACTIVE') {
-    try {
-      return await prisma.userTicket.findMany({
-        where: { 
-          userId,
-          ...(status && { status })
-        },
-        include: {
-          ticket: {
-            include: {
-              event: {
-                select: {
-                  id: true,
-                  title: true,
-                  startDate: true,
-                  endDate: true,
-                  location: true,
-                  imageUrl: true,
-                }
-              }
-            }
-          },
-          purchase: {
-            select: {
-              id: true,
-              purchaseDate: true,
-              totalAmount: true,
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      });
-    } catch (error) {
-      throw new Error(`Failed to get user tickets: ${error.message}`);
-    }
-  }
-
-  // Validate ticket code
-  async validateTicket(code) {
-    try {
-      const ticket = await prisma.userTicket.findUnique({
-        where: { code },
-        include: {
-          ticket: {
-            include: {
-              event: {
-                select: {
-                  id: true,
-                  title: true,
-                  startDate: true,
-                  endDate: true,
-                  location: true,
-                }
-              }
-            }
-          },
           user: {
             select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+              user_id: true,
+              name: true
             }
           }
         }
       });
-
-      if (!ticket) {
-        throw new Error('Invalid ticket code');
-      }
-
-      if (ticket.status !== 'ACTIVE') {
-        throw new Error(`Ticket is ${ticket.status.toLowerCase()}`);
-      }
-
-      return ticket;
     } catch (error) {
-      throw new Error(`Failed to validate ticket: ${error.message}`);
+      throw new Error(`Failed to create search log: ${error.message}`);
     }
-  }
+  },
 
-  // Use ticket (mark as used)
-  async useTicket(code) {
+  // Get all search logs with optional filtering
+  async getAllSearchLogs(filters = {}) {
     try {
-      return await prisma.userTicket.update({
-        where: { code },
-        data: {
-          status: 'USED',
-          usedAt: new Date(),
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to use ticket: ${error.message}`);
-    }
-  }
-
-  // Transfer ticket to another user
-  async transferTicket(code, newUserId) {
-    try {
-      const ticket = await this.validateTicket(code);
+      const where = {};
       
-      if (!ticket.ticket.isTransferable) {
-        throw new Error('This ticket is not transferable');
+      if (filters.user_id) {
+        where.user_id = parseInt(filters.user_id);
+      }
+      
+      if (filters.search_query) {
+        where.search_query = { contains: filters.search_query, mode: 'insensitive' };
+      }
+      
+      if (filters.start_date) {
+        where.search_time = { gte: new Date(filters.start_date) };
+      }
+      
+      if (filters.end_date) {
+        where.search_time = { 
+          ...where.search_time,
+          lte: new Date(filters.end_date) 
+        };
       }
 
-      return await prisma.userTicket.update({
-        where: { code },
-        data: {
-          userId: newUserId,
-          transferredAt: new Date(),
-        }
+      return await prisma.search_Log.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { search_time: 'desc' }
       });
     } catch (error) {
-      throw new Error(`Failed to transfer ticket: ${error.message}`);
+      throw new Error(`Failed to fetch search logs: ${error.message}`);
     }
-  }
+  },
 
-  // Generate unique ticket code
-  generateTicketCode() {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substr(2, 5);
-    return `TIX-${timestamp}-${random}`.toUpperCase();
-  }
-
-  // Get ticket sales analytics for an event
-  async getTicketSalesAnalytics(eventId) {
+  // Get search log by ID
+  async getSearchLogById(id) {
     try {
-      const tickets = await prisma.ticket.findMany({
-        where: { eventId },
+      return await prisma.search_Log.findUnique({
+        where: { log_id: parseInt(id) },
         include: {
-          _count: {
+          user: {
             select: {
-              purchases: true,
+              user_id: true,
+              name: true,
+              email: true
             }
           }
         }
       });
+    } catch (error) {
+      throw new Error(`Failed to fetch search log: ${error.message}`);
+    }
+  },
 
-      const totalRevenue = await prisma.ticketPurchase.aggregate({
+  // Get user's search history
+  async getUserSearchHistory(userId, limit = 50) {
+    try {
+      return await prisma.search_Log.findMany({
+        where: { user_id: parseInt(userId) },
+        orderBy: { search_time: 'desc' },
+        take: limit
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch user search history: ${error.message}`);
+    }
+  },
+
+  // Get popular search queries
+  async getPopularSearchQueries(limit = 10, days = 30) {
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const result = await prisma.search_Log.groupBy({
+        by: ['search_query'],
         where: {
-          ticket: {
-            eventId,
-          },
-          paymentStatus: 'COMPLETED',
+          search_time: { gte: startDate }
         },
-        _sum: {
-          totalAmount: true,
+        _count: {
+          search_query: true
+        },
+        orderBy: {
+          _count: {
+            search_query: 'desc'
+          }
+        },
+        take: limit
+      });
+
+      return result.map(item => ({
+        query: item.search_query,
+        count: item._count.search_query
+      }));
+    } catch (error) {
+      throw new Error(`Failed to fetch popular search queries: ${error.message}`);
+    }
+  },
+
+  // Get search analytics
+  async getSearchAnalytics(days = 30) {
+    try {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const totalSearches = await prisma.search_Log.count({
+        where: {
+          search_time: { gte: startDate }
         }
       });
 
-      const totalSold = await prisma.userTicket.count({
+      const uniqueUsers = await prisma.search_Log.findMany({
         where: {
-          ticket: {
-            eventId,
-          },
-          status: {
-            in: ['ACTIVE', 'USED'],
-          }
+          search_time: { gte: startDate },
+          user_id: { not: null }
+        },
+        distinct: ['user_id'],
+        select: { user_id: true }
+      });
+
+      const searchesByDay = await prisma.search_Log.groupBy({
+        by: ['search_time'],
+        where: {
+          search_time: { gte: startDate }
+        },
+        _count: {
+          log_id: true
         }
       });
 
       return {
-        tickets,
-        totalRevenue: totalRevenue._sum.totalAmount || 0,
-        totalSold,
-        totalCapacity: tickets.reduce((sum, ticket) => sum + ticket.quantity, 0),
+        totalSearches,
+        uniqueUsers: uniqueUsers.length,
+        searchesByDay: searchesByDay.map(item => ({
+          date: item.search_time,
+          count: item._count.log_id
+        }))
       };
     } catch (error) {
-      throw new Error(`Failed to get ticket analytics: ${error.message}`);
+      throw new Error(`Failed to fetch search analytics: ${error.message}`);
+    }
+  },
+
+  // Delete old search logs
+  async cleanupOldSearchLogs(daysToKeep = 90) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const result = await prisma.search_Log.deleteMany({
+        where: {
+          search_time: { lt: cutoffDate }
+        }
+      });
+
+      return { deletedCount: result.count };
+    } catch (error) {
+      throw new Error(`Failed to cleanup old search logs: ${error.message}`);
+    }
+  },
+
+  // Update search log
+  async updateSearchLog(id, data) {
+    try {
+      const updateData = { ...data };
+      delete updateData.log_id;
+      delete updateData.search_time;
+      
+      if (updateData.user_id) {
+        updateData.user_id = parseInt(updateData.user_id);
+      }
+
+      return await prisma.search_Log.update({
+        where: { log_id: parseInt(id) },
+        data: updateData,
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              name: true
+            }
+          }
+        }
+      });
+    } catch (error) {
+      throw new Error(`Failed to update search log: ${error.message}`);
+    }
+  },
+
+  // Delete search log
+  async deleteSearchLog(id) {
+    try {
+      return await prisma.search_Log.delete({
+        where: { log_id: parseInt(id) }
+      });
+    } catch (error) {
+      throw new Error(`Failed to delete search log: ${error.message}`);
     }
   }
-}
-
-module.exports = new TicketService();
+};

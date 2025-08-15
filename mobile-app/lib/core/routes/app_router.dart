@@ -18,7 +18,7 @@ import '../../features/auth/screens/create_new_password_screen.dart';
 import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/event_attendees_screen.dart';
-import '../../features/events/screens/organizer_profile_screen.dart';
+import '../../features/events/screens/organization_profile_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/popular_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
@@ -27,7 +27,6 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/explore_posts_page.dart';
-import '../../features/events/screens/events_test_screen.dart';
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -112,7 +111,7 @@ class AppRouter {
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
       GoRoute(
-        path: '/event/:eventId',
+        path: '/events/:eventId',
         name: 'event-details',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
@@ -131,13 +130,14 @@ class AppRouter {
         },
       ),
 
+
       // Organizer Profile Route
       GoRoute(
-        path: '/organizer/:organizerId',
-        name: 'organizer-profile',
+        path: '/organization/:organizationId',
+        name: 'organization-profile',
         builder: (context, state) {
-          final organizerId = state.pathParameters['organizerId']!;
-          return OrganizerProfileScreen(organizerId: organizerId);
+          final organizationId = state.pathParameters['organizationId']!;
+          return OrganizationProfileScreen(organizationId: organizationId);
         },
       ),
 
@@ -161,13 +161,6 @@ class AppRouter {
           print('🛣️ Router: Building UserProfileScreen for userId: $userId');
           return UserProfileScreen(userId: userId);
         },
-      ),
-
-      // Events Test Route (for backend testing)
-      GoRoute(
-        path: '/events-test',
-        name: 'events-test',
-        builder: (context, state) => const EventsTestScreen(),
       ),
 
       // Checkout Route

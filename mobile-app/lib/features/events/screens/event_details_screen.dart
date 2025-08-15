@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../models/event_model.dart';
+import '../services/event_service.dart';
+import '../providers/event_provider.dart';
+import 'package:provider/provider.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -12,80 +16,93 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch event details using Provider
+    Future.microtask(() {
+      Provider.of<EventProvider>(context, listen: false)
+          .fetchEventById(widget.eventId);
+      _fetchAttendees();
+    });
+  }
+
+  // Attendees are still fetched locally
+  List<dynamic> attendees = [];
+  final EventService _eventService = EventService();
+
+  Future<void> _fetchAttendees() async {
+    try {
+      final response = await _eventService.getEventAttendees(widget.eventId);
+      setState(() {
+        attendees = response;
+      });
+    } catch (e) {
+      // Optionally handle attendee fetch error
+    }
+  }
+
   bool isBookmarked = false;
   bool isFollowing = false;
   bool isAboutExpanded = false;
 
-  @override
-  void initState() {
-    super.initState();
-    print('EventDetailsScreen initialized with eventId: ${widget.eventId}');
+  String _formatDate(DateTime date) {
+    // Example: Dec 23, 2024
+    return '${_monthName(date.month)} ${date.day}, ${date.year}';
   }
 
-  // Mock event data
-  final Map<String, dynamic> eventData = {
-    'title': 'National Music Festival',
-    'heroImage':
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-    'category': 'Music',
-    'attendeeCount': '20,000+',
-    'organizer': {
-      'name': 'World of Music',
-      'role': 'Organizer',
-      'avatar':
-          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100',
-      'events': 24,
-      'followers': '967K',
-      'following': 20,
-    },
-    'about':
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-    'gallery': [
-      'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200',
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=200',
-      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200',
-    ],
-    'location': {
-      'address': 'Grand City St. 100, New York, United States',
-      'venue': 'Madison Square Garden',
-    },
-    'date': 'Dec 23, 2024',
-    'time': '19:00 - 23:00 PM',
-    'price': 'FROM \$25',
-  };
+  String _formatTime(DateTime start, DateTime end) {
+    // Example: 19:00 - 23:00 PM
+    String startStr =
+        '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+    String endStr =
+        '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
+    return '$startStr - $endStr';
+  }
 
-  final List<Map<String, dynamic>> attendees = [
-    {
-      'name': 'Leatrice Handler',
-      'avatar': 'https://i.pravatar.cc/100?img=1',
-      'isFollowing': false
-    },
-    {
-      'name': 'Tanner Stafford',
-      'avatar': 'https://i.pravatar.cc/100?img=2',
-      'isFollowing': true
-    },
-    {
-      'name': 'Chantal Shelburne',
-      'avatar': 'https://i.pravatar.cc/100?img=3',
-      'isFollowing': false
-    },
-    {
-      'name': 'Maryland Winkles',
-      'avatar': 'https://i.pravatar.cc/100?img=4',
-      'isFollowing': true
-    },
-    {
-      'name': 'Sanjuanita Ordonez',
-      'avatar': 'https://i.pravatar.cc/100?img=5',
-      'isFollowing': false
-    },
-  ];
+  String _monthName(int month) {
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month];
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final eventProvider = Provider.of<EventProvider>(context);
+    final event = eventProvider.currentEvent;
+    final isLoading = eventProvider.isLoading;
+    final errorMessage = eventProvider.error;
+
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (errorMessage != null) {
+      return Scaffold(
+        body: Center(child: Text('Error: $errorMessage')),
+      );
+    }
+    if (event == null) {
+      return const Scaffold(
+        body: Center(child: Text('Event not found')),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -97,16 +114,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           children: [
             CustomScrollView(
               slivers: [
-                _buildHeroSection(context, theme),
+                _buildHeroSection(context, theme, event),
                 SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildEventHeader(theme),
-                      _buildOrganizerSection(theme),
-                      _buildAboutSection(theme),
-                      _buildGallerySection(theme),
-                      _buildLocationSection(theme),
+                      _buildEventHeader(theme, event),
+                      _buildOrganizerSection(theme, event),
+                      _buildAboutSection(theme, event),
+                      _buildGallerySection(theme, event),
+                      _buildLocationSection(theme, event),
                       const SizedBox(height: 100), // Space for bottom button
                     ],
                   ),
@@ -123,14 +140,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   color: colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.08),
+                      color: colorScheme.shadow.withOpacity(0.08),
                       blurRadius: 16,
                       offset: const Offset(0, -4),
                     ),
                   ],
                 ),
                 padding: const EdgeInsets.all(20),
-                child: _buildBookEventButton(theme),
+                child: _buildBookEventButton(theme, event),
               ),
             ),
           ],
@@ -139,7 +156,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildHeroSection(BuildContext context, ThemeData theme) {
+  Widget _buildHeroSection(BuildContext context, ThemeData theme, Event event) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -147,7 +164,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withValues(alpha: 0.9),
+          color: theme.colorScheme.surface.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
         child: IconButton(
@@ -159,7 +176,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -173,7 +190,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -187,12 +204,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           fit: StackFit.expand,
           children: [
             Image.network(
-              eventData['heroImage'],
+              event.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 color: theme.colorScheme.surface,
                 child: Icon(Icons.image_not_supported,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                    color: theme.colorScheme.onSurface.withOpacity(0.5)),
               ),
             ),
             Container(
@@ -202,7 +219,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withOpacity(0.6),
                   ],
                 ),
               ),
@@ -215,7 +232,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    eventData['title'],
+                    event.title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -233,7 +250,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          eventData['category'],
+                          event.category,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -243,12 +260,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
-                        width:
-                            88, // Width for 5 overlapping circles: 24 + (4 * 16)
+                        width: 88,
                         height: 24,
                         child: Stack(
                           children: List.generate(
-                            5,
+                            attendees.length > 5 ? 5 : attendees.length,
                             (index) => Positioned(
                               left: index * 16.0,
                               child: Container(
@@ -260,7 +276,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                       Border.all(color: Colors.white, width: 2),
                                   image: DecorationImage(
                                     image: NetworkImage(
-                                        'https://i.pravatar.cc/50?img=${index + 1}'),
+                                        attendees[index]['avatar'] ?? ''),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -271,12 +287,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(width: 16),
                       GestureDetector(
-                        onTap: () =>
-                            context.push('/event/${widget.eventId}/attendees'),
+            onTap: () =>
+              context.push('/events/${widget.eventId}/attendees'),
                         child: Row(
                           children: [
                             Text(
-                              '${eventData['attendeeCount']} going',
+                              '${attendees.length} going',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -340,7 +356,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   //   );
   // }
 
-  Widget _buildEventHeader(ThemeData theme) {
+  Widget _buildEventHeader(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     return Padding(
@@ -352,7 +368,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  eventData['date'],
+                  _formatDate(event.startDateTime),
                   style: textTheme.titleMedium?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -360,7 +376,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  eventData['time'],
+                  _formatTime(event.startDateTime, event.endDateTime),
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -369,7 +385,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
           Text(
-            eventData['price'],
+            event.ticketTypes.isNotEmpty
+                ? 'FROM ${event.ticketTypes.first.price}'
+                : 'Free',
             style: textTheme.titleLarge?.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.bold,
@@ -380,20 +398,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildOrganizerSection(ThemeData theme) {
-    final organizer = eventData['organizer'];
+  Widget _buildOrganizerSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-
     return GestureDetector(
-      onTap: () => context.push('/organizer/world-of-music'),
+      onTap: () {
+        // Navigate to organization details page
+  context.push('/organization/${event.organizationId}');
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundImage: NetworkImage(organizer['avatar']),
+              backgroundImage: NetworkImage(
+                  'https://i.pravatar.cc/100?u=${event.organizationId}'),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -401,16 +421,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    organizer['name'],
+                    event.organizerName,
                     style: textTheme.titleMedium?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    organizer['role'],
+                    'Organizer',
                     style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -439,10 +459,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme) {
+  Widget _buildAboutSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final aboutText = eventData['about'] as String;
+    final aboutText = event.description;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -492,10 +512,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildGallerySection(ThemeData theme) {
+  Widget _buildGallerySection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final gallery = eventData['gallery'] as List<String>;
+    final gallery = event.imageUrl.isNotEmpty ? [event.imageUrl] : [];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -629,7 +649,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildLocationSection(ThemeData theme) {
+  Widget _buildLocationSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     return Padding(
@@ -655,7 +675,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  eventData['location']['address'],
+                  event.address,
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.8),
                   ),
@@ -718,8 +738,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 12,
-                        backgroundImage:
-                            NetworkImage(eventData['organizer']['avatar']),
+                        backgroundImage: NetworkImage(
+                            'https://i.pravatar.cc/100?u=${event.organizationId}'),
                       ),
                     ),
                   ),
@@ -732,7 +752,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildBookEventButton(ThemeData theme) {
+  Widget _buildBookEventButton(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final buttonBg = isDark ? Colors.white : Colors.black;

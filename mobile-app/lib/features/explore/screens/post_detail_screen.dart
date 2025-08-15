@@ -722,9 +722,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     // Navigate to the specific event page
     if (_post!.relatedEventId != null) {
       print('🎯 Navigating to event: ${_post!.relatedEventId}');
-      print('🚀 Route: /event/${_post!.relatedEventId}');
+  print('🚀 Route: /events/${_post!.relatedEventId}');
       try {
-        context.push('/event/${_post!.relatedEventId}');
+  context.push('/events/${_post!.relatedEventId}');
         print('✅ Event navigation successful');
       } catch (e) {
         print('❌ Event navigation failed: $e');
