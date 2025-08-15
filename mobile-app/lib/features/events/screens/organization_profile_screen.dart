@@ -128,7 +128,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
 
   Widget _buildSliverAppBar(ThemeData theme) {
     return SliverAppBar(
-      expandedHeight: 200,
+  expandedHeight: 50,
       pinned: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       leading: Container(
@@ -156,33 +156,17 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              organizationData?['coverImage'] ?? '',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: theme.colorScheme.surface,
-                child: Icon(
-                  Icons.image_not_supported,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.transparent,
+                theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
             ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -195,7 +179,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(organizationData?['avatar'] ?? ''),
+            backgroundImage: NetworkImage(organizationData?['logo_url'] ?? ''),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -210,33 +194,34 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  organizationData?['username'] ?? '',
-                  style: TextStyle(
-                    color: theme.primaryColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                if (organizationData?['website_url'] != null && organizationData?['website_url'] != '')
+                  Text(
+                    organizationData?['website_url'] ?? '',
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      organizationData?['location'] ?? '',
-                      style: TextStyle(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 12,
+                if (organizationData?['contact_email'] != null && organizationData?['contact_email'] != '')
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.email,
+                        size: 16,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 4),
+                      Text(
+                        organizationData?['contact_email'] ?? '',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

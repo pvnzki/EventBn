@@ -9,6 +9,7 @@ class Event {
   final String title;
   final String description;
   final String imageUrl;
+  final String otherImagesUrl;
   final String category;
   final String venue;
   final String address;
@@ -17,6 +18,7 @@ class Event {
   final List<TicketType> ticketTypes;
   final String organizationId;
   final String organizerName;
+  final Map<String, dynamic>? organization;
   final int totalCapacity;
   final int soldTickets;
   final bool isActive;
@@ -28,14 +30,16 @@ class Event {
     required this.title,
     required this.description,
     required this.imageUrl,
+    required this.otherImagesUrl,
     required this.category,
     required this.venue,
     required this.address,
     required this.startDateTime,
     required this.endDateTime,
     required this.ticketTypes,
-  required this.organizationId,
+    required this.organizationId,
     required this.organizerName,
+    this.organization,
     required this.totalCapacity,
     required this.soldTickets,
     required this.isActive,
@@ -50,51 +54,55 @@ class Event {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       imageUrl: json['cover_image_url'] ?? '',
+      otherImagesUrl: json['other_images_url'] ?? '',
       category: json['category'] ?? '',
       venue: json['venue'] ?? '',
       address: json['location'] ?? '',
       startDateTime: json['start_time'] != null
-          ? DateTime.parse(json['start_time'])
-          : DateTime.now(),
+        ? DateTime.parse(json['start_time'])
+        : DateTime.now(),
       endDateTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'])
-          : DateTime.now(),
+        ? DateTime.parse(json['end_time'])
+        : DateTime.now(),
       ticketTypes: [], // TODO: Add ticket types when implemented
-  organizationId: json['organization']?['organization_id']?.toString() ?? 
-          json['creator']?['user_id']?.toString() ?? '',
+      organizationId: json['organization']?['organization_id']?.toString() ?? 
+        json['creator']?['user_id']?.toString() ?? '',
       organizerName: json['organization']?['name'] ?? 
-                     json['creator']?['name'] ?? 'Unknown Organizer',
+             json['creator']?['name'] ?? 'Unknown Organizer',
+      organization: json['organization'],
       totalCapacity: json['capacity'] ?? 0,
       soldTickets: 0, // TODO: Add when ticket sales are implemented
       isActive: json['status'] == 'published',
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+        ? DateTime.parse(json['created_at'])
+        : DateTime.now(),
       updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : DateTime.now(),
+        ? DateTime.parse(json['updated_at'])
+        : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      'event_id': id,
       'title': title,
       'description': description,
-      'imageUrl': imageUrl,
+      'cover_image_url': imageUrl,
+      'other_images_url': otherImagesUrl,
       'category': category,
       'venue': venue,
-      'address': address,
-      'startDateTime': startDateTime.toIso8601String(),
-      'endDateTime': endDateTime.toIso8601String(),
-      'ticketTypes': ticketTypes.map((e) => e.toJson()).toList(),
-  'organizationId': organizationId,
+      'location': address,
+      'start_time': startDateTime.toIso8601String(),
+      'end_time': endDateTime.toIso8601String(),
+      'ticket_types': ticketTypes.map((e) => e.toJson()).toList(),
+      'organization_id': organizationId,
       'organizerName': organizerName,
-      'totalCapacity': totalCapacity,
+      'organization': organization,
+      'capacity': totalCapacity,
       'soldTickets': soldTickets,
-      'isActive': isActive,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'status': isActive ? 'published' : 'draft',
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 

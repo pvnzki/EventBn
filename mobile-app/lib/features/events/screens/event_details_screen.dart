@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -203,10 +204,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              event.imageUrl,
+            CachedNetworkImage(
+              imageUrl: event.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+              placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+              errorWidget: (context, url, error) => Container(
                 color: theme.colorScheme.surface,
                 child: Icon(Icons.image_not_supported,
                     color: theme.colorScheme.onSurface.withOpacity(0.5)),
@@ -410,11 +412,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(
-                  'https://i.pravatar.cc/100?u=${event.organizationId}'),
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: CachedNetworkImageProvider(
+              (event.organization != null &&
+                      event.organization!['logo_url'] != null &&
+                      event.organization!['logo_url'].toString().isNotEmpty)
+                  ? event.organization!['logo_url']
+                  : 'https://i.pravatar.cc/100?u=${event.organizationId}',
             ),
+          ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -515,7 +522,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildGallerySection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final gallery = event.imageUrl.isNotEmpty ? [event.imageUrl] : [];
+    // Support multiple images: cover + other_images_url (comma-separated)
+    List<String> gallery = [];
+    if (event.imageUrl.isNotEmpty) gallery.add(event.imageUrl);
+    if (event.otherImagesUrl.isNotEmpty) {
+      // If backend sends comma-separated string
+      final otherImages = event.otherImagesUrl
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+      gallery.addAll(otherImages);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -551,9 +569,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   mainAxisSpacing: 12),
                           itemBuilder: (context, index) => ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              gallery[index],
+                            child: CachedNetworkImage(
+                              imageUrl: gallery[index],
                               fit: BoxFit.cover,
+                              placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) => Icon(Icons.image_not_supported),
                             ),
                           ),
                         ),
@@ -605,7 +625,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           ),
                         ],
                         image: DecorationImage(
-                          image: NetworkImage(gallery[index]),
+                          image: CachedNetworkImageProvider(gallery[index]),
                           fit: BoxFit.cover,
                         ),
                       ),

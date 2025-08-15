@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 8),
           const CircleAvatar(
             radius: 20,
-            backgroundImage: NetworkImage(
+            backgroundImage: CachedNetworkImageProvider(
               'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
             ),
           ),
@@ -239,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         image: DecorationImage(
-                          image: NetworkImage(event.imageUrl),
+                          image: CachedNetworkImageProvider(event.imageUrl),
                           fit: BoxFit.cover,
                           colorFilter: ColorFilter.mode(
                             Colors.black.withOpacity(0.3),
@@ -553,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(12),
                             image: event.imageUrl.isNotEmpty
                                 ? DecorationImage(
-                                    image: NetworkImage(event.imageUrl),
+                                    image: CachedNetworkImageProvider(event.imageUrl),
                                     fit: BoxFit.cover,
                                   )
                                 : null,

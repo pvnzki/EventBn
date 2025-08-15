@@ -50,6 +50,26 @@ router.post("/", async (req, res) => {
   }
 }),
 
+// Get all organizations
+router.get("/", async (req, res) => {
+  try {
+    const organizations = await prisma.organization.findMany({
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+    res.json(organizations);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get organization by ID
 router.get("/:organizationId", async (req, res) => {
   try {
