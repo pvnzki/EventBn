@@ -10,6 +10,7 @@ class Event {
   final String description;
   final String imageUrl;
   final String otherImagesUrl;
+  final String videoUrl;
   final String category;
   final String venue;
   final String address;
@@ -31,6 +32,7 @@ class Event {
     required this.description,
     required this.imageUrl,
     required this.otherImagesUrl,
+    required this.videoUrl,
     required this.category,
     required this.venue,
     required this.address,
@@ -55,30 +57,33 @@ class Event {
       description: json['description'] ?? '',
       imageUrl: json['cover_image_url'] ?? '',
       otherImagesUrl: json['other_images_url'] ?? '',
+      videoUrl: json['video_url'] ?? '',
       category: json['category'] ?? '',
       venue: json['venue'] ?? '',
       address: json['location'] ?? '',
       startDateTime: json['start_time'] != null
-        ? DateTime.parse(json['start_time'])
-        : DateTime.now(),
+          ? DateTime.parse(json['start_time'])
+          : DateTime.now(),
       endDateTime: json['end_time'] != null
-        ? DateTime.parse(json['end_time'])
-        : DateTime.now(),
+          ? DateTime.parse(json['end_time'])
+          : DateTime.now(),
       ticketTypes: [], // TODO: Add ticket types when implemented
-      organizationId: json['organization']?['organization_id']?.toString() ?? 
-        json['creator']?['user_id']?.toString() ?? '',
-      organizerName: json['organization']?['name'] ?? 
-             json['creator']?['name'] ?? 'Unknown Organizer',
+      organizationId: json['organization']?['organization_id']?.toString() ??
+          json['creator']?['user_id']?.toString() ??
+          '',
+      organizerName: json['organization']?['name'] ??
+          json['creator']?['name'] ??
+          'Unknown Organizer',
       organization: json['organization'],
       totalCapacity: json['capacity'] ?? 0,
       soldTickets: 0, // TODO: Add when ticket sales are implemented
       isActive: json['status'] == 'published',
       createdAt: json['created_at'] != null
-        ? DateTime.parse(json['created_at'])
-        : DateTime.now(),
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
       updatedAt: json['updated_at'] != null
-        ? DateTime.parse(json['updated_at'])
-        : DateTime.now(),
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
     );
   }
 
@@ -89,6 +94,7 @@ class Event {
       'description': description,
       'cover_image_url': imageUrl,
       'other_images_url': otherImagesUrl,
+      'video_url': videoUrl,
       'category': category,
       'venue': venue,
       'location': address,
