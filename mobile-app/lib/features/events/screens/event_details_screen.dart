@@ -18,6 +18,7 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  bool isVideoExpanded = false;
   // Video player
   VideoPlayerController? _videoController;
   bool _videoInitialized = false;
@@ -104,7 +105,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
     // Always reset video controller when event changes to avoid wrong video playing
     if (event != null && event.videoUrl.isNotEmpty) {
-      if (_videoController == null || _videoController!.dataSource != event.videoUrl) {
+      if (_videoController == null ||
+          _videoController!.dataSource != event.videoUrl) {
         _videoController?.dispose();
         if (event.videoUrl.startsWith('http')) {
           _videoController = VideoPlayerController.network(event.videoUrl)
@@ -166,6 +168,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             : SystemUiOverlayStyle.dark,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
+            // Collapse video if expanded and user scrolls
+            if (isVideoExpanded && notification.metrics.pixels > 10) {
+              setState(() {
+                isVideoExpanded = false;
+              });
+            }
             // Pause/play video only when cover is visible
             if (_videoController != null && _videoInitialized) {
               if (notification.metrics.pixels > 250) {
@@ -201,6 +209,131 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                 ],
               ),
+              // Expanded video overlay
+              if (isVideoExpanded &&
+                  event.videoUrl.isNotEmpty &&
+                  _videoController != null &&
+                  _videoInitialized)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: Colors.black,
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: VideoPlayer(_videoController!),
+                          ),
+                        ),
+                        // Controls: progress bar, play, mute
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 32,
+                          child: Column(
+                            children: [
+                              VideoProgressIndicator(
+                                _videoController!,
+                                allowScrubbing: true,
+                                colors: VideoProgressColors(
+                                  playedColor: theme.primaryColor,
+                                  backgroundColor: Colors.white24,
+                                  bufferedColor: Colors.white38,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Mute button
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_videoController!.value.volume > 0) {
+                                        _videoController?.setVolume(0);
+                                      } else {
+                                        _videoController?.setVolume(1);
+                                      }
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      padding: const EdgeInsets.all(12),
+                                      child: Icon(
+                                        _videoController!.value.volume > 0
+                                            ? Icons.volume_up
+                                            : Icons.volume_off,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 32),
+                                  // Play/pause button
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_videoController!.value.isPlaying) {
+                                        _videoController?.pause();
+                                        _userPausedVideo = true;
+                                      } else {
+                                        _videoController?.play();
+                                        _userPausedVideo = false;
+                                      }
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(32),
+                                      ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Icon(
+                                        _videoController!.value.isPlaying
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Close button (top right)
+                        Positioned(
+                          top: 32,
+                          right: 24,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isVideoExpanded = false;
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 28),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               // Fixed bottom Book button
               Positioned(
                 left: 0,
@@ -280,47 +413,53 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // 1. Cover image (bottom)
-            CachedNetworkImage(
-              imageUrl: event.imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) =>
-                  const Center(child: CircularProgressIndicator()),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.image_not_supported),
-            ),
-            // 2. Video (if available)
-            if (event.videoUrl.isNotEmpty && _videoController != null && _videoInitialized)
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    if (_videoController!.value.isPlaying) {
-                      _videoController?.pause();
-                      _userPausedVideo = true;
-                    } else {
-                      _videoController?.play();
-                      _userPausedVideo = false;
-                    }
-                    setState(() {});
-                  },
-                  child: AspectRatio(
-                    aspectRatio: _videoController!.value.aspectRatio,
-                    child: VideoPlayer(_videoController!),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  isVideoExpanded = true;
+                });
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Always show cover image as background
+                  CachedNetworkImage(
+                    imageUrl: event.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.image_not_supported),
                   ),
-                ),
-              ),
-            // 3. Gradient overlay (always above video)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.65),
-                  ],
-                ),
+                  // Show video above cover image if initialized and playing or expanded
+                  if (_videoInitialized &&
+                      _videoController != null &&
+                      (_videoController!.value.isPlaying || isVideoExpanded))
+                    SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      ),
+                    ),
+                  // 3. Gradient overlay (always above video)
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.65),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             // 4. Overlays (title, category, attendees)
@@ -331,45 +470,50 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black,
-                          offset: Offset(0, 2),
-                          blurRadius: 8,
-                        ),
-                      ],
+                  IgnorePointer(
+                    child: Text(
+                      event.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 2),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: theme.primaryColor,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Text(
-                          event.category,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                offset: Offset(0, 1),
-                                blurRadius: 4,
-                              ),
-                            ],
+                        child: IgnorePointer(
+                          child: Text(
+                            event.category,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  offset: Offset(0, 1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -387,9 +531,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 height: 18,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
                                   image: DecorationImage(
-                                    image: NetworkImage(attendees[index]['avatar'] ?? ''),
+                                    image: NetworkImage(
+                                        attendees[index]['avatar'] ?? ''),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -400,7 +546,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(width: 12),
                       GestureDetector(
-                        onTap: () => context.push('/events/${widget.eventId}/attendees'),
+                        onTap: () =>
+                            context.push('/events/${widget.eventId}/attendees'),
                         child: Row(
                           children: [
                             Text(
@@ -419,7 +566,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+                            const Icon(Icons.arrow_forward_ios,
+                                color: Colors.white, size: 14),
                           ],
                         ),
                       ),
@@ -429,7 +577,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
             ),
             // 5. Mute and Play/Pause buttons (bottom right)
-            if (event.videoUrl.isNotEmpty && _videoController != null && _videoInitialized)
+            if (event.videoUrl.isNotEmpty &&
+                _videoController != null &&
+                _videoInitialized)
               Positioned(
                 // Align play button with attendee text (bottom: 40)
                 bottom: 40,
@@ -455,7 +605,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         ),
                         padding: const EdgeInsets.all(8),
                         child: Icon(
-                          _videoController!.value.volume > 0 ? Icons.volume_up : Icons.volume_off,
+                          _videoController!.value.volume > 0
+                              ? Icons.volume_up
+                              : Icons.volume_off,
                           color: Colors.white,
                           size: 22,
                         ),
@@ -481,7 +633,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         ),
                         padding: const EdgeInsets.all(12),
                         child: Icon(
-                          _videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                          _videoController!.value.isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
                           color: Colors.white,
                           size: 28,
                         ),
