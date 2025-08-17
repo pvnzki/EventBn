@@ -424,12 +424,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => context.push('/popular-events'),
+                onTap: () async {
+                  // Fetch real events from backend before navigating
+                  await Provider.of<EventProvider>(context, listen: false).fetchEvents();
+                  context.push('/all-events');
+                },
                 child: Text(
                   'See All',
                   style: TextStyle(
                     fontSize: 14,
-                    color: theme.primaryColor,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white
+                        : theme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -515,8 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: eventProvider.events.length
-                  .clamp(0, 5), // Show max 5 events on home
+              itemCount: eventProvider.events.length, // Show all events
               itemBuilder: (context, index) {
                 final event = eventProvider.events[index];
                 return GestureDetector(
