@@ -19,157 +19,120 @@ class AuthService {
   }
 
   // Register new user
-  async register(userData) {
-    try {
-      const { email, password, username, firstName, lastName } = userData;
-      
-      // Check if user already exists
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email },
-            { username }
-          ]
-        }
-      });
+async register(userData) {
+  try {
+    const { name, email, password, phone_number, profile_picture } = userData;
 
-      if (existingUser) {
-        if (existingUser.email === email) {
-          throw new Error('Email already registered');
-        }
-        if (existingUser.username === username) {
-          throw new Error('Username already taken');
-        }
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          username,
-          firstName,
-          lastName,
-        },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          isVerified: true,
-          createdAt: true,
-        }
-      });
-
-      // Generate token
-      const token = this.generateToken({
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-      });
-
-      return {
-        user,
-        token,
-      };
-    } catch (error) {
-      throw new Error(`Registration failed: ${error.message}`);
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    if (existingUser) {
+      throw new Error('Email already registered');
     }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password_hash: hashedPassword,
+        phone_number: phone_number || null,
+        profile_picture: profile_picture || null,
+        role: "GUEST", // or "USER" or whatever default you want
+        is_active: true,
+        is_email_verified: false
+      },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        profile_picture: true,
+        is_active: true,
+        is_email_verified: true,
+        role: true,
+        created_at: true,
+        updated_at: true
+      }
+    });
+
+    // Generate token
+    const token = this.generateToken({
+      userId: user.user_id,
+      email: user.email,
+      name: user.name,
+    });
+    console.log("Generated JWT token:", token);
+    return {
+      user,
+      token,
+    };
+  } catch (error) {
+    throw new Error(`Registration failed: ${error.message}`);
   }
+}
 
   // Login user
-  async login(credentials) {
-    try {
-      const { email, password } = credentials;
+async login(credentials) {
+  try {
+    console.log("Login called with:", credentials);
+    const { email, password } = credentials;
 
-      // Find user by email
-      const user = await prisma.user.findUnique({
-        where: { email }
-      });
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
 
-      if (!user) {
-        throw new Error('Invalid email or password');
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
-        throw new Error('Invalid email or password');
-      }
-
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() }
-      });
-
-      // Generate token
-      const token = this.generateToken({
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-      });
-
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          avatar: user.avatar,
-          isVerified: user.isVerified,
-        },
-        token,
-      };
-    } catch (error) {
-      throw new Error(`Login failed: ${error.message}`);
+    if (!user) {
+      throw new Error('Invalid email or password');
     }
-  }
-
-  // Refresh token
-  async refreshToken(oldToken) {
-    try {
-      const decoded = this.verifyToken(oldToken);
-      
-      // Get fresh user data
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          isVerified: true,
-        }
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      // Generate new token
-      const token = this.generateToken({
-        userId: user.id,
-        email: user.email,
-        username: user.username,
-      });
-
-      return {
-        user,
-        token,
-      };
-    } catch (error) {
-      throw new Error(`Token refresh failed: ${error.message}`);
+    if (!user.password_hash) {
+      throw new Error('User has no password set');
     }
+
+    // Verify password using bcrypt.compare
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      throw new Error('Invalid email or password');
+    }
+
+    // Update last login
+    await prisma.user.update({
+      where: { user_id: user.user_id },
+      data: { updated_at: new Date() }
+    });
+
+    // Generate token
+    const token = this.generateToken({
+      userId: user.user_id,
+      email: user.email,
+      name: user.name,
+    });
+    console.log("Generated JWT token:", token);
+
+    return {
+      user: {
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        phone_number: user.phone_number,
+        profile_picture: user.profile_picture,
+        is_active: user.is_active,
+        is_email_verified: user.is_email_verified,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      },
+      token,
+    };
+  } catch (error) {
+    throw new Error(`Login failed: ${error.message}`);
   }
+}
 
   // Logout user (invalidate token - in real app, you'd maintain a blacklist)
   async logout(token) {
