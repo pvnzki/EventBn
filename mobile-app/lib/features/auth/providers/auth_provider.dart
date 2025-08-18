@@ -36,7 +36,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final isAuthenticated = prefs.getBool('is_authenticated') ?? false;
       final userEmail = prefs.getString('user_email');
-      
+
       if (isAuthenticated && userEmail != null) {
         final now = DateTime.now();
         _user = User(
@@ -58,45 +58,40 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Login
-  Future<bool> login(String email, String password) async {
-    _setLoading(true);
-    _setError(null);
+Future<bool> login(String email, String password) async {
+  _setLoading(true);
+  _setError(null);
 
-    try {
-      // Simple validation for demo purposes
-      if (email.isNotEmpty && password.isNotEmpty && password.length >= 4) {
-        // Create a simple user object for demo
-        final now = DateTime.now();
-        _user = User(
-          id: 'user_${email.hashCode}',
-          firstName: email.split('@')[0], // Use email prefix as first name
-          lastName: 'User',
-          email: email,
-          phoneNumber: null,
-          createdAt: now,
-          updatedAt: now,
-        );
-        
-        _isAuthenticated = true;
-        
-        // Store authentication state
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_email', email);
-        await prefs.setBool('is_authenticated', true);
-        
-        _setLoading(false);
-        return true;
-      } else {
-        _setError('Please enter a valid email and password (min 4 characters)');
-        _setLoading(false);
-        return false;
-      }
-    } catch (e) {
-      _setError('Login failed. Please try again.');
+  try {
+    final result = await _authService.login(email, password);
+
+    // Ensure result is valid and contains both user + token
+    if (result != null && result['user'] != null && result['token'] != null) {
+      _user = result['user'];
+      _isAuthenticated = true;
+
+      final token = result['token'];
+      print('JWT Token: $token'); // For debugging
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', _user!.email);
+      await prefs.setString('auth_token', token); // 🔥 store token
+      await prefs.setBool('is_authenticated', true);
+
+      _setLoading(false);
+      return true;
+    } else {
+      _setError('Invalid email or password');
       _setLoading(false);
       return false;
     }
+  } catch (e) {
+    _setError(e.toString().replaceAll('Exception: ', ''));
+    _setLoading(false);
+    return false;
   }
+}
+
 
   // Register
   Future<bool> register({
@@ -118,9 +113,14 @@ class AuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
-      if (result['success']) {
+      if (result['success'] == true && result['user'] != null) {
         _user = result['user'];
         _isAuthenticated = true;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', _user!.email);
+        await prefs.setBool('is_authenticated', true);
+
         _setLoading(false);
         return true;
       } else {
@@ -141,7 +141,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_email');
       await prefs.setBool('is_authenticated', false);
-      
+
       _user = null;
       _isAuthenticated = false;
       _error = null;
@@ -169,7 +169,7 @@ class AuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
-      if (result['success']) {
+      if (result['success'] == true && result['user'] != null) {
         _user = result['user'];
         _setLoading(false);
         notifyListeners();
@@ -200,7 +200,7 @@ class AuthProvider extends ChangeNotifier {
         newPassword: newPassword,
       );
 
-      if (result['success']) {
+      if (result['success'] == true) {
         _setLoading(false);
         return true;
       } else {
@@ -215,7 +215,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Clear error
   void clearError() {
     _setError(null);
   }
