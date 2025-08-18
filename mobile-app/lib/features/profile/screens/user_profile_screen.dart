@@ -138,14 +138,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                             // Name and username
                             Row(
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    userData['name'],
-                                    style:
-                                        theme.textTheme.headlineSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                Text(
+                                  userData['name'],
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 if (userData['isVerified']) ...[
@@ -166,7 +163,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -181,50 +177,34 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                               ),
                             const SizedBox(height: 8),
                             // Location and join date
-                            Wrap(
-                              spacing: 16,
-                              runSpacing: 8,
+                            Row(
                               children: [
-                                if (userData['location'] != null) 
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.location_on_outlined,
-                                        size: 16,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          userData['location'],
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                if (userData['location'] != null) ...[
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    size: 16,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 16,
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    userData['location'],
+                                    style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        'Joined ${userData['joinedDate']}',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
+                                  ),
+                                  const SizedBox(width: 16),
+                                ],
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Joined ${userData['joinedDate']}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ],
                             ),
@@ -268,7 +248,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         child: Row(
           children: [
             Expanded(
-              flex: 2,
               child: OutlinedButton(
                 onPressed: () {
                   setState(() {
@@ -280,21 +259,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   foregroundColor:
                       isFollowing ? colorScheme.onPrimary : colorScheme.primary,
                 ),
-                child: Text(
-                  isFollowing ? 'Following' : 'Follow',
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: Text(isFollowing ? 'Following' : 'Follow'),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _sendMessage(),
-                child: const Text(
-                  'Message',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+            OutlinedButton(
+              onPressed: () => _sendMessage(),
+              child: const Text('Message'),
             ),
           ],
         ),

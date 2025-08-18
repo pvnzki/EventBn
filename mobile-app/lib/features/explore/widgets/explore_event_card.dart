@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../common_widgets/responsive_widgets.dart';
 import '../models/event_model.dart';
 
 class ExploreEventCard extends StatefulWidget {
@@ -71,7 +70,7 @@ class _ExploreEventCardState extends State<ExploreEventCard>
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       onTap: () {
-        context.push('/event/${widget.event.id}');
+  context.push('/events/${widget.event.id}');
       },
       child: AnimatedBuilder(
         animation: _scaleAnimation,
@@ -214,14 +213,15 @@ class _ExploreEventCardState extends State<ExploreEventCard>
                 color: Colors.white.withOpacity(0.8),
               ),
               const SizedBox(width: 4),
-              Flexible(
-                child: ResponsiveText(
+              Expanded(
+                child: Text(
                   widget.event.location,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: isLargeCard ? 12 : 11,
                   ),
                   maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

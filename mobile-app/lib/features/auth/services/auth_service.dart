@@ -20,14 +20,12 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && data['success'] == true && data['token'] != null && data['data'] != null) {
         // Store token
         await _storeToken(data['token']);
-
         // Store user data
-        final user = User.fromJson(data['user']);
+        final user = User.fromJson(data['data']);
         await _storeUser(user);
-
         return {'success': true, 'user': user, 'token': data['token']};
       } else {
         return {'success': false, 'message': data['message'] ?? 'Login failed'};

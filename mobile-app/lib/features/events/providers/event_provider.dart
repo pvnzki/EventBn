@@ -36,10 +36,13 @@ class EventProvider extends ChangeNotifier {
     _setError(null);
 
     try {
+      print('EventProvider: Starting to fetch events...');
       final fetchedEvents = await _eventService.getAllEvents();
+      print('EventProvider: Successfully fetched ${fetchedEvents.length} events');
       _events = fetchedEvents;
     } catch (e) {
-      _setError('Failed to fetch events');
+      print('EventProvider: Error fetching events: $e');
+      _setError('Failed to fetch events: $e');
     } finally {
       _setLoading(false);
     }

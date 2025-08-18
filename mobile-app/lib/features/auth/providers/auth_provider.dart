@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -32,13 +33,22 @@ class AuthProvider extends ChangeNotifier {
   Future<void> initializeAuth() async {
     _setLoading(true);
     try {
-      final token = await _authService.getStoredToken();
-      if (token != null) {
-        final userData = await _authService.getCurrentUser();
-        if (userData != null) {
-          _user = userData;
-          _isAuthenticated = true;
-        }
+      final prefs = await SharedPreferences.getInstance();
+      final isAuthenticated = prefs.getBool('is_authenticated') ?? false;
+      final userEmail = prefs.getString('user_email');
+
+      if (isAuthenticated && userEmail != null) {
+        final now = DateTime.now();
+        _user = User(
+          id: 'user_${userEmail.hashCode}',
+          firstName: userEmail.split('@')[0],
+          lastName: 'User',
+          email: userEmail,
+          phoneNumber: null,
+          createdAt: now,
+          updatedAt: now,
+        );
+        _isAuthenticated = true;
       }
     } catch (e) {
       _setError('Failed to initialize authentication');
@@ -48,28 +58,40 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Login
-  Future<bool> login(String email, String password) async {
-    _setLoading(true);
-    _setError(null);
+Future<bool> login(String email, String password) async {
+  _setLoading(true);
+  _setError(null);
 
-    try {
-      final result = await _authService.login(email, password);
-      if (result['success']) {
-        _user = result['user'];
-        _isAuthenticated = true;
-        _setLoading(false);
-        return true;
-      } else {
-        _setError(result['message'] ?? 'Login failed');
-        _setLoading(false);
-        return false;
-      }
-    } catch (e) {
-      _setError('Network error. Please try again.');
+  try {
+    final result = await _authService.login(email, password);
+
+    // Ensure result is valid and contains both user + token
+    if (result != null && result['user'] != null && result['token'] != null) {
+      _user = result['user'];
+      _isAuthenticated = true;
+
+      final token = result['token'];
+      print('JWT Token: $token'); // For debugging
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', _user!.email);
+      await prefs.setString('auth_token', token); // 🔥 store token
+      await prefs.setBool('is_authenticated', true);
+
+      _setLoading(false);
+      return true;
+    } else {
+      _setError('Invalid email or password');
       _setLoading(false);
       return false;
     }
+  } catch (e) {
+    _setError(e.toString().replaceAll('Exception: ', ''));
+    _setLoading(false);
+    return false;
   }
+}
+
 
   // Register
   Future<bool> register({
@@ -91,9 +113,14 @@ class AuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
-      if (result['success']) {
+      if (result['success'] == true && result['user'] != null) {
         _user = result['user'];
         _isAuthenticated = true;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', _user!.email);
+        await prefs.setBool('is_authenticated', true);
+
         _setLoading(false);
         return true;
       } else {
@@ -111,7 +138,10 @@ class AuthProvider extends ChangeNotifier {
   // Logout
   Future<void> logout() async {
     try {
-      await _authService.logout();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_email');
+      await prefs.setBool('is_authenticated', false);
+
       _user = null;
       _isAuthenticated = false;
       _error = null;
@@ -139,7 +169,7 @@ class AuthProvider extends ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
-      if (result['success']) {
+      if (result['success'] == true && result['user'] != null) {
         _user = result['user'];
         _setLoading(false);
         notifyListeners();
@@ -170,7 +200,7 @@ class AuthProvider extends ChangeNotifier {
         newPassword: newPassword,
       );
 
-      if (result['success']) {
+      if (result['success'] == true) {
         _setLoading(false);
         return true;
       } else {
@@ -185,7 +215,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Clear error
   void clearError() {
     _setError(null);
   }

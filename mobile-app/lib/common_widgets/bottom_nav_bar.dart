@@ -98,11 +98,11 @@ class _BottomNavBarState extends State<BottomNavBar>
         'BottomNavBar - Route matches: ${routerState.matches.map((m) => m.matchedLocation).toList()}');
 
     // Don't show bottom nav on event detail pages or other specific pages
-    if (currentLocation.startsWith('/event/') ||
+  if (currentLocation.startsWith('/events/') ||
         currentLocation.startsWith('/checkout/') ||
         currentLocation.startsWith('/organizer/') ||
         routerState.matches
-            .any((match) => match.matchedLocation.startsWith('/event/'))) {
+            .any((match) => match.matchedLocation.startsWith('/events/'))) {
       print('BottomNavBar - Hiding bottom nav for: $currentLocation');
       return widget.child;
     }

@@ -7,80 +7,84 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DIRECT_URL")
+  url      = env("DATABASE_URL")
 }
 
-// User model - matching existing SQL schema
 model User {
-  user_id       Int       @id @default(autoincrement()) @map("user_id")
-  name          String
-  email         String    @unique
-  password_hash String    @map("password_hash")
-  role          String    @default("customer")
-  phone_number  String?   @map("phone_number")
-  profile_picture String? @map("profile_picture")
-  is_active     Boolean?  @default(true) @map("is_active")
-  is_email_verified Boolean? @default(false) @map("is_email_verified")
+  user_id           Int      @id @default(autoincrement())
+  name              String
+  email             String   @unique
+  password_hash     String
+  phone_number      String?
+  profile_picture   String?
+  is_active         Boolean  @default(true)
+  is_email_verified Boolean  @default(false)
+  role              String   @default("USER")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now()) @updatedAt
 
   // Relations
   organizations Organization[]
-  search_logs   SearchLog[]
-
+  search_logs   Search_Log[]
+  // events relation removed (no matching relation in Event)
+  
   @@map("User")
 }
 
-// Organization model - matching existing SQL schema
 model Organization {
-  organization_id Int       @id @default(autoincrement()) @map("organization_id")
-  user_id         Int       @map("user_id")
+  organization_id Int      @id @default(autoincrement())
+  user_id         Int
   name            String
   description     String?
-  logo_url        String?   @map("logo_url")
-  contact_email   String?   @map("contact_email")
-  contact_number  String?   @map("contact_number")
-  website_url     String?   @map("website_url")
-  created_at      DateTime? @default(now()) @map("created_at")
+  logo_url        String?
+  contact_email   String?
+  contact_number  String?
+  website_url     String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
 
   // Relations
-  user            User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  events          Event[]
+  user   User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  events Event[]
 
   @@map("Organization")
 }
 
-// Search Log model - matching existing SQL schema
-model SearchLog {
-  log_id         Int       @id @default(autoincrement()) @map("log_id")
-  user_id        Int       @map("user_id")
-  search_query   String?   @map("search_query")
-  search_time    DateTime? @default(now()) @map("search_time")
-  filters_applied String?  @map("filters_applied")
-
-  // Relations
-  user           User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-
-  @@map("Search_Log")
-}
-
-// Event model - matching your SQL schema exactly
 model Event {
-  event_id          Int       @id @default(autoincrement()) @map("event_id")
-  organization_id   Int?      @map("organization_id")
+  event_id          Int      @id @default(autoincrement())
+  organization_id   Int?
+  // creator_id removed
   title             String
   description       String?
   category          String?
   venue             String?
   location          String?
-  start_time        DateTime  @map("start_time")
-  end_time          DateTime  @map("end_time")
+  start_time        DateTime
+  end_time          DateTime
   capacity          Int?
-  status            String?   @default("draft")
-  cover_image_url   String?   @map("cover_image_url")
-  other_images_url  String?   @map("other_images_url")
-  created_at        DateTime? @default(now()) @map("created_at")
+  cover_image_url   String?
+  other_images_url  String?
+  video_url         String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now()) @updatedAt
+  status            String   @default("ACTIVE")
 
   // Relations
-  organization      Organization? @relation(fields: [organization_id], references: [organization_id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organization_id], references: [organization_id], onDelete: SetNull)
+  // creator relation removed
 
   @@map("Event")
+}
+
+model Search_Log {
+  log_id          Int      @id @default(autoincrement())
+  user_id         Int?
+  search_query    String
+  search_time     DateTime @default(now())
+  filters_applied String?
+
+  // Relations
+  user User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+
+  @@map("Search_Log")
 }

@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../models/event_model.dart';
+import '../services/event_service.dart';
+import '../providers/event_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_player/video_player.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -12,6 +18,17 @@ class EventDetailsScreen extends StatefulWidget {
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  bool isVideoExpanded = false;
+  // Video player
+  VideoPlayerController? _videoController;
+  bool _videoInitialized = false;
+  bool _userPausedVideo = false;
+
+  // Attendees
+  List<dynamic> attendees = [];
+  final EventService _eventService = EventService();
+
+  // State variables
   bool isBookmarked = false;
   bool isFollowing = false;
   bool isAboutExpanded = false;
@@ -19,73 +36,129 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    print('EventDetailsScreen initialized with eventId: ${widget.eventId}');
+    // Fetch event details using Provider
+    Future.microtask(() {
+      Provider.of<EventProvider>(context, listen: false)
+          .fetchEventById(widget.eventId);
+      _fetchAttendees();
+    });
   }
 
-  // Mock event data
-  final Map<String, dynamic> eventData = {
-    'title': 'National Music Festival',
-    'heroImage':
-        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-    'category': 'Music',
-    'attendeeCount': '20,000+',
-    'organizer': {
-      'name': 'World of Music',
-      'role': 'Organizer',
-      'avatar':
-          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100',
-      'events': 24,
-      'followers': '967K',
-      'following': 20,
-    },
-    'about':
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-    'gallery': [
-      'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200',
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=200',
-      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=200',
-    ],
-    'location': {
-      'address': 'Grand City St. 100, New York, United States',
-      'venue': 'Madison Square Garden',
-    },
-    'date': 'Dec 23, 2024',
-    'time': '19:00 - 23:00 PM',
-    'price': 'FROM \$25',
-  };
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
 
-  final List<Map<String, dynamic>> attendees = [
-    {
-      'name': 'Leatrice Handler',
-      'avatar': 'https://i.pravatar.cc/100?img=1',
-      'isFollowing': false
-    },
-    {
-      'name': 'Tanner Stafford',
-      'avatar': 'https://i.pravatar.cc/100?img=2',
-      'isFollowing': true
-    },
-    {
-      'name': 'Chantal Shelburne',
-      'avatar': 'https://i.pravatar.cc/100?img=3',
-      'isFollowing': false
-    },
-    {
-      'name': 'Maryland Winkles',
-      'avatar': 'https://i.pravatar.cc/100?img=4',
-      'isFollowing': true
-    },
-    {
-      'name': 'Sanjuanita Ordonez',
-      'avatar': 'https://i.pravatar.cc/100?img=5',
-      'isFollowing': false
-    },
-  ];
+  Future<void> _fetchAttendees() async {
+    try {
+      final response = await _eventService.getEventAttendees(widget.eventId);
+      setState(() {
+        attendees = response;
+      });
+    } catch (e) {
+      // Optionally handle attendee fetch error
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    // Example: Dec 23, 2024
+    return '${_monthName(date.month)} ${date.day}, ${date.year}';
+  }
+
+  String _formatTime(DateTime start, DateTime end) {
+    // Example: 19:00 - 23:00 PM
+    String startStr =
+        '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+    String endStr =
+        '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
+    return '$startStr - $endStr';
+  }
+
+  String _monthName(int month) {
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month];
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final eventProvider = Provider.of<EventProvider>(context);
+    final event = eventProvider.currentEvent;
+    final isLoading = eventProvider.isLoading;
+    final errorMessage = eventProvider.error;
+
+    // Always reset video controller when event changes to avoid wrong video playing
+    if (event != null && event.videoUrl.isNotEmpty) {
+      if (_videoController == null ||
+          _videoController!.dataSource != event.videoUrl) {
+        _videoController?.dispose();
+        if (event.videoUrl.startsWith('http')) {
+          _videoController = VideoPlayerController.network(event.videoUrl)
+            ..setLooping(true)
+            ..initialize().then((_) {
+              if (mounted) {
+                setState(() {
+                  _videoInitialized = true;
+                  _videoController?.play();
+                  _userPausedVideo = false;
+                });
+              }
+            });
+        } else {
+          _videoController = VideoPlayerController.asset(event.videoUrl)
+            ..setLooping(true)
+            ..initialize().then((_) {
+              if (mounted) {
+                setState(() {
+                  _videoInitialized = true;
+                  _videoController?.play();
+                  _userPausedVideo = false;
+                });
+              }
+            });
+        }
+      }
+    } else {
+      // If no video, dispose controller
+      if (_videoController != null) {
+        _videoController?.dispose();
+        _videoController = null;
+        _videoInitialized = false;
+        _userPausedVideo = false;
+      }
+    }
+
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (errorMessage != null) {
+      return Scaffold(
+        body: Center(child: Text('Error: $errorMessage')),
+      );
+    }
+    if (event == null) {
+      return const Scaffold(
+        body: Center(child: Text('Event not found')),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -93,53 +166,202 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         value: theme.brightness == Brightness.dark
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                _buildHeroSection(context, theme),
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildEventHeader(theme),
-                      _buildOrganizerSection(theme),
-                      _buildAboutSection(theme),
-                      _buildGallerySection(theme),
-                      _buildLocationSection(theme),
-                      const SizedBox(height: 100), // Space for bottom button
-                    ],
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Collapse video if expanded and user scrolls
+            if (isVideoExpanded && notification.metrics.pixels > 10) {
+              setState(() {
+                isVideoExpanded = false;
+              });
+            }
+            // Pause/play video only when cover is visible
+            if (_videoController != null && _videoInitialized) {
+              if (notification.metrics.pixels > 250) {
+                if (_videoController!.value.isPlaying) {
+                  _videoController?.pause();
+                }
+              } else {
+                // Only auto-play if user hasn't manually paused
+                if (!_videoController!.value.isPlaying && !_userPausedVideo) {
+                  _videoController?.play();
+                }
+              }
+            }
+            return false;
+          },
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  _buildHeroSection(context, theme, event),
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildEventHeader(theme, event),
+                        _buildOrganizerSection(theme, event),
+                        _buildAboutSection(theme, event),
+                        _buildGallerySection(theme, event),
+                        _buildLocationSection(theme, event),
+                        const SizedBox(height: 100), // Space for bottom button
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              // Expanded video overlay
+              if (isVideoExpanded &&
+                  event.videoUrl.isNotEmpty &&
+                  _videoController != null &&
+                  _videoInitialized)
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    color: Colors.black,
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: VideoPlayer(_videoController!),
+                          ),
+                        ),
+                        // Controls: progress bar, play, mute
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 32,
+                          child: Column(
+                            children: [
+                              VideoProgressIndicator(
+                                _videoController!,
+                                allowScrubbing: true,
+                                colors: VideoProgressColors(
+                                  playedColor: theme.primaryColor,
+                                  backgroundColor: Colors.white24,
+                                  bufferedColor: Colors.white38,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Mute button
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_videoController!.value.volume > 0) {
+                                        _videoController?.setVolume(0);
+                                      } else {
+                                        _videoController?.setVolume(1);
+                                      }
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                      padding: const EdgeInsets.all(12),
+                                      child: Icon(
+                                        _videoController!.value.volume > 0
+                                            ? Icons.volume_up
+                                            : Icons.volume_off,
+                                        color: Colors.white,
+                                        size: 28,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 32),
+                                  // Play/pause button
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_videoController!.value.isPlaying) {
+                                        _videoController?.pause();
+                                        _userPausedVideo = true;
+                                      } else {
+                                        _videoController?.play();
+                                        _userPausedVideo = false;
+                                      }
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(32),
+                                      ),
+                                      padding: const EdgeInsets.all(16),
+                                      child: Icon(
+                                        _videoController!.value.isPlaying
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Close button (top right)
+                        Positioned(
+                          top: 32,
+                          right: 24,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isVideoExpanded = false;
+                              });
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 28),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-            // Fixed bottom Book button
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
+              // Fixed bottom Book button
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withOpacity(0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: _buildBookEventButton(theme, event),
                 ),
-                padding: const EdgeInsets.all(20),
-                child: _buildBookEventButton(theme),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeroSection(BuildContext context, ThemeData theme) {
+  Widget _buildHeroSection(BuildContext context, ThemeData theme, Event event) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -147,19 +369,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withValues(alpha: 0.9),
+          color: theme.colorScheme.surface.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
         child: IconButton(
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (_videoController != null && _videoController!.value.isPlaying) {
+              _videoController?.pause();
+            }
+            context.pop();
+          },
         ),
       ),
       actions: [
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -173,7 +400,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -186,81 +413,129 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              eventData['heroImage'],
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: theme.colorScheme.surface,
-                child: Icon(Icons.image_not_supported,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  isVideoExpanded = true;
+                });
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Always show cover image as background
+                  CachedNetworkImage(
+                    imageUrl: event.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.image_not_supported),
+                  ),
+                  // Show video above cover image if initialized and playing or expanded
+                  if (_videoInitialized &&
+                      _videoController != null &&
+                      (_videoController!.value.isPlaying || isVideoExpanded))
+                    SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      ),
+                    ),
+                  // 3. Gradient overlay (always above video)
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.65),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.6),
-                  ],
-                ),
-              ),
-            ),
+            // 4. Overlays (title, category, attendees)
             Positioned(
-              bottom: 80,
+              bottom: 40,
               left: 20,
               right: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    eventData['title'],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                  IgnorePointer(
+                    child: Text(
+                      event.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 2),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: theme.primaryColor,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Text(
-                          eventData['category'],
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        child: IgnorePointer(
+                          child: Text(
+                            event.category,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  offset: Offset(0, 1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       SizedBox(
-                        width:
-                            88, // Width for 5 overlapping circles: 24 + (4 * 16)
-                        height: 24,
+                        width: 70,
+                        height: 22,
                         child: Stack(
                           children: List.generate(
-                            5,
+                            attendees.length > 5 ? 5 : attendees.length,
                             (index) => Positioned(
-                              left: index * 16.0,
+                              left: index * 14.0,
                               child: Container(
-                                width: 24,
-                                height: 24,
+                                width: 18,
+                                height: 18,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border:
                                       Border.all(color: Colors.white, width: 2),
                                   image: DecorationImage(
                                     image: NetworkImage(
-                                        'https://i.pravatar.cc/50?img=${index + 1}'),
+                                        attendees[index]['avatar'] ?? ''),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -269,23 +544,30 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       GestureDetector(
                         onTap: () =>
-                            context.push('/event/${widget.eventId}/attendees'),
+                            context.push('/events/${widget.eventId}/attendees'),
                         child: Row(
                           children: [
                             Text(
-                              '${eventData['attendeeCount']} going',
+                              '${attendees.length} going',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             const Icon(Icons.arrow_forward_ios,
-                                color: Colors.white, size: 16),
+                                color: Colors.white, size: 14),
                           ],
                         ),
                       ),
@@ -294,6 +576,75 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ],
               ),
             ),
+            // 5. Mute and Play/Pause buttons (bottom right)
+            if (event.videoUrl.isNotEmpty &&
+                _videoController != null &&
+                _videoInitialized)
+              Positioned(
+                // Align play button with attendee text (bottom: 40)
+                bottom: 40,
+                right: 24,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Mute/unmute button (top)
+                    GestureDetector(
+                      onTap: () {
+                        if (_videoController!.value.volume > 0) {
+                          _videoController?.setVolume(0);
+                        } else {
+                          _videoController?.setVolume(1);
+                        }
+                        setState(() {});
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          _videoController!.value.volume > 0
+                              ? Icons.volume_up
+                              : Icons.volume_off,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Play/pause button (bottom, bigger)
+                    GestureDetector(
+                      onTap: () {
+                        if (_videoController!.value.isPlaying) {
+                          _videoController?.pause();
+                          _userPausedVideo = true;
+                        } else {
+                          _videoController?.play();
+                          _userPausedVideo = false;
+                        }
+                        setState(() {});
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(
+                          _videoController!.value.isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // 6. Bottom rounded container
             Positioned(
               bottom: 0,
               left: 0,
@@ -340,7 +691,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   //   );
   // }
 
-  Widget _buildEventHeader(ThemeData theme) {
+  Widget _buildEventHeader(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     return Padding(
@@ -352,7 +703,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  eventData['date'],
+                  _formatDate(event.startDateTime),
                   style: textTheme.titleMedium?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -360,7 +711,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  eventData['time'],
+                  _formatTime(event.startDateTime, event.endDateTime),
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -369,7 +720,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
           Text(
-            eventData['price'],
+            event.ticketTypes.isNotEmpty
+                ? 'FROM ${event.ticketTypes.first.price}'
+                : 'Free',
             style: textTheme.titleLarge?.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.bold,
@@ -380,20 +733,30 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildOrganizerSection(ThemeData theme) {
-    final organizer = eventData['organizer'];
+  Widget _buildOrganizerSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-
     return GestureDetector(
-      onTap: () => context.push('/organizer/world-of-music'),
+      onTap: () {
+        if (_videoController != null && _videoController!.value.isPlaying) {
+          _videoController?.pause();
+        }
+        // Navigate to organization details page
+        context.push('/organization/${event.organizationId}');
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(organizer['avatar']),
+              radius: 30,
+              backgroundImage: CachedNetworkImageProvider(
+                (event.organization != null &&
+                        event.organization!['logo_url'] != null &&
+                        event.organization!['logo_url'].toString().isNotEmpty)
+                    ? event.organization!['logo_url']
+                    : 'https://i.pravatar.cc/100?u=${event.organizationId}',
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -401,16 +764,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    organizer['name'],
+                    event.organizerName,
                     style: textTheme.titleMedium?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    organizer['role'],
+                    'Organizer',
                     style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -439,10 +802,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme) {
+  Widget _buildAboutSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final aboutText = eventData['about'] as String;
+    final aboutText = event.description;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -492,10 +855,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildGallerySection(ThemeData theme) {
+  Widget _buildGallerySection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final gallery = eventData['gallery'] as List<String>;
+    // Support multiple images: cover + other_images_url (comma-separated)
+    List<String> gallery = [];
+    if (event.imageUrl.isNotEmpty) gallery.add(event.imageUrl);
+    if (event.otherImagesUrl.isNotEmpty) {
+      // If backend sends comma-separated string
+      final otherImages = event.otherImagesUrl
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      gallery.addAll(otherImages);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -531,9 +905,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   mainAxisSpacing: 12),
                           itemBuilder: (context, index) => ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              gallery[index],
+                            child: CachedNetworkImage(
+                              imageUrl: gallery[index],
                               fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator()),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.image_not_supported),
                             ),
                           ),
                         ),
@@ -585,7 +963,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           ),
                         ],
                         image: DecorationImage(
-                          image: NetworkImage(gallery[index]),
+                          image: CachedNetworkImageProvider(gallery[index]),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -629,7 +1007,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildLocationSection(ThemeData theme) {
+  Widget _buildLocationSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     return Padding(
@@ -655,7 +1033,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  eventData['location']['address'],
+                  event.address,
                   style: textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurface.withOpacity(0.8),
                   ),
@@ -718,8 +1096,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 12,
-                        backgroundImage:
-                            NetworkImage(eventData['organizer']['avatar']),
+                        backgroundImage: NetworkImage(
+                            'https://i.pravatar.cc/100?u=${event.organizationId}'),
                       ),
                     ),
                   ),
@@ -732,7 +1110,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildBookEventButton(ThemeData theme) {
+  Widget _buildBookEventButton(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final buttonBg = isDark ? Colors.white : Colors.black;
@@ -741,6 +1119,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
+          if (_videoController != null && _videoController!.value.isPlaying) {
+            _videoController?.pause();
+          }
           context.push('/checkout/${widget.eventId}/seat-selection');
         },
         style: ElevatedButton.styleFrom(

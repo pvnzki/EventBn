@@ -1,6 +1,6 @@
 class Constants {
   // API Endpoints
-  static const String authEndpoint = '/auth';
+  static const String authEndpoint = '/api/auth';
   static const String eventsEndpoint = '/events';
   static const String ticketsEndpoint = '/tickets';
   static const String paymentsEndpoint = '/payments';
