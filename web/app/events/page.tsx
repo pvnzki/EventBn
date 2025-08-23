@@ -1,156 +1,174 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus, Eye, Edit, Trash2, Calendar, MapPin, Users, DollarSign } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Plus, Eye, Edit, Trash2, Calendar, X } from "lucide-react";
+import Link from "next/link";
 
 interface User {
-  role: "admin" | "organizer"
-  name: string
+  role: "admin" | "organizer";
+  name: string;
 }
 
-const mockEvents = [
-  {
-    id: 1,
-    title: "Tech Conference 2024",
-    description: "Annual technology conference featuring the latest innovations",
-    category: "Conference",
-    date: "2024-03-15",
-    time: "09:00",
-    venue: "Convention Center",
-    location: "New York, NY",
-    capacity: 500,
-    ticketsSold: 350,
-    revenue: 17500,
-    status: "active",
-    organizer: "John Doe",
-  },
-  {
-    id: 2,
-    title: "Music Festival Summer",
-    description: "Three-day music festival with top artists",
-    category: "Festival",
-    date: "2024-06-20",
-    time: "14:00",
-    venue: "Central Park",
-    location: "New York, NY",
-    capacity: 1000,
-    ticketsSold: 1000,
-    revenue: 50000,
-    status: "sold-out",
-    organizer: "Jane Smith",
-  },
-  {
-    id: 3,
-    title: "Business Workshop",
-    description: "Professional development workshop for entrepreneurs",
-    category: "Workshop",
-    date: "2024-04-10",
-    time: "10:00",
-    venue: "Business Center",
-    location: "San Francisco, CA",
-    capacity: 100,
-    ticketsSold: 75,
-    revenue: 3750,
-    status: "active",
-    organizer: "Mike Johnson",
-  },
-  {
-    id: 4,
-    title: "Art Exhibition Opening",
-    description: "Contemporary art exhibition featuring local artists",
-    category: "Exhibition",
-    date: "2024-05-05",
-    time: "18:00",
-    venue: "Art Gallery",
-    location: "Los Angeles, CA",
-    capacity: 200,
-    ticketsSold: 0,
-    revenue: 0,
-    status: "draft",
-    organizer: "Sarah Wilson",
-  },
-  {
-    id: 5,
-    title: "Sports Tournament",
-    description: "Annual basketball tournament championship",
-    category: "Sports",
-    date: "2024-07-15",
-    time: "15:00",
-    venue: "Sports Arena",
-    location: "Chicago, IL",
-    capacity: 800,
-    ticketsSold: 600,
-    revenue: 30000,
-    status: "active",
-    organizer: "David Brown",
-  },
-]
+interface Event {
+  event_id: number;
+  organization_id: number | null;
+  title: string;
+  description: string;
+  category: string;
+  venue: string;
+  location: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  cover_image_url: string;
+  other_images_url: string;
+  video_url: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  organization?: { name: string; organization_id: number; logo_url: string };
+  ticketsSold?: number;
+  revenue?: number;
+}
 
 export default function EventsPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [events, setEvents] = useState(mockEvents)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [user, setUser] = useState<User | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [])
+  }, []);
 
-  const isAdmin = user?.role === "admin"
+  useEffect(() => {
+    fetch("http://localhost:3000/api/events")
+      .then((res) => res.json())
+      .then((response) => {
+        if (response.success) {
+          setEvents(response.data);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const handleDeleteEvent = async (event: Event) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/events/${event.event_id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setEvents(events.filter((e) => e.event_id !== event.event_id));
+        setEventToDelete(null);
+      } else {
+        console.error("Failed to delete event");
+      }
+    } catch (err) {
+      console.error("Error deleting event:", err);
+    }
+  };
+
+  const isAdmin = user?.role === "admin";
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.venue.toLowerCase().includes(searchTerm.toLowerCase())
+      event.venue.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || event.status === statusFilter
-    const matchesCategory = categoryFilter === "all" || event.category.toLowerCase() === categoryFilter
+    const matchesStatus =
+      statusFilter === "all" || event.status.toLowerCase() === statusFilter;
+    const matchesCategory =
+      categoryFilter === "all" ||
+      event.category.toLowerCase() === categoryFilter;
 
-    // If organizer, only show their events (simplified - in real app would filter by user ID)
-    const matchesUser = isAdmin || event.organizer === user?.name
+    const matchesUser = isAdmin || event.organization?.name === user?.name;
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesUser
-  })
+    return matchesSearch && matchesStatus && matchesCategory && matchesUser;
+  });
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "active":
-        return "default"
-      case "sold-out":
-        return "destructive"
+        return "default";
+      case "sold_out":
+        return "destructive";
       case "draft":
-        return "secondary"
+        return "secondary";
       case "cancelled":
-        return "outline"
+        return "outline";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const handleViewEvent = (event: Event) => {
+    setSelectedEvent(event);
+  };
+
+  const closeModal = () => {
+    setSelectedEvent(null);
+  };
+
+  const handleOpenDeleteModal = (event: Event) => {
+    setEventToDelete(event);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setEventToDelete(null);
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{isAdmin ? "All Events" : "My Events"}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {isAdmin ? "All Events" : "My Events"}
+              </h1>
               <p className="text-gray-600 mt-2">
-                {isAdmin ? "Manage all events across the platform" : "Manage your created events"}
+                {isAdmin
+                  ? "Manage all events across the platform"
+                  : "Manage your created events"}
               </p>
             </div>
             <Link href="/create-event">
@@ -161,7 +179,6 @@ export default function EventsPage() {
             </Link>
           </div>
 
-          {/* Filters */}
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -183,12 +200,15 @@ export default function EventsPage() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="sold-out">Sold Out</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                >
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
@@ -205,81 +225,89 @@ export default function EventsPage() {
             </CardContent>
           </Card>
 
-          {/* Events Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <Card key={event.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{event.title}</CardTitle>
-                      <CardDescription className="mt-1">{event.description}</CardDescription>
-                    </div>
-                    <Badge variant={getStatusColor(event.status)}>{event.status}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Event Details */}
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      {event.date} at {event.time}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {event.venue}, {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Users className="h-4 w-4 mr-2" />
-                      {event.ticketsSold} / {event.capacity} attendees
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <DollarSign className="h-4 w-4 mr-2" />${event.revenue.toLocaleString()} revenue
-                    </div>
-                    {isAdmin && <div className="text-sm text-gray-600">Organizer: {event.organizer}</div>}
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Tickets Sold</span>
-                      <span>{Math.round((event.ticketsSold / event.capacity) * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {isAdmin ? "Recent Events" : "My Recent Events"}
+              </CardTitle>
+              <CardDescription>
+                {isAdmin
+                  ? "Latest events across the platform"
+                  : "Your latest event activities"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredEvents.map((event) => (
+                  <div
+                    key={event.event_id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={event.cover_image_url}
+                        alt={event.title}
+                        className="w-16 h-16 object-cover rounded-md"
                       />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {event.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Category: {event.category}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Venue: {event.venue}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Date: {formatDate(event.start_time)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge variant={getStatusColor(event.status)}>
+                        {event.status.toLowerCase()}
+                      </Badge>
+                      <div className="flex space-x-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewEvent(event)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {(isAdmin ||
+                          event.organization?.name === user?.name) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenDeleteModal(event)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-                  {/* Actions */}
-                  <div className="flex justify-end space-x-2 pt-2">
-                    <Button size="sm" variant="ghost">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {(isAdmin || event.organizer === user?.name) && (
-                      <Button size="sm" variant="ghost">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Empty State */}
           {filteredEvents.length === 0 && (
             <Card className="text-center py-12">
               <CardContent>
                 <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No events found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No events found
+                </h3>
                 <p className="text-gray-600 mb-4">
-                  {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
+                  {searchTerm ||
+                  statusFilter !== "all" ||
+                  categoryFilter !== "all"
                     ? "Try adjusting your filters to see more events."
                     : "Get started by creating your first event."}
                 </p>
@@ -294,6 +322,155 @@ export default function EventsPage() {
           )}
         </div>
       </div>
+
+      {selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold">{selectedEvent.title}</h2>
+              <Button variant="ghost" onClick={closeModal}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <img
+                src={selectedEvent.cover_image_url}
+                alt={selectedEvent.title}
+                className="w-32 h-16 object-cover rounded-md"
+              />
+              <p className="text-sm">
+                <strong>Event ID:</strong> {selectedEvent.event_id}
+              </p>
+              <p className="text-sm">
+                <strong>Title:</strong> {selectedEvent.title}
+              </p>
+              <p className="text-sm">
+                <strong>Description:</strong> {selectedEvent.description}
+              </p>
+              <p className="text-sm">
+                <strong>Category:</strong> {selectedEvent.category}
+              </p>
+              <p className="text-sm">
+                <strong>Venue:</strong> {selectedEvent.venue}
+              </p>
+              <p className="text-sm">
+                <strong>Location:</strong> {selectedEvent.location}
+              </p>
+              <p className="text-sm">
+                <strong>Start Time:</strong>{" "}
+                {formatDateTime(selectedEvent.start_time)}
+              </p>
+              <p className="text-sm">
+                <strong>End Time:</strong>{" "}
+                {formatDateTime(selectedEvent.end_time)}
+              </p>
+              <p className="text-sm">
+                <strong>Capacity:</strong> {selectedEvent.capacity}
+              </p>
+              <p className="text-sm">
+                <strong>Status:</strong> {selectedEvent.status.toLowerCase()}
+              </p>
+              <p className="text-sm">
+                <strong>Cover Image URL:</strong>{" "}
+                <a
+                  href={selectedEvent.cover_image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Image
+                </a>
+              </p>
+              <p className="text-sm">
+                <strong>Other Images URL:</strong>{" "}
+                {selectedEvent.other_images_url
+                  .split(", ")
+                  .map((url, index) => (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline block"
+                    >
+                      Image {index + 1}
+                    </a>
+                  ))}
+              </p>
+              <p className="text-sm">
+                <strong>Video URL:</strong>{" "}
+                {selectedEvent.video_url ? (
+                  <a
+                    href={selectedEvent.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Video
+                  </a>
+                ) : (
+                  "N/A"
+                )}
+              </p>
+              <p className="text-sm">
+                <strong>Created At:</strong>{" "}
+                {formatDateTime(selectedEvent.created_at)}
+              </p>
+              <p className="text-sm">
+                <strong>Updated At:</strong>{" "}
+                {formatDateTime(selectedEvent.updated_at)}
+              </p>
+              {selectedEvent.organization && (
+                <p className="text-sm">
+                  <strong>Organization:</strong>{" "}
+                  {selectedEvent.organization.name}
+                </p>
+              )}
+              <p className="text-sm">
+                <strong>Organization ID:</strong>{" "}
+                {selectedEvent.organization_id || "N/A"}
+              </p>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button onClick={closeModal} size="sm">
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {eventToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Confirm Delete</h2>
+              <Button variant="ghost" onClick={handleCloseDeleteModal}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete the event "{eventToDelete.title}"?
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCloseDeleteModal}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteEvent(eventToDelete)}
+              >
+                Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
