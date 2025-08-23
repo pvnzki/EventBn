@@ -19,6 +19,7 @@ import {
   Eye,
   Edit,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   Bar,
@@ -37,57 +38,54 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-interface User {
-  role: "admin" | "organizer";
-  name: string;
-}
-
-const salesData = [
-  { month: "Jan", sales: 4000, events: 12 },
-  { month: "Feb", sales: 3000, events: 8 },
-  { month: "Mar", sales: 5000, events: 15 },
-  { month: "Apr", sales: 4500, events: 11 },
-  { month: "May", sales: 6000, events: 18 },
-  { month: "Jun", sales: 5500, events: 16 },
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-const recentEvents = [
-  {
-    id: 1,
-    name: "Tech Conference 2024",
-    date: "2024-03-15",
-    status: "active",
-    attendees: 250,
-    revenue: 12500,
-  },
-  {
-    id: 2,
-    name: "Music Festival",
-    date: "2024-03-20",
-    status: "sold-out",
-    attendees: 500,
-    revenue: 25000,
-  },
-  {
-    id: 3,
-    name: "Business Workshop",
-    date: "2024-03-25",
-    status: "active",
-    attendees: 80,
-    revenue: 4000,
-  },
-  {
-    id: 4,
-    name: "Art Exhibition",
-    date: "2024-04-01",
-    status: "draft",
-    attendees: 0,
-    revenue: 0,
-  },
-];
+const DashboardPage = () => {
+  type User = { role: string } | null;
+  const [user, setUser] = useState<User>(null);
+  type AnalyticsData = {
+    month: number;
+    total_events: number;
+    total_attendees: number;
+    total_revenue: number;
+    growth_rate: number;
+  };
+  type Event = {
+    event_id: number;
+    organization_id: number | null;
+    title: string;
+    description: string;
+    category: string;
+    venue: string;
+    location: string;
+    start_time: string;
+    end_time: string;
+    capacity: number;
+    cover_image_url: string;
+    other_images_url: string;
+    video_url: string;
+    created_at: string;
+    updated_at: string;
+    status: string;
+    organization?: { name: string; organization_id: number; logo_url: string };
+  };
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -96,15 +94,95 @@ export default function DashboardPage() {
     }
   }, []);
 
+  useEffect(() => {
+    fetch("http://localhost:3000/api/analytics")
+      .then((res) => res.json())
+      .then((response) => {
+        if (response.success) {
+          setAnalyticsData(response.data);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/events")
+      .then((res) => res.json())
+      .then((response) => {
+        if (response.success) {
+          setEvents(response.data);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
   const isAdmin = user?.role === "admin";
+
+  const recentData = analyticsData[0] || {
+    total_events: 0,
+    total_attendees: 0,
+    total_revenue: 0,
+    growth_rate: 0,
+  };
+
+  const previousData = analyticsData[1] || recentData;
+
+  const eventsChange =
+    previousData.total_events === 0
+      ? 0
+      : ((recentData.total_events - previousData.total_events) /
+          previousData.total_events) *
+        100;
+
+  const attendeesChange =
+    previousData.total_attendees === 0
+      ? 0
+      : ((recentData.total_attendees - previousData.total_attendees) /
+          previousData.total_attendees) *
+        100;
+
+  const revenueChange =
+    previousData.total_revenue === 0
+      ? 0
+      : ((recentData.total_revenue - previousData.total_revenue) /
+          previousData.total_revenue) *
+        100;
+
+  const growthChange = recentData.growth_rate - previousData.growth_rate;
+
+  let chartData: { month: string; sales: number; events: number }[] = [];
+  if (analyticsData.length > 0) {
+    const lastSix = analyticsData.slice(0, 6).reverse();
+    chartData = lastSix.map((item) => ({
+      month: monthNames[item.month - 1],
+      sales: item.total_revenue,
+      events: item.total_events,
+    }));
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toISOString().split("T")[0];
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const handleViewEvent = (event: Event) => {
+    setSelectedEvent(event);
+  };
+
+  const closeModal = () => {
+    setSelectedEvent(null);
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
               {isAdmin ? "Admin Dashboard" : "Organizer Dashboard"}
@@ -116,7 +194,6 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -127,10 +204,11 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {isAdmin ? "1,222" : "12"}
+                  {recentData.total_events.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
+                  {eventsChange > 0 ? "+" : ""}
+                  {eventsChange.toFixed(1)}% from last month
                 </p>
               </CardContent>
             </Card>
@@ -144,10 +222,11 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {isAdmin ? "45,231" : "1,830"}
+                  {recentData.total_attendees.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +180.1% from last month
+                  {attendeesChange > 0 ? "+" : ""}
+                  {attendeesChange.toFixed(1)}% from last month
                 </p>
               </CardContent>
             </Card>
@@ -159,10 +238,11 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {isAdmin ? "$573,430" : "$41,500"}
+                  ${recentData.total_revenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  +19% from last month
+                  {revenueChange > 0 ? "+" : ""}
+                  {revenueChange.toFixed(1)}% from last month
                 </p>
               </CardContent>
             </Card>
@@ -175,15 +255,18 @@ export default function DashboardPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+12.5%</div>
+                <div className="text-2xl font-bold">
+                  {recentData.growth_rate > 0 ? "+" : ""}
+                  {recentData.growth_rate.toFixed(2)}%
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +2.1% from last month
+                  {growthChange > 0 ? "+" : ""}
+                  {growthChange.toFixed(1)}% from last month
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -207,7 +290,7 @@ export default function DashboardPage() {
                   className="h-[300px]"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={salesData}>
+                    <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -245,7 +328,7 @@ export default function DashboardPage() {
                   className="h-[300px]"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={salesData}>
+                    <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -264,7 +347,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Recent Events */}
           <Card>
             <CardHeader>
               <CardTitle>
@@ -278,41 +360,50 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentEvents.map((event) => (
+                {events.map((event) => (
                   <div
-                    key={event.id}
+                    key={event.event_id}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {event.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Date: {event.date}
-                      </p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className="text-sm text-gray-600">
-                          Attendees: {event.attendees}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          Revenue: ${event.revenue.toLocaleString()}
-                        </span>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={event.cover_image_url}
+                        alt={event.title}
+                        className="w-16 h-16 object-cover rounded-md"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {event.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Category: {event.category}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Venue: {event.venue}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Date: {formatDate(event.start_time)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Badge
                         variant={
-                          event.status === "active"
+                          event.status === "ACTIVE"
                             ? "default"
-                            : event.status === "sold-out"
+                            : event.status === "SOLD_OUT"
                             ? "destructive"
                             : "secondary"
                         }
                       >
-                        {event.status}
+                        {event.status.toLowerCase()}
                       </Badge>
                       <div className="flex space-x-1">
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewEvent(event)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost">
@@ -330,6 +421,125 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-bold">{selectedEvent.title}</h2>
+              <Button variant="ghost" onClick={closeModal}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <img
+                src={selectedEvent.cover_image_url}
+                alt={selectedEvent.title}
+                className="w-32 h-16 object-cover rounded-md"
+              />
+              <p className="text-sm">
+                <strong>Event ID:</strong> {selectedEvent.event_id}
+              </p>
+              <p className="text-sm">
+                <strong>Title:</strong> {selectedEvent.title}
+              </p>
+              <p className="text-sm">
+                <strong>Description:</strong> {selectedEvent.description}
+              </p>
+              <p className="text-sm">
+                <strong>Category:</strong> {selectedEvent.category}
+              </p>
+              <p className="text-sm">
+                <strong>Venue:</strong> {selectedEvent.venue}
+              </p>
+              <p className="text-sm">
+                <strong>Location:</strong> {selectedEvent.location}
+              </p>
+              <p className="text-sm">
+                <strong>Start Time:</strong>{" "}
+                {formatDateTime(selectedEvent.start_time)}
+              </p>
+              <p className="text-sm">
+                <strong>End Time:</strong>{" "}
+                {formatDateTime(selectedEvent.end_time)}
+              </p>
+              <p className="text-sm">
+                <strong>Capacity:</strong> {selectedEvent.capacity}
+              </p>
+              <p className="text-sm">
+                <strong>Status:</strong> {selectedEvent.status.toLowerCase()}
+              </p>
+              <p className="text-sm">
+                <strong>Cover Image URL:</strong>{" "}
+                <a
+                  href={selectedEvent.cover_image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Image
+                </a>
+              </p>
+              <p className="text-sm">
+                <strong>Other Images URL:</strong>{" "}
+                {selectedEvent.other_images_url
+                  .split(", ")
+                  .map((url, index) => (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline block"
+                    >
+                      Image {index + 1}
+                    </a>
+                  ))}
+              </p>
+              <p className="text-sm">
+                <strong>Video URL:</strong>{" "}
+                {selectedEvent.video_url ? (
+                  <a
+                    href={selectedEvent.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Video
+                  </a>
+                ) : (
+                  "N/A"
+                )}
+              </p>
+              <p className="text-sm">
+                <strong>Created At:</strong>{" "}
+                {formatDateTime(selectedEvent.created_at)}
+              </p>
+              <p className="text-sm">
+                <strong>Updated At:</strong>{" "}
+                {formatDateTime(selectedEvent.updated_at)}
+              </p>
+              {selectedEvent.organization && (
+                <p className="text-sm">
+                  <strong>Organization:</strong>{" "}
+                  {selectedEvent.organization.name}
+                </p>
+              )}
+              <p className="text-sm">
+                <strong>Organization ID:</strong>{" "}
+                {selectedEvent.organization_id || "N/A"}
+              </p>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button onClick={closeModal} size="sm">
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default DashboardPage;
