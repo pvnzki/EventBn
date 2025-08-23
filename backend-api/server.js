@@ -51,6 +51,7 @@ const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
 const userRoutes = require("./routes/users");
 const organizationRoutes = require("./routes/organizations");
+const analyticsRoutes = require("./routes/analytics");
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static("uploads"));
@@ -92,6 +93,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/organizations", organizationRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
