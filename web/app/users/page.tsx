@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/components/ui/use-toast"; // Optional: for toast notifications
+import { useToast } from "@/components/ui/use-toast";
 import {
   Search,
   Plus,
@@ -69,8 +69,9 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null); // Track user to delete
-  const { toast } = useToast(); // Optional: for toast notifications
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // New state for selected user
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check current user
@@ -138,7 +139,7 @@ export default function UsersPage() {
 
       if (response.ok) {
         setUsers(users.filter((u) => u.id !== user.id));
-        setUserToDelete(null); // Close the modal
+        setUserToDelete(null);
         toast({
           title: "Success",
           description: "User deleted successfully.",
@@ -164,6 +165,16 @@ export default function UsersPage() {
   // Function to close delete modal
   const handleCloseDeleteModal = () => {
     setUserToDelete(null);
+  };
+
+  // Function to handle view user
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user);
+  };
+
+  // Function to close view modal
+  const closeViewModal = () => {
+    setSelectedUser(null);
   };
 
   // Redirect if not admin
@@ -474,7 +485,11 @@ export default function UsersPage() {
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewUser(user)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost">
@@ -536,6 +551,87 @@ export default function UsersPage() {
                     onClick={() => handleDeleteUser(userToDelete)}
                   >
                     Yes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* View User Modal */}
+          {selectedUser && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold">{selectedUser.name}</h2>
+                  <Button variant="ghost" onClick={closeViewModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage
+                      src={selectedUser.avatar || "/placeholder.svg"}
+                      alt={selectedUser.name}
+                    />
+                    <AvatarFallback>
+                      {selectedUser.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm">
+                    <strong>User ID:</strong> {selectedUser.id}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Name:</strong> {selectedUser.name}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Email:</strong> {selectedUser.email}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Role:</strong> {selectedUser.role}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Status:</strong> {selectedUser.status}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Join Date:</strong> {selectedUser.joinDate}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Last Active:</strong> {selectedUser.lastActive}
+                  </p>
+                  {selectedUser.role === "organizer" && (
+                    <>
+                      <p className="text-sm">
+                        <strong>Events Created:</strong>{" "}
+                        {selectedUser.eventsCreated}
+                      </p>
+                      <p className="text-sm">
+                        <strong>Total Revenue:</strong> $
+                        {selectedUser.totalRevenue.toLocaleString()}
+                      </p>
+                    </>
+                  )}
+                  <p className="text-sm">
+                    <strong>Avatar URL:</strong>{" "}
+                    {selectedUser.avatar ? (
+                      <a
+                        href={selectedUser.avatar}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        View Avatar
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </p>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <Button onClick={closeViewModal} size="sm">
+                    Close
                   </Button>
                 </div>
               </div>
