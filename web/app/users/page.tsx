@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/components/ui/use-toast"; // Optional: for toast notifications
 import {
   Search,
   Plus,
@@ -32,6 +33,7 @@ import {
   Shield,
   UserCheck,
   UserX,
+  X,
 } from "lucide-react";
 
 interface User {
@@ -67,6 +69,8 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null); // Track user to delete
+  const { toast } = useToast(); // Optional: for toast notifications
 
   useEffect(() => {
     // Check current user
@@ -83,7 +87,6 @@ export default function UsersPage() {
         const data = await response.json();
 
         if (data.success && Array.isArray(data.data)) {
-          // Map API response to local User interface
           const mappedUsers: User[] = data.data.map((apiUser: ApiUser) => ({
             id: apiUser.user_id,
             name: apiUser.name,
@@ -98,13 +101,13 @@ export default function UsersPage() {
             eventsCreated:
               apiUser.role.toLowerCase() === "organizer"
                 ? Math.floor(Math.random() * 20)
-                : 0, // Mock data as API doesn't provide this
+                : 0,
             totalRevenue:
               apiUser.role.toLowerCase() === "organizer"
                 ? Math.floor(Math.random() * 50000)
-                : 0, // Mock data as API doesn't provide this
+                : 0,
             joinDate: new Date(apiUser.created_at).toISOString().split("T")[0],
-            lastActive: new Date().toISOString().split("T")[0], // Mock data as API doesn't provide this
+            lastActive: new Date().toISOString().split("T")[0],
             avatar:
               apiUser.profile_picture || "/placeholder.svg?height=40&width=40",
           }));
@@ -122,6 +125,46 @@ export default function UsersPage() {
 
     fetchUsers();
   }, []);
+
+  // Function to handle user deletion
+  const handleDeleteUser = async (user: User) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/users/${user.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        setUsers(users.filter((u) => u.id !== user.id));
+        setUserToDelete(null); // Close the modal
+        toast({
+          title: "Success",
+          description: "User deleted successfully.",
+        });
+      } else {
+        throw new Error("Failed to delete user");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to open delete modal
+  const handleOpenDeleteModal = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  // Function to close delete modal
+  const handleCloseDeleteModal = () => {
+    setUserToDelete(null);
+  };
 
   // Redirect if not admin
   if (currentUser && currentUser.role !== "admin") {
@@ -211,7 +254,6 @@ export default function UsersPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
           {/* Header */}
@@ -438,7 +480,11 @@ export default function UsersPage() {
                         <Button size="sm" variant="ghost">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenDeleteModal(user)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -461,6 +507,40 @@ export default function UsersPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Delete Confirmation Modal */}
+          {userToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold">Confirm Delete</h2>
+                  <Button variant="ghost" onClick={handleCloseDeleteModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Are you sure you want to delete the user "{userToDelete.name}
+                  "?
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCloseDeleteModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteUser(userToDelete)}
+                  >
+                    Yes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
