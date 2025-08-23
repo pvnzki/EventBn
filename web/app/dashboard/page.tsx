@@ -86,6 +86,7 @@ const DashboardPage = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -115,6 +116,25 @@ const DashboardPage = () => {
       })
       .catch((err) => console.error(err));
   }, []);
+
+  const handleDeleteEvent = async (event: Event) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/events/${event.event_id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (response.ok) {
+        setEvents(events.filter((e) => e.event_id !== event.event_id));
+        setEventToDelete(null);
+      } else {
+        console.error("Failed to delete event");
+      }
+    } catch (err) {
+      console.error("Error deleting event:", err);
+    }
+  };
 
   const isAdmin = user?.role === "admin";
 
@@ -176,6 +196,14 @@ const DashboardPage = () => {
 
   const closeModal = () => {
     setSelectedEvent(null);
+  };
+
+  const handleOpenDeleteModal = (event: Event) => {
+    setEventToDelete(event);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setEventToDelete(null);
   };
 
   return (
@@ -409,7 +437,11 @@ const DashboardPage = () => {
                         <Button size="sm" variant="ghost">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenDeleteModal(event)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -533,6 +565,38 @@ const DashboardPage = () => {
             <div className="mt-3 flex justify-end">
               <Button onClick={closeModal} size="sm">
                 Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {eventToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Confirm Delete</h2>
+              <Button variant="ghost" onClick={handleCloseDeleteModal}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete the event "{eventToDelete.title}"?
+            </p>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCloseDeleteModal}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeleteEvent(eventToDelete)}
+              >
+                Yes
               </Button>
             </div>
           </div>
