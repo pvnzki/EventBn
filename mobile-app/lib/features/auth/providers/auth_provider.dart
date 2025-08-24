@@ -66,7 +66,7 @@ Future<bool> login(String email, String password) async {
     final result = await _authService.login(email, password);
 
     // Ensure result is valid and contains both user + token
-    if (result != null && result['user'] != null && result['token'] != null) {
+    if (result['user'] != null && result['token'] != null) {
       _user = result['user'];
       _isAuthenticated = true;
 
