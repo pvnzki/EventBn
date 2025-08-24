@@ -228,149 +228,192 @@ class _ExplorePageState extends State<ExplorePage>
             },
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Post Image
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: AspectRatio(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Stack(
+                  children: [
+                    // Post Image
+                    AspectRatio(
                       aspectRatio: index % 2 == 0 ? 1.0 : 0.8,
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              [Colors.purple.shade200, Colors.purple.shade400],
-                              [Colors.blue.shade200, Colors.blue.shade400],
-                              [Colors.pink.shade200, Colors.pink.shade400],
-                            ][index % 3],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: post.imageUrls.isNotEmpty
-                            ? Image.network(
-                                post.imageUrls.first,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                  color: Colors.grey.shade300,
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey.shade600,
-                                    size: 32,
-                                  ),
+                      child: post.imageUrls.isNotEmpty
+                          ? Image.network(
+                              post.imageUrls.first,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: Colors.grey.shade300,
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey.shade600,
+                                  size: 32,
                                 ),
-                              )
-                            : Icon(
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey.shade200,
+                              child: Icon(
                                 Icons.image,
                                 color: Colors.white.withOpacity(0.7),
                                 size: 32,
                               ),
+                            ),
+                    ),
+                    // Caption overlay (top)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withOpacity(0.7),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        child: Text(
+                          post.content,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black54,
+                                offset: Offset(0, 1),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
-                  ),
-                  // Post Content
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Author info
-                        Row(
+                    // Author info & engagement (bottom)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withOpacity(0.6),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             CircleAvatar(
-                              radius: 12,
+                              radius: 13,
                               backgroundColor: Colors.purple.shade100,
                               child: Text(
                                 post.userDisplayName[0].toUpperCase(),
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.purple.shade700,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 post.userDisplayName,
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black54,
+                                      offset: Offset(0, 1),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 10),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.favorite,
+                                  size: 16,
+                                  color: Colors.red.shade400,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${post.likesCount}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        offset: Offset(0, 1),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${post.commentsCount}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        offset: Offset(0, 1),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        // Post content
-                        Text(
-                          post.content,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.3,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        // Engagement stats
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.favorite,
-                              size: 14,
-                              color: Colors.red.shade400,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${post.likesCount}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${post.commentsCount}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
         },
         childCount: _postService.posts.length,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
       ),
     );
   }
