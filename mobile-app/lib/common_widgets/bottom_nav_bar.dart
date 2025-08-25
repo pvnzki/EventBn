@@ -98,7 +98,7 @@ class _BottomNavBarState extends State<BottomNavBar>
         'BottomNavBar - Route matches: ${routerState.matches.map((m) => m.matchedLocation).toList()}');
 
     // Don't show bottom nav on event detail pages or other specific pages
-  if (currentLocation.startsWith('/events/') ||
+    if (currentLocation.startsWith('/events/') ||
         currentLocation.startsWith('/checkout/') ||
         currentLocation.startsWith('/organizer/') ||
         routerState.matches
@@ -118,68 +118,56 @@ class _BottomNavBarState extends State<BottomNavBar>
       extendBody: true,
       body: widget.child,
       bottomNavigationBar: Container(
-        // Removed margin for true floating effect
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.3)
-                  : Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.05),
-              blurRadius: 40,
-              offset: const Offset(0, 16),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(25),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Main navigation bar background
+            Container(
               height: 75,
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.8)
-                    : Colors.white.withValues(alpha: 0.8),
+                    ? const Color.fromARGB(255, 15, 15, 15) // Dark grey background
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 0,
+                  ),
+                ],
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.white.withValues(alpha: 0.2),
-                  width: 1.5,
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          Colors.black.withValues(alpha: 0.9),
-                          Colors.black.withValues(alpha: 0.7),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: 0.9),
-                          Colors.white.withValues(alpha: 0.7),
-                        ],
+                      ? const Color(0xFF404040)
+                      : const Color(0xFFE5E7EB),
+                  width: 1,
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  _navItems.length,
-                  (index) => _buildNavItem(index),
-                ),
+                children: [
+                  _buildNavItem(0), // Home
+                  _buildNavItem(1), // Search
+                  const SizedBox(width: 60), // Space for create button
+                  _buildNavItem(2), // Tickets
+                  _buildNavItem(3), // Profile
+                ],
               ),
             ),
-          ),
+            // Central create button that extends above (no clipping)
+            Positioned(
+              top: -20,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _buildCreateButton(),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -190,23 +178,34 @@ class _BottomNavBarState extends State<BottomNavBar>
     final isDark = theme.brightness == Brightness.dark;
     final item = _navItems[index];
     final isSelected = _selectedIndex == index;
-    final activeColor = isDark ? Colors.white : Colors.black;
 
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.primaryColor.withValues(alpha: 0.15)
+              ? const Color(0xFF32CD32)
+                  .withValues(alpha: 0.1) // Light lime green for selected
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Add a small indicator line above selected items (like Profile in the image)
+            if (isSelected)
+              Container(
+                width: 20,
+                height: 2,
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF32CD32), // Lime Green
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
             AnimatedBuilder(
               animation: _scaleAnimation,
               builder: (context, child) {
@@ -224,8 +223,12 @@ class _BottomNavBarState extends State<BottomNavBar>
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
                       color: isSelected
-                          ? activeColor
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          ? const Color(0xFF32CD32) // Lime Green for selected
+                          : isDark
+                              ? const Color(
+                                  0xFFB0B0B0) // Light grey for dark theme
+                              : const Color(
+                                  0xFF6B7280), // Medium grey for light theme
                       size: 24,
                     ),
                   ),
@@ -239,13 +242,56 @@ class _BottomNavBarState extends State<BottomNavBar>
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
-                    ? activeColor
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ? const Color(0xFF32CD32) // Lime Green for selected
+                    : isDark
+                        ? const Color(0xFFB0B0B0) // Light grey for dark theme
+                        : const Color(
+                            0xFF6B7280), // Medium grey for light theme
               ),
               child: Text(item.label),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCreateButton() {
+    return GestureDetector(
+      onTap: () {
+        _animationController.forward().then((_) {
+          _animationController.reverse();
+          context.go('/create-post');
+        });
+      },
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              width: 65,
+              height: 65,
+              decoration: BoxDecoration(
+                color: const Color(0xFF32CD32), // Lime Green
+                borderRadius: BorderRadius.circular(35),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF32CD32).withValues(alpha: 0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.add_circle,
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

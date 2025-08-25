@@ -1,21 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
 
-class ExplorePage extends StatefulWidget {
-  const ExplorePage({super.key});
+class ExplorePostsPage extends StatefulWidget {
+  final bool focusSearch;
+  const ExplorePostsPage({super.key, this.focusSearch = false});
 
   @override
-  State<ExplorePage> createState() => _ExplorePageState();
+  @override
+  State<ExplorePostsPage> createState() => _ExplorePostsPageState();
 }
 
-class _ExplorePageState extends State<ExplorePage>
+class _ExplorePostsPageState extends State<ExplorePostsPage>
     with AutomaticKeepAliveClientMixin {
   final ExplorePostService _postService = ExplorePostService();
   final PageController _pageController = PageController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   String _searchQuery = '';
   PostCategory _selectedCategory = PostCategory.all;
@@ -28,11 +31,19 @@ class _ExplorePageState extends State<ExplorePage>
   void initState() {
     super.initState();
     _loadInitialPosts();
+    // Focus search bar if requested
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.focusSearch) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -96,7 +107,7 @@ class _ExplorePageState extends State<ExplorePage>
         onPanUpdate: (details) {
           // Force all scroll gestures to be horizontal page changes
           final delta = details.delta;
-          
+
           // Convert both vertical and horizontal movements to page navigation
           if (delta.dy.abs() > 5 || delta.dx.abs() > 5) {
             if (delta.dy < -10 || delta.dx > 10) {
@@ -145,23 +156,33 @@ class _ExplorePageState extends State<ExplorePage>
   Widget _buildAppBar() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 4, // minimal top
-        left: 16,
-        right: 16,
-        bottom: 0,
+        top: MediaQuery.of(context).padding.top + 8,
+        left: 20,
+        right: 20,
+        bottom: 16,
       ),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
             offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -171,18 +192,34 @@ class _ExplorePageState extends State<ExplorePage>
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
               letterSpacing: -0.5,
+              fontSize: 24,
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF404040) : const Color(0xFFE5E7EB),
+                width: 1,
+              ),
             ),
             child: Icon(
               Icons.tune_rounded,
-              size: 20,
+              size: 22,
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -194,42 +231,61 @@ class _ExplorePageState extends State<ExplorePage>
   Widget _buildSearchAndFilters() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2), // minimal vertical
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         children: [
           // Search Bar
           Container(
-            height: 44,
+            height: 52,
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(14),
+              color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.1),
+                color:
+                    isDark ? const Color(0xFF404040) : const Color(0xFFE5E7EB),
+                width: 1,
               ),
             ),
             child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
               onChanged: (value) {
                 setState(() => _searchQuery = value);
                 _debounceSearch();
               },
-              style: theme.textTheme.bodyMedium,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search posts, events, users...',
                 hintStyle: TextStyle(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontSize: 16,
                 ),
                 prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-                  size: 20,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  size: 22,
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 20,
+                  vertical: 16,
                 ),
               ),
             ),
@@ -247,11 +303,13 @@ class _ExplorePageState extends State<ExplorePage>
                 return GestureDetector(
                   onTap: () => _onCategoryChanged(category),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? colorScheme.primary
-                          : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          : colorScheme.surfaceContainerHighest
+                              .withOpacity(0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected
@@ -298,7 +356,8 @@ class _ExplorePageState extends State<ExplorePage>
             _loadMorePosts();
           }
         },
-        itemCount: (posts.length / postsPerPage).ceil() + (_postService.isLoading ? 1 : 0),
+        itemCount: (posts.length / postsPerPage).ceil() +
+            (_postService.isLoading ? 1 : 0),
         itemBuilder: (context, pageIndex) {
           if (pageIndex >= (posts.length / postsPerPage).ceil()) {
             return _buildLoadingPage(postsPerPage);
@@ -374,7 +433,8 @@ class _ExplorePageState extends State<ExplorePage>
                             color: colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
                                     ? loadingProgress.cumulativeBytesLoaded /
                                         loadingProgress.expectedTotalBytes!
                                     : null,
@@ -417,7 +477,8 @@ class _ExplorePageState extends State<ExplorePage>
                         child: Center(
                           child: Icon(
                             Icons.image_rounded,
-                            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                            color:
+                                colorScheme.onSurfaceVariant.withOpacity(0.6),
                             size: 32,
                           ),
                         ),
@@ -461,8 +522,8 @@ class _ExplorePageState extends State<ExplorePage>
                           ),
                           child: Center(
                             child: Text(
-                              post.userDisplayName.isNotEmpty 
-                                  ? post.userDisplayName[0].toUpperCase() 
+                              post.userDisplayName.isNotEmpty
+                                  ? post.userDisplayName[0].toUpperCase()
                                   : "?",
                               style: const TextStyle(
                                 fontSize: 10,
@@ -564,7 +625,9 @@ class _ExplorePageState extends State<ExplorePage>
         ),
         const SizedBox(width: 4),
         Text(
-          count > 999 ? '${(count / 1000).toStringAsFixed(1)}K' : count.toString(),
+          count > 999
+              ? '${(count / 1000).toStringAsFixed(1)}K'
+              : count.toString(),
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
@@ -577,7 +640,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   Widget _buildEmptyTile() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
@@ -611,15 +674,17 @@ class _ExplorePageState extends State<ExplorePage>
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         physics: const NeverScrollableScrollPhysics(),
-        children: List.generate(postsPerPage, (index) => Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        )),
+        children: List.generate(
+            postsPerPage,
+            (index) => Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )),
       ),
     );
   }
@@ -660,7 +725,9 @@ class _ExplorePageState extends State<ExplorePage>
             if (count > 0) ...[
               const SizedBox(width: 6),
               Text(
-                count > 999 ? '${(count / 1000).toStringAsFixed(1)}K' : count.toString(),
+                count > 999
+                    ? '${(count / 1000).toStringAsFixed(1)}K'
+                    : count.toString(),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
