@@ -24,15 +24,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
   Set<int> selectedSeats = {};
   List<Map<String, dynamic>> seatMap = [];
   bool isLoading = true;
-  String eventName = '';
-  String eventDate = '';
 
   @override
   void initState() {
     super.initState();
     seatCount = widget.initialCount;
     _loadSeatMap();
-    _loadEventDetails();
   }
 
   Future<void> _loadSeatMap() async {
@@ -64,40 +61,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
       setState(() {
         seatMap = jsonData.cast<Map<String, dynamic>>();
         isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadEventDetails() async {
-    try {
-      final String baseUrl = AppConfig.baseUrl;
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/events/${widget.eventId}'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          final event = data['data'];
-          setState(() {
-            eventName = event['title'] ?? 'Event';
-            // Format the start_time to a readable date
-            if (event['start_time'] != null) {
-              final DateTime startTime = DateTime.parse(event['start_time']);
-              eventDate = '${startTime.day}/${startTime.month}/${startTime.year} ${startTime.hour}:${startTime.minute.toString().padLeft(2, '0')}';
-            } else {
-              eventDate = 'Date TBA';
-            }
-          });
-        }
-      }
-    } catch (e) {
-      print('Error loading event details: $e');
-      // Use defaults if API fails
-      setState(() {
-        eventName = 'Event';
-        eventDate = 'Date TBA';
       });
     }
   }
@@ -195,29 +158,14 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               ),
               onPressed: selectedSeats.length == seatCount && seatCount > 0
                   ? () {
-                      // Get selected seat data with full details
-                      List<Map<String, dynamic>> selectedSeatData = [];
-                      for (int seatId in selectedSeats) {
-                        final seatData = seatMap.firstWhere(
-                          (seat) => seat['id'] == seatId,
-                          orElse: () => <String, dynamic>{},
-                        );
-                        if (seatData.isNotEmpty) {
-                          selectedSeatData.add(seatData);
-                        }
-                      }
-                      
                       // Navigate to contact info page using GoRouter
                       context.push(
                         '/checkout/${widget.eventId}/contact',
                         extra: {
                           'eventId': widget.eventId,
-                          'eventName': eventName,
-                          'eventDate': eventDate,
                           'ticketType': widget.ticketType,
                           'seatCount': seatCount,
                           'selectedSeats': selectedSeats.map((id) => id.toString()).toList(),
-                          'selectedSeatData': selectedSeatData,
                         },
                       );
                     }

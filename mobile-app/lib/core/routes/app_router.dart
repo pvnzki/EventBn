@@ -204,23 +204,15 @@ class AppRouter {
         name: 'contact-info',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
-          final ticketType = state.extra is Map &&
-                  (state.extra as Map).containsKey('ticketType')
-              ? (state.extra as Map)['ticketType'] as String
-              : '';
-          final seatCount = state.extra is Map &&
-                  (state.extra as Map).containsKey('seatCount')
-              ? (state.extra as Map)['seatCount'] as int
-              : 1;
-          final selectedSeats = state.extra is Map &&
-                  (state.extra as Map).containsKey('selectedSeats')
-              ? (state.extra as Map)['selectedSeats'] as List<String>
-              : <String>[];
+          final extra = state.extra as Map<String, dynamic>? ?? {};
           return ContactInfoScreen(
             eventId: eventId,
-            ticketType: ticketType,
-            seatCount: seatCount,
-            selectedSeats: selectedSeats,
+            eventName: extra['eventName'] ?? 'Event',
+            eventDate: extra['eventDate'] ?? '',
+            ticketType: extra['ticketType'] ?? '',
+            seatCount: extra['seatCount'] ?? 1,
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
           );
         },
       ),
@@ -234,10 +226,12 @@ class AppRouter {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return PaymentScreen(
             eventId: eventId,
+            eventName: extra['eventName'] ?? 'Event',
+            eventDate: extra['eventDate'] ?? '',
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats:
-                (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
             name: extra['name'] ?? '',
             email: extra['email'] ?? '',
             phone: extra['phone'] ?? '',

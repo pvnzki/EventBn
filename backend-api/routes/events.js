@@ -106,4 +106,43 @@ router.get('/search/:query', async (req, res) => {
   }
 });
 
+// Get seat map for an event
+router.get('/:id/seatmap', async (req, res) => {
+  try {
+    const seatMap = await eventsService.getSeatMap(req.params.id);
+    if (!seatMap) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event or seat map not found'
+      });
+    }
+    res.json({
+      success: true,
+      data: seatMap
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Update seat map for an event (for booking seats)
+router.put('/:id/seatmap', async (req, res) => {
+  try {
+    const updatedSeatMap = await eventsService.updateSeatMap(req.params.id, req.body.seatMap);
+    res.json({
+      success: true,
+      message: 'Seat map updated successfully',
+      data: updatedSeatMap
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

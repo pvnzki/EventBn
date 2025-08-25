@@ -73,6 +73,50 @@ module.exports = {
   // Create new event
   async createEvent(data) {
     try {
+      // Default seat map if none provided
+      const defaultSeatMap = [
+        {"label": "A1", "id": 1, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A2", "id": 2, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A3", "id": 3, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A4", "id": 4, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A5", "id": 5, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A6", "id": 6, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A7", "id": 7, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "A8", "id": 8, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B1", "id": 9, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B2", "id": 10, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B3", "id": 11, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B4", "id": 12, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B5", "id": 13, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B6", "id": 14, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B7", "id": 15, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "B8", "id": 16, "ticketType": "Economy", "price": 20.0, "available": true},
+        {"label": "C1", "id": 17, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C2", "id": 18, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C3", "id": 19, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C4", "id": 20, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C5", "id": 21, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C6", "id": 22, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C7", "id": 23, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "C8", "id": 24, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D1", "id": 25, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D2", "id": 26, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D3", "id": 27, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D4", "id": 28, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D5", "id": 29, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D6", "id": 30, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D7", "id": 31, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "D8", "id": 32, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E1", "id": 33, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E2", "id": 34, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E3", "id": 35, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E4", "id": 36, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E5", "id": 37, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E6", "id": 38, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E7", "id": 39, "ticketType": "VIP", "price": 50.0, "available": true},
+        {"label": "E8", "id": 40, "ticketType": "VIP", "price": 50.0, "available": true}
+      ];
+
       return await prisma.event.create({
         data: {
           organization_id: data.organization_id
@@ -89,6 +133,7 @@ module.exports = {
           cover_image_url: data.cover_image_url || null,
           other_images_url: data.other_images_url || null,
           video_url: data.video_url || null,
+          seat_map: data.seat_map || defaultSeatMap,
           status: data.status || "ACTIVE",
         },
         include: {
@@ -252,6 +297,93 @@ module.exports = {
       });
     } catch (error) {
       throw new Error(`Failed to fetch events by category: ${error.message}`);
+    }
+  },
+
+  // Get seat map for an event
+  async getSeatMap(eventId) {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { event_id: parseInt(eventId) },
+        select: { seat_map: true },
+      });
+
+      if (!event) {
+        throw new Error("Event not found");
+      }
+
+      // If no seat map exists, return default seat map
+      if (!event.seat_map) {
+        const defaultSeatMap = [
+          {"label": "A1", "id": 1, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A2", "id": 2, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A3", "id": 3, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A4", "id": 4, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A5", "id": 5, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A6", "id": 6, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A7", "id": 7, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "A8", "id": 8, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B1", "id": 9, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B2", "id": 10, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B3", "id": 11, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B4", "id": 12, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B5", "id": 13, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B6", "id": 14, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B7", "id": 15, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "B8", "id": 16, "ticketType": "Economy", "price": 20.0, "available": true},
+          {"label": "C1", "id": 17, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C2", "id": 18, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C3", "id": 19, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C4", "id": 20, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C5", "id": 21, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C6", "id": 22, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C7", "id": 23, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "C8", "id": 24, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D1", "id": 25, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D2", "id": 26, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D3", "id": 27, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D4", "id": 28, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D5", "id": 29, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D6", "id": 30, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D7", "id": 31, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "D8", "id": 32, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E1", "id": 33, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E2", "id": 34, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E3", "id": 35, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E4", "id": 36, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E5", "id": 37, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E6", "id": 38, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E7", "id": 39, "ticketType": "VIP", "price": 50.0, "available": true},
+          {"label": "E8", "id": 40, "ticketType": "VIP", "price": 50.0, "available": true}
+        ];
+        
+        // Save default seat map to database
+        await prisma.event.update({
+          where: { event_id: parseInt(eventId) },
+          data: { seat_map: defaultSeatMap },
+        });
+        
+        return defaultSeatMap;
+      }
+
+      return event.seat_map;
+    } catch (error) {
+      throw new Error(`Failed to fetch seat map: ${error.message}`);
+    }
+  },
+
+  // Update seat map for an event (for booking seats)
+  async updateSeatMap(eventId, seatMap) {
+    try {
+      const updatedEvent = await prisma.event.update({
+        where: { event_id: parseInt(eventId) },
+        data: { seat_map: seatMap },
+        select: { seat_map: true },
+      });
+
+      return updatedEvent.seat_map;
+    } catch (error) {
+      throw new Error(`Failed to update seat map: ${error.message}`);
     }
   },
 };

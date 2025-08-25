@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/seat_map.json
     - .env
 
   # Custom fonts (commented out until font files are added)
