@@ -51,6 +51,8 @@ const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
 const userRoutes = require("./routes/users");
 const organizationRoutes = require("./routes/organizations");
+const paymentRoutes = require("./routes/payments");
+const ticketRoutes = require("./routes/tickets");
 
 const analyticsRoutes = require("./routes/analytics");
 
@@ -95,6 +97,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/organizations", organizationRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 

@@ -309,18 +309,22 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         final isSelected = selectedSeats.contains(seatId);
         final ticketType = seat['ticketType'] as String;
         final price = seat['price'];
+        
         Color seatColor;
+        bool canTap = isAvailable;
+        
         if (!isAvailable) {
-          seatColor = Colors.grey;
+          seatColor = Colors.red; // Unavailable/booked seats are red
         } else if (isSelected) {
-          seatColor = theme.primaryColor;
+          seatColor = theme.primaryColor; // Selected seats use theme color
         } else if (ticketType == 'VIP') {
-          seatColor = Colors.amber;
+          seatColor = Colors.amber; // VIP seats are amber
         } else {
-          seatColor = theme.cardColor;
+          seatColor = theme.cardColor; // Regular available seats
         }
+        
         return GestureDetector(
-          onTap: isAvailable ? () => _toggleSeat(seatId) : null,
+          onTap: canTap ? () => _toggleSeat(seatId) : null,
           child: Container(
             decoration: BoxDecoration(
               color: seatColor,
