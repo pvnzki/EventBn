@@ -26,6 +26,7 @@ import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
+import '../../features/explore/screens/create_post_screen.dart';
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -129,7 +130,6 @@ class AppRouter {
         },
       ),
 
-
       // Organizer Profile Route
       GoRoute(
         path: '/organization/:organizationId',
@@ -149,6 +149,13 @@ class AppRouter {
           print('🛣️ Router: Building PostDetailScreen for postId: $postId');
           return PostDetailScreen(postId: postId);
         },
+      ),
+
+      // Create Post Route
+      GoRoute(
+        path: '/create-post',
+        name: 'create-post',
+        builder: (context, state) => const CreatePostScreen(),
       ),
 
       // User Profile Route
@@ -250,7 +257,10 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => const ExplorePage(),
+            builder: (context, state) => ExplorePostsPage(
+              focusSearch: state.extra is Map &&
+                  (state.extra as Map)['focusSearch'] == true,
+            ),
           ),
           GoRoute(
             path: '/my-tickets',
