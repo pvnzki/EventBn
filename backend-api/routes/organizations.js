@@ -96,6 +96,7 @@ router.get("/:organizationId", async (req, res) => {
   } 
 });
 
+
 // Get upcoming and past events for an organization (For Organization Profile in Mobile-App)
 router.get('/:organizationId/events', async (req, res) => {
   try {

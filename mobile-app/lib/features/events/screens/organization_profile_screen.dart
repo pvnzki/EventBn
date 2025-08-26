@@ -14,6 +14,7 @@ class OrganizationProfileScreen extends StatefulWidget {
       _OrganizationProfileScreenState();
 }
 
+
 class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> with SingleTickerProviderStateMixin {
 
   // Small tile for event (used in grid)
@@ -137,6 +138,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
     });
     try {
       final baseUrl = dotenv.env['BASE_URL'] ?? '';
+
       final orgUrl = '$baseUrl/api/organizations/${widget.organizationId}';
       final eventsUrl = '$baseUrl/api/organizations/${widget.organizationId}/events';
 
@@ -165,7 +167,9 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
         setState(() {
           hasError = true;
           errorMessage =
+
               'Failed to load organization data or events. Status: ${orgResponse.statusCode}, ${eventsResponse.statusCode}\nOrg Body: ${orgResponse.body}\nEvents Body: ${eventsResponse.body}';
+
           isLoading = false;
         });
       }
@@ -248,6 +252,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
+
           color: theme.colorScheme.surface.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -277,6 +282,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
+
                 theme.colorScheme.surface.withOpacity(0.8),
               ],
             ),
@@ -287,6 +293,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildProfileHeader(ThemeData theme) {
+
     final logoUrl = organizationData?['logo_url'] ?? '';
     final name = organizationData?['name'] ?? 'Unknown';
     final website = organizationData?['website_url'] ?? organizationData?['website'] ?? '';
@@ -295,12 +302,14 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
     final textColor = theme.colorScheme.onSurface;
     final secondaryTextColor = theme.colorScheme.onSurface.withOpacity(0.7);
     final accentColor = theme.colorScheme.primary;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           CircleAvatar(
             radius: 40,
+
             backgroundImage: logoUrl.isNotEmpty ? NetworkImage(logoUrl) : null,
             child: logoUrl.isEmpty ? Icon(Icons.business, size: 40, color: secondaryTextColor) : null,
             backgroundColor: theme.colorScheme.surface,
@@ -311,6 +320,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+
                   name,
                   style: TextStyle(
                     color: textColor,
@@ -318,6 +328,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 if (website.isNotEmpty)
                   Text(
                     website,
@@ -328,12 +339,14 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
                     ),
                   ),
                 const SizedBox(height: 8),
+
                 if (contactEmail.isNotEmpty)
                   Row(
                     children: [
                       Icon(
                         Icons.email,
                         size: 16,
+
                         color: secondaryTextColor,
                       ),
                       const SizedBox(width: 4),
@@ -341,11 +354,13 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
                         contactEmail,
                         style: TextStyle(
                           color: secondaryTextColor,
+
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
+
                 if (joinDate.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -366,6 +381,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildActionButtons(ThemeData theme) {
+
     final accentColor = theme.colorScheme.primary;
     final surfaceColor = theme.colorScheme.surface;
     final onPrimary = theme.colorScheme.onPrimary;
@@ -382,6 +398,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
             child: ElevatedButton(
               onPressed: () => setState(() => isFollowing = !isFollowing),
               style: ElevatedButton.styleFrom(
+
                 backgroundColor: followBg,
                 foregroundColor: followFg,
                 side: followBorder,
@@ -393,6 +410,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
               ),
               child: Text(
                 isFollowing ? 'Following' : 'Follow',
+
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: followFg,
@@ -412,6 +430,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
               },
               icon: Icon(
                 Icons.message_outlined,
+
                 color: onSurface,
               ),
             ),
@@ -422,6 +441,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildStatsRow(ThemeData theme) {
+
     final eventsCount = organizationData?['events']?.toString() ?? '0';
     final followersCount = organizationData?['followers']?.toString() ?? '0';
     final followingCount = organizationData?['following']?.toString() ?? '0';
@@ -439,6 +459,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildStatItem(String label, String value, ThemeData theme) {
+
     final textColor = theme.colorScheme.onSurface;
     final secondaryTextColor = theme.colorScheme.onSurface.withOpacity(0.7);
     return Column(
@@ -464,6 +485,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildBio(ThemeData theme) {
+
     final bio = organizationData?['bio'] ?? '';
     final website = organizationData?['website_url'] ?? organizationData?['website'] ?? '';
     final joinDate = organizationData?['joinDate'] ?? '';
@@ -577,6 +599,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
   }
 
   Widget _buildPastEvents(ThemeData theme) {
+
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

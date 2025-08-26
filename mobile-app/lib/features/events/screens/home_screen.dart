@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'dart:developer';
 
 import '../providers/event_provider.dart';
+
 import '../widgets/mini_game_overlay.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Sports', 'icon': Icons.sports_soccer, 'color': 0xFF388E3C},
     {'name': 'Music', 'icon': Icons.music_note, 'color': 0xFF1976D2},
@@ -44,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
 
     return Stack(
       children: [
@@ -83,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Header Logo - Theme aware
           Align(
+
             alignment: Alignment.centerLeft,
             child: SizedBox(
               height: 30,
@@ -90,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 isDark
                     ? 'assets/images/White Header logo.png'
                     : 'assets/images/Black header logo.png',
+
                 height: 30,
                 width: 120,
                 fit: BoxFit.contain,
@@ -105,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+
           ),
           const Spacer(),
           IconButton(
@@ -147,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.search, size: 28),
             tooltip: 'Search',
           ),
-        ],
+        ),
       ),
     );
   }
@@ -373,6 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: () async {
                   // Fetch real events from backend before navigating
+
                   await Provider.of<EventProvider>(context, listen: false)
                       .fetchEvents();
                   context.push('/all-events');

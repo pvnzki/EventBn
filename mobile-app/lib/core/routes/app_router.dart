@@ -27,6 +27,7 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/create_post_screen.dart';
+
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -129,6 +130,7 @@ class AppRouter {
           return EventAttendeesScreen(eventId: eventId);
         },
       ),
+
 
       // Organizer Profile Route
       GoRoute(

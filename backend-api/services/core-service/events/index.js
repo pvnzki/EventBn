@@ -73,6 +73,7 @@ module.exports = {
   // Create new event
   async createEvent(data) {
     try {
+
       // Default seat map if none provided
       const defaultSeatMap = [
         {"label": "A1", "id": 1, "ticketType": "Economy", "price": 20.0, "available": true},
@@ -133,7 +134,9 @@ module.exports = {
           cover_image_url: data.cover_image_url || null,
           other_images_url: data.other_images_url || null,
           video_url: data.video_url || null,
+
           seat_map: data.seat_map || defaultSeatMap,
+
           status: data.status || "ACTIVE",
         },
         include: {
@@ -168,7 +171,12 @@ module.exports = {
 
       // Convert numbers if provided
       if (updateData.organization_id) {
-        updateData.organization_id = parseInt(updateData.organization_id);
+
+        updateData.organization = {
+    connect: { organization_id: parseInt(updateData.organization_id) }
+      };
+      delete updateData.organization_id;
+
       }
       if (updateData.capacity) {
         updateData.capacity = parseInt(updateData.capacity);
@@ -232,6 +240,7 @@ module.exports = {
         where.start_time = { gte: new Date(filters.start_date) };
       }
 
+
       return await prisma.event.findMany({
         where,
         include: {
@@ -258,6 +267,7 @@ module.exports = {
           start_time: { gte: new Date() },
           status: "ACTIVE",
         },
+
         include: {
           organization: {
             select: {
@@ -268,6 +278,7 @@ module.exports = {
           },
         },
         orderBy: { start_time: "asc" },
+
         take: limit,
       });
     } catch (error) {
@@ -296,6 +307,36 @@ module.exports = {
         take: limit,
       });
     } catch (error) {
+
+      throw new Error(`Failed to fetch upcoming events: ${error.message}`);
+    }
+  },
+
+  // Get events by category
+  async getEventsByCategory(category, limit = 20) {
+    try {
+      return await prisma.event.findMany({
+        where: {
+          category: category,
+          status: "ACTIVE",
+        },
+        include: {
+          organization: {
+            select: {
+              organization_id: true,
+              name: true,
+              logo_url: true,
+            },
+          },
+        },
+        orderBy: { start_time: "asc" },
+        take: limit,
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch events by category: ${error.message}`);
+    }
+  },
+
       throw new Error(`Failed to fetch events by category: ${error.message}`);
     }
   },
@@ -386,4 +427,5 @@ module.exports = {
       throw new Error(`Failed to update seat map: ${error.message}`);
     }
   },
+
 };

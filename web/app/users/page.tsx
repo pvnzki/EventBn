@@ -1,96 +1,182 @@
-"use client"
 
-import { useState, useEffect } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Plus, Eye, Edit, Trash2, Users, Mail, Calendar, Shield, UserCheck, UserX } from "lucide-react"
+"use client";
+
+import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/sidebar";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Users,
+  Mail,
+  Calendar,
+  Shield,
+  UserCheck,
+  UserX,
+  X,
+} from "lucide-react";
 
 interface User {
-  role: "admin" | "organizer"
-  name: string
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  eventsCreated: number;
+  totalRevenue: number;
+  joinDate: string;
+  lastActive: string;
+  avatar: string | null;
 }
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "organizer",
-    status: "active",
-    eventsCreated: 12,
-    totalRevenue: 45000,
-    joinDate: "2023-01-15",
-    lastActive: "2024-01-20",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "organizer",
-    status: "active",
-    eventsCreated: 8,
-    totalRevenue: 32000,
-    joinDate: "2023-03-22",
-    lastActive: "2024-01-19",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    email: "mike.johnson@example.com",
-    role: "organizer",
-    status: "inactive",
-    eventsCreated: 5,
-    totalRevenue: 15000,
-    joinDate: "2023-06-10",
-    lastActive: "2023-12-15",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 4,
-    name: "Sarah Wilson",
-    email: "sarah.wilson@example.com",
-    role: "organizer",
-    status: "pending",
-    eventsCreated: 0,
-    totalRevenue: 0,
-    joinDate: "2024-01-18",
-    lastActive: "2024-01-18",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    email: "david.brown@example.com",
-    role: "admin",
-    status: "active",
-    eventsCreated: 0,
-    totalRevenue: 0,
-    joinDate: "2022-11-01",
-    lastActive: "2024-01-20",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-]
+interface ApiUser {
+  user_id: number;
+  name: string;
+  email: string;
+  phone_number: string | null;
+  profile_picture: string | null;
+  is_active: boolean;
+  is_email_verified: boolean;
+  role: string;
+  created_at: string;
+}
 
 export default function UsersPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [users, setUsers] = useState(mockUsers)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [currentUser, setCurrentUser] = useState<{ role: string } | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null); // New state for selected user
+  const { toast } = useToast();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    // Check current user
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setCurrentUser(JSON.parse(userData))
+      setCurrentUser(JSON.parse(userData));
     }
-  }, [])
+
+    // Fetch users from API
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("http://localhost:3000/api/users");
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.data)) {
+          const mappedUsers: User[] = data.data.map((apiUser: ApiUser) => ({
+            id: apiUser.user_id,
+            name: apiUser.name,
+            email: apiUser.email,
+            role:
+              apiUser.role.toLowerCase() === "organizer"
+                ? "organizer"
+                : apiUser.role.toLowerCase() === "admin"
+                ? "admin"
+                : "user",
+            status: apiUser.is_active ? "active" : "inactive",
+            eventsCreated:
+              apiUser.role.toLowerCase() === "organizer"
+                ? Math.floor(Math.random() * 20)
+                : 0,
+            totalRevenue:
+              apiUser.role.toLowerCase() === "organizer"
+                ? Math.floor(Math.random() * 50000)
+                : 0,
+            joinDate: new Date(apiUser.created_at).toISOString().split("T")[0],
+            lastActive: new Date().toISOString().split("T")[0],
+            avatar:
+              apiUser.profile_picture || "/placeholder.svg?height=40&width=40",
+          }));
+          setUsers(mappedUsers);
+        } else {
+          throw new Error("Invalid API response format");
+        }
+      } catch (err) {
+        setError("Failed to fetch users. Please try again later.");
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Function to handle user deletion
+  const handleDeleteUser = async (user: User) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/users/${user.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        setUsers(users.filter((u) => u.id !== user.id));
+        setUserToDelete(null);
+        toast({
+          title: "Success",
+          description: "User deleted successfully.",
+        });
+      } else {
+        throw new Error("Failed to delete user");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to open delete modal
+  const handleOpenDeleteModal = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  // Function to close delete modal
+  const handleCloseDeleteModal = () => {
+    setUserToDelete(null);
+  };
+
+  // Function to handle view user
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user);
+  };
+
+  // Function to close view modal
+  const closeViewModal = () => {
+    setSelectedUser(null);
+  };
 
   // Redirect if not admin
   if (currentUser && currentUser.role !== "admin") {
@@ -102,55 +188,99 @@ export default function UsersPage() {
             <CardContent className="pt-6 text-center">
               <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-              <p className="text-gray-600">You don't have permission to view this page.</p>
+              <p className="text-gray-600">
+                You don't have permission to view this page.
+              </p>
+
             </CardContent>
           </Card>
         </div>
       </div>
-    )
+    );
+
   }
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    const matchesStatus =
+      statusFilter === "all" || user.status === statusFilter;
 
-    return matchesSearch && matchesRole && matchesStatus
-  })
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "default"
+        return "default";
       case "inactive":
-        return "secondary"
+        return "secondary";
       case "pending":
-        return "outline"
+        return "outline";
       case "suspended":
-        return "destructive"
+        return "destructive";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
 
   const getRoleIcon = (role: string) => {
-    return role === "admin" ? Shield : Users
+    return role === "admin" ? Shield : Users;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+              <p className="text-gray-600">Fetching user data</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center">
+              <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Error</h2>
+              <p className="text-gray-600">{error}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="text-gray-600 mt-2">Manage all users and organizers on the platform</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                User Management
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Manage all users and organizers on the platform
+              </p>
             </div>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -162,48 +292,83 @@ export default function UsersPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
+
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{users.length}</div>
-                <p className="text-xs text-muted-foreground">+2 from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  +
+                  {
+                    users.filter(
+                      (u) =>
+                        new Date(u.joinDate) >
+                        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                    ).length
+                  }{" "}
+                  from last month
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Users
+                </CardTitle>
                 <UserCheck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.filter((u) => u.status === "active").length}</div>
+                <div className="text-2xl font-bold">
+                  {users.filter((u) => u.status === "active").length}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {Math.round((users.filter((u) => u.status === "active").length / users.length) * 100)}% of total
+                  {users.length > 0
+                    ? Math.round(
+                        (users.filter((u) => u.status === "active").length /
+                          users.length) *
+                          100
+                      )
+                    : 0}
+                  % of total
+
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Organizers</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Organizers
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.filter((u) => u.role === "organizer").length}</div>
+                <div className="text-2xl font-bold">
+                  {users.filter((u) => u.role === "organizer").length}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {users.filter((u) => u.status === "pending").length} pending approval
+                  {users.filter((u) => u.status === "pending").length} pending
+                  approval
+
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Inactive Users
+                </CardTitle>
                 <UserX className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{users.filter((u) => u.status === "inactive").length}</div>
+                <div className="text-2xl font-bold">
+                  {users.filter((u) => u.status === "inactive").length}
+                </div>
                 <p className="text-xs text-muted-foreground">Need attention</p>
               </CardContent>
             </Card>
@@ -232,6 +397,9 @@ export default function UsersPage() {
                     <SelectItem value="all">All Roles</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="organizer">Organizer</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="guest">Guest</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -254,12 +422,14 @@ export default function UsersPage() {
           <Card>
             <CardHeader>
               <CardTitle>Users</CardTitle>
-              <CardDescription>Manage user accounts and permissions</CardDescription>
+              <CardDescription>
+                Manage user accounts and permissions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {filteredUsers.map((user) => {
-                  const RoleIcon = getRoleIcon(user.role)
+                  const RoleIcon = getRoleIcon(user.role);
 
                   return (
                     <div
@@ -268,7 +438,10 @@ export default function UsersPage() {
                     >
                       <div className="flex items-center space-x-4">
                         <Avatar>
-                          <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                          <AvatarImage
+                            src={user.avatar || "/placeholder.svg"}
+                            alt={user.name}
+                          />
                           <AvatarFallback>
                             {user.name
                               .split(" ")
@@ -279,10 +452,20 @@ export default function UsersPage() {
 
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <h3 className="font-semibold text-gray-900">{user.name}</h3>
+                            <h3 className="font-semibold text-gray-900">
+                              {user.name}
+                            </h3>
                             <RoleIcon className="h-4 w-4 text-gray-500" />
-                            <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
-                            <Badge variant={getStatusColor(user.status)}>{user.status}</Badge>
+                            <Badge
+                              variant={
+                                user.role === "admin" ? "default" : "secondary"
+                              }
+                            >
+                              {user.role}
+                            </Badge>
+                            <Badge variant={getStatusColor(user.status)}>
+                              {user.status}
+                            </Badge>
                           </div>
 
                           <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
@@ -299,7 +482,11 @@ export default function UsersPage() {
                           {user.role === "organizer" && (
                             <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
                               <span>{user.eventsCreated} events created</span>
-                              <span>${user.totalRevenue.toLocaleString()} total revenue</span>
+                              <span>
+                                ${user.totalRevenue.toLocaleString()} total
+                                revenue
+                              </span>
+
                               <span>Last active: {user.lastActive}</span>
                             </div>
                           )}
@@ -307,18 +494,27 @@ export default function UsersPage() {
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewUser(user)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenDeleteModal(user)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                  )
+                  );
+
                 })}
               </div>
 
@@ -326,14 +522,133 @@ export default function UsersPage() {
               {filteredUsers.length === 0 && (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-                  <p className="text-gray-600">Try adjusting your filters to see more users.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No users found
+                  </h3>
+                  <p className="text-gray-600">
+                    Try adjusting your filters to see more users.
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Delete Confirmation Modal */}
+          {userToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold">Confirm Delete</h2>
+                  <Button variant="ghost" onClick={handleCloseDeleteModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Are you sure you want to delete the user "{userToDelete.name}
+                  "?
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCloseDeleteModal}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteUser(userToDelete)}
+                  >
+                    Yes
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* View User Modal */}
+          {selectedUser && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-lg font-bold">{selectedUser.name}</h2>
+                  <Button variant="ghost" onClick={closeViewModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage
+                      src={selectedUser.avatar || "/placeholder.svg"}
+                      alt={selectedUser.name}
+                    />
+                    <AvatarFallback>
+                      {selectedUser.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm">
+                    <strong>User ID:</strong> {selectedUser.id}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Name:</strong> {selectedUser.name}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Email:</strong> {selectedUser.email}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Role:</strong> {selectedUser.role}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Status:</strong> {selectedUser.status}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Join Date:</strong> {selectedUser.joinDate}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Last Active:</strong> {selectedUser.lastActive}
+                  </p>
+                  {selectedUser.role === "organizer" && (
+                    <>
+                      <p className="text-sm">
+                        <strong>Events Created:</strong>{" "}
+                        {selectedUser.eventsCreated}
+                      </p>
+                      <p className="text-sm">
+                        <strong>Total Revenue:</strong> $
+                        {selectedUser.totalRevenue.toLocaleString()}
+                      </p>
+                    </>
+                  )}
+                  <p className="text-sm">
+                    <strong>Avatar URL:</strong>{" "}
+                    {selectedUser.avatar ? (
+                      <a
+                        href={selectedUser.avatar}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        View Avatar
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </p>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <Button onClick={closeViewModal} size="sm">
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }

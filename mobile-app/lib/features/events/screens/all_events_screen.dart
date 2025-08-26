@@ -307,7 +307,9 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
+
                     const Icon(
+
                       Icons.star,
                       size: 16,
                       color: Colors.amber,
@@ -343,6 +345,7 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
+
                     const Spacer(),
                     Text(
                       event is Map
