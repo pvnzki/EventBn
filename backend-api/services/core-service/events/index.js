@@ -123,7 +123,10 @@ module.exports = {
 
       // Convert numbers if provided
       if (updateData.organization_id) {
-        updateData.organization_id = parseInt(updateData.organization_id);
+        updateData.organization = {
+    connect: { organization_id: parseInt(updateData.organization_id) }
+      };
+      delete updateData.organization_id;
       }
       if (updateData.capacity) {
         updateData.capacity = parseInt(updateData.capacity);
