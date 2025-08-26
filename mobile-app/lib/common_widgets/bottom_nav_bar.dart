@@ -118,46 +118,49 @@ class _BottomNavBarState extends State<BottomNavBar>
       extendBody: true,
       body: widget.child,
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  height: 66,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withOpacity(isDark ? 0.35 : 0.45),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.10),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Colors.transparent,
-                      width: 0,
-                    ),
+            // Main navigation bar background
+            Container(
+              height: 75,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color.fromARGB(255, 15, 15, 15) // Dark grey background
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 0,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildNavItem(0),
-                      _buildNavItem(1),
-                      const SizedBox(width: 56),
-                      _buildNavItem(2),
-                      _buildNavItem(3),
-                    ],
-                  ),
+                ],
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF404040)
+                      : const Color(0xFFE5E7EB),
+                  width: 1,
                 ),
               ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildNavItem(0), // Home
+                  _buildNavItem(1), // Search
+                  const SizedBox(width: 60), // Space for create button
+                  _buildNavItem(2), // Tickets
+                  _buildNavItem(3), // Profile
+                ],
+              ),
             ),
+            // Central create button that extends above (no clipping)
             Positioned(
-              top: -18,
+              top: -20,
               left: 0,
               right: 0,
               child: Center(
@@ -181,23 +184,25 @@ class _BottomNavBarState extends State<BottomNavBar>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.primary.withOpacity(0.13)
+              ? const Color(0xFF32CD32)
+                  .withValues(alpha: 0.1) // Light lime green for selected
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Add a small indicator line above selected items (like Profile in the image)
             if (isSelected)
               Container(
-                width: 18,
+                width: 20,
                 height: 2,
                 margin: const EdgeInsets.only(bottom: 2),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: const Color(0xFF32CD32), // Lime Green
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -218,24 +223,31 @@ class _BottomNavBarState extends State<BottomNavBar>
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
                       color: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.iconTheme.color?.withOpacity(0.7) ?? Colors.grey,
-                      size: 26,
+                          ? const Color(0xFF32CD32) // Lime Green for selected
+                          : isDark
+                              ? const Color(
+                                  0xFFB0B0B0) // Light grey for dark theme
+                              : const Color(
+                                  0xFF6B7280), // Medium grey for light theme
+                      size: 24,
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
-              style: theme.textTheme.labelMedium?.copyWith(
-                    fontSize: isSelected ? 13 : 11,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.textTheme.labelMedium?.color?.withOpacity(0.7) ?? Colors.grey,
-                  ) ?? const TextStyle(),
+              style: TextStyle(
+                fontSize: isSelected ? 12 : 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? const Color(0xFF32CD32) // Lime Green for selected
+                    : isDark
+                        ? const Color(0xFFB0B0B0) // Light grey for dark theme
+                        : const Color(
+                            0xFF6B7280), // Medium grey for light theme
+              ),
               child: Text(item.label),
             ),
           ],
@@ -245,12 +257,11 @@ class _BottomNavBarState extends State<BottomNavBar>
   }
 
   Widget _buildCreateButton() {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         _animationController.forward().then((_) {
           _animationController.reverse();
-          context.push('/create-post');
+          context.go('/create-post');
         });
       },
       child: AnimatedBuilder(
@@ -259,30 +270,24 @@ class _BottomNavBarState extends State<BottomNavBar>
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: Container(
-              width: 58,
-              height: 58,
+              width: 65,
+              height: 65,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(29),
+                color: const Color(0xFF32CD32), // Lime Green
+                borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.18),
-                    blurRadius: 10,
+                    color: const Color(0xFF32CD32).withValues(alpha: 0.2),
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
+                    spreadRadius: 1,
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.add_rounded,
-                color: theme.colorScheme.onPrimary,
-                size: 32,
+              child: const Icon(
+                Icons.add_circle,
+                color: Colors.white,
+                size: 36,
               ),
             ),
           );
