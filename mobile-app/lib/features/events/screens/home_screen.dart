@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.search, size: 28),
             tooltip: 'Search',
           ),
-        ),
+        ],
       ),
     );
   }

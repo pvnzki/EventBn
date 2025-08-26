@@ -337,10 +337,6 @@ module.exports = {
     }
   },
 
-      throw new Error(`Failed to fetch events by category: ${error.message}`);
-    }
-  },
-
   // Get seat map for an event
   async getSeatMap(eventId) {
     try {
