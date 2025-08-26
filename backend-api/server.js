@@ -52,6 +52,7 @@ const eventRoutes = require("./routes/events");
 const userRoutes = require("./routes/users");
 const organizationRoutes = require("./routes/organizations");
 const paymentRoutes = require("./routes/payments");
+const ticketRoutes = require("./routes/tickets");
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static("uploads"));
@@ -94,6 +95,7 @@ app.use("/api/events", eventRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

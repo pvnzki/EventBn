@@ -53,23 +53,72 @@ router.post('/', authenticateToken, async (req, res) => {
             event_id: true,
             title: true,
             start_time: true,
-            venue: true
+            venue: true,
+            seat_map: true
           }
         }
       }
     });
 
-    // Create booked seat records for each selected seat
-    const bookedSeatsData = selected_seats.map((seatLabel, index) => ({
-      payment_id: payment.payment_id,
-      event_id: parseInt(event_id),
-      seat_id: index + 1, // You might want to get the actual seat ID from selected_seats
-      seat_label: seatLabel
-    }));
+    // Update seat availability in the event's seat_map JSON
+    const currentSeatMap = payment.event.seat_map;
+    
+    if (currentSeatMap && Array.isArray(currentSeatMap)) {
+      // Convert selected_seats (which are seat IDs as strings) to integers
+      const selectedSeatIds = selected_seats.map(seatId => parseInt(seatId, 10));
 
-    await prisma.bookedSeats.createMany({
-      data: bookedSeatsData
-    });
+      // Update the seat_map to mark selected seats as unavailable
+      const updatedSeatMap = currentSeatMap.map(seat => {
+        if (selectedSeatIds.includes(seat.id)) {
+          return { ...seat, available: false };
+        }
+        return seat;
+      });
+
+      // Update the event with the new seat_map
+      await prisma.event.update({
+        where: { event_id: parseInt(event_id) },
+        data: { seat_map: updatedSeatMap }
+      });
+
+      // Create individual ticket purchase records for each seat
+      const ticketPurchases = [];
+      for (const seatId of selectedSeatIds) {
+        const seat = currentSeatMap.find(s => s.id === seatId);
+        if (seat) {
+          // Generate unique QR code for each ticket
+          const qrCode = `TICKET_${payment.payment_id}_${seatId}_${Date.now()}`;
+          
+          ticketPurchases.push({
+            event_id: parseInt(event_id),
+            user_id: user_id,
+            payment_id: payment.payment_id,
+            seat_id: seatId,
+            seat_label: seat.label,
+            purchase_date: new Date(),
+            price: BigInt(Math.round(seat.price * 100)), // Convert to cents/paise for BigInt
+            attended: false,
+            qr_code: qrCode
+          });
+        }
+      }
+
+      // Create all ticket purchase records using raw SQL temporarily
+      if (ticketPurchases.length > 0) {
+        try {
+          for (const ticket of ticketPurchases) {
+            await prisma.$executeRaw`
+              INSERT INTO ticket_purchase (event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
+              VALUES (${ticket.event_id}, ${ticket.user_id}, ${ticket.payment_id}::uuid, ${ticket.seat_id}, ${ticket.seat_label}, ${ticket.purchase_date}, ${ticket.price.toString()}::bigint, ${ticket.attended}, ${ticket.qr_code})
+            `;
+          }
+          console.log(`Created ${ticketPurchases.length} ticket purchase records`);
+        } catch (ticketError) {
+          console.error('Error creating tickets:', ticketError);
+          // Continue with payment success even if ticket creation fails
+        }
+      }
+    }
 
     res.status(201).json({
       success: true,

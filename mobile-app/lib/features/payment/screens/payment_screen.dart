@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
 
@@ -76,21 +77,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
             context: context,
             barrierDismissible: false,
             builder: (context) => AlertDialog(
-              title: const Text('Payment Successful!'),
+              title: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 28),
+                  SizedBox(width: 8),
+                  Text('Booking Confirmed!'),
+                ],
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Your booking is confirmed!'),
+                  Text('🎉 Your tickets have been successfully booked!'),
+                  const SizedBox(height: 12),
+                  Text('Event: ${widget.eventName}'),
+                  Text('Date: ${widget.eventDate}'),
+                  Text('Seats: ${widget.selectedSeats.join(', ')}'),
                   const SizedBox(height: 8),
-                  Text('Payment ID: ${paymentData['payment']['payment_id']}'),
-                  Text('Amount: ₹${totalAmount.toStringAsFixed(2)}'),
+                  Text('Payment ID: ${paymentData['payment']['payment_id']}', 
+                       style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text('Total: ₹${totalAmount.toStringAsFixed(2)}', 
+                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog first
+                    // Navigate to event details page
+                    context.go('/events/${widget.eventId}');
+                  },
+                  child: const Text('View Event'),
                 ),
               ],
             ),
