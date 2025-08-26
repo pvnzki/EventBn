@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/payment/screens/seat_selection_screen.dart';
 import '../../features/payment/screens/contact_info_screen.dart';
 import '../../features/payment/screens/payment_screen.dart';
-
+import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/auth/screens/welcome_login_screen.dart';
@@ -20,13 +20,14 @@ import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/event_attendees_screen.dart';
 import '../../features/events/screens/organization_profile_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
-import '../../features/events/screens/popular_events_screen.dart';
+import '../../features/events/screens/all_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
-import '../../features/explore/screens/explore_posts_page.dart';
+import '../../features/explore/screens/create_post_screen.dart';
+
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -104,9 +105,9 @@ class AppRouter {
         builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
-        path: '/popular-events',
-        name: 'popular-events',
-        builder: (context, state) => const PopularEventsScreen(),
+        path: '/all-events',
+        name: 'all-events',
+        builder: (context, state) => const AllEventsScreen(),
       ),
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
@@ -150,6 +151,13 @@ class AppRouter {
           print('🛣️ Router: Building PostDetailScreen for postId: $postId');
           return PostDetailScreen(postId: postId);
         },
+      ),
+
+      // Create Post Route
+      GoRoute(
+        path: '/create-post',
+        name: 'create-post',
+        builder: (context, state) => const CreatePostScreen(),
       ),
 
       // User Profile Route
@@ -251,7 +259,10 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => const ExplorePostsPage(),
+            builder: (context, state) => ExplorePostsPage(
+              focusSearch: state.extra is Map &&
+                  (state.extra as Map)['focusSearch'] == true,
+            ),
           ),
           GoRoute(
             path: '/my-tickets',

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/core-service/auth');
+
 const { authenticateToken } = require('../middleware/auth');
 
 // Register user
@@ -38,6 +39,7 @@ router.post('/login', async (req, res) => {
     });
   }
 });
+
 
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {

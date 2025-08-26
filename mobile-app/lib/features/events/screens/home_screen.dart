@@ -1,10 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:developer';
 
 import '../providers/event_provider.dart';
-import '../models/event_model.dart';
+
+import '../widgets/mini_game_overlay.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
 
-
   @override
   void initState() {
     super.initState();
@@ -28,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ...existing code...
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Sports', 'icon': Icons.sports_soccer, 'color': 0xFF388E3C},
@@ -47,27 +48,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildSearchBar(),
-              const SizedBox(height: 24),
-              _buildFeaturedBanner(),
-              const SizedBox(height: 24),
-              _buildCategories(),
-              const SizedBox(height: 32),
-              _buildUpcomingEvents(),
-              const SizedBox(height: 20),
-            ],
+
+    return Stack(
+      children: [
+        Container(
+          color: theme.scaffoldBackgroundColor,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+                  _buildFeaturedBanner(),
+                  const SizedBox(height: 24),
+                  _buildCategories(),
+                  const SizedBox(height: 32),
+                  _buildUpcomingEvents(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        const MiniGameOverlay(),
+      ],
     );
   }
 
@@ -81,18 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Header Logo - Theme aware
           Align(
-            alignment: Alignment.centerLeft, // Align to the left
+
+            alignment: Alignment.centerLeft,
             child: SizedBox(
-              height: 30, // Reduced height
+              height: 30,
               child: Image.asset(
                 isDark
                     ? 'assets/images/White Header logo.png'
                     : 'assets/images/Black header logo.png',
-                height: 30, // Reduced height
-                width: 120, // Increased width
+
+                height: 30,
+                width: 120,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                  // Fallback to text logo if image not found
                   return Text(
                     'EventBn',
                     style: TextStyle(
@@ -104,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+
           ),
           const Spacer(),
           IconButton(
@@ -141,65 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          const CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GestureDetector(
-        onTap: () => context.go('/search'),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? theme.cardColor : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark
-                  ? theme.dividerColor.withValues(alpha: 0.3)
-                  : Colors.grey.shade300,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.search,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Search...',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 16,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.tune,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: () => context.push('/search'),
+            icon: const Icon(Icons.search, size: 28),
+            tooltip: 'Search',
           ),
         ),
       ),
@@ -239,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         image: DecorationImage(
-                          image: NetworkImage(event.imageUrl),
+                          image: CachedNetworkImageProvider(event.imageUrl),
                           fit: BoxFit.cover,
                           colorFilter: ColorFilter.mode(
                             Colors.black.withOpacity(0.3),
@@ -425,12 +378,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => context.push('/popular-events'),
+                onTap: () async {
+                  // Fetch real events from backend before navigating
+
+                  await Provider.of<EventProvider>(context, listen: false)
+                      .fetchEvents();
+                  context.push('/all-events');
+                },
                 child: Text(
                   'See All',
                   style: TextStyle(
                     fontSize: 14,
-                    color: theme.primaryColor,
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.white
+                        : theme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -456,7 +417,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.1),
@@ -465,7 +427,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                        const Icon(Icons.warning_amber,
+                            color: Colors.orange, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -491,7 +454,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         TextButton(
                           onPressed: () => eventProvider.fetchEvents(),
-                          child: const Text('Retry', style: TextStyle(fontSize: 12)),
+                          child: const Text('Retry',
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -513,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: eventProvider.events.length.clamp(0, 5), // Show max 5 events on home
+              itemCount: eventProvider.events.length, // Show all events
               itemBuilder: (context, index) {
                 final event = eventProvider.events[index];
                 return GestureDetector(
@@ -535,13 +499,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                       border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                          color:
+                              theme.colorScheme.outline.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
@@ -553,16 +519,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(12),
                             image: event.imageUrl.isNotEmpty
                                 ? DecorationImage(
-                                    image: NetworkImage(event.imageUrl),
+                                    image: CachedNetworkImageProvider(
+                                        event.imageUrl),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
-                            color: event.imageUrl.isEmpty ? theme.colorScheme.outline.withOpacity(0.3) : null,
+                            color: event.imageUrl.isEmpty
+                                ? theme.colorScheme.outline.withOpacity(0.3)
+                                : null,
                           ),
                           child: event.imageUrl.isEmpty
                               ? Icon(
                                   Icons.event,
-                                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5),
                                   size: 32,
                                 )
                               : null,
@@ -588,7 +558,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 '${event.startDateTime.month}/${event.startDateTime.day}/${event.startDateTime.year} • ${event.startDateTime.hour}:${event.startDateTime.minute.toString().padLeft(2, '0')}',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -597,15 +568,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(
                                     Icons.location_on,
                                     size: 16,
-                                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
                                   ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
-                                      event.address.isNotEmpty ? event.address : event.venue,
+                                      event.address.isNotEmpty
+                                          ? event.address
+                                          : event.venue,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.7),
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -616,7 +591,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (event.category.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: theme.primaryColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),

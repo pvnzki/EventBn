@@ -67,6 +67,7 @@ model Event {
   cover_image_url   String?
   other_images_url  String?
   video_url         String?
+
   seat_map          Json?    @db.JsonB
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now()) @updatedAt
@@ -142,3 +143,19 @@ enum Status {
 
   @@map("status")
 }
+
+model MonthlyAnalytics {
+  id             Int      @id @default(autoincrement())
+  year           Int
+  month          Int
+  total_events   Int
+  total_attendees Int
+  total_revenue  Float
+  growth_rate    Float
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now()) @updatedAt
+
+  @@unique([year, month], name: "year_month") // Composite key to avoid duplicate entries
+  @@map("monthly_analytics")
+}
+
