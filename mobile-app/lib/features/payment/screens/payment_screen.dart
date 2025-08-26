@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../../core/config/app_config.dart';
+import '../../auth/services/auth_service.dart';
 
-class PaymentScreen extends StatelessWidget {
+class PaymentScreen extends StatefulWidget {
   final String eventId;
   final String eventName;
   final String eventDate;
@@ -25,6 +29,100 @@ class PaymentScreen extends StatelessWidget {
     required this.email,
     required this.phone,
   });
+
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  bool _isProcessingPayment = false;
+
+  Future<void> _processPayment() async {
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
+    try {
+      // Get auth token
+      final token = await AuthService().getStoredToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      // Calculate total amount
+      final totalAmount = widget.selectedSeatData.fold(0.0, (sum, seat) => sum + (seat['price'] as num).toDouble());
+
+      // Create payment
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/payments'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'event_id': widget.eventId,
+          'amount': totalAmount,
+          'payment_method': 'card',
+          'selected_seats': widget.selectedSeats,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final paymentData = jsonDecode(response.body);
+        
+        if (mounted) {
+          // Show success dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Payment Successful!'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your booking is confirmed!'),
+                  const SizedBox(height: 8),
+                  Text('Payment ID: ${paymentData['payment']['payment_id']}'),
+                  Text('Amount: ₹${totalAmount.toStringAsFixed(2)}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        throw Exception('Payment failed: ${response.body}');
+      }
+    } catch (e) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Payment Failed'),
+            content: Text('Error: ${e.toString()}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,24 +160,24 @@ class PaymentScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(28)),
                 elevation: 4,
               ),
-              onPressed: () {
-                // TODO: Implement payment logic
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Payment Successful'),
-                    content: const Text('Your booking is confirmed!'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context)
-                            .popUntil((route) => route.isFirst),
-                        child: const Text('OK'),
+              onPressed: _isProcessingPayment ? null : _processPayment,
+              child: _isProcessingPayment 
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       ),
+                      SizedBox(width: 8),
+                      Text('Processing...'),
                     ],
-                  ),
-                );
-              },
-              child: const Text('Pay Now'),
+                  )
+                : const Text('Pay Now'),
             ),
           ],
         ),
@@ -92,7 +190,7 @@ class PaymentScreen extends StatelessWidget {
     double totalPrice = 0.0;
     List<String> seatLabels = [];
     
-    for (var seatData in selectedSeatData) {
+    for (var seatData in widget.selectedSeatData) {
       totalPrice += (seatData['price'] ?? 0.0);
       seatLabels.add(seatData['label'] ?? '');
     }
@@ -106,11 +204,11 @@ class PaymentScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSummaryRow('Event', eventName, theme),
-            _buildSummaryRow('Date', eventDate, theme),
-            _buildSummaryRow('Name', name, theme),
-            _buildSummaryRow('Email', email, theme),
-            _buildSummaryRow('Phone', phone, theme),
+            _buildSummaryRow('Event', widget.eventName, theme),
+            _buildSummaryRow('Date', widget.eventDate, theme),
+            _buildSummaryRow('Name', widget.name, theme),
+            _buildSummaryRow('Email', widget.email, theme),
+            _buildSummaryRow('Phone', widget.phone, theme),
             _buildSummaryRow('Seats', seatLabels.join(', '), theme),
             _buildSummaryRow('Total', '\u20B9${totalPrice.toStringAsFixed(0)}', theme),
           ],

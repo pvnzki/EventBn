@@ -22,6 +22,7 @@ class SeatSelectionScreen extends StatefulWidget {
 class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
   int seatCount = 1;
   Set<int> selectedSeats = {};
+  Set<int> bookedSeats = {}; // Add this to track booked seats
   List<Map<String, dynamic>> seatMap = [];
   bool isLoading = true;
   String eventName = '';
@@ -33,6 +34,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
     seatCount = widget.initialCount;
     _loadSeatMap();
     _loadEventDetails();
+    _loadBookedSeats(); // Add this line
   }
 
   Future<void> _loadSeatMap() async {
@@ -99,6 +101,30 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         eventName = 'Event';
         eventDate = 'Date TBA';
       });
+    }
+  }
+
+  Future<void> _loadBookedSeats() async {
+    try {
+      final String baseUrl = AppConfig.baseUrl;
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/events/${widget.eventId}/booked-seats'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> bookedSeatsList = data['data'];
+          setState(() {
+            bookedSeats = bookedSeatsList
+                .map<int>((seat) => seat['seat_id'] as int)
+                .toSet();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading booked seats: $e');
     }
   }
 

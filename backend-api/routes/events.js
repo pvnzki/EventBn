@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const eventsService = require('../services/core-service/events');
+const prisma = require('../lib/database');
 
 // Get all events
 router.get('/', async (req, res) => {
@@ -81,6 +82,39 @@ router.delete('/:id', async (req, res) => {
     res.json({
       success: true,
       message: 'Event deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get booked seats for an event
+router.get('/:id/booked-seats', async (req, res) => {
+  try {
+    const eventId = parseInt(req.params.id);
+    
+    const bookedSeats = await prisma.bookedSeats.findMany({
+      where: { 
+        event_id: eventId,
+        payment: {
+          status: {
+            in: ['pending', 'completed']
+          }
+        }
+      },
+      select: {
+        seat_id: true,
+        seat_label: true,
+        booked_at: true
+      }
+    });
+
+    res.json({
+      success: true,
+      data: bookedSeats
     });
   } catch (error) {
     res.status(500).json({

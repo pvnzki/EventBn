@@ -26,6 +26,7 @@ model User {
   // Relations
   organizations Organization[]
   search_logs   Search_Log[]
+  payments      Payment[]
   // events relation removed (no matching relation in Event)
   
   @@map("User")
@@ -72,6 +73,8 @@ model Event {
 
   // Relations
   organization Organization? @relation(fields: [organization_id], references: [organization_id], onDelete: SetNull)
+  payments     Payment[]
+  booked_seats BookedSeats[]
   // creator relation removed
 
   @@map("Event")
@@ -88,4 +91,49 @@ model Search_Log {
   user User? @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
 
   @@map("Search_Log")
+}
+
+model Payment {
+  payment_id      String   @id @default(uuid())
+  user_id         Int
+  event_id        Int
+  amount          Decimal  @db.Decimal
+  payment_date    DateTime @default(now())
+  status          Status   @default(pending)
+  payment_method  String?
+  transaction_ref String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  event        Event        @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  booked_seats BookedSeats[]
+
+  @@map("payment")
+}
+
+model BookedSeats {
+  booking_id  String   @id @default(uuid())
+  payment_id  String
+  event_id    Int
+  seat_id     Int
+  seat_label  String
+  booked_at   DateTime @default(now())
+
+  // Relations
+  payment Payment @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade)
+  event   Event   @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
+  @@unique([event_id, seat_id])
+  @@map("booked_seats")
+}
+
+enum Status {
+  pending
+  completed
+  failed
+  refunded
+
+  @@map("status")
 }
