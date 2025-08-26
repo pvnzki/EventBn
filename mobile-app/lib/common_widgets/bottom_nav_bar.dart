@@ -127,23 +127,21 @@ class _BottomNavBarState extends State<BottomNavBar>
               height: 75,
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color.fromARGB(255, 15, 15, 15) // Dark grey background
-                    : Colors.white,
+                    ? Colors.black // Pure black for dark mode
+                    : Colors.white, // Pure white for light mode
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? Colors.black.withValues(alpha: 0.4)
-                        : Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
+                        ? Colors.black.withOpacity(0.18)
+                        : Colors.grey.withOpacity(0.10),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                     spreadRadius: 0,
                   ),
                 ],
                 border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF404040)
-                      : const Color(0xFFE5E7EB),
+                  color: isDark ? Colors.black : const Color(0xFFE5E7EB),
                   width: 1,
                 ),
               ),
@@ -179,6 +177,9 @@ class _BottomNavBarState extends State<BottomNavBar>
     final item = _navItems[index];
     final isSelected = _selectedIndex == index;
 
+    final selectedColor = isDark ? Colors.white : Colors.black;
+    final unselectedColor =
+        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF6B7280);
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: AnimatedContainer(
@@ -186,23 +187,21 @@ class _BottomNavBarState extends State<BottomNavBar>
         curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF32CD32)
-                  .withValues(alpha: 0.1) // Light lime green for selected
-              : Colors.transparent,
+          color:
+              isSelected ? selectedColor.withOpacity(0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Add a small indicator line above selected items (like Profile in the image)
+            // Add a small indicator line above selected items
             if (isSelected)
               Container(
                 width: 20,
                 height: 2,
                 margin: const EdgeInsets.only(bottom: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF32CD32), // Lime Green
+                  color: selectedColor,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -222,13 +221,7 @@ class _BottomNavBarState extends State<BottomNavBar>
                     child: Icon(
                       isSelected ? item.activeIcon : item.icon,
                       key: ValueKey(isSelected),
-                      color: isSelected
-                          ? const Color(0xFF32CD32) // Lime Green for selected
-                          : isDark
-                              ? const Color(
-                                  0xFFB0B0B0) // Light grey for dark theme
-                              : const Color(
-                                  0xFF6B7280), // Medium grey for light theme
+                      color: isSelected ? selectedColor : unselectedColor,
                       size: 24,
                     ),
                   ),
@@ -241,12 +234,7 @@ class _BottomNavBarState extends State<BottomNavBar>
               style: TextStyle(
                 fontSize: isSelected ? 12 : 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected
-                    ? const Color(0xFF32CD32) // Lime Green for selected
-                    : isDark
-                        ? const Color(0xFFB0B0B0) // Light grey for dark theme
-                        : const Color(
-                            0xFF6B7280), // Medium grey for light theme
+                color: isSelected ? selectedColor : unselectedColor,
               ),
               child: Text(item.label),
             ),
@@ -257,11 +245,15 @@ class _BottomNavBarState extends State<BottomNavBar>
   }
 
   Widget _buildCreateButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.black : Colors.white;
+    final iconColor = isDark ? Colors.white : Colors.black;
     return GestureDetector(
       onTap: () {
         _animationController.forward().then((_) {
           _animationController.reverse();
-          context.go('/create-post');
+            context.push('/create-post'); // Use push for back navigation
         });
       },
       child: AnimatedBuilder(
@@ -269,26 +261,40 @@ class _BottomNavBarState extends State<BottomNavBar>
         builder: (context, child) {
           return Transform.scale(
             scale: _scaleAnimation.value,
-            child: Container(
-              width: 65,
-              height: 65,
-              decoration: BoxDecoration(
-                color: const Color(0xFF32CD32), // Lime Green
-                borderRadius: BorderRadius.circular(35),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF32CD32).withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                    spreadRadius: 1,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: bgColor.withOpacity(0.18),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.add_circle,
-                color: Colors.white,
-                size: 36,
-              ),
+                  child: Icon(
+                    Icons.add_circle,
+                    color: iconColor,
+                    size: 38,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Post',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                ),
+              ],
             ),
           );
         },
