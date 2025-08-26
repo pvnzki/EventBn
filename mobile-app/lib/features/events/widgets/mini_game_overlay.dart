@@ -203,9 +203,8 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                 color: const Color(0xFF32CD32)
                     .withValues(alpha: 0.1), // Light lime green background
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: const Color(0xFF32CD32)
-                        .withValues(alpha: 0.3)), // Lime green border
+        border: Border.all(
+          color: Colors.transparent),
               ),
               child: Text(
                 offer,
@@ -282,7 +281,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                     ],
                   ),
                   child: const Icon(
-                    Icons.bookmark,
+                    Icons.sports_esports, // Joystick/gamepad icon
                     color: Colors.white,
                     size: 28,
                   ),
