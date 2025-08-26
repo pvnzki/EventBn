@@ -26,7 +26,6 @@ import {
   BarChart,
   Line,
   LineChart,
-  ResponsiveContainer,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -37,6 +36,18 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 
 const monthNames = [
   "Jan",
@@ -87,6 +98,9 @@ const DashboardPage = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
+  const [formData, setFormData] = useState<Partial<Event>>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -103,7 +117,7 @@ const DashboardPage = () => {
           setAnalyticsData(response.data);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Error fetching analytics:", err));
   }, []);
 
   useEffect(() => {
@@ -114,7 +128,7 @@ const DashboardPage = () => {
           setEvents(response.data);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Error fetching events:", err));
   }, []);
 
   const handleDeleteEvent = async (event: Event) => {
@@ -128,11 +142,125 @@ const DashboardPage = () => {
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
+        toast({
+          title: "Success",
+          description: "Event deleted successfully",
+        });
       } else {
         console.error("Failed to delete event");
+        toast({
+          title: "Error",
+          description: "Failed to delete event",
+          variant: "destructive",
+        });
       }
     } catch (err) {
       console.error("Error deleting event:", err);
+      toast({
+        title: "Error",
+        description: "Error deleting event",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenEditModal = (event: Event) => {
+    console.log("Opening edit modal for event:", event);
+    setEventToEdit(event);
+    setFormData({
+      title: event.title,
+      description: event.description,
+      category: event.category,
+      venue: event.venue,
+      location: event.location,
+      start_time: event.start_time,
+      end_time: event.end_time,
+      capacity: event.capacity,
+      cover_image_url: event.cover_image_url,
+      other_images_url: event.other_images_url,
+      video_url: event.video_url,
+      status: event.status,
+      organization_id: event.organization_id,
+    });
+    console.log("Form data set to:", {
+      title: event.title,
+      description: event.description,
+      category: event.category,
+      venue: event.venue,
+      location: event.location,
+      start_time: event.start_time,
+      end_time: event.end_time,
+      capacity: event.capacity,
+      cover_image_url: event.cover_image_url,
+      other_images_url: event.other_images_url,
+      video_url: event.video_url,
+      status: event.status,
+      organization_id: event.organization_id,
+    });
+  };
+
+  const handleCloseEditModal = () => {
+    console.log("Closing edit modal");
+    setEventToEdit(null);
+    setFormData({});
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    console.log(`Input changed: ${name} = ${value}`);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!eventToEdit) {
+      console.error("No event to edit");
+      return;
+    }
+
+    try {
+      console.log("Sending PUT request with data:", formData);
+      const response = await fetch(
+        `http://localhost:3000/api/events/${eventToEdit.event_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (response.ok) {
+        const updatedEvent = await response.json();
+        console.log("Event updated successfully:", updatedEvent);
+        setEvents(
+          events.map((e) =>
+            e.event_id === eventToEdit.event_id ? updatedEvent.data : e
+          )
+        );
+        setEventToEdit(null);
+        setFormData({});
+        toast({
+          title: "Success",
+          description: "Event updated successfully",
+        });
+      } else {
+        console.error("Failed to update event:", response.statusText);
+        toast({
+          title: "Error",
+          description: "Failed to update event",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Error updating event:", err);
+      toast({
+        title: "Error",
+        description: "Error updating event",
+        variant: "destructive",
+      });
     }
   };
 
@@ -191,18 +319,22 @@ const DashboardPage = () => {
   };
 
   const handleViewEvent = (event: Event) => {
+    console.log("Opening view modal for event:", event);
     setSelectedEvent(event);
   };
 
   const closeModal = () => {
+    console.log("Closing view modal");
     setSelectedEvent(null);
   };
 
   const handleOpenDeleteModal = (event: Event) => {
+    console.log("Opening delete modal for event:", event);
     setEventToDelete(event);
   };
 
   const handleCloseDeleteModal = () => {
+    console.log("Closing delete modal");
     setEventToDelete(null);
   };
 
@@ -317,8 +449,8 @@ const DashboardPage = () => {
                   }}
                   className="h-[300px]"
                 >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
+                  <div style={{ width: "379px", height: "300px" }}>
+                    <BarChart data={chartData} width={379} height={300}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -335,7 +467,7 @@ const DashboardPage = () => {
                         name="Events"
                       />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </div>
                 </ChartContainer>
               </CardContent>
             </Card>
@@ -355,8 +487,8 @@ const DashboardPage = () => {
                   }}
                   className="h-[300px]"
                 >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                  <div style={{ width: "379px", height: "300px" }}>
+                    <LineChart data={chartData} width={379} height={300}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -369,7 +501,7 @@ const DashboardPage = () => {
                         name="Revenue ($)"
                       />
                     </LineChart>
-                  </ResponsiveContainer>
+                  </div>
                 </ChartContainer>
               </CardContent>
             </Card>
@@ -434,7 +566,11 @@ const DashboardPage = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenEditModal(event)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -601,6 +737,195 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {eventToEdit && (
+        <Dialog open={!!eventToEdit} onOpenChange={handleCloseEditModal}>
+          <DialogContent className="sm:max-w-[425px] z-[100]">
+            <DialogHeader>
+              <DialogTitle>Edit Event</DialogTitle>
+              <DialogDescription>
+                Update the event details below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formData.title || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="category" className="text-right">
+                  Category
+                </Label>
+                <Input
+                  id="category"
+                  name="category"
+                  value={formData.category || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="venue" className="text-right">
+                  Venue
+                </Label>
+                <Input
+                  id="venue"
+                  name="venue"
+                  value={formData.venue || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="location" className="text-right">
+                  Location
+                </Label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="start_time" className="text-right">
+                  Start Time
+                </Label>
+                <Input
+                  id="start_time"
+                  name="start_time"
+                  type="datetime-local"
+                  value={
+                    formData.start_time
+                      ? new Date(formData.start_time).toISOString().slice(0, 16)
+                      : ""
+                  }
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="end_time" className="text-right">
+                  End Time
+                </Label>
+                <Input
+                  id="end_time"
+                  name="end_time"
+                  type="datetime-local"
+                  value={
+                    formData.end_time
+                      ? new Date(formData.end_time).toISOString().slice(0, 16)
+                      : ""
+                  }
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="capacity" className="text-right">
+                  Capacity
+                </Label>
+                <Input
+                  id="capacity"
+                  name="capacity"
+                  type="number"
+                  value={formData.capacity || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cover_image_url" className="text-right">
+                  Cover Image URL
+                </Label>
+                <Input
+                  id="cover_image_url"
+                  name="cover_image_url"
+                  value={formData.cover_image_url || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="other_images_url" className="text-right">
+                  Other Images URL
+                </Label>
+                <Textarea
+                  id="other_images_url"
+                  name="other_images_url"
+                  value={formData.other_images_url || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="video_url" className="text-right">
+                  Video URL
+                </Label>
+                <Input
+                  id="video_url"
+                  name="video_url"
+                  value={formData.video_url || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">
+                  Status
+                </Label>
+                <Input
+                  id="status"
+                  name="status"
+                  value={formData.status || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="organization_id" className="text-right">
+                  Organization ID
+                </Label>
+                <Input
+                  id="organization_id"
+                  name="organization_id"
+                  type="number"
+                  value={formData.organization_id || ""}
+                  onChange={handleInputChange}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCloseEditModal}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

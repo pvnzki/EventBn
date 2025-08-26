@@ -1,10 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/login/page": "app/login/page.js",
-  "/events/page": "app/events/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/users/page": "app/users/page.js",
   "/create-event/page": "app/create-event/page.js",
-  "/settings/page": "app/settings/page.js",
-  "/analytics/page": "app/analytics/page.js"
+  "/users/page": "app/users/page.js",
+  "/analytics/page": "app/analytics/page.js",
+  "/settings/page": "app/settings/page.js"
 }
