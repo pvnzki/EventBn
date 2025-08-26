@@ -97,6 +97,7 @@ export default function EventsPage() {
 
   const isAdmin = user?.role === "admin";
 
+
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,6 +180,7 @@ export default function EventsPage() {
             </Link>
           </div>
 
+          {/* Filters */}
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -201,6 +203,7 @@ export default function EventsPage() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="sold_out">Sold Out</SelectItem>
+
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
@@ -224,7 +227,6 @@ export default function EventsPage() {
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>
@@ -296,7 +298,6 @@ export default function EventsPage() {
               </div>
             </CardContent>
           </Card>
-
           {filteredEvents.length === 0 && (
             <Card className="text-center py-12">
               <CardContent>
@@ -473,4 +474,5 @@ export default function EventsPage() {
       )}
     </div>
   );
+
 }

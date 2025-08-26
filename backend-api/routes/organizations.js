@@ -96,4 +96,40 @@ router.get("/:organizationId", async (req, res) => {
   } 
 });
 
+
+// Get upcoming and past events for an organization (For Organization Profile in Mobile-App)
+router.get('/:organizationId/events', async (req, res) => {
+  try {
+    const organizationId = Number(req.params.organizationId);
+    if (!organizationId) {
+      return res.status(400).json({ error: 'Invalid organization ID.' });
+    }
+
+    // Upcoming events: start_time >= now
+    const upcomingEvents = await prisma.event.findMany({
+      where: {
+        organization_id: organizationId,
+        start_time: { gte: new Date() },
+      },
+      orderBy: { start_time: 'asc' },
+    });
+
+    // Past events: end_time < now
+    const pastEvents = await prisma.event.findMany({
+      where: {
+        organization_id: organizationId,
+        end_time: { lt: new Date() },
+      },
+      orderBy: { end_time: 'desc' },
+    });
+
+    res.json({
+      upcomingEvents,
+      pastEvents,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

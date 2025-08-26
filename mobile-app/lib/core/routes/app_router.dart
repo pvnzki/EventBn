@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/payment/screens/seat_selection_screen.dart';
 import '../../features/payment/screens/contact_info_screen.dart';
 import '../../features/payment/screens/payment_screen.dart';
-
+import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/auth/screens/welcome_login_screen.dart';
@@ -26,7 +26,8 @@ import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
-import '../../features/explore/screens/explore_posts_page.dart';
+import '../../features/explore/screens/create_post_screen.dart';
+
 import '../../common_widgets/bottom_nav_bar.dart';
 
 class AppRouter {
@@ -152,6 +153,13 @@ class AppRouter {
         },
       ),
 
+      // Create Post Route
+      GoRoute(
+        path: '/create-post',
+        name: 'create-post',
+        builder: (context, state) => const CreatePostScreen(),
+      ),
+
       // User Profile Route
       GoRoute(
         path: '/user/:userId',
@@ -204,23 +212,15 @@ class AppRouter {
         name: 'contact-info',
         builder: (context, state) {
           final eventId = state.pathParameters['eventId']!;
-          final ticketType = state.extra is Map &&
-                  (state.extra as Map).containsKey('ticketType')
-              ? (state.extra as Map)['ticketType'] as String
-              : '';
-          final seatCount = state.extra is Map &&
-                  (state.extra as Map).containsKey('seatCount')
-              ? (state.extra as Map)['seatCount'] as int
-              : 1;
-          final selectedSeats = state.extra is Map &&
-                  (state.extra as Map).containsKey('selectedSeats')
-              ? (state.extra as Map)['selectedSeats'] as List<String>
-              : <String>[];
+          final extra = state.extra as Map<String, dynamic>? ?? {};
           return ContactInfoScreen(
             eventId: eventId,
-            ticketType: ticketType,
-            seatCount: seatCount,
-            selectedSeats: selectedSeats,
+            eventName: extra['eventName'] ?? 'Event',
+            eventDate: extra['eventDate'] ?? '',
+            ticketType: extra['ticketType'] ?? '',
+            seatCount: extra['seatCount'] ?? 1,
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
           );
         },
       ),
@@ -234,10 +234,12 @@ class AppRouter {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return PaymentScreen(
             eventId: eventId,
+            eventName: extra['eventName'] ?? 'Event',
+            eventDate: extra['eventDate'] ?? '',
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats:
-                (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
             name: extra['name'] ?? '',
             email: extra['email'] ?? '',
             phone: extra['phone'] ?? '',
@@ -257,7 +259,10 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => const ExplorePostsPage(),
+            builder: (context, state) => ExplorePostsPage(
+              focusSearch: state.extra is Map &&
+                  (state.extra as Map)['focusSearch'] == true,
+            ),
           ),
           GoRoute(
             path: '/my-tickets',

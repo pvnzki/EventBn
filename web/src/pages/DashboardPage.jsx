@@ -60,6 +60,7 @@ const DashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{isAdmin ? "1,2222" : "12"}</div>
+
                 <p className="text-xs text-muted-foreground">+20.1% from last month</p>
               </CardContent>
             </Card>

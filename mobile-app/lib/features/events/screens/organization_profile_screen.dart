@@ -14,8 +14,112 @@ class OrganizationProfileScreen extends StatefulWidget {
       _OrganizationProfileScreenState();
 }
 
-class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
-    with SingleTickerProviderStateMixin {
+
+class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> with SingleTickerProviderStateMixin {
+
+  // Small tile for event (used in grid)
+  Widget _buildEventTile(Map<String, dynamic> event, ThemeData theme, {bool isPast = false}) {
+    final image = (event['image'] ?? '').toString();
+    final title = (event['title'] ?? '').toString();
+    final date = (event['date'] ?? event['start_time'] ?? '').toString();
+    final location = (event['location'] ?? '').toString();
+    final attendees = (event['attendees'] ?? '0').toString();
+    final price = (event['price'] ?? '').toString();
+    final rating = (event['rating'] ?? '0').toString();
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withOpacity(0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Image.network(
+                  image,
+                  height: 100,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 100,
+                    color: theme.colorScheme.surface,
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: theme.colorScheme.onSurface.withOpacity(0.3),
+                    ),
+                  ),
+                ),
+                if (isPast)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.star, color: theme.colorScheme.secondary, size: 14),
+                          const SizedBox(width: 2),
+                          Text(rating, style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface)),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 12, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                      const SizedBox(width: 2),
+                      Text(date, style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.6))),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 12, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                      const SizedBox(width: 2),
+                      Expanded(child: Text(location, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.6)))),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(isPast ? '$attendees attended' : '$attendees going', style: TextStyle(fontSize: 11, color: theme.colorScheme.primary, fontWeight: FontWeight.w600)),
+                      const Spacer(),
+                      Text(price, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   late TabController _tabController;
   bool isFollowing = false;
 
@@ -34,24 +138,38 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
     });
     try {
       final baseUrl = dotenv.env['BASE_URL'] ?? '';
-      final url = '$baseUrl/api/organizations/${widget.organizationId}';
-      final response = await http.get(Uri.parse(url));
-      print('API Request: GET $url');
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+
+      final orgUrl = '$baseUrl/api/organizations/${widget.organizationId}';
+      final eventsUrl = '$baseUrl/api/organizations/${widget.organizationId}/events';
+
+      // Fetch organization info
+      final orgResponse = await http.get(Uri.parse(orgUrl));
+      // Fetch events
+      final eventsResponse = await http.get(Uri.parse(eventsUrl));
+
+      print('API Request: GET $orgUrl');
+      print('Status Code: ${orgResponse.statusCode}');
+      print('Response Body: ${orgResponse.body}');
+      print('API Request: GET $eventsUrl');
+      print('Status Code: ${eventsResponse.statusCode}');
+      print('Response Body: ${eventsResponse.body}');
+
+      if (orgResponse.statusCode == 200 && eventsResponse.statusCode == 200) {
+        final orgData = json.decode(orgResponse.body);
+        final eventsData = json.decode(eventsResponse.body);
         setState(() {
-          organizationData = data;
-          upcomingEvents = data['upcomingEvents'] ?? [];
-          pastEvents = data['pastEvents'] ?? [];
+          organizationData = orgData;
+          upcomingEvents = eventsData['upcomingEvents'] ?? [];
+          pastEvents = eventsData['pastEvents'] ?? [];
           isLoading = false;
         });
       } else {
         setState(() {
           hasError = true;
           errorMessage =
-              'Failed to load organization data. Status: ${response.statusCode}\nBody: ${response.body}';
+
+              'Failed to load organization data or events. Status: ${orgResponse.statusCode}, ${eventsResponse.statusCode}\nOrg Body: ${orgResponse.body}\nEvents Body: ${eventsResponse.body}';
+
           isLoading = false;
         });
       }
@@ -134,7 +252,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.9),
+
+          color: theme.colorScheme.surface.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
         child: IconButton(
@@ -146,7 +265,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor.withValues(alpha: 0.9),
+            color: theme.colorScheme.surface.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -163,7 +282,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+
+                theme.colorScheme.surface.withOpacity(0.8),
               ],
             ),
           ),
@@ -173,13 +293,26 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
   }
 
   Widget _buildProfileHeader(ThemeData theme) {
+
+    final logoUrl = organizationData?['logo_url'] ?? '';
+    final name = organizationData?['name'] ?? 'Unknown';
+    final website = organizationData?['website_url'] ?? organizationData?['website'] ?? '';
+    final contactEmail = organizationData?['contact_email'] ?? '';
+    final joinDate = organizationData?['joinDate'] ?? '';
+    final textColor = theme.colorScheme.onSurface;
+    final secondaryTextColor = theme.colorScheme.onSurface.withOpacity(0.7);
+    final accentColor = theme.colorScheme.primary;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(organizationData?['logo_url'] ?? ''),
+
+            backgroundImage: logoUrl.isNotEmpty ? NetworkImage(logoUrl) : null,
+            child: logoUrl.isEmpty ? Icon(Icons.business, size: 40, color: secondaryTextColor) : null,
+            backgroundColor: theme.colorScheme.surface,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -187,44 +320,57 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  organizationData?['name'] ?? '',
+
+                  name,
                   style: TextStyle(
-                    color: theme.colorScheme.onSurface,
+                    color: textColor,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (organizationData?['website_url'] != null &&
-                    organizationData?['website_url'] != '')
+
+                if (website.isNotEmpty)
                   Text(
-                    organizationData?['website_url'] ?? '',
+                    website,
                     style: TextStyle(
-                      color: theme.primaryColor,
+                      color: accentColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 const SizedBox(height: 8),
-                if (organizationData?['contact_email'] != null &&
-                    organizationData?['contact_email'] != '')
+
+                if (contactEmail.isNotEmpty)
                   Row(
                     children: [
                       Icon(
                         Icons.email,
                         size: 16,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
+
+                        color: secondaryTextColor,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        organizationData?['contact_email'] ?? '',
+                        contactEmail,
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
+                          color: secondaryTextColor,
+
                           fontSize: 12,
                         ),
                       ),
                     ],
+                  ),
+
+                if (joinDate.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Joined $joinDate',
+                      style: TextStyle(
+                        color: secondaryTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -235,6 +381,15 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
   }
 
   Widget _buildActionButtons(ThemeData theme) {
+
+    final accentColor = theme.colorScheme.primary;
+    final surfaceColor = theme.colorScheme.surface;
+    final onPrimary = theme.colorScheme.onPrimary;
+    final onSurface = theme.colorScheme.onSurface;
+    final borderColor = theme.colorScheme.outline.withOpacity(0.3);
+    final followBg = isFollowing ? surfaceColor : accentColor;
+    final followFg = isFollowing ? accentColor : onPrimary;
+    final followBorder = isFollowing ? BorderSide(color: accentColor, width: 1) : BorderSide.none;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -243,13 +398,11 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
             child: ElevatedButton(
               onPressed: () => setState(() => isFollowing = !isFollowing),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isFollowing
-                    ? theme.colorScheme.surface
-                    : theme.primaryColor,
-                foregroundColor:
-                    isFollowing ? theme.primaryColor : Colors.white,
-                side:
-                    isFollowing ? BorderSide(color: theme.primaryColor) : null,
+
+                backgroundColor: followBg,
+                foregroundColor: followFg,
+                side: followBorder,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
@@ -257,15 +410,18 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
               ),
               child: Text(
                 isFollowing ? 'Following' : 'Follow',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: followFg,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(25),
             ),
             child: IconButton(
@@ -274,7 +430,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
               },
               icon: Icon(
                 Icons.message_outlined,
-                color: theme.colorScheme.onSurface,
+
+                color: onSurface,
               ),
             ),
           ),
@@ -284,29 +441,33 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
   }
 
   Widget _buildStatsRow(ThemeData theme) {
+
+    final eventsCount = organizationData?['events']?.toString() ?? '0';
+    final followersCount = organizationData?['followers']?.toString() ?? '0';
+    final followingCount = organizationData?['following']?.toString() ?? '0';
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem(
-              'Events', organizationData?['events']?.toString() ?? '0', theme),
-          _buildStatItem(
-              'Followers', organizationData?['followers'] ?? '0', theme),
-          _buildStatItem('Following',
-              organizationData?['following']?.toString() ?? '0', theme),
+          _buildStatItem('Events', eventsCount, theme),
+          _buildStatItem('Followers', followersCount, theme),
+          _buildStatItem('Following', followingCount, theme),
         ],
       ),
     );
   }
 
   Widget _buildStatItem(String label, String value, ThemeData theme) {
+
+    final textColor = theme.colorScheme.onSurface;
+    final secondaryTextColor = theme.colorScheme.onSurface.withOpacity(0.7);
     return Column(
       children: [
         Text(
           value,
           style: TextStyle(
-            color: theme.colorScheme.onSurface,
+            color: textColor,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -315,7 +476,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
         Text(
           label,
           style: TextStyle(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            color: secondaryTextColor,
             fontSize: 14,
           ),
         ),
@@ -324,46 +485,60 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
   }
 
   Widget _buildBio(ThemeData theme) {
+
+    final bio = organizationData?['bio'] ?? '';
+    final website = organizationData?['website_url'] ?? organizationData?['website'] ?? '';
+    final joinDate = organizationData?['joinDate'] ?? '';
+    final secondaryTextColor = theme.colorScheme.onSurface.withOpacity(0.7);
+    final accentColor = theme.colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            organizationData?['bio'] ?? '',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-              fontSize: 14,
-              height: 1.5,
+          if (bio.isNotEmpty)
+            Text(
+              bio,
+              style: TextStyle(
+                color: secondaryTextColor,
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.link,
-                size: 16,
-                color: theme.primaryColor,
+          if (website.isNotEmpty || joinDate.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  if (website.isNotEmpty) ...[
+                    Icon(
+                      Icons.link,
+                      size: 16,
+                      color: accentColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      website,
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if (website.isNotEmpty && joinDate.isNotEmpty)
+                    const Spacer(),
+                  if (joinDate.isNotEmpty)
+                    Text(
+                      'Joined $joinDate',
+                      style: TextStyle(
+                        color: secondaryTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                organizationData?['website'] ?? '',
-                style: TextStyle(
-                  color: theme.primaryColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Joined ${organizationData?['joinDate'] ?? ''}',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -407,275 +582,50 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
   }
 
   Widget _buildUpcomingEvents(ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.85,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
       itemCount: upcomingEvents.length,
       itemBuilder: (context, index) {
         final event = upcomingEvents[index];
-        return _buildUpcomingEventCard(event, theme);
+        return _buildEventTile(event, theme);
       },
     );
   }
 
   Widget _buildPastEvents(ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.85,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
       itemCount: pastEvents.length,
       itemBuilder: (context, index) {
         final event = pastEvents[index];
-        return _buildPastEventCard(event, theme);
+        return _buildEventTile(event, theme, isPast: true);
       },
     );
   }
 
-  Widget _buildUpcomingEventCard(Map<String, dynamic> event, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              event['image'],
-              height: 150,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 150,
-                color: theme.colorScheme.surface,
-                child: Icon(
-                  Icons.image_not_supported,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event['title'],
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      event['date'],
-                      style: TextStyle(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        event['location'],
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      '${event['attendees']} going',
-                      style: TextStyle(
-                        color: theme.primaryColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      event['price'],
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPastEventCard(Map<String, dynamic> event, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Stack(
-              children: [
-                Image.network(
-                  event['image'],
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 150,
-                    color: theme.colorScheme.surface,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          event['rating'].toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event['title'],
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      event['date'],
-                      style: TextStyle(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        event['location'],
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${event['attendees']} attended',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showMoreOptions(BuildContext context, ThemeData theme) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        margin: const EdgeInsets.only(
-            bottom: 90), // Account for bottom nav height + padding
+        margin: const EdgeInsets.only(bottom: 90),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
+          color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -685,7 +635,7 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                color: theme.colorScheme.onSurface.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -26,32 +26,41 @@ class User {
 
   // Temporary JSON methods
   factory User.fromJson(Map<String, dynamic> json) {
+    // Split name into firstName and lastName
+    String fullName = json['name'] ?? '';
+    List<String> nameParts = fullName.trim().split(' ');
+    String firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    String lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
+    
     return User(
-      id: json['id'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
+      id: json['user_id']?.toString() ?? json['id']?.toString() ?? '',
+      firstName: firstName,
+      lastName: lastName,
       email: json['email'] ?? '',
-      phoneNumber: json['phoneNumber'],
-      profileImageUrl: json['profileImageUrl'],
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : DateTime.now(),
+      phoneNumber: json['phone_number'] ?? json['phoneNumber'],
+      profileImageUrl: json['profile_picture'] ?? json['profileImageUrl'],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : (json['createdAt'] != null 
+              ? DateTime.parse(json['createdAt'])
+              : DateTime.now()),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : (json['updatedAt'] != null
+              ? DateTime.parse(json['updatedAt'])
+              : DateTime.now()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'firstName': firstName,
-      'lastName': lastName,
+      'user_id': int.tryParse(id) ?? id,
+      'name': '$firstName $lastName'.trim(),
       'email': email,
-      'phoneNumber': phoneNumber,
-      'profileImageUrl': profileImageUrl,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'phone_number': phoneNumber,
+      'profile_picture': profileImageUrl,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 

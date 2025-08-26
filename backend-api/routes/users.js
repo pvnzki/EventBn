@@ -78,6 +78,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await usersService.permanentDeleteUser(req.params.id);
+
     res.json({
       success: true,
       message: 'User deleted successfully'

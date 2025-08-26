@@ -65,6 +65,8 @@ model Event {
   cover_image_url   String?
   other_images_url  String?
   video_url         String?
+
+  seat_map          Json?    @db.JsonB
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now()) @updatedAt
   status            String   @default("ACTIVE")
@@ -89,6 +91,7 @@ model Search_Log {
   @@map("Search_Log")
 }
 
+
 model MonthlyAnalytics {
   id             Int      @id @default(autoincrement())
   year           Int
@@ -103,3 +106,4 @@ model MonthlyAnalytics {
   @@unique([year, month], name: "year_month") // Composite key to avoid duplicate entries
   @@map("monthly_analytics")
 }
+

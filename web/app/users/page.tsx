@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -190,11 +191,13 @@ export default function UsersPage() {
               <p className="text-gray-600">
                 You don't have permission to view this page.
               </p>
+
             </CardContent>
           </Card>
         </div>
       </div>
     );
+
   }
 
   const filteredUsers = users.filter((user) => {
@@ -208,6 +211,7 @@ export default function UsersPage() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -260,6 +264,7 @@ export default function UsersPage() {
         </div>
       </div>
     );
+
   }
 
   return (
@@ -290,6 +295,7 @@ export default function UsersPage() {
                 <CardTitle className="text-sm font-medium">
                   Total Users
                 </CardTitle>
+
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -328,6 +334,7 @@ export default function UsersPage() {
                       )
                     : 0}
                   % of total
+
                 </p>
               </CardContent>
             </Card>
@@ -346,6 +353,7 @@ export default function UsersPage() {
                 <p className="text-xs text-muted-foreground">
                   {users.filter((u) => u.status === "pending").length} pending
                   approval
+
                 </p>
               </CardContent>
             </Card>
@@ -478,6 +486,7 @@ export default function UsersPage() {
                                 ${user.totalRevenue.toLocaleString()} total
                                 revenue
                               </span>
+
                               <span>Last active: {user.lastActive}</span>
                             </div>
                           )}
@@ -505,6 +514,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   );
+
                 })}
               </div>
 

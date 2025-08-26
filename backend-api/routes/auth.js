@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const authService = require('../services/core-service/auth');
 
+const { authenticateToken } = require('../middleware/auth');
+
 // Register user
 router.post('/register', async (req, res) => {
   try {
@@ -32,6 +34,22 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     res.status(401).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// Get current user
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      user: req.user
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
       message: error.message
     });

@@ -2,21 +2,29 @@ import 'package:flutter/material.dart';
 
 class PaymentScreen extends StatelessWidget {
   final String eventId;
+  final String eventName;
+  final String eventDate;
   final String ticketType;
   final int seatCount;
   final List<String> selectedSeats;
+  final List<Map<String, dynamic>> selectedSeatData;
   final String name;
   final String email;
   final String phone;
-  const PaymentScreen(
-      {super.key,
-      required this.eventId,
-      required this.ticketType,
-      required this.seatCount,
-      required this.selectedSeats,
-      required this.name,
-      required this.email,
-      required this.phone});
+  
+  const PaymentScreen({
+    super.key,
+    required this.eventId,
+    required this.eventName,
+    required this.eventDate,
+    required this.ticketType,
+    required this.seatCount,
+    required this.selectedSeats,
+    required this.selectedSeatData,
+    required this.name,
+    required this.email,
+    required this.phone,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +88,15 @@ class PaymentScreen extends StatelessWidget {
   }
 
   Widget _buildSummary(ThemeData theme) {
+    // Calculate total price from selected seat data
+    double totalPrice = 0.0;
+    List<String> seatLabels = [];
+    
+    for (var seatData in selectedSeatData) {
+      totalPrice += (seatData['price'] ?? 0.0);
+      seatLabels.add(seatData['label'] ?? '');
+    }
+    
     return Card(
       color: theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -89,13 +106,13 @@ class PaymentScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSummaryRow('Event', eventName, theme),
+            _buildSummaryRow('Date', eventDate, theme),
             _buildSummaryRow('Name', name, theme),
             _buildSummaryRow('Email', email, theme),
             _buildSummaryRow('Phone', phone, theme),
-            _buildSummaryRow('Ticket Type', ticketType, theme),
-            _buildSummaryRow('Seats', selectedSeats.join(', '), theme),
-            _buildSummaryRow(
-                'Total', '\u20B9${seatCount * 500}', theme), // Example price
+            _buildSummaryRow('Seats', seatLabels.join(', '), theme),
+            _buildSummaryRow('Total', '\u20B9${totalPrice.toStringAsFixed(0)}', theme),
           ],
         ),
       ),

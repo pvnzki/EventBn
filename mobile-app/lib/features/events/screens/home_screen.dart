@@ -6,6 +6,9 @@ import 'dart:developer';
 
 import '../providers/event_provider.dart';
 
+import '../widgets/mini_game_overlay.dart';
+
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -27,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ...existing code...
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Sports', 'icon': Icons.sports_soccer, 'color': 0xFF388E3C},
@@ -46,27 +48,32 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildSearchBar(),
-              const SizedBox(height: 24),
-              _buildFeaturedBanner(),
-              const SizedBox(height: 24),
-              _buildCategories(),
-              const SizedBox(height: 32),
-              _buildUpcomingEvents(),
-              const SizedBox(height: 20),
-            ],
+
+    return Stack(
+      children: [
+        Container(
+          color: theme.scaffoldBackgroundColor,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+                  _buildFeaturedBanner(),
+                  const SizedBox(height: 24),
+                  _buildCategories(),
+                  const SizedBox(height: 32),
+                  _buildUpcomingEvents(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        const MiniGameOverlay(),
+      ],
     );
   }
 
@@ -80,18 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Header Logo - Theme aware
           Align(
-            alignment: Alignment.centerLeft, // Align to the left
+
+            alignment: Alignment.centerLeft,
             child: SizedBox(
-              height: 30, // Reduced height
+              height: 30,
               child: Image.asset(
                 isDark
                     ? 'assets/images/White Header logo.png'
                     : 'assets/images/Black header logo.png',
-                height: 30, // Reduced height
-                width: 120, // Increased width
+
+                height: 30,
+                width: 120,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
-                  // Fallback to text logo if image not found
                   return Text(
                     'EventBn',
                     style: TextStyle(
@@ -103,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
+
           ),
           const Spacer(),
           IconButton(
@@ -140,65 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          const CircleAvatar(
-            radius: 20,
-            backgroundImage: CachedNetworkImageProvider(
-              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GestureDetector(
-        onTap: () => context.go('/search'),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? theme.cardColor : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark
-                  ? theme.dividerColor.withValues(alpha: 0.3)
-                  : Colors.grey.shade300,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.search,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Search...',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 16,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.tune,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: () => context.push('/search'),
+            icon: const Icon(Icons.search, size: 28),
+            tooltip: 'Search',
           ),
         ),
       ),
@@ -426,7 +380,9 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: () async {
                   // Fetch real events from backend before navigating
-                  await Provider.of<EventProvider>(context, listen: false).fetchEvents();
+
+                  await Provider.of<EventProvider>(context, listen: false)
+                      .fetchEvents();
                   context.push('/all-events');
                 },
                 child: Text(

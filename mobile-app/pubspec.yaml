@@ -34,6 +34,9 @@ dependencies:
 
   # Image handling
   cached_network_image: ^3.3.0
+  image_picker: ^1.0.4
+
+  video_player: ^2.7.0
 
   video_player: ^2.7.0
 
@@ -76,6 +79,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/seat_map.json
     - .env
 
   # Custom fonts (commented out until font files are added)
