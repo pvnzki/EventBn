@@ -170,7 +170,7 @@ The app uses GoRouter for navigation with the following routes:
 - `/register` - Registration screen
 - `/home` - Home screen (events listing)
 - `/search` - Event search
-- `/my-tickets` - User tickets
+- `/tickets` - User tickets
 - `/profile` - User profile
 - `/event/:eventId` - Event details
 - `/checkout/:eventId` - Payment checkout

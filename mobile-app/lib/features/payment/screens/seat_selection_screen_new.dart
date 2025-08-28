@@ -243,7 +243,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
     return GridView.builder(
       shrinkWrap: false,
       physics: const AlwaysScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 8, // 8 columns as before
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
