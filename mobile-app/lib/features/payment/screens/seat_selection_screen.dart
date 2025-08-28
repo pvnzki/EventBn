@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
+import '../../../core/utils/theme_utils.dart';
 
 class SeatSelectionScreen extends StatefulWidget {
   final String eventId;
@@ -186,8 +187,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 minimumSize: const Size.fromHeight(56),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28)),
@@ -207,9 +208,10 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                         }
                       }
                       
-                      // Navigate to contact info page using GoRouter
-                      context.push(
-                        '/checkout/${widget.eventId}/contact',
+                      // Navigate to user details page using new booking flow
+                      context.pushNamed(
+                        'user-details',
+                        pathParameters: {'eventId': widget.eventId},
                         extra: {
                           'eventId': widget.eventId,
                           'eventName': eventName,
@@ -246,7 +248,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
             type,
             style: TextStyle(
               color: isSelected
-                  ? theme.primaryColor
+                  ? theme.colorScheme.primary
                   : theme.colorScheme.onSurface.withOpacity(0.6),
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -257,7 +259,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
             height: 3,
             width: 60,
             decoration: BoxDecoration(
-              color: isSelected ? theme.primaryColor : Colors.transparent,
+              color: isSelected ? theme.colorScheme.primary : Colors.transparent,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -273,15 +275,15 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
+          color: theme.colorScheme.surface,
+          border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: theme.primaryColor,
+              color: theme.colorScheme.primary,
               fontSize: 32,
               fontWeight: FontWeight.w600,
             ),
@@ -295,7 +297,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
     return GridView.builder(
       shrinkWrap: false,
       physics: const AlwaysScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 8, // 8 columns as before
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
@@ -314,13 +316,13 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
         bool canTap = isAvailable;
         
         if (!isAvailable) {
-          seatColor = Colors.red; // Unavailable/booked seats are red
+          seatColor = theme.colorScheme.error; // Unavailable/booked seats use error color
         } else if (isSelected) {
-          seatColor = theme.primaryColor; // Selected seats use theme color
+          seatColor = theme.colorScheme.primary; // Selected seats use primary color
         } else if (ticketType == 'VIP') {
-          seatColor = Colors.amber; // VIP seats are amber
+          seatColor = Colors.amber; // VIP seats are amber (special color)
         } else {
-          seatColor = theme.cardColor; // Regular available seats
+          seatColor = theme.colorScheme.surface; // Regular available seats use surface color
         }
         
         return GestureDetector(
@@ -330,7 +332,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
               color: seatColor,
               border: Border.all(
                 color: isSelected
-                    ? theme.primaryColor
+                    ? theme.colorScheme.primary
                     : theme.dividerColor.withOpacity(0.3),
                 width: 2,
               ),

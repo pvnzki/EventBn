@@ -1122,7 +1122,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (_videoController != null && _videoController!.value.isPlaying) {
             _videoController?.pause();
           }
-          context.push('/checkout/${widget.eventId}/seat-selection');
+          context.pushNamed('booking-seat-selection', pathParameters: {
+            'eventId': widget.eventId,
+          });
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonBg,

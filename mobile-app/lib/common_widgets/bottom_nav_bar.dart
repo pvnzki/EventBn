@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
 
 class BottomNavBar extends StatefulWidget {
   final Widget child;
@@ -34,7 +33,7 @@ class _BottomNavBarState extends State<BottomNavBar>
       icon: Icons.confirmation_number_outlined,
       activeIcon: Icons.confirmation_number,
       label: 'Tickets',
-      route: '/my-tickets',
+      route: '/tickets',
     ),
     NavItem(
       icon: Icons.person_outline,

@@ -2,6 +2,11 @@ import 'package:go_router/go_router.dart';
 import '../../features/payment/screens/seat_selection_screen.dart';
 import '../../features/payment/screens/contact_info_screen.dart';
 import '../../features/payment/screens/payment_screen.dart';
+import '../../features/booking/screens/user_details_screen.dart';
+import '../../features/booking/screens/payment_method_screen.dart';
+import '../../features/booking/screens/order_summary_screen.dart';
+import '../../features/booking/screens/payment_success_screen.dart';
+import '../../features/payment/screens/e_ticket_screen.dart';
 import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
@@ -247,6 +252,96 @@ class AppRouter {
         },
       ),
 
+      // New Multi-Step Booking Flow
+      // Step 1: Seat Selection
+      GoRoute(
+        path: '/booking/:eventId/seat-selection',
+        name: 'booking-seat-selection',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SeatSelectionScreen(
+            eventId: eventId,
+            ticketType: extra['ticketType'] ?? 'General',
+            initialCount: extra['seatCount'] ?? 1,
+          );
+        },
+      ),
+
+      // Step 2: User Details
+      GoRoute(
+        path: '/booking/:eventId/user-details',
+        name: 'user-details',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return UserDetailsScreen(
+            eventId: eventId,
+            eventName: extra['eventName'] ?? 'Event',
+            eventDate: extra['eventDate'] ?? '',
+            ticketType: extra['ticketType'] ?? '',
+            seatCount: extra['seatCount'] ?? 1,
+            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
+          );
+        },
+      ),
+
+      // Step 3: Payment Method Selection
+      GoRoute(
+        path: '/booking/:eventId/payment-method',
+        name: 'payment-method',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentMethodScreen(
+            eventId: eventId,
+            bookingData: extra,
+          );
+        },
+      ),
+
+      // Step 4: Order Summary
+      GoRoute(
+        path: '/booking/:eventId/order-summary',
+        name: 'order-summary',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return OrderSummaryScreen(
+            eventId: eventId,
+            bookingData: extra,
+          );
+        },
+      ),
+
+      // Step 5: Payment Success
+      GoRoute(
+        path: '/booking/payment-success',
+        name: 'payment-success',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentSuccessScreen(
+            bookingData: extra,
+            paymentId: extra['paymentId'] ?? '',
+          );
+        },
+      ),
+
+      // E-Ticket View
+      GoRoute(
+        path: '/ticket/:ticketId',
+        name: 'e-ticket',
+        builder: (context, state) {
+          final ticketId = state.pathParameters['ticketId']!;
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ETicketScreen(
+            bookingData: extra,
+            paymentId: ticketId,
+          );
+        },
+      ),
+
       // Main App Routes with Bottom Navigation
       ShellRoute(
         builder: (context, state, child) => BottomNavBar(child: child),
@@ -265,8 +360,8 @@ class AppRouter {
             ),
           ),
           GoRoute(
-            path: '/my-tickets',
-            name: 'my-tickets',
+            path: '/tickets',
+            name: 'tickets',
             builder: (context, state) => const MyTicketsScreen(),
           ),
           GoRoute(
