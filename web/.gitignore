@@ -4,7 +4,7 @@
 /node_modules
 
 # next.js
-/.next/
+.next/
 /out/
 
 # production
@@ -26,7 +26,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.next/
 
-/.next/
+
+
 
