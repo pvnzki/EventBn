@@ -52,6 +52,9 @@ dependencies:
   # QR Code generation
   qr_flutter: ^4.1.0
 
+  # SVG support
+  flutter_svg: ^2.0.9
+
   # Staggered Grid View for masonry layout
   flutter_staggered_grid_view: ^0.7.0
 
