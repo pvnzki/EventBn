@@ -100,7 +100,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Widget _buildPaymentDetailsCard(BuildContext context) {
     final theme = Theme.of(context);
-    final selectedSeats = bookingData['selectedSeats'] as List<String>;
+    final selectedSeats = (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
     final subtotal = _calculateSubtotal();
     final tax = subtotal * 0.1;

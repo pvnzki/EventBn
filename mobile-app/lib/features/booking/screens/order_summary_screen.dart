@@ -248,12 +248,15 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       }
       
       // Prepare the payment data with correct field names (matching payment_screen.dart)
+      final seatData = widget.bookingData['selectedSeatData'] as List<Map<String, dynamic>>? ?? [];
+      
       final paymentData = {
         'event_id': int.parse(widget.eventId), // Use underscore format
         'payment_id': paymentId, // Use underscore format
         'amount': _total,
         'payment_method': 'payhere', // Use underscore format
         'selected_seats': selectedSeats, // Use underscore format
+        'selectedSeatData': seatData, // Include seat data with pricing info
         'currency': 'LKR',
         'status': 'completed',
         'customerName': widget.bookingData['name'] ?? '',
@@ -530,7 +533,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildPricingBreakdown() {
     final theme = Theme.of(context);
-    final selectedSeats = widget.bookingData['selectedSeats'] as List<String>;
+    final selectedSeats = (widget.bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
     
     return Container(

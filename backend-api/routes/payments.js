@@ -7,7 +7,7 @@ const { Status } = require("@prisma/client");
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const { event_id, amount, payment_method, selected_seats, payment_id } =
+    const { event_id, amount, payment_method, selected_seats, payment_id, selectedSeatData } =
       req.body;
     const user_id = req.user.user_id;
 
@@ -72,6 +72,7 @@ router.post("/", authenticateToken, async (req, res) => {
     const currentSeatMap = payment.event.seat_map;
 
     if (currentSeatMap && Array.isArray(currentSeatMap)) {
+      // Handle events with seat maps
       // Convert selected_seats (which are seat IDs as strings) to integers
       const selectedSeatIds = selected_seats.map((seatId) =>
         parseInt(seatId, 10)
@@ -133,6 +134,78 @@ router.post("/", authenticateToken, async (req, res) => {
           );
         } catch (ticketError) {
           console.error("Error creating tickets:", ticketError);
+          // Continue with payment success even if ticket creation fails
+        }
+      }
+    } else {
+      // Handle events without seat maps (ticket type selection)
+      const ticketPurchases = [];
+      
+      if (selectedSeatData && Array.isArray(selectedSeatData)) {
+        // Use selectedSeatData if available (contains pricing info)
+        for (let i = 0; i < selectedSeatData.length; i++) {
+          const seatData = selectedSeatData[i];
+          
+          // Generate unique QR code for each ticket
+          const qrCode = `TICKET_${payment.payment_id}_${i + 1}_${Date.now()}`;
+
+          ticketPurchases.push({
+            event_id: parseInt(event_id),
+            user_id: user_id,
+            payment_id: payment.payment_id,
+            seat_id: null, // No seat ID for general admission
+            seat_label: seatData.label || selected_seats[i] || `Ticket ${i + 1}`,
+            purchase_date: new Date(),
+            price: BigInt(Math.round(parseFloat(seatData.price || 0) * 100)), // Convert to cents/paise for BigInt
+            attended: false,
+            qr_code: qrCode,
+          });
+        }
+      } else {
+        // Fallback: use selected_seats array (calculate price per ticket)
+        for (let i = 0; i < selected_seats.length; i++) {
+          const seatLabel = selected_seats[i];
+          
+          // Calculate price per ticket (total amount divided by number of tickets)
+          const pricePerTicket = parseFloat(amount) / selected_seats.length;
+          
+          // Generate unique QR code for each ticket
+          const qrCode = `TICKET_${payment.payment_id}_${i + 1}_${Date.now()}`;
+
+          ticketPurchases.push({
+            event_id: parseInt(event_id),
+            user_id: user_id,
+            payment_id: payment.payment_id,
+            seat_id: null, // No seat ID for general admission
+            seat_label: seatLabel,
+            purchase_date: new Date(),
+            price: BigInt(Math.round(pricePerTicket * 100)), // Convert to cents/paise for BigInt
+            attended: false,
+            qr_code: qrCode,
+          });
+        }
+      }
+
+      // Create all ticket purchase records
+      if (ticketPurchases.length > 0) {
+        try {
+          for (const ticket of ticketPurchases) {
+            await prisma.$executeRaw`
+              INSERT INTO ticket_purchase (event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
+              VALUES (${ticket.event_id}, ${ticket.user_id}, ${
+              ticket.payment_id
+            }::uuid, ${ticket.seat_id}, ${ticket.seat_label}, ${
+              ticket.purchase_date
+            }, ${ticket.price.toString()}::bigint, ${ticket.attended}, ${
+              ticket.qr_code
+            })
+            `;
+          }
+          console.log(
+            `Created ${ticketPurchases.length} ticket purchase records for event without seat map`
+          );
+        } catch (ticketError) {
+          console.error("Error creating tickets for event without seat map:", ticketError);
           // Continue with payment success even if ticket creation fails
         }
       }

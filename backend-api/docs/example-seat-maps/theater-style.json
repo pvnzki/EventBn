@@ -1,0 +1,17 @@
+[
+  {"id": 1, "label": "Row A - Seat 1", "ticketType": "Orchestra", "price": 80.0, "available": true},
+  {"id": 2, "label": "Row A - Seat 2", "ticketType": "Orchestra", "price": 80.0, "available": true},
+  {"id": 3, "label": "Row A - Seat 3", "ticketType": "Orchestra", "price": 80.0, "available": true},
+  {"id": 4, "label": "Row A - Seat 4", "ticketType": "Orchestra", "price": 80.0, "available": true},
+  {"id": 5, "label": "Row A - Seat 5", "ticketType": "Orchestra", "price": 80.0, "available": true},
+  {"id": 6, "label": "Row B - Seat 1", "ticketType": "Mezzanine", "price": 60.0, "available": true},
+  {"id": 7, "label": "Row B - Seat 2", "ticketType": "Mezzanine", "price": 60.0, "available": true},
+  {"id": 8, "label": "Row B - Seat 3", "ticketType": "Mezzanine", "price": 60.0, "available": true},
+  {"id": 9, "label": "Row B - Seat 4", "ticketType": "Mezzanine", "price": 60.0, "available": true},
+  {"id": 10, "label": "Row B - Seat 5", "ticketType": "Mezzanine", "price": 60.0, "available": true},
+  {"id": 11, "label": "Row C - Seat 1", "ticketType": "Balcony", "price": 40.0, "available": true},
+  {"id": 12, "label": "Row C - Seat 2", "ticketType": "Balcony", "price": 40.0, "available": true},
+  {"id": 13, "label": "Row C - Seat 3", "ticketType": "Balcony", "price": 40.0, "available": true},
+  {"id": 14, "label": "Row C - Seat 4", "ticketType": "Balcony", "price": 40.0, "available": true},
+  {"id": 15, "label": "Row C - Seat 5", "ticketType": "Balcony", "price": 40.0, "available": true}
+]

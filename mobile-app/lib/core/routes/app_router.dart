@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import '../../features/payment/screens/seat_selection_screen.dart';
+import '../../features/payment/screens/ticket_type_selection_screen.dart';
 import '../../features/payment/screens/contact_info_screen.dart';
 import '../../features/payment/screens/payment_screen.dart';
 import '../../features/booking/screens/user_details_screen.dart';
@@ -136,7 +137,6 @@ class AppRouter {
         },
       ),
 
-
       // Organizer Profile Route
       GoRoute(
         path: '/organization/:organizationId',
@@ -211,6 +211,20 @@ class AppRouter {
         },
       ),
 
+      // Ticket Type Selection (for events without custom seat maps)
+      GoRoute(
+        path: '/ticket-type-selection',
+        name: 'ticket-type-selection',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return TicketTypeSelectionScreen(
+            eventId: extra['eventId'] as String,
+            ticketType: extra['ticketType'] as String,
+            initialCount: extra['initialCount'] as int,
+          );
+        },
+      ),
+
       // Booking Flow: Contact Info
       GoRoute(
         path: '/checkout/:eventId/contact',
@@ -224,8 +238,11 @@ class AppRouter {
             eventDate: extra['eventDate'] ?? '',
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
-            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
+            selectedSeats:
+                (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData:
+                (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ??
+                    <Map<String, dynamic>>[],
           );
         },
       ),
@@ -243,8 +260,11 @@ class AppRouter {
             eventDate: extra['eventDate'] ?? '',
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
-            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
+            selectedSeats:
+                (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData:
+                (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ??
+                    <Map<String, dynamic>>[],
             name: extra['name'] ?? '',
             email: extra['email'] ?? '',
             phone: extra['phone'] ?? '',
@@ -281,8 +301,11 @@ class AppRouter {
             eventDate: extra['eventDate'] ?? '',
             ticketType: extra['ticketType'] ?? '',
             seatCount: extra['seatCount'] ?? 1,
-            selectedSeats: (extra['selectedSeats'] as List<String>?) ?? <String>[],
-            selectedSeatData: (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ?? <Map<String, dynamic>>[],
+            selectedSeats:
+                (extra['selectedSeats'] as List<String>?) ?? <String>[],
+            selectedSeatData:
+                (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ??
+                    <Map<String, dynamic>>[],
           );
         },
       ),

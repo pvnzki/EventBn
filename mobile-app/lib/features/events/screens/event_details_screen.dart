@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../providers/event_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
+import '../../../core/config/app_config.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -32,6 +35,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool isBookmarked = false;
   bool isFollowing = false;
   bool isAboutExpanded = false;
+  
+  // Seat map cache
+  bool? _hasCustomSeating;
+  bool _seatMapLoaded = false;
 
   @override
   void initState() {
@@ -41,6 +48,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       Provider.of<EventProvider>(context, listen: false)
           .fetchEventById(widget.eventId);
       _fetchAttendees();
+      _loadSeatMapInfo();
     });
   }
 
@@ -48,6 +56,32 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   void dispose() {
     _videoController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSeatMapInfo() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final seatMapData = responseData['data'];
+        print('🔍 Seat Map API Response: $responseData');
+        print('🔍 Seat Map Data: $seatMapData');
+        setState(() {
+          _hasCustomSeating = seatMapData['hasCustomSeating'] == true;
+          _seatMapLoaded = true;
+        });
+        print('🔍 _hasCustomSeating set to: $_hasCustomSeating');
+      }
+    } catch (e) {
+      print('Error loading seat map info: $e');
+      setState(() {
+        _seatMapLoaded = true;
+      });
+    }
   }
 
   Future<void> _fetchAttendees() async {
@@ -1118,13 +1152,53 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (_videoController != null && _videoController!.value.isPlaying) {
             _videoController?.pause();
           }
-          context.pushNamed('booking-seat-selection', pathParameters: {
-            'eventId': widget.eventId,
-          });
+          
+          // Wait for seat map info to be loaded if still loading
+          if (!_seatMapLoaded) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+            
+            // Wait for seat map to load
+            while (!_seatMapLoaded) {
+              await Future.delayed(const Duration(milliseconds: 100));
+            }
+            
+            if (mounted) Navigator.of(context).pop();
+          }
+          
+          // Navigate based on cached seat map information
+          print('🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
+          if (_hasCustomSeating == true) {
+            // Event has seat map - go to seat selection
+            print('🎯 Navigating to seat selection screen');
+            if (mounted) {
+              context.pushNamed('booking-seat-selection', pathParameters: {
+                'eventId': widget.eventId,
+              });
+            }
+          } else {
+            // Event has no seat map - go directly to ticket type selection
+            print('🎯 Navigating to ticket type selection screen');
+            if (mounted) {
+              context.pushReplacement('/ticket-type-selection', extra: {
+                'eventId': widget.eventId,
+                'eventName': event.title,
+                'eventDate': event.startDateTime.toString(),
+                'venue': event.venue,
+                'ticketType': 'General', // Default ticket type
+                'initialCount': 1, // Default count
+              });
+            }
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonBg,
