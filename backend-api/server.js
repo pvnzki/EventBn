@@ -123,15 +123,18 @@ app.use("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log(`
 \x1b[36m==============================\x1b[0m
 \x1b[35m EventBn API Server Started \x1b[0m
 \x1b[36m------------------------------\x1b[0m
 \x1b[32mEnv:\x1b[0m ${process.env.NODE_ENV || "development"}
 \x1b[32mPort:\x1b[0m ${PORT}
-\x1b[32mURL:\x1b[0m http://localhost:${PORT}
+\x1b[32mHost:\x1b[0m ${HOST}
+\x1b[32mLocal URL:\x1b[0m http://localhost:${PORT}
+\x1b[32mNetwork URL:\x1b[0m http://192.168.1.19:${PORT}
 \x1b[32mHealth:\x1b[0m /health
 \x1b[36m==============================\x1b[0m
 `);
