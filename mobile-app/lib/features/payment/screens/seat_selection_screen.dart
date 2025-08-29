@@ -46,9 +46,34 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('🔍 Seat Map Response: $data');
+        
         if (data['success'] == true && data['data'] != null) {
+          final seatMapData = data['data'];
+          print('🔍 Seat Map Data: $seatMapData');
+          print('🔍 hasCustomSeating: ${seatMapData['hasCustomSeating']}');
+          
+          // Check if this event has custom seating
+          if (seatMapData['hasCustomSeating'] == false) {
+            print('🎯 No custom seating - navigating to ticket type selection');
+            // Navigate to ticket type selection screen
+            setState(() {
+              isLoading = false; // Stop loading before navigation
+            });
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              print('🚀 Attempting navigation to ticket-type-selection');
+              context.pushReplacement('/ticket-type-selection', extra: {
+                'eventId': widget.eventId,
+                'ticketType': widget.ticketType,
+                'initialCount': widget.initialCount,
+              });
+            });
+            return; // This will properly exit the function
+          }
+          
+          print('🎯 Custom seating found - showing seat grid');
           setState(() {
-            seatMap = List<Map<String, dynamic>>.from(data['data']);
+            seatMap = List<Map<String, dynamic>>.from(seatMapData['seats']);
             isLoading = false;
           });
         } else {
