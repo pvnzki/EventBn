@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -65,6 +66,7 @@ const monthNames = [
 ];
 
 const AdminDashboardPage = () => {
+  const router = useRouter();
   type User = { role: string } | null;
   const [user, setUser] = useState<User>(null);
   type AnalyticsData = {
@@ -564,13 +566,7 @@ const AdminDashboardPage = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenEditModal(event)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+
                         <Button
                           size="sm"
                           variant="ghost"
@@ -648,19 +644,22 @@ const AdminDashboardPage = () => {
               </p>
               <p className="text-sm">
                 <strong>Other Images URL:</strong>{" "}
-                {selectedEvent.other_images_url
-                  .split(", ")
-                  .map((url, index) => (
-                    <a
-                      key={index}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline block"
-                    >
-                      Image {index + 1}
-                    </a>
-                  ))}
+                {selectedEvent.other_images_url &&
+                selectedEvent.other_images_url.trim() !== ""
+                  ? selectedEvent.other_images_url
+                      .split(", ")
+                      .map((url, index) => (
+                        <a
+                          key={index}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline block"
+                        >
+                          Image {index + 1}
+                        </a>
+                      ))
+                  : "N/A"}
               </p>
               <p className="text-sm">
                 <strong>Video URL:</strong>{" "}
