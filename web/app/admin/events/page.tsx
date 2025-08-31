@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Eye, Edit, Trash2, Calendar, X } from "lucide-react";
+import { Search, Plus, Eye, Trash2, Calendar, X } from "lucide-react";
 import Link from "next/link";
 
 interface Event {
@@ -253,9 +253,6 @@ export default function AdminEventsPage() {
                           onClick={() => handleViewEvent(event)}
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost">
-                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
