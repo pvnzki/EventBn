@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -31,10 +30,10 @@ import {
   Users,
   Mail,
   Calendar,
-  Shield,
   UserCheck,
   UserX,
   X,
+  Shield,
 } from "lucide-react";
 
 interface User {
@@ -63,7 +62,6 @@ interface ApiUser {
 }
 
 export default function UsersPage() {
-  const [currentUser, setCurrentUser] = useState<{ role: string } | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -71,16 +69,10 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null); // New state for selected user
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check current user
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setCurrentUser(JSON.parse(userData));
-    }
-
     // Fetch users from API
     const fetchUsers = async () => {
       try {
@@ -178,28 +170,6 @@ export default function UsersPage() {
     setSelectedUser(null);
   };
 
-  // Redirect if not admin
-  if (currentUser && currentUser.role !== "admin") {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1 lg:ml-64 flex items-center justify-center">
-          <Card className="max-w-md">
-            <CardContent className="pt-6 text-center">
-              <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-              <p className="text-gray-600">
-                You don't have permission to view this page.
-              </p>
-
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-
-  }
-
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -211,7 +181,6 @@ export default function UsersPage() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
-
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -264,7 +233,6 @@ export default function UsersPage() {
         </div>
       </div>
     );
-
   }
 
   return (
@@ -295,7 +263,6 @@ export default function UsersPage() {
                 <CardTitle className="text-sm font-medium">
                   Total Users
                 </CardTitle>
-
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -334,7 +301,6 @@ export default function UsersPage() {
                       )
                     : 0}
                   % of total
-
                 </p>
               </CardContent>
             </Card>
@@ -353,7 +319,6 @@ export default function UsersPage() {
                 <p className="text-xs text-muted-foreground">
                   {users.filter((u) => u.status === "pending").length} pending
                   approval
-
                 </p>
               </CardContent>
             </Card>
@@ -486,7 +451,6 @@ export default function UsersPage() {
                                 ${user.totalRevenue.toLocaleString()} total
                                 revenue
                               </span>
-
                               <span>Last active: {user.lastActive}</span>
                             </div>
                           )}
@@ -514,7 +478,6 @@ export default function UsersPage() {
                       </div>
                     </div>
                   );
-
                 })}
               </div>
 

@@ -22,48 +22,39 @@ import {
 import { Search, Plus, Eye, Edit, Trash2, Calendar, X } from "lucide-react";
 import Link from "next/link";
 
-interface User {
-  role: "admin" | "organizer";
-  name: string;
-}
-
 interface Event {
   event_id: number;
   organization_id: number | null;
-  title: string;
-  description: string;
-  category: string;
-  venue: string;
-  location: string;
-  start_time: string;
-  end_time: string;
-  capacity: number;
-  cover_image_url: string;
-  other_images_url: string;
-  video_url: string;
-  created_at: string;
-  updated_at: string;
-  status: string;
-  organization?: { name: string; organization_id: number; logo_url: string };
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  venue: string | null;
+  location: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  capacity: number | null;
+  cover_image_url: string | null;
+  other_images_url: string | null;
+  video_url: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  status: string | null;
+  organization?: {
+    name: string;
+    organization_id: number;
+    logo_url: string;
+  } | null;
   ticketsSold?: number;
   revenue?: number;
 }
 
-export default function EventsPage() {
-  const [user, setUser] = useState<User | null>(null);
+export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
 
   useEffect(() => {
     fetch("http://localhost:3000/api/events")
@@ -95,28 +86,25 @@ export default function EventsPage() {
     }
   };
 
-  const isAdmin = user?.role === "admin";
-
-
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.venue.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ??
+        false) ||
+      (event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ??
+        false) ||
+      (event.venue?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
     const matchesStatus =
-      statusFilter === "all" || event.status.toLowerCase() === statusFilter;
+      statusFilter === "all" || event.status?.toLowerCase() === statusFilter;
     const matchesCategory =
       categoryFilter === "all" ||
-      event.category.toLowerCase() === categoryFilter;
+      event.category?.toLowerCase() === categoryFilter;
 
-    const matchesUser = isAdmin || event.organization?.name === user?.name;
-
-    return matchesSearch && matchesStatus && matchesCategory && matchesUser;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+  const getStatusColor = (status: string | null) => {
+    switch (status?.toLowerCase()) {
       case "active":
         return "default";
       case "sold_out":
@@ -130,12 +118,14 @@ export default function EventsPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
   };
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleString();
   };
@@ -163,21 +153,12 @@ export default function EventsPage() {
         <div className="p-6 lg:p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {isAdmin ? "All Events" : "My Events"}
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">All Events</h1>
               <p className="text-gray-600 mt-2">
-                {isAdmin
-                  ? "Manage all events across the platform"
-                  : "Manage your created events"}
+                Manage all events across the platform
               </p>
             </div>
-            <Link href="/create-event">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Event
-              </Button>
-            </Link>
+            {/* Create Event button removed */}
           </div>
 
           {/* Filters */}
@@ -203,7 +184,6 @@ export default function EventsPage() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="sold_out">Sold Out</SelectItem>
-
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
@@ -229,13 +209,9 @@ export default function EventsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>
-                {isAdmin ? "Recent Events" : "My Recent Events"}
-              </CardTitle>
+              <CardTitle>Recent Events</CardTitle>
               <CardDescription>
-                {isAdmin
-                  ? "Latest events across the platform"
-                  : "Your latest event activities"}
+                Latest events across the platform
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -247,19 +223,19 @@ export default function EventsPage() {
                   >
                     <div className="flex items-center space-x-4">
                       <img
-                        src={event.cover_image_url}
-                        alt={event.title}
+                        src={event.cover_image_url || "/placeholder.jpg"}
+                        alt={event.title || "Event"}
                         className="w-16 h-16 object-cover rounded-md"
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">
-                          {event.title}
+                          {event.title || "Untitled Event"}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          Category: {event.category}
+                          Category: {event.category || "N/A"}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Venue: {event.venue}
+                          Venue: {event.venue || "N/A"}
                         </p>
                         <p className="text-sm text-gray-600">
                           Date: {formatDate(event.start_time)}
@@ -268,7 +244,7 @@ export default function EventsPage() {
                     </div>
                     <div className="flex items-center space-x-3">
                       <Badge variant={getStatusColor(event.status)}>
-                        {event.status.toLowerCase()}
+                        {event.status?.toLowerCase() || "N/A"}
                       </Badge>
                       <div className="flex space-x-1">
                         <Button
@@ -281,16 +257,13 @@ export default function EventsPage() {
                         <Button size="sm" variant="ghost">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {(isAdmin ||
-                          event.organization?.name === user?.name) && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleOpenDeleteModal(event)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenDeleteModal(event)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -328,34 +301,37 @@ export default function EventsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">{selectedEvent.title}</h2>
+              <h2 className="text-lg font-bold">
+                {selectedEvent.title || "Untitled Event"}
+              </h2>
               <Button variant="ghost" onClick={closeModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="space-y-2">
               <img
-                src={selectedEvent.cover_image_url}
-                alt={selectedEvent.title}
+                src={selectedEvent.cover_image_url || "/placeholder.jpg"}
+                alt={selectedEvent.title || "Event"}
                 className="w-32 h-16 object-cover rounded-md"
               />
               <p className="text-sm">
                 <strong>Event ID:</strong> {selectedEvent.event_id}
               </p>
               <p className="text-sm">
-                <strong>Title:</strong> {selectedEvent.title}
+                <strong>Title:</strong> {selectedEvent.title || "N/A"}
               </p>
               <p className="text-sm">
-                <strong>Description:</strong> {selectedEvent.description}
+                <strong>Description:</strong>{" "}
+                {selectedEvent.description || "N/A"}
               </p>
               <p className="text-sm">
-                <strong>Category:</strong> {selectedEvent.category}
+                <strong>Category:</strong> {selectedEvent.category || "N/A"}
               </p>
               <p className="text-sm">
-                <strong>Venue:</strong> {selectedEvent.venue}
+                <strong>Venue:</strong> {selectedEvent.venue || "N/A"}
               </p>
               <p className="text-sm">
-                <strong>Location:</strong> {selectedEvent.location}
+                <strong>Location:</strong> {selectedEvent.location || "N/A"}
               </p>
               <p className="text-sm">
                 <strong>Start Time:</strong>{" "}
@@ -366,37 +342,44 @@ export default function EventsPage() {
                 {formatDateTime(selectedEvent.end_time)}
               </p>
               <p className="text-sm">
-                <strong>Capacity:</strong> {selectedEvent.capacity}
+                <strong>Capacity:</strong> {selectedEvent.capacity ?? "N/A"}
               </p>
               <p className="text-sm">
-                <strong>Status:</strong> {selectedEvent.status.toLowerCase()}
+                <strong>Status:</strong>{" "}
+                {selectedEvent.status?.toLowerCase() || "N/A"}
               </p>
               <p className="text-sm">
                 <strong>Cover Image URL:</strong>{" "}
-                <a
-                  href={selectedEvent.cover_image_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View Image
-                </a>
+                {selectedEvent.cover_image_url ? (
+                  <a
+                    href={selectedEvent.cover_image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Image
+                  </a>
+                ) : (
+                  "N/A"
+                )}
               </p>
               <p className="text-sm">
                 <strong>Other Images URL:</strong>{" "}
                 {selectedEvent.other_images_url
-                  .split(", ")
-                  .map((url, index) => (
-                    <a
-                      key={index}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline block"
-                    >
-                      Image {index + 1}
-                    </a>
-                  ))}
+                  ? selectedEvent.other_images_url
+                      .split(", ")
+                      .map((url, index) => (
+                        <a
+                          key={index}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline block"
+                        >
+                          Image {index + 1}
+                        </a>
+                      ))
+                  : "N/A"}
               </p>
               <p className="text-sm">
                 <strong>Video URL:</strong>{" "}
@@ -424,12 +407,12 @@ export default function EventsPage() {
               {selectedEvent.organization && (
                 <p className="text-sm">
                   <strong>Organization:</strong>{" "}
-                  {selectedEvent.organization.name}
+                  {selectedEvent.organization.name || "N/A"}
                 </p>
               )}
               <p className="text-sm">
                 <strong>Organization ID:</strong>{" "}
-                {selectedEvent.organization_id || "N/A"}
+                {selectedEvent.organization_id ?? "N/A"}
               </p>
             </div>
             <div className="mt-3 flex justify-end">
@@ -444,14 +427,15 @@ export default function EventsPage() {
       {eventToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justifying-between items-center mb-4">
               <h2 className="text-lg font-bold">Confirm Delete</h2>
               <Button variant="ghost" onClick={handleCloseDeleteModal}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete the event "{eventToDelete.title}"?
+              Are you sure you want to delete the event "
+              {eventToDelete.title || "Untitled Event"}"?
             </p>
             <div className="flex justify-end space-x-2">
               <Button
@@ -474,5 +458,4 @@ export default function EventsPage() {
       )}
     </div>
   );
-
 }

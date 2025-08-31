@@ -1,26 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Bell, Shield, Globe, Camera, User } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bell, Shield, Globe, Camera, User } from "lucide-react";
 
 interface UserType {
-  role: "admin" | "organizer"
-  name: string
-  email: string
+  role: "admin" | "organizer";
+  name: string;
+  email: string;
 }
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<UserType | null>(null)
+  const [user, setUser] = useState<UserType | null>(null);
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -30,7 +42,7 @@ export default function SettingsPage() {
     website: "",
     location: "",
     avatar: "/placeholder.svg?height=100&width=100",
-  })
+  });
 
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -38,42 +50,42 @@ export default function SettingsPage() {
     eventReminders: true,
     marketingEmails: false,
     weeklyReports: true,
-  })
+  });
 
   const [preferences, setPreferences] = useState({
     timezone: "UTC-5",
     language: "en",
     currency: "USD",
     dateFormat: "MM/DD/YYYY",
-  })
+  });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
       setProfileData((prev) => ({
         ...prev,
         name: parsedUser.name,
         email: parsedUser.email,
-      }))
+      }));
     }
-  }, [])
+  }, []);
 
   const handleProfileSave = () => {
-    console.log("Saving profile:", profileData)
+    console.log("Saving profile:", profileData);
     // Handle profile save
-  }
+  };
 
   const handleNotificationSave = () => {
-    console.log("Saving notifications:", notifications)
+    console.log("Saving notifications:", notifications);
     // Handle notification save
-  }
+  };
 
   const handlePreferencesSave = () => {
-    console.log("Saving preferences:", preferences)
+    console.log("Saving preferences:", preferences);
     // Handle preferences save
-  }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -84,7 +96,9 @@ export default function SettingsPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+            <p className="text-gray-600 mt-2">
+              Manage your account settings and preferences
+            </p>
           </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
@@ -103,13 +117,18 @@ export default function SettingsPage() {
                     <User className="h-5 w-5 mr-2" />
                     Profile Information
                   </CardTitle>
-                  <CardDescription>Update your personal information and profile details</CardDescription>
+                  <CardDescription>
+                    Update your personal information and profile details
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Avatar Section */}
                   <div className="flex items-center space-x-6">
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={profileData.avatar || "/placeholder.svg"} alt={profileData.name} />
+                      <AvatarImage
+                        src={profileData.avatar || "/placeholder.svg"}
+                        alt={profileData.name}
+                      />
                       <AvatarFallback className="text-lg">
                         {profileData.name
                           .split(" ")
@@ -122,7 +141,9 @@ export default function SettingsPage() {
                         <Camera className="h-4 w-4 mr-2" />
                         Change Photo
                       </Button>
-                      <p className="text-sm text-gray-600 mt-2">JPG, GIF or PNG. 1MB max.</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        JPG, GIF or PNG. 1MB max.
+                      </p>
                     </div>
                   </div>
 
@@ -133,7 +154,12 @@ export default function SettingsPage() {
                       <Input
                         id="name"
                         value={profileData.name}
-                        onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            name: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -142,7 +168,12 @@ export default function SettingsPage() {
                         id="email"
                         type="email"
                         value={profileData.email}
-                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            email: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -150,7 +181,12 @@ export default function SettingsPage() {
                       <Input
                         id="phone"
                         value={profileData.phone}
-                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            phone: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -158,7 +194,12 @@ export default function SettingsPage() {
                       <Input
                         id="location"
                         value={profileData.location}
-                        onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            location: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -170,7 +211,12 @@ export default function SettingsPage() {
                       <Input
                         id="company"
                         value={profileData.company}
-                        onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            company: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -178,7 +224,12 @@ export default function SettingsPage() {
                       <Input
                         id="website"
                         value={profileData.website}
-                        onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                        onChange={(e) =>
+                          setProfileData({
+                            ...profileData,
+                            website: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -190,7 +241,9 @@ export default function SettingsPage() {
                       rows={4}
                       placeholder="Tell us about yourself..."
                       value={profileData.bio}
-                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                      onChange={(e) =>
+                        setProfileData({ ...profileData, bio: e.target.value })
+                      }
                     />
                   </div>
 
@@ -209,19 +262,26 @@ export default function SettingsPage() {
                     <Bell className="h-5 w-5 mr-2" />
                     Notification Preferences
                   </CardTitle>
-                  <CardDescription>Choose how you want to be notified about events and updates</CardDescription>
+                  <CardDescription>
+                    Choose how you want to be notified about events and updates
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Email Notifications</Label>
-                        <p className="text-sm text-gray-600">Receive notifications via email</p>
+                        <p className="text-sm text-gray-600">
+                          Receive notifications via email
+                        </p>
                       </div>
                       <Switch
                         checked={notifications.emailNotifications}
                         onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, emailNotifications: checked })
+                          setNotifications({
+                            ...notifications,
+                            emailNotifications: checked,
+                          })
                         }
                       />
                     </div>
@@ -229,12 +289,17 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Push Notifications</Label>
-                        <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
+                        <p className="text-sm text-gray-600">
+                          Receive push notifications in your browser
+                        </p>
                       </div>
                       <Switch
                         checked={notifications.pushNotifications}
                         onCheckedChange={(checked) =>
-                          setNotifications({ ...notifications, pushNotifications: checked })
+                          setNotifications({
+                            ...notifications,
+                            pushNotifications: checked,
+                          })
                         }
                       />
                     </div>
@@ -242,39 +307,62 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Event Reminders</Label>
-                        <p className="text-sm text-gray-600">Get reminded about upcoming events</p>
+                        <p className="text-sm text-gray-600">
+                          Get reminded about upcoming events
+                        </p>
                       </div>
                       <Switch
                         checked={notifications.eventReminders}
-                        onCheckedChange={(checked) => setNotifications({ ...notifications, eventReminders: checked })}
+                        onCheckedChange={(checked) =>
+                          setNotifications({
+                            ...notifications,
+                            eventReminders: checked,
+                          })
+                        }
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Marketing Emails</Label>
-                        <p className="text-sm text-gray-600">Receive promotional emails and updates</p>
+                        <p className="text-sm text-gray-600">
+                          Receive promotional emails and updates
+                        </p>
                       </div>
                       <Switch
                         checked={notifications.marketingEmails}
-                        onCheckedChange={(checked) => setNotifications({ ...notifications, marketingEmails: checked })}
+                        onCheckedChange={(checked) =>
+                          setNotifications({
+                            ...notifications,
+                            marketingEmails: checked,
+                          })
+                        }
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Weekly Reports</Label>
-                        <p className="text-sm text-gray-600">Get weekly analytics and performance reports</p>
+                        <p className="text-sm text-gray-600">
+                          Get weekly analytics and performance reports
+                        </p>
                       </div>
                       <Switch
                         checked={notifications.weeklyReports}
-                        onCheckedChange={(checked) => setNotifications({ ...notifications, weeklyReports: checked })}
+                        onCheckedChange={(checked) =>
+                          setNotifications({
+                            ...notifications,
+                            weeklyReports: checked,
+                          })
+                        }
                       />
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={handleNotificationSave}>Save Preferences</Button>
+                    <Button onClick={handleNotificationSave}>
+                      Save Preferences
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -288,7 +376,9 @@ export default function SettingsPage() {
                     <Globe className="h-5 w-5 mr-2" />
                     System Preferences
                   </CardTitle>
-                  <CardDescription>Customize your system preferences and regional settings</CardDescription>
+                  <CardDescription>
+                    Customize your system preferences and regional settings
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -296,16 +386,26 @@ export default function SettingsPage() {
                       <Label htmlFor="timezone">Timezone</Label>
                       <Select
                         value={preferences.timezone}
-                        onValueChange={(value) => setPreferences({ ...preferences, timezone: value })}
+                        onValueChange={(value) =>
+                          setPreferences({ ...preferences, timezone: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="UTC-8">Pacific Time (UTC-8)</SelectItem>
-                          <SelectItem value="UTC-7">Mountain Time (UTC-7)</SelectItem>
-                          <SelectItem value="UTC-6">Central Time (UTC-6)</SelectItem>
-                          <SelectItem value="UTC-5">Eastern Time (UTC-5)</SelectItem>
+                          <SelectItem value="UTC-8">
+                            Pacific Time (UTC-8)
+                          </SelectItem>
+                          <SelectItem value="UTC-7">
+                            Mountain Time (UTC-7)
+                          </SelectItem>
+                          <SelectItem value="UTC-6">
+                            Central Time (UTC-6)
+                          </SelectItem>
+                          <SelectItem value="UTC-5">
+                            Eastern Time (UTC-5)
+                          </SelectItem>
                           <SelectItem value="UTC+0">UTC</SelectItem>
                         </SelectContent>
                       </Select>
@@ -315,7 +415,9 @@ export default function SettingsPage() {
                       <Label htmlFor="language">Language</Label>
                       <Select
                         value={preferences.language}
-                        onValueChange={(value) => setPreferences({ ...preferences, language: value })}
+                        onValueChange={(value) =>
+                          setPreferences({ ...preferences, language: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -333,7 +435,9 @@ export default function SettingsPage() {
                       <Label htmlFor="currency">Currency</Label>
                       <Select
                         value={preferences.currency}
-                        onValueChange={(value) => setPreferences({ ...preferences, currency: value })}
+                        onValueChange={(value) =>
+                          setPreferences({ ...preferences, currency: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -351,7 +455,9 @@ export default function SettingsPage() {
                       <Label htmlFor="dateFormat">Date Format</Label>
                       <Select
                         value={preferences.dateFormat}
-                        onValueChange={(value) => setPreferences({ ...preferences, dateFormat: value })}
+                        onValueChange={(value) =>
+                          setPreferences({ ...preferences, dateFormat: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -366,7 +472,9 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={handlePreferencesSave}>Save Preferences</Button>
+                    <Button onClick={handlePreferencesSave}>
+                      Save Preferences
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -381,7 +489,9 @@ export default function SettingsPage() {
                       <Shield className="h-5 w-5 mr-2" />
                       Password & Security
                     </CardTitle>
-                    <CardDescription>Manage your password and security settings</CardDescription>
+                    <CardDescription>
+                      Manage your password and security settings
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -393,7 +503,9 @@ export default function SettingsPage() {
                       <Input id="new-password" type="password" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <Label htmlFor="confirm-password">
+                        Confirm New Password
+                      </Label>
                       <Input id="confirm-password" type="password" />
                     </div>
                     <Button>Update Password</Button>
@@ -403,13 +515,17 @@ export default function SettingsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Two-Factor Authentication</CardTitle>
-                    <CardDescription>Add an extra layer of security to your account</CardDescription>
+                    <CardDescription>
+                      Add an extra layer of security to your account
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Two-factor authentication</p>
-                        <p className="text-sm text-gray-600">Secure your account with 2FA</p>
+                        <p className="text-sm text-gray-600">
+                          Secure your account with 2FA
+                        </p>
                       </div>
                       <Button variant="outline">Enable 2FA</Button>
                     </div>
@@ -419,20 +535,28 @@ export default function SettingsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Account Actions</CardTitle>
-                    <CardDescription>Manage your account status</CardDescription>
+                    <CardDescription>
+                      Manage your account status
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Export Data</p>
-                        <p className="text-sm text-gray-600">Download a copy of your account data</p>
+                        <p className="text-sm text-gray-600">
+                          Download a copy of your account data
+                        </p>
                       </div>
                       <Button variant="outline">Export</Button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-red-600">Delete Account</p>
-                        <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
+                        <p className="font-medium text-red-600">
+                          Delete Account
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Permanently delete your account and all data
+                        </p>
                       </div>
                       <Button variant="destructive">Delete</Button>
                     </div>
@@ -444,5 +568,5 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

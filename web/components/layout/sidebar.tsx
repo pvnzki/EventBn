@@ -1,56 +1,74 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, Ticket, UserCheck, Shield } from "lucide-react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  Users,
+  BarChart3,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Ticket,
+  UserCheck,
+  Shield,
+} from "lucide-react";
 
 interface User {
-  email: string
-  role: "admin" | "organizer"
-  name: string
+  email: string;
+  role: "ADMIN" | "ORGANIZER";
+  name: string;
+  user_id: number;
+  is_active: boolean;
+  is_email_verified: boolean;
+  phone_number: string | null;
+  profile_picture: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export function Sidebar() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isOpen, setIsOpen] = useState(false)
-  const pathname = usePathname()
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [])
+  }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user")
-    router.push("/login")
-  }
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
 
   const organizerNavItems = [
-    { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-    { href: "/events", label: "My Events", icon: Calendar },
-    { href: "/create-event", label: "Create Event", icon: Calendar },
-    { href: "/tickets", label: "Tickets", icon: Ticket },
-    { href: "/attendees", label: "Attendees", icon: UserCheck },
-    { href: "/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/settings", label: "Settings", icon: Settings },
-  ]
+    { href: "/organizer/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/organizer/events", label: "My Events", icon: Calendar },
+    { href: "/organizer/create-event", label: "Create Event", icon: Calendar },
+    { href: "/organizer/tickets", label: "Tickets", icon: Ticket },
+    { href: "/organizer/attendees", label: "Attendees", icon: UserCheck },
+    { href: "/organizer/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/organizer/settings", label: "Settings", icon: Settings },
+  ];
 
   const adminNavItems = [
-    { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-    { href: "/events", label: "All Events", icon: Calendar },
-    { href: "/users", label: "Users", icon: Users },
-    { href: "/organizers", label: "Organizers", icon: Shield },
-    { href: "/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/settings", label: "Settings", icon: Settings },
-  ]
+    { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/admin/events", label: "All Events", icon: Calendar },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/organizers", label: "Organizers", icon: Shield },
+    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+  ];
 
-  const navItems = user?.role === "admin" ? adminNavItems : organizerNavItems
+  const navItems = user?.role === "ADMIN" ? adminNavItems : organizerNavItems;
 
   return (
     <>
@@ -68,7 +86,7 @@ export function Sidebar() {
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full",
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
@@ -78,7 +96,9 @@ export function Sidebar() {
             {user && (
               <div className="mt-2">
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{user.role}</p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {user.role.toLowerCase()}
+                </p>
               </div>
             )}
           </div>
@@ -86,8 +106,8 @@ export function Sidebar() {
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2">
             {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
 
               return (
                 <Link
@@ -95,14 +115,16 @@ export function Sidebar() {
                   href={item.href}
                   className={cn(
                     "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    isActive ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   )}
                   onClick={() => setIsOpen(false)}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
                 </Link>
-              )
+              );
             })}
           </nav>
 
@@ -122,8 +144,11 @@ export function Sidebar() {
 
       {/* Overlay for mobile */}
       {isOpen && (
-        <div className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden" onClick={() => setIsOpen(false)} />
+        <div
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
       )}
     </>
-  )
+  );
 }

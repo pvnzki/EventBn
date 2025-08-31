@@ -1,12 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/layout/sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -14,29 +26,41 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Eye, Edit, Trash2, Ticket, DollarSign, Users, TrendingUp, Download, Mail } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Ticket,
+  DollarSign,
+  Users,
+  TrendingUp,
+  Download,
+  Mail,
+} from "lucide-react";
 
 interface User {
-  role: "admin" | "organizer"
-  name: string
+  role: "admin" | "organizer";
+  name: string;
 }
 
 interface TicketType {
-  id: string
-  eventId: string
-  eventName: string
-  name: string
-  description: string
-  price: number
-  quantity: number
-  sold: number
-  status: "active" | "paused" | "sold-out"
-  salesStart: string
-  salesEnd: string
-  category: string
+  id: string;
+  eventId: string;
+  eventName: string;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  sold: number;
+  status: "active" | "paused" | "sold-out";
+  salesStart: string;
+  salesEnd: string;
+  category: string;
 }
 
 const mockTickets: TicketType[] = [
@@ -110,15 +134,15 @@ const mockTickets: TicketType[] = [
     salesEnd: "2024-04-09",
     category: "workshop",
   },
-]
+];
 
 export default function TicketsPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [tickets, setTickets] = useState<TicketType[]>(mockTickets)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [eventFilter, setEventFilter] = useState("all")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null);
+  const [tickets, setTickets] = useState<TicketType[]>(mockTickets);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [eventFilter, setEventFilter] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTicket, setNewTicket] = useState({
     eventName: "",
     name: "",
@@ -128,54 +152,56 @@ export default function TicketsPage() {
     salesStart: "",
     salesEnd: "",
     category: "standard",
-  })
+  });
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [])
+  }, []);
 
-  const isAdmin = user?.role === "admin"
+  const isAdmin = user?.role === "admin";
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
       ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase())
+      ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter
-    const matchesEvent = eventFilter === "all" || ticket.eventName === eventFilter
+    const matchesStatus =
+      statusFilter === "all" || ticket.status === statusFilter;
+    const matchesEvent =
+      eventFilter === "all" || ticket.eventName === eventFilter;
 
-    return matchesSearch && matchesStatus && matchesEvent
-  })
+    return matchesSearch && matchesStatus && matchesEvent;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "default"
+        return "default";
       case "sold-out":
-        return "destructive"
+        return "destructive";
       case "paused":
-        return "secondary"
+        return "secondary";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "premium":
-        return "default"
+        return "default";
       case "early-bird":
-        return "secondary"
+        return "secondary";
       case "workshop":
-        return "outline"
+        return "outline";
       default:
-        return "secondary"
+        return "secondary";
     }
-  }
+  };
 
   const handleCreateTicket = () => {
     const ticket: TicketType = {
@@ -191,10 +217,10 @@ export default function TicketsPage() {
       salesStart: newTicket.salesStart,
       salesEnd: newTicket.salesEnd,
       category: newTicket.category,
-    }
+    };
 
-    setTickets([...tickets, ticket])
-    setIsCreateDialogOpen(false)
+    setTickets([...tickets, ticket]);
+    setIsCreateDialogOpen(false);
     setNewTicket({
       eventName: "",
       name: "",
@@ -204,14 +230,20 @@ export default function TicketsPage() {
       salesStart: "",
       salesEnd: "",
       category: "standard",
-    })
-  }
+    });
+  };
 
-  const totalRevenue = tickets.reduce((sum, ticket) => sum + ticket.price * ticket.sold, 0)
-  const totalSold = tickets.reduce((sum, ticket) => sum + ticket.sold, 0)
-  const totalAvailable = tickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
+  const totalRevenue = tickets.reduce(
+    (sum, ticket) => sum + ticket.price * ticket.sold,
+    0
+  );
+  const totalSold = tickets.reduce((sum, ticket) => sum + ticket.sold, 0);
+  const totalAvailable = tickets.reduce(
+    (sum, ticket) => sum + ticket.quantity,
+    0
+  );
 
-  const uniqueEvents = [...new Set(tickets.map((ticket) => ticket.eventName))]
+  const uniqueEvents = [...new Set(tickets.map((ticket) => ticket.eventName))];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -222,12 +254,19 @@ export default function TicketsPage() {
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Ticket Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Ticket Management
+              </h1>
               <p className="text-gray-600 mt-2">
-                {isAdmin ? "Manage all tickets across the platform" : "Manage your event tickets and sales"}
+                {isAdmin
+                  ? "Manage all tickets across the platform"
+                  : "Manage your event tickets and sales"}
               </p>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -238,7 +277,8 @@ export default function TicketsPage() {
                 <DialogHeader>
                   <DialogTitle>Create New Ticket Type</DialogTitle>
                   <DialogDescription>
-                    Add a new ticket type for your event with pricing and availability details.
+                    Add a new ticket type for your event with pricing and
+                    availability details.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -249,7 +289,12 @@ export default function TicketsPage() {
                         id="event-name"
                         placeholder="Select or enter event name"
                         value={newTicket.eventName}
-                        onChange={(e) => setNewTicket({ ...newTicket, eventName: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({
+                            ...newTicket,
+                            eventName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -258,7 +303,9 @@ export default function TicketsPage() {
                         id="ticket-name"
                         placeholder="e.g., General Admission, VIP"
                         value={newTicket.name}
-                        onChange={(e) => setNewTicket({ ...newTicket, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({ ...newTicket, name: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -269,7 +316,12 @@ export default function TicketsPage() {
                       id="description"
                       placeholder="Describe what's included with this ticket..."
                       value={newTicket.description}
-                      onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewTicket({
+                          ...newTicket,
+                          description: e.target.value,
+                        })
+                      }
                     />
                   </div>
 
@@ -282,7 +334,9 @@ export default function TicketsPage() {
                         step="0.01"
                         placeholder="0.00"
                         value={newTicket.price}
-                        onChange={(e) => setNewTicket({ ...newTicket, price: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({ ...newTicket, price: e.target.value })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -292,14 +346,21 @@ export default function TicketsPage() {
                         type="number"
                         placeholder="100"
                         value={newTicket.quantity}
-                        onChange={(e) => setNewTicket({ ...newTicket, quantity: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({
+                            ...newTicket,
+                            quantity: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="category">Category</Label>
                       <Select
                         value={newTicket.category}
-                        onValueChange={(value) => setNewTicket({ ...newTicket, category: value })}
+                        onValueChange={(value) =>
+                          setNewTicket({ ...newTicket, category: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -321,7 +382,12 @@ export default function TicketsPage() {
                         id="sales-start"
                         type="date"
                         value={newTicket.salesStart}
-                        onChange={(e) => setNewTicket({ ...newTicket, salesStart: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({
+                            ...newTicket,
+                            salesStart: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -330,16 +396,26 @@ export default function TicketsPage() {
                         id="sales-end"
                         type="date"
                         value={newTicket.salesEnd}
-                        onChange={(e) => setNewTicket({ ...newTicket, salesEnd: e.target.value })}
+                        onChange={(e) =>
+                          setNewTicket({
+                            ...newTicket,
+                            salesEnd: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
 
                   <div className="flex justify-end space-x-2 pt-4">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateTicket}>Create Ticket Type</Button>
+                    <Button onClick={handleCreateTicket}>
+                      Create Ticket Type
+                    </Button>
                   </div>
                 </div>
               </DialogContent>
@@ -350,47 +426,70 @@ export default function TicketsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">From ticket sales</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
-                <Ticket className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalSold.toLocaleString()}</div>
+                <div className="text-2xl font-bold">
+                  ${totalRevenue.toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {Math.round((totalSold / totalAvailable) * 100)}% of total available
+                  From ticket sales
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Available Tickets</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">
+                  Tickets Sold
+                </CardTitle>
+                <Ticket className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{(totalAvailable - totalSold).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">Remaining inventory</p>
+                <div className="text-2xl font-bold">
+                  {totalSold.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round((totalSold / totalAvailable) * 100)}% of total
+                  available
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg. Ticket Price</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Available Tickets
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(totalAvailable - totalSold).toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Remaining inventory
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Avg. Ticket Price
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${totalSold > 0 ? Math.round(totalRevenue / totalSold) : 0}</div>
-                <p className="text-xs text-muted-foreground">Average selling price</p>
+                <div className="text-2xl font-bold">
+                  ${totalSold > 0 ? Math.round(totalRevenue / totalSold) : 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Average selling price
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -441,23 +540,34 @@ export default function TicketsPage() {
           {/* Tickets Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTickets.map((ticket) => (
-              <Card key={ticket.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={ticket.id}
+                className="hover:shadow-lg transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="text-lg">{ticket.name}</CardTitle>
-                      <CardDescription className="mt-1">{ticket.eventName}</CardDescription>
+                      <CardDescription className="mt-1">
+                        {ticket.eventName}
+                      </CardDescription>
                     </div>
                     <div className="flex flex-col items-end space-y-1">
-                      <Badge variant={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                      <Badge variant={getCategoryColor(ticket.category)}>{ticket.category}</Badge>
+                      <Badge variant={getStatusColor(ticket.status)}>
+                        {ticket.status}
+                      </Badge>
+                      <Badge variant={getCategoryColor(ticket.category)}>
+                        {ticket.category}
+                      </Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Ticket Details */}
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600">{ticket.description}</p>
+                    <p className="text-sm text-gray-600">
+                      {ticket.description}
+                    </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-gray-600">
                         <DollarSign className="h-4 w-4 mr-1" />${ticket.price}
@@ -476,7 +586,9 @@ export default function TicketsPage() {
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>Sales Progress</span>
-                      <span>{Math.round((ticket.sold / ticket.quantity) * 100)}%</span>
+                      <span>
+                        {Math.round((ticket.sold / ticket.quantity) * 100)}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -484,10 +596,12 @@ export default function TicketsPage() {
                           ticket.status === "sold-out"
                             ? "bg-red-600"
                             : ticket.status === "active"
-                              ? "bg-blue-600"
-                              : "bg-gray-400"
+                            ? "bg-blue-600"
+                            : "bg-gray-400"
                         }`}
-                        style={{ width: `${(ticket.sold / ticket.quantity) * 100}%` }}
+                        style={{
+                          width: `${(ticket.sold / ticket.quantity) * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -495,7 +609,9 @@ export default function TicketsPage() {
                   {/* Revenue */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Revenue Generated</span>
+                      <span className="text-sm font-medium">
+                        Revenue Generated
+                      </span>
                       <span className="text-lg font-bold text-green-600">
                         ${(ticket.price * ticket.sold).toLocaleString()}
                       </span>
@@ -536,7 +652,9 @@ export default function TicketsPage() {
             <Card className="text-center py-12">
               <CardContent>
                 <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No tickets found
+                </h3>
                 <p className="text-gray-600 mb-4">
                   {searchTerm || statusFilter !== "all" || eventFilter !== "all"
                     ? "Try adjusting your filters to see more tickets."
@@ -552,5 +670,5 @@ export default function TicketsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

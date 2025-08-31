@@ -64,7 +64,7 @@ const monthNames = [
   "Dec",
 ];
 
-const DashboardPage = () => {
+const AdminDashboardPage = () => {
   type User = { role: string } | null;
   const [user, setUser] = useState<User>(null);
   type AnalyticsData = {
@@ -264,8 +264,6 @@ const DashboardPage = () => {
     }
   };
 
-  const isAdmin = user?.role === "admin";
-
   const recentData = analyticsData[0] || {
     total_events: 0,
     total_attendees: 0,
@@ -298,13 +296,19 @@ const DashboardPage = () => {
 
   const growthChange = recentData.growth_rate - previousData.growth_rate;
 
-  let chartData: { month: string; sales: number; events: number }[] = [];
+  let chartData: {
+    month: string;
+    sales: number;
+    Ascending: true;
+    events: number;
+  }[] = [];
   if (analyticsData.length > 0) {
     const lastSix = analyticsData.slice(0, 6).reverse();
     chartData = lastSix.map((item) => ({
       month: monthNames[item.month - 1],
       sales: item.total_revenue,
       events: item.total_events,
+      Ascending: true,
     }));
   }
 
@@ -338,7 +342,6 @@ const DashboardPage = () => {
     setEventToDelete(null);
   };
 
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -346,12 +349,10 @@ const DashboardPage = () => {
         <div className="p-6 lg:p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              {isAdmin ? "Admin Dashboard" : "Organizer Dashboard"}
+              Admin Dashboard
             </h1>
             <p className="text-gray-600 mt-2">
-              {isAdmin
-                ? "Overview of all platform activities and metrics"
-                : "Manage your events and track performance"}
+              Overview of all platform activities and metrics
             </p>
           </div>
 
@@ -359,7 +360,7 @@ const DashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {isAdmin ? "Total Events" : "My Events"}
+                  Total Events
                 </CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -371,14 +372,13 @@ const DashboardPage = () => {
                   {eventsChange > 0 ? "+" : ""}
                   {eventsChange.toFixed(1)}% from last month
                 </p>
-
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {isAdmin ? "Total Attendees" : "My Attendees"}
+                  Total Attendees
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -390,7 +390,6 @@ const DashboardPage = () => {
                   {attendeesChange > 0 ? "+" : ""}
                   {attendeesChange.toFixed(1)}% from last month
                 </p>
-
               </CardContent>
             </Card>
 
@@ -407,7 +406,6 @@ const DashboardPage = () => {
                   {revenueChange > 0 ? "+" : ""}
                   {revenueChange.toFixed(1)}% from last month
                 </p>
-
               </CardContent>
             </Card>
 
@@ -431,9 +429,6 @@ const DashboardPage = () => {
             </Card>
           </div>
 
-
-          {/* Charts */}
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -441,7 +436,6 @@ const DashboardPage = () => {
                 <CardDescription>
                   Monthly revenue and event count
                 </CardDescription>
-
               </CardHeader>
               <CardContent>
                 <ChartContainer
@@ -459,7 +453,6 @@ const DashboardPage = () => {
                 >
                   <div style={{ width: "379px", height: "300px" }}>
                     <BarChart data={chartData} width={379} height={300}>
-
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -498,7 +491,6 @@ const DashboardPage = () => {
                 >
                   <div style={{ width: "379px", height: "300px" }}>
                     <LineChart data={chartData} width={379} height={300}>
-
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -511,9 +503,7 @@ const DashboardPage = () => {
                         name="Revenue ($)"
                       />
                     </LineChart>
-
                   </div>
-
                 </ChartContainer>
               </CardContent>
             </Card>
@@ -521,14 +511,9 @@ const DashboardPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>
-                {isAdmin ? "Recent Events" : "My Recent Events"}
-              </CardTitle>
+              <CardTitle>Recent Events</CardTitle>
               <CardDescription>
-                {isAdmin
-                  ? "Latest events across the platform"
-                  : "Your latest event activities"}
-
+                Latest events across the platform
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -557,13 +542,11 @@ const DashboardPage = () => {
                         <p className="text-sm text-gray-600">
                           Date: {formatDate(event.start_time)}
                         </p>
-
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Badge
                         variant={
-
                           event.status === "ACTIVE"
                             ? "default"
                             : event.status === "SOLD_OUT"
@@ -946,5 +929,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;
-
+export default AdminDashboardPage;
