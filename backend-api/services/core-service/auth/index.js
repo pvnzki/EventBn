@@ -114,6 +114,18 @@ async login(credentials) {
     });
     console.log("Generated JWT token:", token);
 
+    // If organizer, fetch organization_id
+    let organization_id = null;
+    if (user.role && user.role.toUpperCase() === 'ORGANIZER') {
+      const organization = await prisma.organization.findFirst({
+        where: { user_id: user.user_id },
+        select: { organization_id: true }
+      });
+      if (organization) {
+        organization_id = organization.organization_id;
+      }
+    }
+
     return {
       user: {
         user_id: user.user_id,
@@ -125,7 +137,8 @@ async login(credentials) {
         is_email_verified: user.is_email_verified,
         role: user.role,
         created_at: user.created_at,
-        updated_at: user.updated_at
+        updated_at: user.updated_at,
+        ...(organization_id && { organization_id })
       },
       token,
     };
