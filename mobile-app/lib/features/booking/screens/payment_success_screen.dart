@@ -139,7 +139,7 @@ class PaymentSuccessScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _buildDetailRow(context, 'Seats', '$seatCount x ${bookingData['ticketType'] ?? 'Economy'}'),
             const SizedBox(height: 12),
-            _buildDetailRow(context, 'Amount', '\$${total.toStringAsFixed(2)}'),
+            _buildDetailRow(context, 'Amount', 'LKR ${total.toStringAsFixed(2)}'),
           ],
         ),
       ),

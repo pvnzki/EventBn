@@ -272,7 +272,7 @@ class ETicketScreen extends StatelessWidget {
           ],
           
           // Amount
-          _buildTicketInfo(context, 'Total Amount', '\$${_calculateTotal().toStringAsFixed(2)}'),
+          _buildTicketInfo(context, 'Total Amount', 'LKR ${_calculateTotal().toStringAsFixed(2)}'),
         ],
       ),
     );

@@ -552,15 +552,15 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildPriceRow('$seatCount Seats (${widget.bookingData['ticketType'] ?? 'Economy'})', '\$${_subtotal.toStringAsFixed(2)}'),
+            _buildPriceRow('$seatCount Seats (${widget.bookingData['ticketType'] ?? 'Economy'})', 'LKR ${_subtotal.toStringAsFixed(2)}'),
             const SizedBox(height: 16),
-            _buildPriceRow('Tax', '\$${_tax.toStringAsFixed(2)}'),
+            _buildPriceRow('Tax', 'LKR ${_tax.toStringAsFixed(2)}'),
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
             _buildPriceRow(
               'Total',
-              '\$${_total.toStringAsFixed(2)}',
+              'LKR ${_total.toStringAsFixed(2)}',
               isTotal: true,
             ),
           ],
