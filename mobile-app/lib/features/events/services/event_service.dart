@@ -170,16 +170,20 @@ class EventService {
   Future<List<Event>> searchEvents(String query) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/events/search?q=$query'),
+        Uri.parse('$baseUrl/api/events/search/${Uri.encodeComponent(query)}'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> eventsJson = data['events'];
-        return eventsJson.map((json) => Event.fromJson(json)).toList();
+        if (data['success'] == true) {
+          final List<dynamic> eventsJson = data['data'];
+          return eventsJson.map((json) => Event.fromJson(json)).toList();
+        } else {
+          throw Exception('API Error: ${data['message'] ?? 'No events found'}');
+        }
       } else {
-        throw Exception('Failed to search events');
+        throw Exception('Failed to search events: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Network error: $e');
