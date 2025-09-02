@@ -5,6 +5,11 @@ const path = require("path")
 const cors = require("cors");
 const prisma = require("./lib/database");
 
+// Handle BigInt serialization for JSON responses
+BigInt.prototype.toJSON = function() {
+  return Number(this);
+};
+
 const app = express();
 
 // Middleware
