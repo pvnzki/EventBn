@@ -1,4 +1,5 @@
 const express = require('express');
+const multer =require('multer');
 const router = express.Router();
 const usersService = require('../services/core-service/users');
 
@@ -57,19 +58,40 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Configure Multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Folder to save images (make sure it exists)
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
 // Update user
-router.put('/:id', async (req, res) => {
+router.put("/:id", upload.single("profile_picture"), async (req, res) => {
   try {
-    const user = await usersService.updateUser(req.params.id, req.body);
+    const updateData = { ...req.body };
+
+    // If a new profile picture is uploaded, set its path
+    if (req.file) {
+      updateData.profile_picture = `/uploads/${req.file.filename}`;
+    }
+
+    const user = await usersService.updateUser(req.params.id, updateData);
+
     res.json({
       success: true,
-      message: 'User updated successfully',
-      data: user
+      message: "User updated successfully",
+      data: user,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
