@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
 
 class BottomNavBar extends StatefulWidget {
   final Widget child;
@@ -116,57 +117,85 @@ class _BottomNavBarState extends State<BottomNavBar>
 
     return Scaffold(
       extendBody: true,
-      body: widget.child,
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Main navigation bar background
-            Container(
-              height: 75,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.black // Pure black for dark mode
-                    : Colors.white, // Pure white for light mode
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.black.withOpacity(0.18)
-                        : Colors.grey.withOpacity(0.10),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                    spreadRadius: 0,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          widget.child,
+          // Floating bottom navigation
+          Positioned(
+            bottom: 20,
+            left: 16,
+            right: 16,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Main navigation bar background with floating effect
+                Container(
+                  height: 75,
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.black : Colors.white).withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withOpacity(0.4)
+                            : Colors.grey.withOpacity(0.25),
+                        blurRadius: 25,
+                        offset: const Offset(0, 8),
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.white.withOpacity(0.8),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.1) 
+                          : Colors.black.withOpacity(0.05),
+                      width: 0.5,
+                    ),
                   ),
-                ],
-                border: Border.all(
-                  color: isDark ? Colors.black : const Color(0xFFE5E7EB),
-                  width: 1,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildNavItem(0), // Home
+                            _buildNavItem(1), // Search
+                            const SizedBox(width: 60), // Space for create button
+                            _buildNavItem(2), // Tickets
+                            _buildNavItem(3), // Profile
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavItem(0), // Home
-                  _buildNavItem(1), // Search
-                  const SizedBox(width: 60), // Space for create button
-                  _buildNavItem(2), // Tickets
-                  _buildNavItem(3), // Profile
-                ],
-              ),
+                // Central create button that extends above (no clipping)
+                Positioned(
+                  top: -20,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _buildCreateButton(),
+                  ),
+                ),
+              ],
             ),
-            // Central create button that extends above (no clipping)
-            Positioned(
-              top: -20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildCreateButton(),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -247,7 +276,7 @@ class _BottomNavBarState extends State<BottomNavBar>
   Widget _buildCreateButton() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? Colors.black : Colors.white;
+    final bgColor = (isDark ? Colors.black : Colors.white).withOpacity(0.9);
     final iconColor = isDark ? Colors.white : Colors.black;
     return GestureDetector(
       onTap: () {
@@ -269,29 +298,64 @@ class _BottomNavBarState extends State<BottomNavBar>
                   height: 58,
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(35),
+                    borderRadius: BorderRadius.circular(29),
                     boxShadow: [
                       BoxShadow(
-                        color: bgColor.withOpacity(0.18),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                        spreadRadius: 1,
+                        color: isDark
+                            ? Colors.black.withOpacity(0.5)
+                            : Colors.grey.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.white.withOpacity(0.9),
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                        spreadRadius: 0,
                       ),
                     ],
+                    border: Border.all(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.15) 
+                          : Colors.black.withOpacity(0.08),
+                      width: 0.5,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.add_circle,
-                    color: iconColor,
-                    size: 38,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(29),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(29),
+                        ),
+                        child: Icon(
+                          Icons.add_circle,
+                          color: iconColor,
+                          size: 38,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Post',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: iconColor,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: bgColor.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Post',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                    ),
                   ),
                 ),
               ],
