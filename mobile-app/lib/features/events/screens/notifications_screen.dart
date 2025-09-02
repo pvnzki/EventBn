@@ -46,7 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'id': '4',
       'title': 'Payment Successful',
       'message':
-          'Payment of \$45.00 for Summer Music Festival has been processed successfully.',
+          'Payment of LKR 4,500.00 for Summer Music Festival has been processed successfully.',
       'time': '1 day ago',
       'isRead': true,
       'type': 'payment',

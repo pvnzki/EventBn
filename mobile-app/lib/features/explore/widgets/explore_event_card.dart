@@ -284,7 +284,7 @@ class _ExploreEventCardState extends State<ExploreEventCard>
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            '\$${widget.event.price.toStringAsFixed(0)}',
+            'LKR ${widget.event.price.toStringAsFixed(0)}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 11,

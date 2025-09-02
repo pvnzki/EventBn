@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _debounceTimer;
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
+  bool _imagesPreloaded = false;
 
   final List<String> _bannerImages = [
     'assets/images/manobhawa banner.jpg',
@@ -48,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {});
     });
 
+    // Preload banner images for faster rendering
+    _preloadBannerImages();
+
     // Start auto-scrolling banner
     _startBannerAutoScroll();
 
@@ -55,6 +59,24 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EventProvider>().fetchEvents();
     });
+  }
+
+  // Preload banner images to improve performance
+  Future<void> _preloadBannerImages() async {
+    for (String imagePath in _bannerImages) {
+      try {
+        await precacheImage(AssetImage(imagePath), context);
+        print('Preloaded banner image: $imagePath');
+      } catch (e) {
+        print('Error preloading banner image $imagePath: $e');
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _imagesPreloaded = true;
+      });
+      print('All banner images preloaded successfully');
+    }
   }
 
   final List<Map<String, dynamic>> _categories = [
@@ -525,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         _buildPromotionalBanner(),
-        const SizedBox(height: 1), // Reduced from 8 to 4
+        const SizedBox(height: 8), // Increased gap between banner and indicator
         _buildPageIndicators(),
         const SizedBox(height: 2), // Keep user's preferred spacing
         _buildCategories(),
@@ -667,47 +689,52 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPromotionalBanner() {
     return Stack(
       children: [
-        // Ambient background effect with smooth transitions - spread around all sides
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 1200),
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: Container(
-            key: ValueKey(_currentBannerIndex),
-            child: Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8), // Slightly inset
-                child: Transform.translate(
-                  offset: const Offset(0, -10), // Extend upward
-                  child: Container(
-                    height: 180, // Increased height to extend on all sides
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(5), // Slightly less rounded for broader effect
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55), // Increased blur for broader spread
-                        child: Container(
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: AssetImage(_bannerImages[_currentBannerIndex]),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+        // Ambient background effect with smooth transitions - spread around all sides (dark mode only)
+        if (_imagesPreloaded && Theme.of(context).brightness == Brightness.dark)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 1200),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            child: Container(
+              key: ValueKey(_currentBannerIndex),
+              child: Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8), // Slightly inset
+                  child: Transform.translate(
+                    offset: const Offset(0, -10), // Extend upward
+                    child: Container(
+                      height: 180, // Increased height to extend on all sides
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5), // Slightly less rounded for broader effect
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55), // Increased blur for broader spread
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: RadialGradient(
-                                center: Alignment.center,
-                                radius: 1.6, // Larger radius for broader spread
-                                colors: [
-                                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
-                                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.3),
-                                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
-                                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
-                                ],
-                                stops: const [0.0, 0.4, 0.7, 1.0],
+                              image: DecorationImage(
+                                image: AssetImage(_bannerImages[_currentBannerIndex]),
+                                fit: BoxFit.cover,
+                                onError: (error, stackTrace) {
+                                  print('Error loading banner background image: $error');
+                                },
+                              ),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: RadialGradient(
+                                  center: Alignment.center,
+                                  radius: 1.6, // Larger radius for broader spread
+                                  colors: [
+                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
+                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.3),
+                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
+                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                                  ],
+                                  stops: const [0.0, 0.4, 0.7, 1.0],
+                                ),
                               ),
                             ),
                           ),
@@ -719,12 +746,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ),
         // Main banner content
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SizedBox(
-            height: 160,
+            height: 180,
             child: Stack(
               children: [
                 // PageView for multiple banner containers with smooth transitions
@@ -771,24 +797,69 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Container(
                             width: double.infinity,
                             height: double.infinity,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage(_bannerImages[index]),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.05),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            child: _imagesPreloaded
+                                ? Image.asset(
+                                    _bannerImages[index],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print('Error loading banner image ${_bannerImages[index]}: $error');
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Theme.of(context).primaryColor.withOpacity(0.7),
+                                              Theme.of(context).primaryColor.withOpacity(0.9),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.image_not_supported_outlined,
+                                                color: Colors.white.withOpacity(0.8),
+                                                size: 40,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Banner ${index + 1}',
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.9),
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Theme.of(context).primaryColor.withOpacity(0.3),
+                                          Theme.of(context).primaryColor.withOpacity(0.5),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white.withOpacity(0.8),
+                                        ),
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -895,6 +966,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _getEventPriceText(Event event) {
+    // Check if event has ticket types with pricing
+    if (event.ticketTypes.isNotEmpty) {
+      final lowestPrice = event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+      if (lowestPrice > 0) {
+        return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
+      }
+    }
+    return 'Free Event';
+  }
+
   Widget _buildEventCard(Event event) {
     final theme = Theme.of(context);
     
@@ -970,9 +1052,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.black.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            'Free Event',
-                            style: TextStyle(
+                          child: Text(
+                            _getEventPriceText(event),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -981,8 +1063,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         // Favorite icon
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
                             shape: BoxShape.circle,
@@ -994,7 +1076,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             icon: const Icon(
                               Icons.favorite_border,
-                              size: 20,
+                              size: 16,
                               color: Colors.black54,
                             ),
                           ),

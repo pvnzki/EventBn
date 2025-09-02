@@ -39,6 +39,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   // Seat map cache
   bool? _hasCustomSeating;
   bool _seatMapLoaded = false;
+  List<dynamic> _seatMapData = [];
 
   @override
   void initState() {
@@ -60,24 +61,30 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   Future<void> _loadSeatMapInfo() async {
     try {
+      final url = '${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap';
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap'),
+        Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
       
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final seatMapData = responseData['data'];
-        print('🔍 Seat Map API Response: $responseData');
-        print('🔍 Seat Map Data: $seatMapData');
+        
         setState(() {
           _hasCustomSeating = seatMapData['hasCustomSeating'] == true;
+          _seatMapData = seatMapData['seats'] ?? [];
           _seatMapLoaded = true;
         });
-        print('🔍 _hasCustomSeating set to: $_hasCustomSeating');
+      } else {
+        print('❌ Failed to load seat map. Status: ${response.statusCode}');
+        setState(() {
+          _seatMapLoaded = true;
+        });
       }
     } catch (e) {
-      print('Error loading seat map info: $e');
+      print('❌ Error loading seat map info: $e');
       setState(() {
         _seatMapLoaded = true;
       });
@@ -92,6 +99,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       });
     } catch (e) {
       // Optionally handle attendee fetch error
+    }
+  }
+
+  double? _getLowestPriceFromSeatMap() {
+    if (_seatMapData.isEmpty) return null;
+    
+    try {
+      List<double> prices = [];
+      for (var seat in _seatMapData) {
+        if (seat['price'] != null) {
+          prices.add((seat['price'] as num).toDouble());
+        }
+      }
+      
+      if (prices.isEmpty) return null;
+      final lowestPrice = prices.reduce((a, b) => a < b ? a : b);
+      return lowestPrice;
+    } catch (e) {
+      print('❌ Error calculating lowest price: $e');
+      return null;
     }
   }
 
@@ -754,9 +781,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
           Text(
-            event.ticketTypes.isNotEmpty
-                ? 'FROM ${event.ticketTypes.first.price}'
-                : 'Free',
+            () {
+              // First try to get price from seat map data
+              final lowestPrice = _getLowestPriceFromSeatMap();
+              if (lowestPrice != null) {
+                return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
+              }
+              
+              // Fallback to ticket types if available
+              if (event.ticketTypes.isNotEmpty) {
+                final ticketPrice = event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+                return 'From LKR ${ticketPrice.toStringAsFixed(0)}';
+              }
+              
+              return 'Free';
+            }(),
             style: textTheme.titleLarge?.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.bold,

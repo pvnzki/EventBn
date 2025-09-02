@@ -1,0 +1,402 @@
+[
+  {
+    "id": 1,
+    "label": "A1",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 1,
+    "section": "front"
+  },
+  {
+    "id": 2,
+    "label": "A2",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 2,
+    "section": "front"
+  },
+  {
+    "id": 3,
+    "label": "A3",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 3,
+    "section": "front"
+  },
+  {
+    "id": 4,
+    "label": "A4",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 4,
+    "section": "front"
+  },
+  {
+    "id": 5,
+    "label": "A5",
+    "price": 50,
+    "available": false,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 5,
+    "section": "front"
+  },
+  {
+    "id": 6,
+    "label": "A6",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 6,
+    "section": "front"
+  },
+  {
+    "id": 7,
+    "label": "A7",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 7,
+    "section": "front"
+  },
+  {
+    "id": 8,
+    "label": "A8",
+    "price": 50,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "A",
+    "column": 8,
+    "section": "front"
+  },
+  {
+    "id": 9,
+    "label": "B1",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 1,
+    "section": "front"
+  },
+  {
+    "id": 10,
+    "label": "B2",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 2,
+    "section": "front"
+  },
+  {
+    "id": 11,
+    "label": "B3",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 3,
+    "section": "front"
+  },
+  {
+    "id": 12,
+    "label": "B4",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 4,
+    "section": "front"
+  },
+  {
+    "id": 13,
+    "label": "B5",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 5,
+    "section": "front"
+  },
+  {
+    "id": 14,
+    "label": "B6",
+    "price": 45,
+    "available": false,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 6,
+    "section": "front"
+  },
+  {
+    "id": 15,
+    "label": "B7",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 7,
+    "section": "front"
+  },
+  {
+    "id": 16,
+    "label": "B8",
+    "price": 45,
+    "available": true,
+    "ticketType": "Premium",
+    "row": "B",
+    "column": 8,
+    "section": "front"
+  },
+  {
+    "id": 17,
+    "label": "C1",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 1,
+    "section": "front"
+  },
+  {
+    "id": 18,
+    "label": "C2",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 2,
+    "section": "front"
+  },
+  {
+    "id": 19,
+    "label": "C3",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 3,
+    "section": "front"
+  },
+  {
+    "id": 20,
+    "label": "C4",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 4,
+    "section": "front"
+  },
+  {
+    "id": 21,
+    "label": "C5",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 5,
+    "section": "front"
+  },
+  {
+    "id": 22,
+    "label": "C6",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 6,
+    "section": "front"
+  },
+  {
+    "id": 23,
+    "label": "C7",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 7,
+    "section": "front"
+  },
+  {
+    "id": 24,
+    "label": "C8",
+    "price": 40,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "C",
+    "column": 8,
+    "section": "front"
+  },
+  {
+    "id": 25,
+    "label": "D1",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 1,
+    "section": "middle"
+  },
+  {
+    "id": 26,
+    "label": "D2",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 2,
+    "section": "middle"
+  },
+  {
+    "id": 27,
+    "label": "D3",
+    "price": 35,
+    "available": false,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 3,
+    "section": "middle"
+  },
+  {
+    "id": 28,
+    "label": "D4",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 4,
+    "section": "middle"
+  },
+  {
+    "id": 29,
+    "label": "D5",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 5,
+    "section": "middle"
+  },
+  {
+    "id": 30,
+    "label": "D6",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 6,
+    "section": "middle"
+  },
+  {
+    "id": 31,
+    "label": "D7",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 7,
+    "section": "middle"
+  },
+  {
+    "id": 32,
+    "label": "D8",
+    "price": 35,
+    "available": true,
+    "ticketType": "Standard",
+    "row": "D",
+    "column": 8,
+    "section": "middle"
+  },
+  {
+    "id": 33,
+    "label": "E1",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 1,
+    "section": "middle"
+  },
+  {
+    "id": 34,
+    "label": "E2",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 2,
+    "section": "middle"
+  },
+  {
+    "id": 35,
+    "label": "E3",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 3,
+    "section": "middle"
+  },
+  {
+    "id": 36,
+    "label": "E4",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 4,
+    "section": "middle"
+  },
+  {
+    "id": 37,
+    "label": "E5",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 5,
+    "section": "middle"
+  },
+  {
+    "id": 38,
+    "label": "E6",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 6,
+    "section": "middle"
+  },
+  {
+    "id": 39,
+    "label": "E7",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 7,
+    "section": "middle"
+  },
+  {
+    "id": 40,
+    "label": "E8",
+    "price": 30,
+    "available": true,
+    "ticketType": "Economy",
+    "row": "E",
+    "column": 8,
+    "section": "middle"
+  }
+]

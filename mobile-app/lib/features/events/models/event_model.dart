@@ -1,4 +1,5 @@
 // ...existing code...
+import 'dart:convert';
 import 'package:json_annotation/json_annotation.dart';
 
 // part 'event_model.g.dart';
@@ -67,7 +68,7 @@ class Event {
       endDateTime: json['end_time'] != null
           ? DateTime.parse(json['end_time'])
           : DateTime.now(),
-      ticketTypes: [], // TODO: Add ticket types when implemented
+      ticketTypes: _parseTicketTypesFromSeatMap(json['seat_map']), // Parse from seat_map
       organizationId: json['organization']?['organization_id']?.toString() ??
           json['creator']?['user_id']?.toString() ??
           '',
@@ -85,6 +86,67 @@ class Event {
           ? DateTime.parse(json['updated_at'])
           : DateTime.now(),
     );
+  }
+
+  // Helper method to parse ticket types from seat map data
+  static List<TicketType> _parseTicketTypesFromSeatMap(dynamic seatMapData) {
+    if (seatMapData == null) return [];
+    
+    try {
+      List<dynamic> seatMap = [];
+      
+      // Handle both String and List cases
+      if (seatMapData is String) {
+        final decoded = jsonDecode(seatMapData);
+        seatMap = decoded is List ? decoded : [];
+      } else if (seatMapData is List) {
+        seatMap = seatMapData;
+      }
+      
+      if (seatMap.isEmpty) return [];
+      
+      // Group seats by ticket type and collect unique pricing
+      Map<String, Map<String, dynamic>> ticketTypeMap = {};
+      
+      for (var seat in seatMap) {
+        if (seat is Map<String, dynamic>) {
+          final ticketType = seat['ticketType'] ?? 'General';
+          final price = (seat['price'] ?? 0).toDouble();
+          
+          if (!ticketTypeMap.containsKey(ticketType)) {
+            ticketTypeMap[ticketType] = {
+              'name': ticketType,
+              'price': price,
+              'count': 1,
+            };
+          } else {
+            ticketTypeMap[ticketType]!['count'] = (ticketTypeMap[ticketType]!['count'] as int) + 1;
+            // Use the minimum price if there are variations
+            final existingPrice = ticketTypeMap[ticketType]!['price'] as double;
+            if (price < existingPrice) {
+              ticketTypeMap[ticketType]!['price'] = price;
+            }
+          }
+        }
+      }
+      
+      // Convert to TicketType objects
+      return ticketTypeMap.entries.map((entry) {
+        final data = entry.value;
+        return TicketType(
+          id: entry.key.toLowerCase().replaceAll(' ', '_'),
+          name: data['name'] as String,
+          description: '${data['name']} seating',
+          price: data['price'] as double,
+          totalQuantity: data['count'] as int,
+          soldQuantity: 0, // TODO: Calculate from actual sales data
+          maxPerOrder: 10,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error parsing ticket types from seat map: $e');
+      return [];
+    }
   }
 
   Map<String, dynamic> toJson() {

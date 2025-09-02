@@ -16,8 +16,8 @@ class AppHelpers {
   }
 
   // Currency formatting
-  static String formatCurrency(double amount, {String currency = 'USD'}) {
-    final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  static String formatCurrency(double amount, {String currency = 'LKR'}) {
+    final formatter = NumberFormat.currency(symbol: 'LKR ', decimalDigits: 2);
     return formatter.format(amount);
   }
 

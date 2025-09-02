@@ -346,7 +346,7 @@ class _TicketTypeSelectionScreenState extends State<TicketTypeSelectionScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '\$${price.toStringAsFixed(2)}',
+                                      'LKR ${price.toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -458,7 +458,7 @@ class _TicketTypeSelectionScreenState extends State<TicketTypeSelectionScreen> {
                             ),
                           ),
                           Text(
-                            '\$${totalPrice.toStringAsFixed(2)}',
+                            'LKR ${totalPrice.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,

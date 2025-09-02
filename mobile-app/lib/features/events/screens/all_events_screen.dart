@@ -350,10 +350,10 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
                     Text(
                       event is Map
                         ? (event['price'] != null
-                            ? (event['price'] is num ? '\$${event['price'].toStringAsFixed(0)}' : '\$${event['price'].toString()}')
+                            ? (event['price'] is num ? 'LKR ${event['price'].toStringAsFixed(0)}' : 'LKR ${event['price'].toString()}')
                             : '')
                         : (event.toJson() != null && event.toJson().containsKey('price'))
-                            ? (event.toJson()['price'] is num ? '\$${event.toJson()['price'].toStringAsFixed(0)}' : '\$${event.toJson()['price'].toString()}')
+                            ? (event.toJson()['price'] is num ? 'LKR ${event.toJson()['price'].toStringAsFixed(0)}' : 'LKR ${event.toJson()['price'].toString()}')
                             : '',
                       style: const TextStyle(
                         fontSize: 18,
