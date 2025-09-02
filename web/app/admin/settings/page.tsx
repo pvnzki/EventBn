@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -62,9 +63,7 @@ export default function SettingsPage() {
         const response = await fetch(
           `http://localhost:3000/api/users/${userId}`
         );
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
+        if (!response.ok) throw new Error("Failed to fetch user data");
 
         const result = await response.json();
         if (result.success && result.data) {
@@ -77,9 +76,7 @@ export default function SettingsPage() {
               result.data.profile_picture ||
               "/placeholder.svg?height=100&width=100",
           });
-        } else {
-          throw new Error("Invalid API response");
-        }
+        } else throw new Error("Invalid API response");
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Error fetching user data"
@@ -91,6 +88,22 @@ export default function SettingsPage() {
 
     fetchUserData();
   }, []);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      alert("File size must be less than 500KB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileData({ ...profileData, avatar: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleProfileSave = async () => {
     try {
@@ -104,9 +117,7 @@ export default function SettingsPage() {
         `http://localhost:3000/api/users/${userId}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: profileData.name,
             email: profileData.email,
@@ -116,14 +127,11 @@ export default function SettingsPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to save profile data");
-      }
+      if (!response.ok) throw new Error("Failed to save profile data");
 
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Update local state
         setUser(result.data);
         setProfileData({
           name: result.data.name,
@@ -134,39 +142,26 @@ export default function SettingsPage() {
             "/placeholder.svg?height=100&width=100",
         });
 
-        // Also update localStorage with new user data
         localStorage.setItem("user", JSON.stringify(result.data));
 
-        // Show success popup
         setShowPopup(true);
-        setTimeout(() => setShowPopup(false), 3000); // Hide after 3 seconds
-
-        console.log("Profile updated successfully:", result.data);
+        setTimeout(() => setShowPopup(false), 3000);
       }
     } catch (err) {
-      if (err instanceof Error) {
-        console.error("Error saving profile:", err.message);
-      } else {
-        console.error("Error saving profile:", err);
-      }
+      console.error("Error saving profile:", err);
     }
   };
 
-  if (loading) {
+  if (loading)
     return <div className="flex min-h-screen bg-gray-50">Loading...</div>;
-  }
-
-  if (error) {
+  if (error)
     return <div className="flex min-h-screen bg-gray-50">Error: {error}</div>;
-  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
             <p className="text-gray-600 mt-2">
@@ -174,7 +169,6 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          {/* Success Popup */}
           {showPopup && (
             <div className="fixed top-4 right-4 z-50 flex items-center bg-white text-gray-800 px-4 py-3 rounded-lg shadow-xl border-l-4 border-green-500 transition-all duration-300 transform animate-slide-in">
               <svg
@@ -229,7 +223,6 @@ export default function SettingsPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Profile Tab */}
             <TabsContent value="profile">
               <Card>
                 <CardHeader>
@@ -242,7 +235,6 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Avatar Section */}
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-16 w-16">
                       <AvatarImage
@@ -257,17 +249,26 @@ export default function SettingsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button variant="outline" size="sm">
-                        <Camera className="h-4 w-4 mr-2" />
-                        Change Photo
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Camera className="h-4 w-4 mr-2" /> Change Photo
                       </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
                       <p className="text-xs text-gray-500 mt-1">
                         JPG, GIF or PNG. 500KB max.
                       </p>
                     </div>
                   </div>
 
-                  {/* Basic Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
@@ -318,7 +319,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Security Tab */}
             <TabsContent value="security">
               <div className="space-y-6">
                 <Card>
