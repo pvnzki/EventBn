@@ -205,10 +205,21 @@ module.exports = {
 
   // Update event
   async updateEvent(id, data) {
+
     try {
       const updateData = { ...data };
       delete updateData.event_id;
       delete updateData.created_at;
+      delete updateData.updated_at;
+      delete updateData.organization;
+
+      // Only allow valid Event table columns
+      const validColumns = [
+        "organization_id", "title", "description", "category", "venue", "location",
+        "start_time", "end_time", "capacity", "cover_image_url", "other_images_url",
+        "video_url", "status"
+      ];
+
 
       // Convert dates if provided
       if (updateData.start_time) {
@@ -220,15 +231,29 @@ module.exports = {
 
       // Convert numbers if provided
       if (updateData.organization_id) {
-
         updateData.organization = {
-    connect: { organization_id: parseInt(updateData.organization_id) }
-      };
-      delete updateData.organization_id;
-
+          connect: { organization_id: parseInt(updateData.organization_id) }
+        };
+        delete updateData.organization_id;
       }
       if (updateData.capacity) {
         updateData.capacity = parseInt(updateData.capacity);
+      }
+
+
+      // Debug log for JSON fields
+      console.log("updateData.seat_map:", updateData.seat_map, typeof updateData.seat_map);
+      console.log("updateData.ticket_types:", updateData.ticket_types, typeof updateData.ticket_types);
+
+      // Accept seat_map and ticket_types as arrays of objects (not strings)
+      if (updateData.seat_map === undefined) updateData.seat_map = null;
+      if (updateData.ticket_types === undefined) updateData.ticket_types = null;
+      // If not null, must be an array or object
+      if (updateData.seat_map !== null && !Array.isArray(updateData.seat_map) && typeof updateData.seat_map !== 'object') {
+        updateData.seat_map = null;
+      }
+      if (updateData.ticket_types !== null && !Array.isArray(updateData.ticket_types) && typeof updateData.ticket_types !== 'object') {
+        updateData.ticket_types = null;
       }
 
       // Ensure video_url is present
@@ -236,23 +261,59 @@ module.exports = {
         updateData.video_url = null;
       }
 
-      return await prisma.event.update({
-        where: { event_id: parseInt(id) },
-        data: updateData,
-        include: {
-          organization: {
-            select: {
-              organization_id: true,
-              name: true,
-              logo_url: true,
-            },
-          },
-        },
-      });
+      // Use raw SQL for seat_map and ticket_types jsonb[] columns
+      const eventId = parseInt(id);
+      const {
+        seat_map,
+        ticket_types,
+        ...otherFields
+      } = updateData;
+
+      // Filter only valid columns for SQL update
+      const filteredFields = {};
+      for (const key of Object.keys(otherFields)) {
+        if (validColumns.includes(key)) {
+          filteredFields[key] = otherFields[key];
+        }
+      }
+      if (typeof filteredFields === 'object' && filteredFields.organization) delete filteredFields.organization;
+
+      // Build the SET clause for filtered fields
+      const setClauses = [];
+      const values = [];
+      let idx = 1;
+      for (const key in filteredFields) {
+        setClauses.push(`${key} = $${idx}`);
+        values.push(filteredFields[key]);
+        idx++;
+      }
+  // Add seat_map (serialize to JSON string and cast as jsonb)
+  setClauses.push(`seat_map = $${idx}::jsonb`);
+  values.push(seat_map ? JSON.stringify(seat_map) : null);
+  idx++;
+      // Serialize ticket_types as Postgres array literal and cast to json[]
+      let ticketTypesValue = ticket_types;
+      let ticketTypesClause = `ticket_types = $${idx}`;
+      if (Array.isArray(ticket_types)) {
+        // Convert JS array to Postgres array literal: '{"{...}","{...}"}'
+        ticketTypesValue = '{' + ticket_types.map(obj => JSON.stringify(obj).replace(/"/g, '\"')).map(str => '"' + str + '"').join(',') + '}';
+        ticketTypesClause = `ticket_types = $${idx}::json[]`;
+      }
+      setClauses.push(ticketTypesClause);
+      values.push(ticketTypesValue);
+      idx++;
+      // Add event_id for WHERE
+      values.push(eventId);
+
+      const setClause = setClauses.join(', ');
+      const sql = `UPDATE "Event" SET ${setClause} WHERE event_id = $${idx} RETURNING *`;
+      const [updated] = await prisma.$queryRawUnsafe(sql, ...values);
+      // Optionally, fetch organization info if needed
+      return updated;
     } catch (error) {
-      throw new Error(`Failed to update event: ${error.message}`);
+      throw new Error("Failed to update event: " + error.message);
     }
-  },
+    },
 
   // Delete event
   async deleteEvent(id) {
