@@ -553,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildCategories(),
         const SizedBox(height: 32),
         _buildEventGrid(),
-        const SizedBox(height: 120), // Increased bottom padding for floating nav
+        const SizedBox(height: 16), // Reduced since we're adding proper padding in the main scroll view
       ],
     );
   }
@@ -581,6 +581,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             children: [
                               _buildSearchResults(),
+                              // Add bottom padding for search results too
+                              SizedBox(height: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16),
                             ],
                           ),
                         ),
@@ -596,6 +598,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildSearchBar(),
                         const SizedBox(height: 24),
                         _buildMainContentWithoutSearchBar(),
+                        // Add bottom padding to account for bottom navigation bar
+                        SizedBox(height: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16),
                       ],
                     ),
                   ),

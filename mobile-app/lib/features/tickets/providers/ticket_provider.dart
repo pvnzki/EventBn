@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../models/ticket_model.dart';
+import '../services/ticket_service.dart';
 
 class TicketProvider extends ChangeNotifier {
   List<Ticket> _tickets = [];
   bool _isLoading = false;
   String? _error;
+  final TicketService _ticketService = TicketService();
 
   // Getters
   List<Ticket> get tickets => _tickets;
@@ -26,17 +28,21 @@ class TicketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Fetch user tickets
-  Future<void> fetchUserTickets(String userId) async {
+  // Fetch user tickets from API
+  Future<void> fetchUserTickets() async {
     _setLoading(true);
     _setError(null);
 
     try {
-      // Simulate API call - replace with actual service call
-      await Future.delayed(const Duration(seconds: 1));
-      _tickets = []; // Placeholder - will be populated from API
+      final result = await _ticketService.getUserTickets();
+      
+      if (result['success'] == true) {
+        _tickets = result['tickets'] ?? [];
+      } else {
+        _setError(result['message'] ?? 'Failed to fetch tickets');
+      }
     } catch (e) {
-      _setError('Failed to fetch tickets');
+      _setError('Failed to fetch tickets: ${e.toString()}');
     } finally {
       _setLoading(false);
     }
@@ -51,5 +57,10 @@ class TicketProvider extends ChangeNotifier {
   // Clear error
   void clearError() {
     _setError(null);
+  }
+
+  // Refresh tickets
+  Future<void> refreshTickets() async {
+    await fetchUserTickets();
   }
 }

@@ -116,7 +116,7 @@ class _BottomNavBarState extends State<BottomNavBar>
     }
 
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [

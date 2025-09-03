@@ -7,7 +7,7 @@ import '../../features/booking/screens/user_details_screen.dart';
 import '../../features/booking/screens/payment_method_screen.dart';
 import '../../features/booking/screens/order_summary_screen.dart';
 import '../../features/booking/screens/payment_success_screen.dart';
-import '../../features/payment/screens/e_ticket_screen.dart';
+import '../../features/tickets/screens/e_ticket_screen.dart' as tickets;
 import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
@@ -358,9 +358,11 @@ class AppRouter {
         builder: (context, state) {
           final ticketId = state.pathParameters['ticketId']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return ETicketScreen(
-            bookingData: extra,
-            paymentId: ticketId,
+          final ticket = extra['ticket'];
+          
+          return tickets.ETicketScreen(
+            ticketId: ticketId,
+            initialTicket: ticket,
           );
         },
       ),

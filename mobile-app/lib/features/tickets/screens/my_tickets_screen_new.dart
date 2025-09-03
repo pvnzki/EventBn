@@ -114,28 +114,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               decoration: BoxDecoration(
                 color: isDark ? Colors.grey[900] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-                  width: 1,
-                ),
               ),
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(23),
-                  color: theme.colorScheme.primary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      spreadRadius: 0,
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(25),
+                  color: theme.primaryColor,
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: theme.colorScheme.onPrimary,
-                unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                labelColor: Colors.white,
+                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -274,11 +262,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     return RefreshIndicator(
       onRefresh: () => context.read<TicketProvider>().refreshTickets(),
       child: ListView.builder(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: tickets.length,
         itemBuilder: (context, index) {
           final ticket = tickets[index];
@@ -304,24 +288,17 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   Widget _buildModernTicketCard(BuildContext context, Ticket ticket, String tabType) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final colorScheme = theme.colorScheme;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: isDark 
-                ? Colors.black.withValues(alpha: 0.5)
-                : Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
             spreadRadius: 0,
-            blurRadius: isDark ? 10 : 8,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -334,7 +311,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
             height: 120,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              color: isDark ? Colors.grey[900] : Colors.grey[100],
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
               image: ticket.eventImageUrl.isNotEmpty 
                 ? DecorationImage(
                     image: NetworkImage(ticket.eventImageUrl),
@@ -374,7 +351,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      _buildStatusBadge(tabType, ticket.status, theme),
+                      _buildStatusBadge(tabType, ticket.status, isDark),
                     ],
                   ),
                 ],
@@ -394,7 +371,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     Icon(
                       Icons.access_time,
                       size: 16,
-                      color: colorScheme.primary,
+                      color: theme.primaryColor,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -402,7 +379,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
+                        color: theme.primaryColor,
                       ),
                     ),
                   ],
@@ -416,7 +393,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     Icon(
                       Icons.location_on_outlined,
                       size: 16,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -424,7 +401,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                         ticket.venue.isNotEmpty ? ticket.venue : 'Venue TBA',
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -443,7 +420,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     );
   }
 
-  Widget _buildStatusBadge(String tabType, TicketStatus status, ThemeData theme) {
+  Widget _buildStatusBadge(String tabType, TicketStatus status, bool isDark) {
     Color backgroundColor;
     String text;
 
@@ -461,7 +438,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
         text = 'Cancelled';
         break;
       default:
-        backgroundColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+        backgroundColor = Colors.grey;
         text = 'Unknown';
     }
 
@@ -483,8 +460,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   }
 
   Widget _buildActionButtons(BuildContext context, Ticket ticket, String tabType, ThemeData theme) {
-    final colorScheme = theme.colorScheme;
-    
     switch (tabType) {
       case 'upcoming':
         return Row(
@@ -493,17 +468,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               child: OutlinedButton(
                 onPressed: () => _showCancelDialog(context, ticket),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: colorScheme.primary, width: 1.5),
+                  side: BorderSide(color: theme.primaryColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.transparent,
                 ),
                 child: Text(
                   'Cancel Booking',
                   style: TextStyle(
-                    color: colorScheme.primary,
+                    color: theme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -514,13 +488,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               child: ElevatedButton(
                 onPressed: () => _navigateToTicketDetails(context, ticket),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  elevation: 0,
                 ),
                 child: const Text(
                   'View E-Ticket',
@@ -538,17 +511,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               child: OutlinedButton(
                 onPressed: () => _showReviewDialog(context, ticket),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: colorScheme.primary, width: 1.5),
+                  side: BorderSide(color: theme.primaryColor),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.transparent,
                 ),
                 child: Text(
                   'Leave a Review',
                   style: TextStyle(
-                    color: colorScheme.primary,
+                    color: theme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -559,13 +531,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               child: ElevatedButton(
                 onPressed: () => _navigateToTicketDetails(context, ticket),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  elevation: 0,
                 ),
                 child: const Text(
                   'View E-Ticket',
@@ -583,13 +554,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
           child: ElevatedButton(
             onPressed: () => _navigateToTicketDetails(context, ticket),
             style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
-              elevation: 0,
             ),
             child: const Text(
               'View Details',
@@ -615,33 +585,25 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showCancelDialog(BuildContext context, Ticket ticket) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
+        title: const Text(
           'Cancel Booking',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Are you sure you want to cancel this event?',
-              style: TextStyle(color: colorScheme.onSurface),
-            ),
+            const Text('Are you sure you want to cancel this event?'),
             const SizedBox(height: 12),
             Text(
               'Only 80% of funds will be returned to your account according to our policy.',
               style: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
             ),
@@ -650,10 +612,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'No, Don\'t Cancel',
-              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            ),
+            child: const Text('No, Don\'t Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -661,8 +620,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               _showCancelReasonDialog(context, ticket);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
@@ -676,7 +635,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showCancelReasonDialog(BuildContext context, Ticket ticket) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     String? selectedReason;
     final TextEditingController otherReasonController = TextEditingController();
 
@@ -694,20 +652,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          backgroundColor: colorScheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: [
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+                icon: const Icon(Icons.arrow_back),
               ),
-              Text(
+              const Text(
                 'Cancel Booking',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -717,16 +671,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Please select the reason for cancellation:',
-                  style: TextStyle(color: colorScheme.onSurface),
-                ),
+                const Text('Please select the reason for cancellation:'),
                 const SizedBox(height: 16),
                 ...cancelReasons.map((reason) => RadioListTile<String>(
-                  title: Text(
-                    reason,
-                    style: TextStyle(color: colorScheme.onSurface),
-                  ),
+                  title: Text(reason),
                   value: reason,
                   groupValue: selectedReason,
                   onChanged: (value) {
@@ -734,42 +682,20 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                       selectedReason = value;
                     });
                   },
-                  activeColor: colorScheme.primary,
-                  fillColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) {
-                      return colorScheme.primary;
-                    }
-                    return colorScheme.onSurface.withValues(alpha: 0.5);
-                  }),
+                  activeColor: theme.primaryColor,
                 )).toList(),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Others',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: otherReasonController,
-                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Others reason...',
-                    hintStyle: TextStyle(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.outline),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.outline),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.primary),
                     ),
                   ),
                   maxLines: 3,
@@ -793,9 +719,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                   _showCancelSuccessDialog(context);
                 } : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -815,13 +740,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showCancelSuccessDialog(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -831,32 +754,28 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: colorScheme.primary,
+                color: theme.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.check,
-                color: colorScheme.onPrimary,
+                color: Colors.white,
                 size: 40,
               ),
             ),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'Successful!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'You have successfully canceled the event. 80% of the funds will be returned to your account.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: colorScheme.onSurface,
-              ),
+              style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -868,8 +787,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                   context.read<TicketProvider>().refreshTickets();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -889,49 +808,28 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showReviewDialog(BuildContext context, Ticket ticket) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
+        title: const Text(
           'Leave a Review',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'How was your experience at ${ticket.eventTitle}?',
-              style: TextStyle(color: colorScheme.onSurface),
-            ),
+            Text('How was your experience at ${ticket.eventTitle}?'),
             const SizedBox(height: 16),
             // Star rating could be implemented here
             const Text('⭐⭐⭐⭐⭐'),
             const SizedBox(height: 16),
             TextField(
-              style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: 'Write your review...',
-                hintStyle: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.outline),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.outline),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.primary),
                 ),
               ),
               maxLines: 4,
@@ -941,10 +839,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            ),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -955,8 +850,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
