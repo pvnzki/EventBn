@@ -41,209 +41,260 @@ import {
   TrendingUp,
   Download,
   Mail,
+  Calendar,
+  MapPin,
+  User,
+  Phone,
+  CreditCard,
+  Check,
+  X,
+  RefreshCw,
 } from "lucide-react";
 
 interface User {
   role: "admin" | "organizer";
   name: string;
+  user_id?: number;
 }
 
-interface TicketType {
-  id: string;
-  eventId: string;
-  eventName: string;
+interface EventData {
+  event_id: number;
+  title: string;
+  start_time: string;
+  end_time: string;
+  venue: string;
+  location: string;
+  capacity: number;
+  cover_image_url?: string;
+}
+
+interface TicketUser {
   name: string;
-  description: string;
-  price: number;
-  quantity: number;
-  sold: number;
-  status: "active" | "paused" | "sold-out";
-  salesStart: string;
-  salesEnd: string;
-  category: string;
+  email: string;
+  phone_number?: string;
 }
 
-const mockTickets: TicketType[] = [
-  {
-    id: "1",
-    eventId: "1",
-    eventName: "Tech Conference 2024",
-    name: "General Admission",
-    description: "Standard entry ticket with access to all sessions",
-    price: 99,
-    quantity: 500,
-    sold: 350,
-    status: "active",
-    salesStart: "2024-01-01",
-    salesEnd: "2024-03-14",
-    category: "standard",
-  },
-  {
-    id: "2",
-    eventId: "1",
-    eventName: "Tech Conference 2024",
-    name: "VIP Pass",
-    description: "Premium access with networking dinner and priority seating",
-    price: 299,
-    quantity: 100,
-    sold: 85,
-    status: "active",
-    salesStart: "2024-01-01",
-    salesEnd: "2024-03-14",
-    category: "premium",
-  },
-  {
-    id: "3",
-    eventId: "2",
-    eventName: "Music Festival Summer",
-    name: "Early Bird",
-    description: "Limited time early bird pricing",
-    price: 75,
-    quantity: 200,
-    sold: 200,
-    status: "sold-out",
-    salesStart: "2023-12-01",
-    salesEnd: "2024-01-31",
-    category: "early-bird",
-  },
-  {
-    id: "4",
-    eventId: "2",
-    eventName: "Music Festival Summer",
-    name: "Regular Admission",
-    description: "Standard festival pass",
-    price: 120,
-    quantity: 800,
-    sold: 650,
-    status: "active",
-    salesStart: "2024-02-01",
-    salesEnd: "2024-06-19",
-    category: "standard",
-  },
-  {
-    id: "5",
-    eventId: "3",
-    eventName: "Business Workshop",
-    name: "Workshop Access",
-    description: "Full day workshop with materials included",
-    price: 150,
-    quantity: 50,
-    sold: 0,
-    status: "paused",
-    salesStart: "2024-03-01",
-    salesEnd: "2024-04-09",
-    category: "workshop",
-  },
-];
+interface Payment {
+  payment_id: string;
+  status: string;
+  payment_method: string;
+  payment_date: string;
+}
+
+interface TicketPurchase {
+  ticket_id: string;
+  event_id: number;
+  user_id: number;
+  seat_id?: number;
+  seat_label?: string;
+  purchase_date: string;
+  price: number;
+  attended: boolean;
+  qr_code?: string;
+  user: TicketUser;
+  event: EventData;
+  payment: Payment;
+}
+
+interface EventWithTickets {
+  event: EventData;
+  tickets: TicketPurchase[];
+  ticketCount: number;
+  eventRevenue: number;
+  attendedCount: number;
+}
+
+interface Statistics {
+  totalTicketsSold: number;
+  totalRevenue: number;
+  totalEvents: number;
+  averageTicketPrice: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  tickets: TicketPurchase[];
+  events: EventData[];
+  ticketsByEvent: EventWithTickets[];
+  statistics: Statistics;
+  message?: string;
+}
 
 export default function TicketsPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [tickets, setTickets] = useState<TicketType[]>(mockTickets);
+  const [tickets, setTickets] = useState<TicketPurchase[]>([]);
+  const [ticketsByEvent, setTicketsByEvent] = useState<EventWithTickets[]>([]);
+  const [statistics, setStatistics] = useState<Statistics>({
+    totalTicketsSold: 0,
+    totalRevenue: 0,
+    totalEvents: 0,
+    averageTicketPrice: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [eventFilter, setEventFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newTicket, setNewTicket] = useState({
-    eventName: "",
-    name: "",
-    description: "",
-    price: "",
-    quantity: "",
-    salesStart: "",
-    salesEnd: "",
-    category: "standard",
-  });
+  const [attendanceFilter, setAttendanceFilter] = useState("all");
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchTicketsData(parsedUser);
     }
   }, []);
+
+  const fetchTicketsData = async (currentUser: User) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("No authentication token found");
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:3000/api/tickets/my-events-tickets",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: ApiResponse = await response.json();
+
+      if (data.success) {
+        setTickets(data.tickets);
+        setTicketsByEvent(data.ticketsByEvent);
+        setStatistics(data.statistics);
+      } else {
+        setError(data.message || "Failed to fetch tickets data");
+      }
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch tickets"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshData = () => {
+    if (user) {
+      fetchTicketsData(user);
+    }
+  };
+
+  const markAsAttended = async (ticketId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(
+        `http://localhost:3000/api/tickets/${ticketId}/attend`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Refresh data after successful update
+        refreshData();
+      }
+    } catch (error) {
+      console.error("Error marking attendance:", error);
+    }
+  };
 
   const isAdmin = user?.role === "admin";
 
   const filteredTickets = tickets.filter((ticket) => {
     const matchesSearch =
-      ticket.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
+      ticket.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.event?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ticket.seat_label &&
+        ticket.seat_label.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus =
-      statusFilter === "all" || ticket.status === statusFilter;
-    const matchesEvent =
-      eventFilter === "all" || ticket.eventName === eventFilter;
+      statusFilter === "all" || ticket.payment?.status === statusFilter;
 
-    return matchesSearch && matchesStatus && matchesEvent;
+    const matchesEvent =
+      eventFilter === "all" || ticket.event?.title === eventFilter;
+
+    const matchesAttendance =
+      attendanceFilter === "all" ||
+      (attendanceFilter === "attended" && ticket.attended) ||
+      (attendanceFilter === "not-attended" && !ticket.attended);
+
+    return matchesSearch && matchesStatus && matchesEvent && matchesAttendance;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "default";
-      case "sold-out":
-        return "destructive";
-      case "paused":
-        return "secondary";
-      default:
-        return "secondary";
-    }
-  };
+  const uniqueEvents = [
+    ...new Set(tickets.map((ticket) => ticket.event?.title).filter(Boolean)),
+  ];
+  const uniqueStatuses = [
+    ...new Set(tickets.map((ticket) => ticket.payment?.status).filter(Boolean)),
+  ];
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "premium":
-        return "default";
-      case "early-bird":
-        return "secondary";
-      case "workshop":
-        return "outline";
-      default:
-        return "secondary";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="p-6 lg:p-8">
+            <div className="flex items-center justify-center h-64">
+              <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-600">
+                Loading tickets data...
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const handleCreateTicket = () => {
-    const ticket: TicketType = {
-      id: Date.now().toString(),
-      eventId: Date.now().toString(),
-      eventName: newTicket.eventName,
-      name: newTicket.name,
-      description: newTicket.description,
-      price: Number.parseFloat(newTicket.price),
-      quantity: Number.parseInt(newTicket.quantity),
-      sold: 0,
-      status: "active",
-      salesStart: newTicket.salesStart,
-      salesEnd: newTicket.salesEnd,
-      category: newTicket.category,
-    };
-
-    setTickets([...tickets, ticket]);
-    setIsCreateDialogOpen(false);
-    setNewTicket({
-      eventName: "",
-      name: "",
-      description: "",
-      price: "",
-      quantity: "",
-      salesStart: "",
-      salesEnd: "",
-      category: "standard",
-    });
-  };
-
-  const totalRevenue = tickets.reduce(
-    (sum, ticket) => sum + ticket.price * ticket.sold,
-    0
-  );
-  const totalSold = tickets.reduce((sum, ticket) => sum + ticket.sold, 0);
-  const totalAvailable = tickets.reduce(
-    (sum, ticket) => sum + ticket.quantity,
-    0
-  );
-
-  const uniqueEvents = [...new Set(tickets.map((ticket) => ticket.eventName))];
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="p-6 lg:p-8">
+            <Card className="text-center py-12">
+              <CardContent>
+                <X className="h-12 w-12 mx-auto text-red-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Error Loading Data
+                </h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <Button onClick={refreshData}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -260,166 +311,13 @@ export default function TicketsPage() {
               <p className="text-gray-600 mt-2">
                 {isAdmin
                   ? "Manage all tickets across the platform"
-                  : "Manage your event tickets and sales"}
+                  : "Manage tickets for your events"}
               </p>
             </div>
-            <Dialog
-              open={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Ticket Type
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Create New Ticket Type</DialogTitle>
-                  <DialogDescription>
-                    Add a new ticket type for your event with pricing and
-                    availability details.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="event-name">Event Name</Label>
-                      <Input
-                        id="event-name"
-                        placeholder="Select or enter event name"
-                        value={newTicket.eventName}
-                        onChange={(e) =>
-                          setNewTicket({
-                            ...newTicket,
-                            eventName: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ticket-name">Ticket Name</Label>
-                      <Input
-                        id="ticket-name"
-                        placeholder="e.g., General Admission, VIP"
-                        value={newTicket.name}
-                        onChange={(e) =>
-                          setNewTicket({ ...newTicket, name: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe what's included with this ticket..."
-                      value={newTicket.description}
-                      onChange={(e) =>
-                        setNewTicket({
-                          ...newTicket,
-                          description: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Price ($)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={newTicket.price}
-                        onChange={(e) =>
-                          setNewTicket({ ...newTicket, price: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        placeholder="100"
-                        value={newTicket.quantity}
-                        onChange={(e) =>
-                          setNewTicket({
-                            ...newTicket,
-                            quantity: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select
-                        value={newTicket.category}
-                        onValueChange={(value) =>
-                          setNewTicket({ ...newTicket, category: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="standard">Standard</SelectItem>
-                          <SelectItem value="premium">Premium</SelectItem>
-                          <SelectItem value="early-bird">Early Bird</SelectItem>
-                          <SelectItem value="workshop">Workshop</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="sales-start">Sales Start Date</Label>
-                      <Input
-                        id="sales-start"
-                        type="date"
-                        value={newTicket.salesStart}
-                        onChange={(e) =>
-                          setNewTicket({
-                            ...newTicket,
-                            salesStart: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sales-end">Sales End Date</Label>
-                      <Input
-                        id="sales-end"
-                        type="date"
-                        value={newTicket.salesEnd}
-                        onChange={(e) =>
-                          setNewTicket({
-                            ...newTicket,
-                            salesEnd: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreateDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleCreateTicket}>
-                      Create Ticket Type
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={refreshData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Data
+            </Button>
           </div>
 
           {/* Stats Cards */}
@@ -433,10 +331,10 @@ export default function TicketsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalRevenue.toLocaleString()}
+                  ${statistics.totalRevenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  From ticket sales
+                  From {statistics.totalTicketsSold} tickets
                 </p>
               </CardContent>
             </Card>
@@ -450,11 +348,10 @@ export default function TicketsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {totalSold.toLocaleString()}
+                  {statistics.totalTicketsSold}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {Math.round((totalSold / totalAvailable) * 100)}% of total
-                  available
+                  Across {statistics.totalEvents} events
                 </p>
               </CardContent>
             </Card>
@@ -462,16 +359,16 @@ export default function TicketsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Available Tickets
+                  Active Events
                 </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {(totalAvailable - totalSold).toLocaleString()}
+                  {statistics.totalEvents}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Remaining inventory
+                  Events with tickets sold
                 </p>
               </CardContent>
             </Card>
@@ -479,16 +376,16 @@ export default function TicketsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Avg. Ticket Price
+                  Avg Ticket Price
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalSold > 0 ? Math.round(totalRevenue / totalSold) : 0}
+                  ${statistics.averageTicketPrice.toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Average selling price
+                  Average per ticket
                 </p>
               </CardContent>
             </Card>
@@ -502,7 +399,7 @@ export default function TicketsPage() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
-                      placeholder="Search tickets..."
+                      placeholder="Search by customer name, email, event, or seat..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -523,122 +420,177 @@ export default function TicketsPage() {
                   </SelectContent>
                 </Select>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="sold-out">Sold Out</SelectItem>
-                    <SelectItem value="paused">Paused</SelectItem>
+                    {uniqueStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={attendanceFilter}
+                  onValueChange={setAttendanceFilter}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by attendance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="attended">Attended</SelectItem>
+                    <SelectItem value="not-attended">Not Attended</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
           </Card>
 
-          {/* Tickets Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Tickets List */}
+          <div className="space-y-6">
             {filteredTickets.map((ticket) => (
               <Card
-                key={ticket.id}
+                key={ticket.ticket_id}
                 className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <CardTitle className="text-lg">{ticket.name}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {ticket.eventName}
+                      <CardTitle className="text-lg flex items-center">
+                        <Ticket className="h-5 w-5 mr-2 text-blue-600" />
+                        {ticket.event?.title || "Unknown Event"}
+                      </CardTitle>
+                      <CardDescription className="mt-1 flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {ticket.event?.start_time ? (
+                          <>
+                            {new Date(
+                              ticket.event.start_time
+                            ).toLocaleDateString()}{" "}
+                            at{" "}
+                            {new Date(
+                              ticket.event.start_time
+                            ).toLocaleTimeString()}
+                          </>
+                        ) : (
+                          "Date TBD"
+                        )}
                       </CardDescription>
                     </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      <Badge variant={getStatusColor(ticket.status)}>
-                        {ticket.status}
+                    <div className="flex flex-col items-end space-y-2">
+                      <Badge
+                        variant={
+                          ticket.payment?.status === "completed"
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {ticket.payment?.status || "Unknown"}
                       </Badge>
-                      <Badge variant={getCategoryColor(ticket.category)}>
-                        {ticket.category}
-                      </Badge>
+                      {ticket.attended && (
+                        <Badge variant="default" className="bg-green-600">
+                          <Check className="h-3 w-3 mr-1" />
+                          Attended
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Ticket Details */}
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      {ticket.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="h-4 w-4 mr-1" />${ticket.price}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Users className="h-4 w-4 mr-1" />
-                        {ticket.sold} / {ticket.quantity} sold
+                  {/* Customer Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-700">
+                        Customer Details
+                      </h4>
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <User className="h-4 w-4 mr-2 text-gray-500" />
+                          {ticket.user?.name || "Unknown"}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                          {ticket.user?.email || "No email"}
+                        </div>
+                        {ticket.user?.phone_number && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                            {ticket.user.phone_number}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      Sales: {ticket.salesStart} to {ticket.salesEnd}
+
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-gray-700">
+                        Ticket Details
+                      </h4>
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm">
+                          <DollarSign className="h-4 w-4 mr-2 text-gray-500" />$
+                          {ticket.price?.toFixed(2) || "0.00"}
+                        </div>
+                        {ticket.seat_label && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                            Seat: {ticket.seat_label}
+                          </div>
+                        )}
+                        <div className="flex items-center text-sm text-gray-600">
+                          <CreditCard className="h-4 w-4 mr-2 text-gray-500" />
+                          {ticket.payment?.payment_method || "N/A"}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Sales Progress</span>
-                      <span>
-                        {Math.round((ticket.sold / ticket.quantity) * 100)}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${
-                          ticket.status === "sold-out"
-                            ? "bg-red-600"
-                            : ticket.status === "active"
-                            ? "bg-blue-600"
-                            : "bg-gray-400"
-                        }`}
-                        style={{
-                          width: `${(ticket.sold / ticket.quantity) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Revenue */}
+                  {/* Purchase Information */}
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">
-                        Revenue Generated
-                      </span>
-                      <span className="text-lg font-bold text-green-600">
-                        ${(ticket.price * ticket.sold).toLocaleString()}
-                      </span>
+                      <div>
+                        <span className="text-sm font-medium">
+                          Purchase Date:
+                        </span>
+                        <p className="text-sm text-gray-600">
+                          {new Date(ticket.purchase_date).toLocaleDateString()}{" "}
+                          at{" "}
+                          {new Date(ticket.purchase_date).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium">Payment ID:</span>
+                        <p className="text-sm text-gray-600 font-mono">
+                          {ticket.payment?.payment_id?.slice(0, 8) || "N/A"}...
+                        </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="flex space-x-1">
-                      <Button size="sm" variant="ghost">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <div className="flex space-x-2">
+                      {!ticket.attended && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => markAsAttended(ticket.ticket_id)}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Mark Attended
+                        </Button>
+                      )}
                     </div>
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
                         <Download className="h-4 w-4 mr-1" />
                         Export
                       </Button>
                       <Button size="sm" variant="outline">
                         <Mail className="h-4 w-4 mr-1" />
-                        Email
+                        Email Customer
                       </Button>
                     </div>
                   </div>
@@ -656,14 +608,13 @@ export default function TicketsPage() {
                   No tickets found
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {searchTerm || statusFilter !== "all" || eventFilter !== "all"
+                  {searchTerm ||
+                  statusFilter !== "all" ||
+                  eventFilter !== "all" ||
+                  attendanceFilter !== "all"
                     ? "Try adjusting your filters to see more tickets."
-                    : "Get started by creating your first ticket type."}
+                    : "No tickets have been sold for your events yet."}
                 </p>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Ticket Type
-                </Button>
               </CardContent>
             </Card>
           )}
