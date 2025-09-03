@@ -44,7 +44,13 @@ class _ETicketScreenState extends State<ETicketScreen> {
         _errorMessage = null;
       });
 
-      final result = await _ticketService.getTicketDetails(widget.ticketId);
+      // First try to get ticket by ticket ID
+      var result = await _ticketService.getTicketDetails(widget.ticketId);
+
+      // If that fails, try to get ticket by payment ID
+      if (result['success'] != true) {
+        result = await _ticketService.getTicketDetailsByPaymentId(widget.ticketId);
+      }
 
       if (result['success'] == true) {
         setState(() {

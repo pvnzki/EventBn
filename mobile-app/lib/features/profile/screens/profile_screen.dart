@@ -10,10 +10,11 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F5F7),
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
@@ -37,15 +38,13 @@ class ProfileScreen extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isDark 
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.black.withOpacity(0.05),
+                              color: colorScheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               Icons.arrow_back_ios_new,
                               size: 20,
-                              color: isDark ? Colors.white : Colors.black,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -55,7 +54,7 @@ class ProfileScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const Spacer(),
@@ -71,21 +70,15 @@ class ProfileScreen extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 20),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark 
-                        ? Colors.white.withOpacity(0.05)
-                        : Colors.white.withOpacity(0.9),
+                      color: colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark 
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.black.withOpacity(0.05),
+                        color: colorScheme.outline.withValues(alpha: 0.2),
                         width: 0.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark 
-                            ? Colors.black.withOpacity(0.3)
-                            : Colors.black.withOpacity(0.04),
+                          color: colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 4),
                         ),
@@ -96,9 +89,7 @@ class ProfileScreen extends StatelessWidget {
                         // Profile Picture
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: isDark 
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.grey.withOpacity(0.1),
+                          backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                           backgroundImage: user?.profileImageUrl != null 
                             ? NetworkImage(user!.profileImageUrl!) 
                             : null,
@@ -106,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
                             ? Icon(
                                 Icons.person,
                                 size: 28,
-                                color: isDark ? Colors.white70 : Colors.grey[600],
+                                color: colorScheme.onSurfaceVariant,
                               )
                             : null,
                         ),
@@ -124,7 +115,7 @@ class ProfileScreen extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : Colors.black,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -133,7 +124,7 @@ class ProfileScreen extends StatelessWidget {
                                 user?.email ?? 'jacobjones24@gmail.com',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: isDark ? Colors.white60 : Colors.grey[600],
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -150,7 +141,7 @@ class ProfileScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Theme.of(context).primaryColor,
+                              color: colorScheme.primary,
                             ),
                           ),
                         ),
@@ -237,13 +228,13 @@ class ProfileScreen extends StatelessWidget {
                   
                   // Logout Button
                   Container(
-                    margin: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                    margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () => _showLogoutDialog(context, authProvider),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.withOpacity(0.9),
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.error,
+                        foregroundColor: colorScheme.onError,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -259,6 +250,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  
+                  // Bottom spacing to prevent hiding by navbar
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
                 ],
               ),
             );
@@ -270,7 +264,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildSettingsSection(BuildContext context, String title, List<Widget> items) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,28 +276,22 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : Colors.grey[600],
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: isDark 
-              ? Colors.white.withOpacity(0.05)
-              : Colors.white.withOpacity(0.9),
+            color: colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark 
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.05),
+              color: colorScheme.outline.withValues(alpha: 0.2),
               width: 0.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark 
-                  ? Colors.black.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.02),
+                color: colorScheme.shadow.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -318,9 +306,7 @@ class ProfileScreen extends StatelessWidget {
                   if (!isLast)
                     Divider(
                       height: 1,
-                      color: isDark 
-                        ? Colors.white.withOpacity(0.05)
-                        : Colors.black.withOpacity(0.05),
+                      color: colorScheme.outline.withValues(alpha: 0.1),
                       indent: 60,
                     ),
                 ],
@@ -334,80 +320,145 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          dialogBackgroundColor: colorScheme.surface,
+          dialogTheme: DialogThemeData(
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await authProvider.logout();
-              if (context.mounted) {
-                context.go('/login');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Logged out successfully'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-            child: const Text('Log Out', style: TextStyle(color: Colors.red)),
+        ),
+        child: AlertDialog(
+          backgroundColor: colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Log Out',
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ],
+          content: Text(
+            'Are you sure you want to log out?',
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authProvider.logout();
+                if (context.mounted) {
+                  context.go('/login');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Logged out successfully'),
+                      backgroundColor: colorScheme.primary,
+                    ),
+                  );
+                }
+              },
+              child: Text(
+                'Log Out', 
+                style: TextStyle(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildThemeOption(
-                context,
-                'System',
-                'Follow system setting',
-                Icons.settings_outlined,
-                ThemeMode.system,
-                themeProvider,
+        return Theme(
+          data: Theme.of(context).copyWith(
+            dialogBackgroundColor: colorScheme.surface,
+            dialogTheme: DialogThemeData(
+              backgroundColor: colorScheme.surface,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-              _buildThemeOption(
-                context,
-                'Light',
-                'Light theme',
-                Icons.light_mode_outlined,
-                ThemeMode.light,
-                themeProvider,
+            ),
+          ),
+          child: AlertDialog(
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              'Choose Theme',
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
               ),
-              _buildThemeOption(
-                context,
-                'Dark',
-                'Dark theme',
-                Icons.dark_mode_outlined,
-                ThemeMode.dark,
-                themeProvider,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildThemeOption(
+                  context,
+                  'System',
+                  'Follow system setting',
+                  Icons.settings_outlined,
+                  ThemeMode.system,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  'Light',
+                  'Light theme',
+                  Icons.light_mode_outlined,
+                  ThemeMode.light,
+                  themeProvider,
+                ),
+                _buildThemeOption(
+                  context,
+                  'Dark',
+                  'Dark theme',
+                  Icons.dark_mode_outlined,
+                  ThemeMode.dark,
+                  themeProvider,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Close',
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
         );
       },
     );
@@ -422,6 +473,7 @@ class ProfileScreen extends StatelessWidget {
     ThemeProvider themeProvider,
   ) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isSelected = themeProvider.themeMode == mode;
 
     return InkWell(
@@ -434,15 +486,15 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.primaryColor.withOpacity(0.1) : null,
+          color: isSelected ? colorScheme.primaryContainer : null,
           borderRadius: BorderRadius.circular(12),
-          border: isSelected ? Border.all(color: theme.primaryColor, width: 0.5) : null,
+          border: isSelected ? Border.all(color: colorScheme.primary, width: 0.5) : null,
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
               size: 20,
             ),
             const SizedBox(width: 16),
@@ -455,15 +507,14 @@ class ProfileScreen extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: isSelected ? theme.primaryColor : theme.colorScheme.onSurface,
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: (isSelected ? theme.primaryColor : theme.colorScheme.onSurface)
-                          .withOpacity(0.7),
+                      color: isSelected ? colorScheme.primary.withValues(alpha: 0.7) : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -472,7 +523,7 @@ class ProfileScreen extends StatelessWidget {
             if (isSelected)
               Icon(
                 Icons.check_circle,
-                color: theme.primaryColor,
+                color: colorScheme.primary,
                 size: 18,
               ),
           ],
@@ -498,7 +549,7 @@ class _SettingItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return InkWell(
       onTap: onTap,
@@ -509,7 +560,7 @@ class _SettingItem extends StatelessWidget {
             Icon(
               icon,
               size: 22,
-              color: isDark ? Colors.white70 : Colors.grey[700],
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -518,7 +569,7 @@ class _SettingItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white : Colors.black,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -527,7 +578,7 @@ class _SettingItem extends StatelessWidget {
                 trailing!,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? Colors.white60 : Colors.grey[600],
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 8),
@@ -535,7 +586,7 @@ class _SettingItem extends StatelessWidget {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: isDark ? Colors.white.withOpacity(0.4) : Colors.grey[400],
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
             ),
           ],
         ),

@@ -179,14 +179,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   void _handlePaymentSuccess(String paymentId) async {
     try {
-      // Save payment to backend
-      await _savePaymentToBackend(paymentId);
+      // Save payment to backend and get the actual payment ID
+      final actualPaymentId = await _savePaymentToBackend(paymentId);
       
       // Navigate to success screen
       if (mounted) {
         context.go('/booking/payment-success', extra: {
           ...widget.bookingData,
-          'paymentId': paymentId,
+          'paymentId': actualPaymentId, // Use the actual payment ID from backend
           'eventData': _event?.toJson(),
           'total': _total,
         });
@@ -231,7 +231,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     }
   }
 
-  Future<void> _savePaymentToBackend(String paymentId) async {
+  Future<String> _savePaymentToBackend(String paymentId) async {
     try {
       final authService = AuthService();
       final token = await authService.getStoredToken();
@@ -287,6 +287,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       print('✅ Payment saved successfully to backend');
       final responseData = jsonDecode(response.body);
       print('✅ Backend response: $responseData');
+      
+      // Extract the actual payment ID from the backend response
+      final actualPaymentId = responseData['payment']?['payment_id'] ?? paymentId;
+      return actualPaymentId;
     } catch (e) {
       rethrow;
     }

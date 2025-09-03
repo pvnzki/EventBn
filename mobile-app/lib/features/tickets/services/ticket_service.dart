@@ -241,4 +241,86 @@ class TicketService {
       };
     }
   }
+
+  // Get individual ticket details by payment ID
+  Future<Map<String, dynamic>> getTicketDetailsByPaymentId(String paymentId) async {
+    try {
+      final token = await _authService.getStoredToken();
+      
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'User not authenticated',
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/tickets/by-payment/$paymentId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true) {
+          final ticketData = data['ticket'];
+          
+          // Convert to Ticket object
+          final ticket = Ticket(
+            id: ticketData['ticket_id'] ?? '',
+            eventId: ticketData['event_id']?.toString() ?? '',
+            eventTitle: ticketData['event']?['title'] ?? '',
+            eventImageUrl: ticketData['event']?['cover_image_url'] ?? '',
+            userId: ticketData['user_id']?.toString() ?? '',
+            ticketTypeId: ticketData['seat_id']?.toString() ?? '',
+            ticketTypeName: ticketData['seat_label'] ?? 'General',
+            price: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            quantity: 1,
+            totalAmount: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            qrCode: ticketData['qr_code'] ?? '',
+            status: ticketData['attended'] == true 
+                ? TicketStatus.used 
+                : TicketStatus.active,
+            purchaseDate: ticketData['purchase_date'] != null 
+                ? DateTime.parse(ticketData['purchase_date'])
+                : DateTime.now(),
+            eventStartDate: ticketData['event']?['start_time'] != null 
+                ? DateTime.parse(ticketData['event']['start_time'])
+                : DateTime.now(),
+            venue: ticketData['event']?['venue'] ?? '',
+            address: ticketData['event']?['location'] ?? '',
+          );
+
+          return {
+            'success': true,
+            'ticket': ticket,
+            'rawData': ticketData, // Include raw data for additional fields
+          };
+        } else {
+          return {
+            'success': false,
+            'message': data['message'] ?? 'Failed to fetch ticket details',
+          };
+        }
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'message': 'Ticket not found or access denied',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to fetch ticket details. Status: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error occurred: ${e.toString()}',
+      };
+    }
+  }
 }

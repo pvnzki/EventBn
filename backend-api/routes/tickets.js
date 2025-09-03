@@ -299,4 +299,87 @@ router.get('/event/:eventId', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/tickets/by-payment/:paymentId - Get first ticket details by payment ID
+router.get('/by-payment/:paymentId', authenticateToken, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const user_id = req.user.user_id;
+
+    const ticket = await prisma.ticketPurchase.findFirst({
+      where: { 
+        payment_id: paymentId,
+        user_id: user_id // Ensure user can only access their own tickets
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone_number: true
+          }
+        },
+        event: {
+          select: {
+            title: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true
+          }
+        },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket not found or access denied'
+      });
+    }
+
+    // Generate fresh QR code if it doesn't exist
+    let qrCode = ticket.qr_code;
+    if (!qrCode) {
+      qrCode = `TICKET:${ticket.ticket_id}:${ticket.event_id}:${ticket.user_id}:${Date.now()}`;
+      
+      await prisma.ticketPurchase.update({
+        where: { ticket_id: ticket.ticket_id },
+        data: { qr_code: qrCode }
+      });
+    }
+
+    // Serialize BigInt values
+    const serializedTicket = {
+      ...ticket,
+      price: Number(ticket.price),
+      user_id: Number(ticket.user_id),
+      event_id: Number(ticket.event_id),
+      qr_code: qrCode
+    };
+
+    res.json({
+      success: true,
+      ticket: serializedTicket
+    });
+
+  } catch (error) {
+    console.error('Error fetching ticket details by payment ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ticket details',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
