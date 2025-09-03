@@ -355,7 +355,7 @@ const AdminDashboardPage = () => {
         <div className="p-6 lg:p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Admin Dashboard
+              Organizer Dashboard
             </h1>
             <p className="text-gray-600 mt-2">
               Overview of all platform activities and metrics
