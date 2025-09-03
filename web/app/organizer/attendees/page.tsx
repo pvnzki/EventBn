@@ -46,6 +46,7 @@ import {
   XCircle,
   Clock,
   Send,
+  Loader2,
 } from "lucide-react";
 
 interface User {
@@ -54,124 +55,82 @@ interface User {
 }
 
 interface Attendee {
-  id: string;
-  eventId: string;
-  eventName: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  ticketType: string;
-  ticketPrice: number;
-  purchaseDate: string;
-  checkInStatus: "checked-in" | "not-checked-in" | "no-show";
-  checkInTime?: string;
-  company?: string;
-  jobTitle?: string;
-  dietaryRestrictions?: string;
-  specialRequests?: string;
-  avatar?: string;
-  qrCode: string;
+  ticket_id: string;
+  event_id: number;
+  user_id: number;
+  seat_id?: number;
+  seat_label?: string;
+  purchase_date: string;
+  price: number;
+  attended: boolean;
+  qr_code?: string;
+  user: {
+    name: string;
+    email: string;
+    phone_number?: string;
+  };
+  event: {
+    title: string;
+    start_time: string;
+    venue?: string;
+    location?: string;
+    cover_image_url?: string;
+  };
+  payment?: {
+    payment_id: string;
+    status: string;
+    payment_method?: string;
+    payment_date: string;
+  };
 }
 
-const mockAttendees: Attendee[] = [
-  {
-    id: "1",
-    eventId: "1",
-    eventName: "Tech Conference 2024",
-    firstName: "John",
-    lastName: "Smith",
-    email: "john.smith@example.com",
-    phone: "+1 (555) 123-4567",
-    ticketType: "General Admission",
-    ticketPrice: 99,
-    purchaseDate: "2024-01-15",
-    checkInStatus: "checked-in",
-    checkInTime: "2024-03-15 09:30:00",
-    company: "Tech Corp",
-    jobTitle: "Software Engineer",
-    qrCode: "QR123456789",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "2",
-    eventId: "1",
-    eventName: "Tech Conference 2024",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah.johnson@example.com",
-    phone: "+1 (555) 987-6543",
-    ticketType: "VIP Pass",
-    ticketPrice: 299,
-    purchaseDate: "2024-01-20",
-    checkInStatus: "not-checked-in",
-    company: "StartupXYZ",
-    jobTitle: "Product Manager",
-    dietaryRestrictions: "Vegetarian",
-    qrCode: "QR987654321",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "3",
-    eventId: "2",
-    eventName: "Music Festival Summer",
-    firstName: "Mike",
-    lastName: "Davis",
-    email: "mike.davis@example.com",
-    phone: "+1 (555) 456-7890",
-    ticketType: "Regular Admission",
-    ticketPrice: 120,
-    purchaseDate: "2024-02-10",
-    checkInStatus: "checked-in",
-    checkInTime: "2024-06-20 14:15:00",
-    specialRequests: "Wheelchair accessible seating",
-    qrCode: "QR456789123",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "4",
-    eventId: "1",
-    eventName: "Tech Conference 2024",
-    firstName: "Emily",
-    lastName: "Brown",
-    email: "emily.brown@example.com",
-    phone: "+1 (555) 321-0987",
-    ticketType: "General Admission",
-    ticketPrice: 99,
-    purchaseDate: "2024-02-05",
-    checkInStatus: "no-show",
-    company: "Design Studio",
-    jobTitle: "UX Designer",
-    qrCode: "QR321098765",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: "5",
-    eventId: "3",
-    eventName: "Business Workshop",
-    firstName: "David",
-    lastName: "Wilson",
-    email: "david.wilson@example.com",
-    phone: "+1 (555) 654-3210",
-    ticketType: "Workshop Access",
-    ticketPrice: 150,
-    purchaseDate: "2024-03-01",
-    checkInStatus: "not-checked-in",
-    company: "Consulting Firm",
-    jobTitle: "Business Analyst",
-    dietaryRestrictions: "Gluten-free",
-    qrCode: "QR654321098",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-];
+interface EventTickets {
+  event: {
+    event_id: number;
+    title: string;
+    start_time: string;
+    end_time: string;
+    venue?: string;
+    location?: string;
+    capacity?: number;
+    cover_image_url?: string;
+  };
+  tickets: Attendee[];
+  ticketCount: number;
+  eventRevenue: number;
+  attendedCount: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  tickets: Attendee[];
+  events: any[];
+  ticketsByEvent: EventTickets[];
+  statistics: {
+    totalTicketsSold: number;
+    totalRevenue: number;
+    totalEvents: number;
+    averageTicketPrice: number;
+  };
+}
+
+const mockAttendees: Attendee[] = [];
 
 export default function AttendeesPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [attendees, setAttendees] = useState<Attendee[]>(mockAttendees);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [ticketsByEvent, setTicketsByEvent] = useState<EventTickets[]>([]);
+  const [statistics, setStatistics] = useState({
+    totalTicketsSold: 0,
+    totalRevenue: 0,
+    totalEvents: 0,
+    averageTicketPrice: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [ticketFilter, setTicketFilter] = useState("all");
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailData, setEmailData] = useState({
@@ -186,54 +145,95 @@ export default function AttendeesPage() {
     }
   }, []);
 
-  const isAdmin = user?.role === "admin";
+  useEffect(() => {
+    fetchAttendees();
+  }, []);
 
-  const filteredAttendees = attendees.filter((attendee) => {
-    const matchesSearch =
-      attendee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.company?.toLowerCase().includes(searchTerm.toLowerCase());
+  const fetchAttendees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const matchesEvent =
-      eventFilter === "all" || attendee.eventName === eventFilter;
-    const matchesStatus =
-      statusFilter === "all" || attendee.checkInStatus === statusFilter;
-    const matchesTicket =
-      ticketFilter === "all" || attendee.ticketType === ticketFilter;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
-    return matchesSearch && matchesEvent && matchesStatus && matchesTicket;
-  });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/my-events-tickets`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "checked-in":
-        return "default";
-      case "not-checked-in":
-        return "secondary";
-      case "no-show":
-        return "destructive";
-      default:
-        return "secondary";
+      if (!response.ok) {
+        throw new Error(`Failed to fetch attendees: ${response.statusText}`);
+      }
+
+      const data: ApiResponse = await response.json();
+
+      if (!data.success) {
+        throw new Error("Failed to fetch attendees from server");
+      }
+
+      setAttendees(data.tickets || []);
+      setTicketsByEvent(data.ticketsByEvent || []);
+      setStatistics(
+        data.statistics || {
+          totalTicketsSold: 0,
+          totalRevenue: 0,
+          totalEvents: 0,
+          averageTicketPrice: 0,
+        }
+      );
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch attendees"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "checked-in":
-        return CheckCircle;
-      case "not-checked-in":
-        return Clock;
-      case "no-show":
-        return XCircle;
-      default:
-        return Clock;
-    }
+  const isAdmin = user?.role === "admin";
+
+  const getCheckInStatus = (
+    attended: boolean
+  ): "checked-in" | "not-checked-in" => {
+    return attended ? "checked-in" : "not-checked-in";
+  };
+
+  const filteredAttendees = attendees.filter((attendee) => {
+    const matchesSearch =
+      attendee.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      attendee.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesEvent =
+      eventFilter === "all" || attendee.event?.title === eventFilter;
+
+    const status = getCheckInStatus(attendee.attended);
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
+
+    return matchesSearch && matchesEvent && matchesStatus;
+  });
+
+  const getStatusColor = (attended: boolean) => {
+    return attended ? "default" : "secondary";
+  };
+
+  const getStatusIcon = (attended: boolean) => {
+    return attended ? CheckCircle : Clock;
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedAttendees(filteredAttendees.map((attendee) => attendee.id));
+      setSelectedAttendees(
+        filteredAttendees.map((attendee) => attendee.ticket_id)
+      );
     } else {
       setSelectedAttendees([]);
     }
@@ -247,18 +247,59 @@ export default function AttendeesPage() {
     }
   };
 
-  const handleCheckIn = (attendeeId: string) => {
-    setAttendees(
-      attendees.map((attendee) =>
-        attendee.id === attendeeId
-          ? {
-              ...attendee,
-              checkInStatus: "checked-in" as const,
-              checkInTime: new Date().toISOString(),
-            }
-          : attendee
-      )
-    );
+  const handleCheckIn = async (ticketId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/attend`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to check in attendee: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the local state
+        setAttendees((prev) =>
+          prev.map((attendee) =>
+            attendee.ticket_id === ticketId
+              ? { ...attendee, attended: true }
+              : attendee
+          )
+        );
+
+        // Update ticketsByEvent as well
+        setTicketsByEvent((prev) =>
+          prev.map((eventData) => ({
+            ...eventData,
+            tickets: eventData.tickets.map((ticket) =>
+              ticket.ticket_id === ticketId
+                ? { ...ticket, attended: true }
+                : ticket
+            ),
+            attendedCount: eventData.tickets.filter((t) =>
+              t.ticket_id === ticketId ? true : t.attended
+            ).length,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error checking in attendee:", error);
+      // You could show a toast notification here
+    }
   };
 
   const handleBulkEmail = () => {
@@ -268,24 +309,48 @@ export default function AttendeesPage() {
     setEmailData({ subject: "", message: "" });
   };
 
-  const totalAttendees = attendees.length;
-  const checkedInCount = attendees.filter(
-    (a) => a.checkInStatus === "checked-in"
-  ).length;
-  const noShowCount = attendees.filter(
-    (a) => a.checkInStatus === "no-show"
-  ).length;
-  const totalRevenue = attendees.reduce(
-    (sum, attendee) => sum + attendee.ticketPrice,
-    0
-  );
+  const totalAttendees = statistics.totalTicketsSold;
+  const checkedInCount = attendees.filter((a) => a.attended).length;
+  const totalRevenue = statistics.totalRevenue;
 
   const uniqueEvents = [
-    ...new Set(attendees.map((attendee) => attendee.eventName)),
+    ...new Set(
+      attendees.map((attendee) => attendee.event?.title).filter(Boolean)
+    ),
   ];
-  const uniqueTicketTypes = [
-    ...new Set(attendees.map((attendee) => attendee.ticketType)),
-  ];
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600">Loading attendees...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <XCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={fetchAttendees}>Try Again</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -354,16 +419,15 @@ export default function AttendeesPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">No Shows</CardTitle>
-                <XCircle className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{noShowCount}</div>
+                <div className="text-2xl font-bold">
+                  {totalAttendees - checkedInCount}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {totalAttendees > 0
-                    ? Math.round((noShowCount / totalAttendees) * 100)
-                    : 0}
-                  % no-show rate
+                  Not yet checked in
                 </p>
               </CardContent>
             </Card>
@@ -377,7 +441,7 @@ export default function AttendeesPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalRevenue.toLocaleString()}
+                  ${totalRevenue.toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   From ticket sales
@@ -424,20 +488,6 @@ export default function AttendeesPage() {
                     <SelectItem value="not-checked-in">
                       Not Checked In
                     </SelectItem>
-                    <SelectItem value="no-show">No Show</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={ticketFilter} onValueChange={setTicketFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Ticket Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tickets</SelectItem>
-                    {uniqueTicketTypes.map((ticket) => (
-                      <SelectItem key={ticket} value={ticket}>
-                        {ticket}
-                      </SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -549,19 +599,23 @@ export default function AttendeesPage() {
             <CardContent>
               <div className="space-y-4">
                 {filteredAttendees.map((attendee) => {
-                  const StatusIcon = getStatusIcon(attendee.checkInStatus);
+                  const attended = attendee.attended;
+                  const StatusIcon = getStatusIcon(attended);
+                  const status = getCheckInStatus(attended);
 
                   return (
                     <div
-                      key={attendee.id}
+                      key={attendee.ticket_id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                     >
                       <div className="flex items-center space-x-4">
                         <Checkbox
-                          checked={selectedAttendees.includes(attendee.id)}
+                          checked={selectedAttendees.includes(
+                            attendee.ticket_id
+                          )}
                           onCheckedChange={(checked) =>
                             handleSelectAttendee(
-                              attendee.id,
+                              attendee.ticket_id,
                               checked as boolean
                             )
                           }
@@ -569,107 +623,96 @@ export default function AttendeesPage() {
 
                         <Avatar>
                           <AvatarImage
-                            src={attendee.avatar || "/placeholder.svg"}
-                            alt={attendee.firstName}
+                            src="/placeholder.svg"
+                            alt={attendee.user?.name || "User"}
                           />
                           <AvatarFallback>
-                            {attendee.firstName[0]}
-                            {attendee.lastName[0]}
+                            {attendee.user?.name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("") || "U"}
                           </AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
                             <h3 className="font-semibold text-gray-900">
-                              {attendee.firstName} {attendee.lastName}
+                              {attendee.user?.name || "Unknown User"}
                             </h3>
-                            <Badge
-                              variant={getStatusColor(attendee.checkInStatus)}
-                            >
+                            <Badge variant={getStatusColor(attended)}>
                               <StatusIcon className="h-3 w-3 mr-1" />
-                              {attendee.checkInStatus.replace("-", " ")}
+                              {status.replace("-", " ")}
                             </Badge>
-                            <Badge variant="outline">
-                              {attendee.ticketType}
-                            </Badge>
+                            {attendee.seat_label && (
+                              <Badge variant="outline">
+                                Seat {attendee.seat_label}
+                              </Badge>
+                            )}
                           </div>
 
                           <div className="flex items-center space-x-6 mt-1 text-sm text-gray-600">
                             <div className="flex items-center">
                               <Mail className="h-3 w-3 mr-1" />
-                              {attendee.email}
+                              {attendee.user?.email || "No email"}
                             </div>
-                            <div className="flex items-center">
-                              <Phone className="h-3 w-3 mr-1" />
-                              {attendee.phone}
-                            </div>
+                            {attendee.user?.phone_number && (
+                              <div className="flex items-center">
+                                <Phone className="h-3 w-3 mr-1" />
+                                {attendee.user.phone_number}
+                              </div>
+                            )}
                             <div className="flex items-center">
                               <Calendar className="h-3 w-3 mr-1" />
-                              {attendee.eventName}
+                              {attendee.event?.title || "Unknown Event"}
                             </div>
                           </div>
 
-                          {(attendee.company || attendee.jobTitle) && (
+                          {(attendee.event?.venue ||
+                            attendee.event?.location) && (
                             <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                              {attendee.company && (
-                                <span>{attendee.company}</span>
+                              {attendee.event?.venue && (
+                                <span>{attendee.event.venue}</span>
                               )}
-                              {attendee.jobTitle && (
-                                <span>• {attendee.jobTitle}</span>
+                              {attendee.event?.location && (
+                                <span>• {attendee.event.location}</span>
                               )}
                             </div>
                           )}
 
-                          {attendee.checkInTime && (
-                            <div className="text-sm text-green-600 mt-1">
-                              Checked in:{" "}
-                              {new Date(attendee.checkInTime).toLocaleString()}
-                            </div>
-                          )}
-
-                          {(attendee.dietaryRestrictions ||
-                            attendee.specialRequests) && (
-                            <div className="text-sm text-orange-600 mt-1">
-                              {attendee.dietaryRestrictions &&
-                                `Dietary: ${attendee.dietaryRestrictions}`}
-                              {attendee.specialRequests &&
-                                ` • Special: ${attendee.specialRequests}`}
-                            </div>
-                          )}
+                          <div className="text-sm text-blue-600 mt-1">
+                            Purchased:{" "}
+                            {new Date(attendee.purchase_date).toLocaleString()}
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-2">
                         <div className="text-right mr-4">
                           <div className="font-semibold">
-                            ${attendee.ticketPrice}
+                            ${attendee.price.toFixed(2)}
                           </div>
                           <div className="text-sm text-gray-600">
-                            Purchased:{" "}
-                            {new Date(
-                              attendee.purchaseDate
-                            ).toLocaleDateString()}
+                            {attendee.payment?.payment_method || "Card"}
                           </div>
                         </div>
 
                         <div className="flex space-x-1">
-                          {attendee.checkInStatus === "not-checked-in" && (
+                          {!attended && (
                             <Button
                               size="sm"
-                              onClick={() => handleCheckIn(attendee.id)}
+                              onClick={() => handleCheckIn(attendee.ticket_id)}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Check In
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost">
-                            <QrCode className="h-4 w-4" />
-                          </Button>
+                          {attendee.qr_code && (
+                            <Button size="sm" variant="ghost">
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost">
                             <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <Edit className="h-4 w-4" />
                           </Button>
                           <Button size="sm" variant="ghost">
                             <Mail className="h-4 w-4" />
@@ -691,8 +734,7 @@ export default function AttendeesPage() {
                   <p className="text-gray-600">
                     {searchTerm ||
                     eventFilter !== "all" ||
-                    statusFilter !== "all" ||
-                    ticketFilter !== "all"
+                    statusFilter !== "all"
                       ? "Try adjusting your filters to see more attendees."
                       : "Attendees will appear here once tickets are purchased."}
                   </p>
