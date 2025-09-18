@@ -92,7 +92,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">EventPro</h1>
+            <h1 className="text-2xl font-bold text-gray-900">EventBn</h1>
             {user && (
               <div className="mt-2">
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
