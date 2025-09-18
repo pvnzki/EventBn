@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
+import '../services/seat_lock_service.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String eventId;
@@ -37,6 +38,60 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  final SeatLockService _seatLockService = SeatLockService();
+  bool _locksExtended = false;
+  bool _paymentCompleted = false;
+
+  @override
+  void dispose() {
+    // Release locks if user leaves payment screen without completing
+    if (!_paymentCompleted) {
+      _releaseSeatLocks();
+    }
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _extendSeatLocks();
+  }
+
+  /// Extend seat locks when payment screen starts
+  Future<void> _extendSeatLocks() async {
+    if (_locksExtended) return;
+    
+    try {
+      for (final seatId in widget.selectedSeats) {
+        await _seatLockService.extendSeatLock(
+          eventId: widget.eventId,
+          seatId: seatId,
+        );
+      }
+      _locksExtended = true;
+      print('✅ Seat locks extended for payment process');
+    } catch (e) {
+      print('❌ Failed to extend seat locks: $e');
+      // Continue with payment anyway - locks might still be valid
+    }
+  }
+
+  /// Release seat locks after successful payment
+  Future<void> _releaseSeatLocks() async {
+    try {
+      for (final seatId in widget.selectedSeats) {
+        await _seatLockService.releaseSeatLock(
+          eventId: widget.eventId,
+          seatId: seatId,
+        );
+      }
+      print('✅ Seat locks released after successful payment');
+    } catch (e) {
+      print('❌ Failed to release seat locks: $e');
+      // Don't fail the payment process because of this
+    }
+  }
+
   void startSandboxPayment() {
     // Calculate total price from selected seat data
     double totalPrice = 0.0;
@@ -169,7 +224,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
 
       if (response.statusCode == 201) {
-        // Payment record saved successfully
+        // Payment record saved successfully - now release seat locks
+        _paymentCompleted = true;
+        await _releaseSeatLocks();
+        
         if (mounted) {
           // Show success dialog
           showDialog(
