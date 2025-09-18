@@ -12,7 +12,7 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
@@ -62,9 +62,9 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Profile Card - Horizontal Layout
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -89,21 +89,22 @@ class ProfileScreen extends StatelessWidget {
                         // Profile Picture
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-                          backgroundImage: user?.profileImageUrl != null 
-                            ? NetworkImage(user!.profileImageUrl!) 
-                            : null,
+                          backgroundColor:
+                              colorScheme.primary.withValues(alpha: 0.1),
+                          backgroundImage: user?.profileImageUrl != null
+                              ? NetworkImage(user!.profileImageUrl!)
+                              : null,
                           child: user?.profileImageUrl == null
-                            ? Icon(
-                                Icons.person,
-                                size: 28,
-                                color: colorScheme.onSurfaceVariant,
-                              )
-                            : null,
+                              ? Icon(
+                                  Icons.person,
+                                  size: 28,
+                                  color: colorScheme.onSurfaceVariant,
+                                )
+                              : null,
                         ),
-                        
+
                         const SizedBox(width: 16),
-                        
+
                         // User Info Section
                         Expanded(
                           child: Column(
@@ -130,7 +131,7 @@ class ProfileScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        
+
                         // Edit Profile Button (Text only)
                         GestureDetector(
                           onTap: () {
@@ -148,12 +149,12 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Settings Sections
                   _buildSettingsSection(
-                    context, 
+                    context,
                     'Account details',
                     [
                       _SettingItem(
@@ -168,9 +169,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   _buildSettingsSection(
-                    context, 
+                    context,
                     'Target',
                     [
                       _SettingItem(
@@ -185,9 +186,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   _buildSettingsSection(
-                    context, 
+                    context,
                     'General',
                     [
                       _SettingItem(
@@ -204,18 +205,21 @@ class ProfileScreen extends StatelessWidget {
                       Consumer<ThemeProvider>(
                         builder: (context, themeProvider, child) {
                           return _SettingItem(
-                            icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                            icon: isDark
+                                ? Icons.dark_mode_outlined
+                                : Icons.light_mode_outlined,
                             title: 'Light/Dark Mode',
                             trailing: themeProvider.currentThemeName,
-                            onTap: () => _showThemeDialog(context, themeProvider),
+                            onTap: () =>
+                                _showThemeDialog(context, themeProvider),
                           );
                         },
                       ),
                     ],
                   ),
-                  
+
                   _buildSettingsSection(
-                    context, 
+                    context,
                     'Support',
                     [
                       _SettingItem(
@@ -225,7 +229,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   // Logout Button
                   Container(
                     margin: const EdgeInsets.fromLTRB(20, 24, 20, 0),
@@ -250,7 +254,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Bottom spacing to prevent hiding by navbar
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
                 ],
@@ -262,10 +266,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context, String title, List<Widget> items) {
+  Widget _buildSettingsSection(
+      BuildContext context, String title, List<Widget> items) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -321,7 +326,7 @@ class ProfileScreen extends StatelessWidget {
 
   void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     showDialog(
       context: context,
       builder: (context) => Theme(
@@ -338,7 +343,8 @@ class ProfileScreen extends StatelessWidget {
         child: AlertDialog(
           backgroundColor: colorScheme.surface,
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             'Log Out',
             style: TextStyle(
@@ -376,7 +382,7 @@ class ProfileScreen extends StatelessWidget {
                 }
               },
               child: Text(
-                'Log Out', 
+                'Log Out',
                 style: TextStyle(
                   color: colorScheme.error,
                   fontWeight: FontWeight.w600,
@@ -391,7 +397,7 @@ class ProfileScreen extends StatelessWidget {
 
   void _showThemeDialog(BuildContext context, ThemeProvider themeProvider) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -409,7 +415,8 @@ class ProfileScreen extends StatelessWidget {
           child: AlertDialog(
             backgroundColor: colorScheme.surface,
             surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(
               'Choose Theme',
               style: TextStyle(
@@ -488,7 +495,9 @@ class ProfileScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? colorScheme.primaryContainer : null,
           borderRadius: BorderRadius.circular(12),
-          border: isSelected ? Border.all(color: colorScheme.primary, width: 0.5) : null,
+          border: isSelected
+              ? Border.all(color: colorScheme.primary, width: 0.5)
+              : null,
         ),
         child: Row(
           children: [
@@ -507,14 +516,18 @@ class ProfileScreen extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: isSelected ? colorScheme.primary.withValues(alpha: 0.7) : colorScheme.onSurfaceVariant,
+                      color: isSelected
+                          ? colorScheme.primary.withValues(alpha: 0.7)
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],

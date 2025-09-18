@@ -19,7 +19,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Fetch tickets when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TicketProvider>().fetchUserTickets();
@@ -123,7 +123,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Colors.white,
-                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
+                unselectedLabelColor:
+                    isDark ? Colors.grey[400] : Colors.grey[600],
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -195,9 +196,16 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                   return TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildTicketsList(context, ticketProvider.upcomingTickets, 'upcoming'),
-                      _buildTicketsList(context, _getCompletedTickets(ticketProvider.tickets), 'completed'),
-                      _buildTicketsList(context, _getCancelledTickets(ticketProvider.tickets), 'cancelled'),
+                      _buildTicketsList(
+                          context, ticketProvider.upcomingTickets, 'upcoming'),
+                      _buildTicketsList(
+                          context,
+                          _getCompletedTickets(ticketProvider.tickets),
+                          'completed'),
+                      _buildTicketsList(
+                          context,
+                          _getCancelledTickets(ticketProvider.tickets),
+                          'cancelled'),
                     ],
                   );
                 },
@@ -210,20 +218,23 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   }
 
   List<Ticket> _getCompletedTickets(List<Ticket> tickets) {
-    return tickets.where((ticket) => 
-      ticket.status == TicketStatus.used || 
-      (ticket.isPast && ticket.status == TicketStatus.active)
-    ).toList();
+    return tickets
+        .where((ticket) =>
+            ticket.status == TicketStatus.used ||
+            (ticket.isPast && ticket.status == TicketStatus.active))
+        .toList();
   }
 
   List<Ticket> _getCancelledTickets(List<Ticket> tickets) {
-    return tickets.where((ticket) => 
-      ticket.status == TicketStatus.cancelled || 
-      ticket.status == TicketStatus.refunded
-    ).toList();
+    return tickets
+        .where((ticket) =>
+            ticket.status == TicketStatus.cancelled ||
+            ticket.status == TicketStatus.refunded)
+        .toList();
   }
 
-  Widget _buildTicketsList(BuildContext context, List<Ticket> tickets, String tabType) {
+  Widget _buildTicketsList(
+      BuildContext context, List<Ticket> tickets, String tabType) {
     final theme = Theme.of(context);
 
     if (tickets.isEmpty) {
@@ -285,7 +296,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     }
   }
 
-  Widget _buildModernTicketCard(BuildContext context, Ticket ticket, String tabType) {
+  Widget _buildModernTicketCard(
+      BuildContext context, Ticket ticket, String tabType) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -310,18 +322,20 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
           Container(
             height: 120,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               color: isDark ? Colors.grey[800] : Colors.grey[200],
-              image: ticket.eventImageUrl.isNotEmpty 
-                ? DecorationImage(
-                    image: NetworkImage(ticket.eventImageUrl),
-                    fit: BoxFit.cover,
-                  )
-                : null,
+              image: ticket.eventImageUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(ticket.eventImageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -401,7 +415,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                         ticket.venue.isNotEmpty ? ticket.venue : 'Venue TBA',
                         style: TextStyle(
                           fontSize: 14,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -459,7 +474,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, Ticket ticket, String tabType, ThemeData theme) {
+  Widget _buildActionButtons(
+      BuildContext context, Ticket ticket, String tabType, ThemeData theme) {
     switch (tabType) {
       case 'upcoming':
         return Row(
@@ -572,20 +588,33 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   String _formatEventDate(DateTime date) {
     final weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+
     final weekday = weekdays[date.weekday % 7];
     final month = months[date.month - 1];
     final day = date.day;
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
-    
+
     return '$weekday, $month $day • $hour:$minute PM';
   }
 
   void _showCancelDialog(BuildContext context, Ticket ticket) {
     final theme = Theme.of(context);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -652,7 +681,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: [
               IconButton(
@@ -673,17 +703,19 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               children: [
                 const Text('Please select the reason for cancellation:'),
                 const SizedBox(height: 16),
-                ...cancelReasons.map((reason) => RadioListTile<String>(
-                  title: Text(reason),
-                  value: reason,
-                  groupValue: selectedReason,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedReason = value;
-                    });
-                  },
-                  activeColor: theme.primaryColor,
-                )).toList(),
+                ...cancelReasons
+                    .map((reason) => RadioListTile<String>(
+                          title: Text(reason),
+                          value: reason,
+                          groupValue: selectedReason,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedReason = value;
+                            });
+                          },
+                          activeColor: theme.primaryColor,
+                        ))
+                    .toList(),
                 const SizedBox(height: 16),
                 const Text(
                   'Others',
@@ -714,10 +746,12 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: selectedReason != null ? () {
-                  Navigator.of(context).pop();
-                  _showCancelSuccessDialog(context);
-                } : null,
+                onPressed: selectedReason != null
+                    ? () {
+                        Navigator.of(context).pop();
+                        _showCancelSuccessDialog(context);
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
@@ -740,7 +774,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showCancelSuccessDialog(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -808,7 +842,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   void _showReviewDialog(BuildContext context, Ticket ticket) {
     final theme = Theme.of(context);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

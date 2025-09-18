@@ -43,7 +43,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
       final eventService = EventService();
       final event = await eventService.getEventById(widget.eventId);
-      
+
       setState(() {
         _event = event;
         _isLoading = false;
@@ -58,25 +58,27 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   double get _subtotal {
     double total = 0.0;
-    final seatData = widget.bookingData['selectedSeatData'] as List<Map<String, dynamic>>? ?? [];
+    final seatData =
+        widget.bookingData['selectedSeatData'] as List<Map<String, dynamic>>? ??
+            [];
     for (var seat in seatData) {
       total += (seat['price']?.toDouble() ?? 0.0);
     }
-    
+
     // If no seat data, calculate from event pricing
     if (total == 0.0 && _event != null && _event!.ticketTypes.isNotEmpty) {
       final seatCount = widget.bookingData['seatCount'] ?? 1;
       final ticketType = widget.bookingData['ticketType'] ?? 'General';
-      
+
       // Find the matching ticket type or use the first one
       final matchingTicketType = _event!.ticketTypes.firstWhere(
         (type) => type.name.toLowerCase() == ticketType.toLowerCase(),
         orElse: () => _event!.ticketTypes.first,
       );
-      
+
       total = matchingTicketType.price * seatCount;
     }
-    
+
     return total;
   }
 
@@ -123,14 +125,17 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     Map paymentObject = {
       "sandbox": true, // true if using Sandbox Merchant ID
       "merchant_id": "1231652", // PayHere official sandbox merchant ID
-      "merchant_secret": "MzM5NDQxMTAzNzM1NzQyODUwOTk0MTMyNjI1MjQxMTI0NDc2Nzk0NA==", // PayHere official sandbox secret
+      "merchant_secret":
+          "MzM5NDQxMTAzNzM1NzQyODUwOTk0MTMyNjI1MjQxMTI0NDc2Nzk0NA==", // PayHere official sandbox secret
       "notify_url": "https://sandbox.payhere.lk/notify",
       "order_id": "ItemNo12345-${DateTime.now().millisecondsSinceEpoch}",
-      "items": "${_event?.title ?? 'Event Ticket'} - ${widget.bookingData['seatCount'] ?? 1} tickets",
+      "items":
+          "${_event?.title ?? 'Event Ticket'} - ${widget.bookingData['seatCount'] ?? 1} tickets",
       "amount": totalPrice, // Pass as double, not string
       "currency": "LKR",
       "first_name": widget.bookingData['name']?.split(' ').first ?? '',
-      "last_name": widget.bookingData['name']?.split(' ').skip(1).join(' ') ?? '',
+      "last_name":
+          widget.bookingData['name']?.split(' ').skip(1).join(' ') ?? '',
       "email": widget.bookingData['email'] ?? '',
       "phone": widget.bookingData['phone'] ?? '',
       "address": "No.1, Galle Road",
@@ -181,12 +186,13 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     try {
       // Save payment to backend and get the actual payment ID
       final actualPaymentId = await _savePaymentToBackend(paymentId);
-      
+
       // Navigate to success screen
       if (mounted) {
         context.go('/booking/payment-success', extra: {
           ...widget.bookingData,
-          'paymentId': actualPaymentId, // Use the actual payment ID from backend
+          'paymentId':
+              actualPaymentId, // Use the actual payment ID from backend
           'eventData': _event?.toJson(),
           'total': _total,
         });
@@ -195,7 +201,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Payment successful but failed to save: ${e.toString()}'),
+            content:
+                Text('Payment successful but failed to save: ${e.toString()}'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -235,21 +242,24 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
     try {
       final authService = AuthService();
       final token = await authService.getStoredToken();
-      
+
       // Ensure selectedSeats is properly formatted
       List<String> selectedSeats = [];
       if (widget.bookingData['selectedSeats'] != null) {
         selectedSeats = List<String>.from(widget.bookingData['selectedSeats']);
       }
-      
+
       // Validate required fields
       if (widget.eventId.isEmpty || _total <= 0 || selectedSeats.isEmpty) {
-        throw Exception('Missing required fields: eventId, amount, or selectedSeats');
+        throw Exception(
+            'Missing required fields: eventId, amount, or selectedSeats');
       }
-      
+
       // Prepare the payment data with correct field names (matching payment_screen.dart)
-      final seatData = widget.bookingData['selectedSeatData'] as List<Map<String, dynamic>>? ?? [];
-      
+      final seatData = widget.bookingData['selectedSeatData']
+              as List<Map<String, dynamic>>? ??
+          [];
+
       final paymentData = {
         'event_id': int.parse(widget.eventId), // Use underscore format
         'payment_id': paymentId, // Use underscore format
@@ -265,10 +275,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         'seatCount': widget.bookingData['seatCount'] ?? 1,
         'ticketType': widget.bookingData['ticketType'] ?? 'General',
       };
-      
+
       // Debug log the payment data
       print('Sending payment data to backend: ${jsonEncode(paymentData)}');
-      
+
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/payments'),
         headers: {
@@ -283,13 +293,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         print('❌ Response body: ${response.body}');
         throw Exception('Failed to save payment: ${response.body}');
       }
-      
+
       print('✅ Payment saved successfully to backend');
       final responseData = jsonDecode(response.body);
       print('✅ Backend response: $responseData');
-      
+
       // Extract the actual payment ID from the backend response
-      final actualPaymentId = responseData['payment']?['payment_id'] ?? paymentId;
+      final actualPaymentId =
+          responseData['payment']?['payment_id'] ?? paymentId;
       return actualPaymentId;
     } catch (e) {
       rethrow;
@@ -299,7 +310,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -325,7 +336,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
+                      Icon(Icons.error_outline,
+                          size: 64, color: theme.colorScheme.error),
                       const SizedBox(height: 16),
                       Text(
                         'Error loading event data',
@@ -333,8 +345,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _error!, 
-                        style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                        _error!,
+                        style: TextStyle(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.6)),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
@@ -352,15 +366,15 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       // Event Card
                       _buildEventCard(),
                       const SizedBox(height: 24),
-                      
+
                       // Contact Information
                       _buildContactInfo(),
                       const SizedBox(height: 24),
-                      
+
                       // Pricing Breakdown
                       _buildPricingBreakdown(),
                       const SizedBox(height: 24),
-                      
+
                       // Payment Method
                       _buildPaymentMethod(),
                       const SizedBox(height: 32),
@@ -373,7 +387,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildEventCard() {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -406,7 +420,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                     ? LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary
+                        ],
                       )
                     : null,
               ),
@@ -421,7 +438,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   : null,
             ),
             const SizedBox(width: 16),
-            
+
             // Event Details
             Expanded(
               child: Column(
@@ -439,7 +456,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _event != null 
+                    _event != null
                         ? '${_formatDateTime(_event!.startDateTime)} - ${_formatDateTime(_event!.endDateTime)}'
                         : widget.bookingData['eventDate'] ?? 'Date TBD',
                     style: TextStyle(
@@ -466,22 +483,32 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   String _formatDateTime(DateTime dateTime) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
+
     final day = days[dateTime.weekday - 1];
     final month = months[dateTime.month - 1];
     final hour = dateTime.hour.toString().padLeft(2, '0');
     final minute = dateTime.minute.toString().padLeft(2, '0');
-    
+
     return '$day, $month ${dateTime.day} • $hour:$minute';
   }
 
   Widget _buildContactInfo() {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -498,11 +525,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildInfoRow('Full Name', widget.bookingData['name'] ?? 'Andrew Ainsley'),
+            _buildInfoRow(
+                'Full Name', widget.bookingData['name'] ?? 'Andrew Ainsley'),
             const SizedBox(height: 16),
-            _buildInfoRow('Phone', widget.bookingData['phone'] ?? '+1 111 467 378 399'),
+            _buildInfoRow(
+                'Phone', widget.bookingData['phone'] ?? '+1 111 467 378 399'),
             const SizedBox(height: 16),
-            _buildInfoRow('Email', widget.bookingData['email'] ?? 'andrew_ainsley@yo...com'),
+            _buildInfoRow('Email',
+                widget.bookingData['email'] ?? 'andrew_ainsley@yo...com'),
           ],
         ),
       ),
@@ -511,7 +541,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildInfoRow(String label, String value) {
     final theme = Theme.of(context);
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -537,9 +567,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildPricingBreakdown() {
     final theme = Theme.of(context);
-    final selectedSeats = (widget.bookingData['selectedSeats'] as List<String>?) ?? <String>[];
+    final selectedSeats =
+        (widget.bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -556,7 +587,9 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildPriceRow('$seatCount Seats (${widget.bookingData['ticketType'] ?? 'Economy'})', 'LKR ${_subtotal.toStringAsFixed(2)}'),
+            _buildPriceRow(
+                '$seatCount Seats (${widget.bookingData['ticketType'] ?? 'Economy'})',
+                'LKR ${_subtotal.toStringAsFixed(2)}'),
             const SizedBox(height: 16),
             _buildPriceRow('Tax', 'LKR ${_tax.toStringAsFixed(2)}'),
             const SizedBox(height: 16),
@@ -575,7 +608,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildPriceRow(String label, String amount, {bool isTotal = false}) {
     final theme = Theme.of(context);
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -583,7 +616,9 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
           label,
           style: TextStyle(
             fontSize: isTotal ? 16 : 14,
-            color: isTotal ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
+            color: isTotal
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
           ),
         ),
@@ -601,7 +636,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildPaymentMethod() {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -665,7 +700,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
 
   Widget _buildBottomBar() {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -700,7 +735,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.onPrimary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            theme.colorScheme.onPrimary),
                       ),
                     ),
                     SizedBox(width: 12),

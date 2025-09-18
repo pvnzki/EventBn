@@ -12,7 +12,7 @@ class TicketService {
   Future<Map<String, dynamic>> getUserTickets() async {
     try {
       final token = await _authService.getStoredToken();
-      
+
       if (token == null) {
         return {
           'success': false,
@@ -30,10 +30,10 @@ class TicketService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['success'] == true) {
           final List<dynamic> ticketsData = data['tickets'] ?? [];
-          
+
           // Convert the ticket data to Ticket objects
           final List<Ticket> tickets = ticketsData.map((ticketData) {
             return Ticket(
@@ -44,17 +44,19 @@ class TicketService {
               userId: ticketData['user_id']?.toString() ?? '',
               ticketTypeId: ticketData['seat_id']?.toString() ?? '',
               ticketTypeName: ticketData['seat_label'] ?? 'General',
-              price: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+              price: (ticketData['price']?.toDouble() ?? 0.0) /
+                  100, // Convert from cents to LKR
               quantity: 1,
-              totalAmount: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+              totalAmount: (ticketData['price']?.toDouble() ?? 0.0) /
+                  100, // Convert from cents to LKR
               qrCode: ticketData['qr_code'] ?? '',
-              status: ticketData['attended'] == true 
-                  ? TicketStatus.used 
+              status: ticketData['attended'] == true
+                  ? TicketStatus.used
                   : TicketStatus.active,
-              purchaseDate: ticketData['purchase_date'] != null 
+              purchaseDate: ticketData['purchase_date'] != null
                   ? DateTime.parse(ticketData['purchase_date'])
                   : DateTime.now(),
-              eventStartDate: ticketData['event']?['start_time'] != null 
+              eventStartDate: ticketData['event']?['start_time'] != null
                   ? DateTime.parse(ticketData['event']['start_time'])
                   : DateTime.now(),
               venue: ticketData['event']?['venue'] ?? '',
@@ -90,7 +92,7 @@ class TicketService {
   Future<Map<String, dynamic>> getTicketByQR(String qrCode) async {
     try {
       final token = await _authService.getStoredToken();
-      
+
       if (token == null) {
         return {
           'success': false,
@@ -127,7 +129,7 @@ class TicketService {
   Future<Map<String, dynamic>> getTicketDetails(String ticketId) async {
     try {
       final token = await _authService.getStoredToken();
-      
+
       if (token == null) {
         return {
           'success': false,
@@ -145,10 +147,10 @@ class TicketService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['success'] == true) {
           final ticketData = data['ticket'];
-          
+
           // Convert to Ticket object
           final ticket = Ticket(
             id: ticketData['ticket_id'] ?? '',
@@ -158,17 +160,19 @@ class TicketService {
             userId: ticketData['user_id']?.toString() ?? '',
             ticketTypeId: ticketData['seat_id']?.toString() ?? '',
             ticketTypeName: ticketData['seat_label'] ?? 'General',
-            price: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            price: (ticketData['price']?.toDouble() ?? 0.0) /
+                100, // Convert from cents to LKR
             quantity: 1,
-            totalAmount: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            totalAmount: (ticketData['price']?.toDouble() ?? 0.0) /
+                100, // Convert from cents to LKR
             qrCode: ticketData['qr_code'] ?? '',
-            status: ticketData['attended'] == true 
-                ? TicketStatus.used 
+            status: ticketData['attended'] == true
+                ? TicketStatus.used
                 : TicketStatus.active,
-            purchaseDate: ticketData['purchase_date'] != null 
+            purchaseDate: ticketData['purchase_date'] != null
                 ? DateTime.parse(ticketData['purchase_date'])
                 : DateTime.now(),
-            eventStartDate: ticketData['event']?['start_time'] != null 
+            eventStartDate: ticketData['event']?['start_time'] != null
                 ? DateTime.parse(ticketData['event']['start_time'])
                 : DateTime.now(),
             venue: ticketData['event']?['venue'] ?? '',
@@ -194,7 +198,8 @@ class TicketService {
       } else {
         return {
           'success': false,
-          'message': 'Failed to fetch ticket details. Status: ${response.statusCode}',
+          'message':
+              'Failed to fetch ticket details. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -209,7 +214,7 @@ class TicketService {
   Future<Map<String, dynamic>> markTicketAttended(String ticketId) async {
     try {
       final token = await _authService.getStoredToken();
-      
+
       if (token == null) {
         return {
           'success': false,
@@ -243,10 +248,11 @@ class TicketService {
   }
 
   // Get individual ticket details by payment ID
-  Future<Map<String, dynamic>> getTicketDetailsByPaymentId(String paymentId) async {
+  Future<Map<String, dynamic>> getTicketDetailsByPaymentId(
+      String paymentId) async {
     try {
       final token = await _authService.getStoredToken();
-      
+
       if (token == null) {
         return {
           'success': false,
@@ -264,10 +270,10 @@ class TicketService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['success'] == true) {
           final ticketData = data['ticket'];
-          
+
           // Convert to Ticket object
           final ticket = Ticket(
             id: ticketData['ticket_id'] ?? '',
@@ -277,17 +283,19 @@ class TicketService {
             userId: ticketData['user_id']?.toString() ?? '',
             ticketTypeId: ticketData['seat_id']?.toString() ?? '',
             ticketTypeName: ticketData['seat_label'] ?? 'General',
-            price: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            price: (ticketData['price']?.toDouble() ?? 0.0) /
+                100, // Convert from cents to LKR
             quantity: 1,
-            totalAmount: (ticketData['price']?.toDouble() ?? 0.0) / 100, // Convert from cents to LKR
+            totalAmount: (ticketData['price']?.toDouble() ?? 0.0) /
+                100, // Convert from cents to LKR
             qrCode: ticketData['qr_code'] ?? '',
-            status: ticketData['attended'] == true 
-                ? TicketStatus.used 
+            status: ticketData['attended'] == true
+                ? TicketStatus.used
                 : TicketStatus.active,
-            purchaseDate: ticketData['purchase_date'] != null 
+            purchaseDate: ticketData['purchase_date'] != null
                 ? DateTime.parse(ticketData['purchase_date'])
                 : DateTime.now(),
-            eventStartDate: ticketData['event']?['start_time'] != null 
+            eventStartDate: ticketData['event']?['start_time'] != null
                 ? DateTime.parse(ticketData['event']['start_time'])
                 : DateTime.now(),
             venue: ticketData['event']?['venue'] ?? '',
@@ -313,7 +321,8 @@ class TicketService {
       } else {
         return {
           'success': false,
-          'message': 'Failed to fetch ticket details. Status: ${response.statusCode}',
+          'message':
+              'Failed to fetch ticket details. Status: ${response.statusCode}',
         };
       }
     } catch (e) {

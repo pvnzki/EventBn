@@ -49,7 +49,8 @@ class _ETicketScreenState extends State<ETicketScreen> {
 
       // If that fails, try to get ticket by payment ID
       if (result['success'] != true) {
-        result = await _ticketService.getTicketDetailsByPaymentId(widget.ticketId);
+        result =
+            await _ticketService.getTicketDetailsByPaymentId(widget.ticketId);
       }
 
       if (result['success'] == true) {
@@ -76,7 +77,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -127,7 +128,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
 
   Widget _buildLoadingState(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +149,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
 
   Widget _buildErrorState(BuildContext context, [String? message]) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -189,7 +190,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildTicketContent(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return RefreshIndicator(
       onRefresh: _fetchTicketDetails,
       color: theme.colorScheme.primary,
@@ -199,7 +200,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
           left: 24,
           right: 24,
           top: 24,
-          bottom: 24 + MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight,
+          bottom: 24 +
+              MediaQuery.of(context).padding.bottom +
+              kBottomNavigationBarHeight,
         ),
         child: Column(
           children: [
@@ -210,7 +213,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: isDark 
+                    color: isDark
                         ? Colors.black.withValues(alpha: 0.3)
                         : theme.colorScheme.shadow.withValues(alpha: 0.1),
                     blurRadius: 20,
@@ -226,21 +229,21 @@ class _ETicketScreenState extends State<ETicketScreen> {
                 children: [
                   // Ticket Header
                   _buildTicketHeader(context),
-                  
+
                   // Dashed Separator
                   _buildDashedSeparator(context),
-                  
+
                   // Ticket Body
                   _buildTicketBody(context),
-                  
+
                   // QR Code Section
                   _buildQRCodeSection(context),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Action Buttons
             _buildActionButtons(context),
           ],
@@ -252,7 +255,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildTicketHeader(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       height: 200,
       decoration: BoxDecoration(
@@ -314,7 +317,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Event Info
                 Expanded(
                   child: Column(
@@ -332,7 +335,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _ticket!.venue.isNotEmpty ? _ticket!.venue : 'Venue TBA',
+                        _ticket!.venue.isNotEmpty
+                            ? _ticket!.venue
+                            : 'Venue TBA',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.8),
@@ -343,14 +348,14 @@ class _ETicketScreenState extends State<ETicketScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Status Badge
                 _buildStatusBadge(),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Date and Time
             Row(
               children: [
@@ -377,7 +382,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildStatusBadge() {
     Color backgroundColor;
     String text;
-    
+
     switch (_ticket!.status) {
       case TicketStatus.active:
         backgroundColor = Colors.green;
@@ -441,7 +446,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
 
   Widget _buildDashedSeparator(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -451,8 +456,8 @@ class _ETicketScreenState extends State<ETicketScreen> {
           (index) => Expanded(
             child: Container(
               height: 1,
-              color: index % 2 == 0 
-                  ? theme.colorScheme.outline.withValues(alpha: 0.3) 
+              color: index % 2 == 0
+                  ? theme.colorScheme.outline.withValues(alpha: 0.3)
                   : Colors.transparent,
             ),
           ),
@@ -464,7 +469,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildTicketBody(BuildContext context) {
     final user = _rawTicketData?['user'];
     final payment = _rawTicketData?['payment'];
-    
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -491,9 +496,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Ticket Details
           Row(
             children: [
@@ -516,9 +521,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Seat and Location
           Row(
             children: [
@@ -541,9 +546,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Amount and Purchase Date
           Row(
             children: [
@@ -574,7 +579,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildTicketInfo(BuildContext context, String label, String value) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -605,11 +610,11 @@ class _ETicketScreenState extends State<ETicketScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? colorScheme.surfaceContainerHigh
             : colorScheme.surfaceContainerLowest,
         borderRadius: const BorderRadius.only(
@@ -628,14 +633,15 @@ class _ETicketScreenState extends State<ETicketScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // QR Code with better theme awareness
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white, // Always white background for QR code readability
+              color: Colors
+                  .white, // Always white background for QR code readability
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: colorScheme.outline.withValues(alpha: 0.2),
@@ -643,8 +649,8 @@ class _ETicketScreenState extends State<ETicketScreen> {
               ),
             ),
             child: QrImageView(
-              data: _ticket!.qrCode.isNotEmpty 
-                  ? _ticket!.qrCode 
+              data: _ticket!.qrCode.isNotEmpty
+                  ? _ticket!.qrCode
                   : 'TICKET:${_ticket!.id}:${_ticket!.eventId}:${_ticket!.userId}',
               version: QrVersions.auto,
               size: 160,
@@ -652,9 +658,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
               foregroundColor: Colors.black,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Ticket ID
           GestureDetector(
             onTap: () {
@@ -708,7 +714,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
   Widget _buildActionButtons(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Column(
       children: [
         // Add to Calendar Button
@@ -745,9 +751,9 @@ class _ETicketScreenState extends State<ETicketScreen> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Go Home Button
         SizedBox(
           width: double.infinity,
