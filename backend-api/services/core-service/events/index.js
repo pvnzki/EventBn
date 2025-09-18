@@ -142,28 +142,44 @@ module.exports = {
 
   // Create new event
   async createEvent(data) {
+
     try {
+      // Debug log incoming data
+      console.log("[createEvent] seat_map type:", typeof data.seat_map, data.seat_map);
+      console.log("[createEvent] ticket_types type:", typeof data.ticket_types, data.ticket_types);
+
       // Handle seat map validation and processing
       let seatMapData = null;
-      
       if (data.seat_map) {
-        // If seat_map is provided, validate it
         if (typeof data.seat_map === 'string') {
           try {
             seatMapData = JSON.parse(data.seat_map);
           } catch (parseError) {
             throw new Error("Invalid JSON format for seat_map");
           }
-        } else if (typeof data.seat_map === 'object') {
+        } else if (Array.isArray(data.seat_map) || typeof data.seat_map === 'object') {
           seatMapData = data.seat_map;
         } else {
           throw new Error("seat_map must be a JSON object or valid JSON string");
         }
-        
-        // Validate the seat map structure
         validateSeatMap(seatMapData);
       }
-      // If no seat_map provided, it will remain null (optional)
+
+      // Handle ticket_types validation and processing
+      let ticketTypesData = null;
+      if (data.ticket_types) {
+        if (typeof data.ticket_types === 'string') {
+          try {
+            ticketTypesData = JSON.parse(data.ticket_types);
+          } catch (parseError) {
+            throw new Error("Invalid JSON format for ticket_types");
+          }
+        } else if (Array.isArray(data.ticket_types) || typeof data.ticket_types === 'object') {
+          ticketTypesData = data.ticket_types;
+        } else {
+          throw new Error("ticket_types must be an array or valid JSON string");
+        }
+      }
 
       const eventData = {
         organization_id: data.organization_id ? parseInt(data.organization_id) : null,
@@ -180,13 +196,16 @@ module.exports = {
         video_url: data.video_url || null,
         status: data.status || "ACTIVE",
       };
-
-      // Only add seat_map if it was provided and validated
       if (seatMapData) {
         eventData.seat_map = seatMapData;
       }
+      if (ticketTypesData) {
+        eventData.ticket_types = ticketTypesData;
+      }
 
       return await prisma.event.create({
+        // Extra logging to confirm structure before Prisma call
+      // Logging and validation temporarily removed due to syntax issues
         data: eventData,
         include: {
           organization: {
