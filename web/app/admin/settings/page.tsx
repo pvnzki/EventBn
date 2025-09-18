@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -12,23 +12,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Shield, Globe, Camera, User } from "lucide-react";
+import { Shield, Camera, User } from "lucide-react";
 
 interface UserType {
-  role: "admin" | "organizer";
+  user_id: number;
   name: string;
   email: string;
+  phone_number: string | null;
+  profile_picture: string | null;
+  role: "ADMIN" | "ORGANIZER";
+  is_active: boolean;
+  is_email_verified: boolean;
+  created_at: string;
 }
 
 export default function SettingsPage() {
@@ -37,63 +34,134 @@ export default function SettingsPage() {
     name: "",
     email: "",
     phone: "",
-    bio: "",
-    company: "",
-    website: "",
-    location: "",
     avatar: "/placeholder.svg?height=100&width=100",
   });
-
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    eventReminders: true,
-    marketingEmails: false,
-    weeklyReports: true,
-  });
-
-  const [preferences, setPreferences] = useState({
-    timezone: "UTC-5",
-    language: "en",
-    currency: "USD",
-    dateFormat: "MM/DD/YYYY",
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setProfileData((prev) => ({
-        ...prev,
-        name: parsedUser.name,
-        email: parsedUser.email,
-      }));
-    }
+    const fetchUserData = async () => {
+      try {
+        const userData = localStorage.getItem("user");
+        if (!userData) {
+          setError("No user data found in local storage");
+          setLoading(false);
+          return;
+        }
+
+        const parsedUser = JSON.parse(userData);
+        const userId = parsedUser.user_id;
+
+        if (!userId) {
+          setError("User ID not found");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `http://localhost:3000/api/users/${userId}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch user data");
+
+        const result = await response.json();
+        if (result.success && result.data) {
+          setUser(result.data);
+          setProfileData({
+            name: result.data.name || "",
+            email: result.data.email || "",
+            phone: result.data.phone_number || "",
+            avatar:
+              result.data.profile_picture ||
+              "/placeholder.svg?height=100&width=100",
+          });
+        } else throw new Error("Invalid API response");
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Error fetching user data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
-  const handleProfileSave = () => {
-    console.log("Saving profile:", profileData);
-    // Handle profile save
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      alert("File size must be less than 500KB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfileData({ ...profileData, avatar: reader.result as string });
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleNotificationSave = () => {
-    console.log("Saving notifications:", notifications);
-    // Handle notification save
+  const handleProfileSave = async () => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (!userData) return;
+
+      const parsedUser = JSON.parse(userData);
+      const userId = parsedUser.user_id;
+
+      const response = await fetch(
+        `http://localhost:3000/api/users/${userId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: profileData.name,
+            email: profileData.email,
+            phone_number: profileData.phone,
+            profile_picture: profileData.avatar,
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to save profile data");
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setUser(result.data);
+        setProfileData({
+          name: result.data.name,
+          email: result.data.email,
+          phone: result.data.phone_number || "",
+          avatar:
+            result.data.profile_picture ||
+            "/placeholder.svg?height=100&width=100",
+        });
+
+        localStorage.setItem("user", JSON.stringify(result.data));
+
+        setShowPopup(true);
+        setTimeout(() => setShowPopup(false), 3000);
+      }
+    } catch (err) {
+      console.error("Error saving profile:", err);
+    }
   };
 
-  const handlePreferencesSave = () => {
-    console.log("Saving preferences:", preferences);
-    // Handle preferences save
-  };
+  if (loading)
+    return <div className="flex min-h-screen bg-gray-50">Loading...</div>;
+  if (error)
+    return <div className="flex min-h-screen bg-gray-50">Error: {error}</div>;
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 lg:ml-64">
         <div className="p-6 lg:p-8">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
             <p className="text-gray-600 mt-2">
@@ -101,15 +169,60 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {showPopup && (
+            <div className="fixed top-4 right-4 z-50 flex items-center bg-white text-gray-800 px-4 py-3 rounded-lg shadow-xl border-l-4 border-green-500 transition-all duration-300 transform animate-slide-in">
+              <svg
+                className="h-6 w-6 text-green-500 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <div>
+                <p className="font-semibold text-sm">Success</p>
+                <p className="text-sm">Profile saved successfully!</p>
+              </div>
+            </div>
+          )}
+
+          <style jsx>{`
+            @keyframes slide-in {
+              0% {
+                transform: translateY(-20px);
+                opacity: 0;
+              }
+              100% {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+            .animate-slide-in {
+              animation: slide-in 0.3s ease-out;
+            }
+          `}</style>
+
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="preferences">Preferences</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsList className="inline-flex rounded-lg bg-gray-100 p-1.5">
+              <TabsTrigger
+                value="profile"
+                className="px-4 py-2 text-sm font-medium text-gray-600 rounded-md border border-gray-300 transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm hover:bg-gray-200 hover:border-gray-400"
+              >
+                Profile
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="px-4 py-2 text-sm font-medium text-gray-600 rounded-md border border-gray-300 transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:border-blue-500 data-[state=active]:shadow-sm hover:bg-gray-200 hover:border-gray-400"
+              >
+                Security
+              </TabsTrigger>
             </TabsList>
 
-            {/* Profile Tab */}
             <TabsContent value="profile">
               <Card>
                 <CardHeader>
@@ -122,14 +235,13 @@ export default function SettingsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Avatar Section */}
-                  <div className="flex items-center space-x-6">
-                    <Avatar className="h-24 w-24">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16">
                       <AvatarImage
-                        src={profileData.avatar || "/placeholder.svg"}
+                        src={profileData.avatar}
                         alt={profileData.name}
                       />
-                      <AvatarFallback className="text-lg">
+                      <AvatarFallback className="text-base">
                         {profileData.name
                           .split(" ")
                           .map((n) => n[0])
@@ -137,17 +249,26 @@ export default function SettingsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Button variant="outline" size="sm">
-                        <Camera className="h-4 w-4 mr-2" />
-                        Change Photo
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Camera className="h-4 w-4 mr-2" /> Change Photo
                       </Button>
-                      <p className="text-sm text-gray-600 mt-2">
-                        JPG, GIF or PNG. 1MB max.
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        JPG, GIF or PNG. 500KB max.
                       </p>
                     </div>
                   </div>
 
-                  {/* Basic Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
@@ -189,62 +310,6 @@ export default function SettingsPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        value={profileData.location}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            location: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Professional Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Company</Label>
-                      <Input
-                        id="company"
-                        value={profileData.company}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            company: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        value={profileData.website}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            website: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      rows={4}
-                      placeholder="Tell us about yourself..."
-                      value={profileData.bio}
-                      onChange={(e) =>
-                        setProfileData({ ...profileData, bio: e.target.value })
-                      }
-                    />
                   </div>
 
                   <div className="flex justify-end">
@@ -254,233 +319,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Notifications Tab */}
-            <TabsContent value="notifications">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Bell className="h-5 w-5 mr-2" />
-                    Notification Preferences
-                  </CardTitle>
-                  <CardDescription>
-                    Choose how you want to be notified about events and updates
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-gray-600">
-                          Receive notifications via email
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.emailNotifications}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            emailNotifications: checked,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Push Notifications</Label>
-                        <p className="text-sm text-gray-600">
-                          Receive push notifications in your browser
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.pushNotifications}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            pushNotifications: checked,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Event Reminders</Label>
-                        <p className="text-sm text-gray-600">
-                          Get reminded about upcoming events
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.eventReminders}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            eventReminders: checked,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Marketing Emails</Label>
-                        <p className="text-sm text-gray-600">
-                          Receive promotional emails and updates
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.marketingEmails}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            marketingEmails: checked,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Weekly Reports</Label>
-                        <p className="text-sm text-gray-600">
-                          Get weekly analytics and performance reports
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notifications.weeklyReports}
-                        onCheckedChange={(checked) =>
-                          setNotifications({
-                            ...notifications,
-                            weeklyReports: checked,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button onClick={handleNotificationSave}>
-                      Save Preferences
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Preferences Tab */}
-            <TabsContent value="preferences">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Globe className="h-5 w-5 mr-2" />
-                    System Preferences
-                  </CardTitle>
-                  <CardDescription>
-                    Customize your system preferences and regional settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Select
-                        value={preferences.timezone}
-                        onValueChange={(value) =>
-                          setPreferences({ ...preferences, timezone: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="UTC-8">
-                            Pacific Time (UTC-8)
-                          </SelectItem>
-                          <SelectItem value="UTC-7">
-                            Mountain Time (UTC-7)
-                          </SelectItem>
-                          <SelectItem value="UTC-6">
-                            Central Time (UTC-6)
-                          </SelectItem>
-                          <SelectItem value="UTC-5">
-                            Eastern Time (UTC-5)
-                          </SelectItem>
-                          <SelectItem value="UTC+0">UTC</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="language">Language</Label>
-                      <Select
-                        value={preferences.language}
-                        onValueChange={(value) =>
-                          setPreferences({ ...preferences, language: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="es">Spanish</SelectItem>
-                          <SelectItem value="fr">French</SelectItem>
-                          <SelectItem value="de">German</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select
-                        value={preferences.currency}
-                        onValueChange={(value) =>
-                          setPreferences({ ...preferences, currency: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="CAD">CAD (C$)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="dateFormat">Date Format</Label>
-                      <Select
-                        value={preferences.dateFormat}
-                        onValueChange={(value) =>
-                          setPreferences({ ...preferences, dateFormat: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button onClick={handlePreferencesSave}>
-                      Save Preferences
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Security Tab */}
             <TabsContent value="security">
               <div className="space-y-6">
                 <Card>

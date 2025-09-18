@@ -119,47 +119,48 @@ module.exports = {
   },
 
   // Update user
-  async updateUser(id, data) {
-    try {
-      const updateData = { ...data };
-      delete updateData.user_id;
-      delete updateData.created_at;
-      delete updateData.password_hash;
-      
-      // Handle email case conversion
-      if (updateData.email) {
-        updateData.email = updateData.email.toLowerCase();
-      }
-      
-      // Hash new password if provided
-      if (data.password) {
-        const saltRounds = 12;
-        updateData.password_hash = await bcrypt.hash(data.password, saltRounds);
-        delete updateData.password;
-      }
+async updateUser(id, data) {
+  try {
+    const updateData = { ...data };
+    delete updateData.user_id;
+    delete updateData.created_at;
+    delete updateData.password_hash;
 
-      return await prisma.user.update({
-        where: { user_id: parseInt(id) },
-        data: updateData,
-        select: {
-          user_id: true,
-          name: true,
-          email: true,
-          phone_number: true,
-          profile_picture: true,
-          is_active: true,
-          is_email_verified: true,
-          role: true,
-          updated_at: true
-        }
-      });
-    } catch (error) {
-      if (error.code === 'P2002') {
-        throw new Error('Email already in use by another user');
-      }
-      throw new Error(`Failed to update user: ${error.message}`);
+    // Handle email case conversion
+    if (updateData.email) {
+      updateData.email = updateData.email.toLowerCase();
     }
-  },
+
+    // Hash new password if provided
+    if (data.password) {
+      const saltRounds = 12;
+      updateData.password_hash = await bcrypt.hash(data.password, saltRounds);
+      delete updateData.password;
+    }
+
+    return await prisma.user.update({
+      where: { user_id: parseInt(id) },
+      data: updateData,
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        profile_picture: true, // now holds file path
+        is_active: true,
+        is_email_verified: true,
+        role: true,
+        updated_at: true,
+      },
+    });
+  } catch (error) {
+    if (error.code === "P2002") {
+      throw new Error("Email already in use by another user");
+    }
+    throw new Error(`Failed to update user: ${error.message}`);
+  }
+}
+,
 
   // Delete user (soft delete by deactivating)
   async deleteUser(id) {

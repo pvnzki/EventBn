@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
+
 const eventsService = require("../services/core-service/events");
 const prisma = require("../lib/database");
+const multer = require("multer");
+const cloudinary = require("../lib/cloudinary");
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all events
 router.get("/", async (req, res) => {
@@ -41,10 +45,55 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create new event
-router.post("/", async (req, res) => {
+
+// Create new event with media upload
+router.post("/", upload.fields([
+  { name: "cover_image", maxCount: 1 },
+  { name: "other_images", maxCount: 10 },
+  { name: "video", maxCount: 1 },
+]), async (req, res) => {
   try {
-    const event = await eventsService.createEvent(req.body);
+    const body = req.body;
+    // Parse ticket_types and seat_map if sent as JSON strings
+    if (body.ticket_types && typeof body.ticket_types === "string") {
+      try {
+        body.ticket_types = JSON.parse(body.ticket_types);
+      } catch (e) {
+        return res.status(400).json({ success: false, message: "Invalid JSON for ticket_types" });
+      }
+    }
+    if (body.seat_map && typeof body.seat_map === "string") {
+      try {
+        body.seat_map = JSON.parse(body.seat_map);
+      } catch (e) {
+        return res.status(400).json({ success: false, message: "Invalid JSON for seat_map" });
+      }
+    }
+
+    // Handle file uploads to Cloudinary
+    if (req.files) {
+      // Cover image
+      if (req.files.cover_image && req.files.cover_image[0]) {
+        const result = await cloudinary.uploader.upload_stream_promise(req.files.cover_image[0], "cover_images");
+        body.cover_image_url = result.secure_url;
+      }
+      // Other images
+      if (req.files.other_images) {
+        const otherUrls = [];
+        for (const file of req.files.other_images) {
+          const result = await cloudinary.uploader.upload_stream_promise(file, "event_images");
+          otherUrls.push(result.secure_url);
+        }
+        body.other_images_url = JSON.stringify(otherUrls);
+      }
+      // Video
+      if (req.files.video && req.files.video[0]) {
+        const result = await cloudinary.uploader.upload_stream_promise(req.files.video[0], "event_videos", { resource_type: "video" });
+        body.video_url = result.secure_url;
+      }
+    }
+
+    const event = await eventsService.createEvent(body);
     res.status(201).json({
       success: true,
       message: "Event created successfully",

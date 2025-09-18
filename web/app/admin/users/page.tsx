@@ -250,10 +250,6 @@ export default function UsersPage() {
                 Manage all users and organizers on the platform
               </p>
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Invite User
-            </Button>
           </div>
 
           {/* Stats Cards */}
@@ -464,9 +460,6 @@ export default function UsersPage() {
                           onClick={() => handleViewUser(user)}
                         >
                           <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost">
-                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"

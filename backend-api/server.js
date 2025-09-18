@@ -1,14 +1,20 @@
 require("dotenv").config();
 
 const express = require("express");
+const path = require("path")
 const cors = require("cors");
 const prisma = require("./lib/database");
+
+// Handle BigInt serialization for JSON responses
+BigInt.prototype.toJSON = function() {
+  return Number(this);
+};
 
 const app = express();
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // CORS Configuration
 let corsOptions = {};
@@ -58,7 +64,7 @@ const analyticsRoutes = require("./routes/analytics");
 
 
 // Serve static files (for uploaded images)
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Basic route
 app.get("/", (req, res) => {
@@ -101,6 +107,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
+
+
+
 
 
 // Error handling middleware

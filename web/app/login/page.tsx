@@ -73,7 +73,7 @@ export default function LoginPage() {
         {/* Left side - Branding */}
         <div className="hidden lg:block space-y-6">
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900">EventPro</h1>
+            <h1 className="text-4xl font-bold text-gray-900">EventBn</h1>
             <p className="text-xl text-gray-600">
               Complete event management solution for organizers and
               administrators

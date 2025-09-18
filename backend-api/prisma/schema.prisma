@@ -69,6 +69,7 @@ model Event {
   video_url         String?
 
   seat_map          Json?    @db.JsonB
+  ticket_types      Json?    @db.JsonB
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now()) @updatedAt
   status            String   @default("ACTIVE")
