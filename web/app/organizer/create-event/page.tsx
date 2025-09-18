@@ -36,6 +36,12 @@ import {
   Save,
   AlertCircle,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const SeatingArrangementSection = dynamic(
+  () => import("./SeatingArrangementSection"),
+  { ssr: false }
+);
 
 interface TicketType {
   id: string;
@@ -45,15 +51,12 @@ interface TicketType {
   description?: string;
 }
 
-interface SeatMap {
-  layout: string;
-  sections: Array<{
-    id: string;
-    name: string;
-    rows: number;
-    seatsPerRow: number;
-    price?: number;
-  }>;
+interface Seat {
+  id: number;
+  label: string;
+  price: number;
+  available: boolean;
+  ticketType: string;
 }
 
 export default function CreateEventPage() {
@@ -73,7 +76,9 @@ export default function CreateEventPage() {
     otherImages: [] as File[],
     otherImagesUrl: [] as string[],
     videoUrl: "",
+    videoFile: null as File | null,
     status: "ACTIVE",
+    organization_id: "", // Added for organization
   });
 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
@@ -85,12 +90,37 @@ export default function CreateEventPage() {
     description: "",
   });
 
-  const [seatMap, setSeatMap] = useState<SeatMap | null>(null);
+  const [seatMap, setSeatMap] = useState<Seat[] | null>(null);
+
+  // Video file upload handler (function declaration, hoisted)
+  function handleVideoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      setEventData((prev) => ({ ...prev, videoFile: file }));
+    }
+  }
+
   const [isLoading, setIsLoading] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
 
-  // Load draft on component mount
+  // Load draft and set organization_id on component mount
   useEffect(() => {
+    // Set organization_id from user in localStorage
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user && user.organization_id) {
+          setEventData((prev) => ({
+            ...prev,
+            organization_id: user.organization_id,
+          }));
+        }
+      } catch (err) {
+        console.error("Error parsing user from localStorage:", err);
+      }
+    }
+    // Load draft
     const savedDraft = localStorage.getItem("eventDraft");
     if (savedDraft) {
       try {
@@ -253,6 +283,13 @@ export default function CreateEventPage() {
       formData.append("capacity", eventData.capacity);
       formData.append("video_url", eventData.videoUrl);
       formData.append("status", eventData.status);
+      // Add organization_id
+      if (eventData.organization_id) {
+        formData.append(
+          "organization_id",
+          eventData.organization_id.toString()
+        );
+      }
 
       // Add ticket types
       formData.append("ticket_types", JSON.stringify(ticketTypes));
@@ -267,16 +304,28 @@ export default function CreateEventPage() {
         formData.append("cover_image", eventData.coverImage);
       }
 
-      // Add other images
-      eventData.otherImages.forEach((image, index) => {
-        formData.append(`other_image_${index}`, image);
+      // Add other images as array
+      eventData.otherImages.forEach((image) => {
+        formData.append("other_images", image);
       });
 
+      // Add video file if present
+      if (eventData.videoFile) {
+        formData.append("video", eventData.videoFile);
+      }
+
+      // No conversion needed, seatMap is already an array of seat objects
+
       // Send to API
-      const response = await fetch("/api/events", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+        }/api/events`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const result = await response.json();
 
@@ -324,6 +373,12 @@ export default function CreateEventPage() {
             <p className="text-gray-600 mt-2">
               Set up your event details, location, and ticket types
             </p>
+            {eventData.organization_id && (
+              <div className="mt-2 text-sm text-gray-500">
+                <span className="font-semibold">Organization ID:</span>{" "}
+                {eventData.organization_id}
+              </div>
+            )}
           </div>
 
           {/* Draft Notice */}
@@ -683,24 +738,21 @@ export default function CreateEventPage() {
                   </div>
                 </div>
 
-                {/* Video URL */}
+                {/* Video Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl" className="flex items-center">
+                  <Label htmlFor="videoFile" className="flex items-center">
                     <Video className="h-4 w-4 mr-2" />
-                    Video URL (Optional)
+                    Event Video (Optional)
                   </Label>
                   <Input
-                    id="videoUrl"
-                    type="url"
-                    placeholder="https://youtube.com/watch?v=..."
-                    value={eventData.videoUrl}
-                    onChange={(e) =>
-                      setEventData({ ...eventData, videoUrl: e.target.value })
-                    }
+                    id="videoFile"
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
                   />
                   <p className="text-sm text-gray-500">
-                    Add a YouTube, Vimeo, or other video URL to showcase your
-                    event
+                    Upload a short promo or highlight video for your event (mp4,
+                    mov, etc.)
                   </p>
                 </div>
               </CardContent>
@@ -834,7 +886,7 @@ export default function CreateEventPage() {
               </CardContent>
             </Card>
 
-            {/* Seat Map (Optional) */}
+            {/* Seat Map (New Implementation) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -846,139 +898,121 @@ export default function CreateEventPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!seatMap ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600 mb-4">
-                      Add a custom seating layout for better organization
-                    </p>
-                    <div className="space-x-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          setSeatMap({
-                            layout: "theater",
-                            sections: [
-                              {
-                                id: "1",
-                                name: "Front",
-                                rows: 5,
-                                seatsPerRow: 10,
-                                price: 100,
-                              },
-                              {
-                                id: "2",
-                                name: "Middle",
-                                rows: 8,
-                                seatsPerRow: 12,
-                                price: 75,
-                              },
-                              {
-                                id: "3",
-                                name: "Back",
-                                rows: 6,
-                                seatsPerRow: 14,
-                                price: 50,
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        Theater Style
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          setSeatMap({
-                            layout: "conference",
-                            sections: [
-                              {
-                                id: "1",
-                                name: "Round Tables",
-                                rows: 10,
-                                seatsPerRow: 8,
-                                price: 80,
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        Conference Style
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          setSeatMap({
-                            layout: "concert",
-                            sections: [
-                              {
-                                id: "1",
-                                name: "VIP",
-                                rows: 3,
-                                seatsPerRow: 20,
-                                price: 150,
-                              },
-                              {
-                                id: "2",
-                                name: "General",
-                                rows: 15,
-                                seatsPerRow: 25,
-                                price: 80,
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        Concert Style
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium capitalize">
-                        {seatMap.layout} Layout
-                      </h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSeatMap(null)}
-                      >
-                        <X className="h-4 w-4" />
-                        Remove Layout
-                      </Button>
-                    </div>
-                    <div className="grid gap-4">
-                      {seatMap.sections.map((section, index) => (
-                        <div key={section.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium">{section.name}</h5>
-                            <Badge variant="outline">
-                              ${section.price || "Free"}
-                            </Badge>
+                <SeatingArrangementSection
+                  ticketTypes={ticketTypes}
+                  onGenerate={(seatArr) => setSeatMap(seatArr)}
+                />
+                {seatMap &&
+                  Array.isArray(seatMap) &&
+                  seatMap.length > 0 &&
+                  (() => {
+                    // Color palette and ticketTypeColors mapping
+                    const ticketTypeColors: Record<string, string> = {};
+                    const palette = [
+                      "bg-blue-200",
+                      "bg-green-200",
+                      "bg-yellow-200",
+                      "bg-pink-200",
+                      "bg-purple-200",
+                      "bg-orange-200",
+                      "bg-teal-200",
+                      "bg-red-200",
+                    ];
+                    let colorIdx = 0;
+                    seatMap.forEach((seat) => {
+                      if (!ticketTypeColors[seat.ticketType]) {
+                        ticketTypeColors[seat.ticketType] =
+                          palette[colorIdx % palette.length];
+                        colorIdx++;
+                      }
+                    });
+                    // Group seats by row label
+                    const rows: Record<string, Seat[]> = {};
+                    seatMap.forEach((seat) => {
+                      const row = seat.label.match(/^[A-Z]+/i)?.[0] || "";
+                      if (!rows[row]) rows[row] = [];
+                      rows[row].push(seat);
+                    });
+                    return (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Seating Preview</h4>
+                        <div className="inline-block rounded-lg border bg-white shadow p-4">
+                          <div className="flex flex-col gap-2">
+                            {Object.entries(rows).map(
+                              ([rowLabel, seats], i) => (
+                                <div
+                                  key={rowLabel}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="font-semibold text-gray-700 w-6 text-right mr-2 select-none">
+                                    {rowLabel}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    {seats.map((seat) => (
+                                      <div
+                                        key={seat.id}
+                                        className={`relative border rounded-full w-8 h-8 flex items-center justify-center text-xs font-semibold shadow-sm transition-all duration-150
+                                      ${
+                                        seat.available
+                                          ? ticketTypeColors[seat.ticketType]
+                                          : "bg-gray-300 text-gray-400"
+                                      }
+                                      ${
+                                        seat.available
+                                          ? "hover:scale-110 cursor-pointer"
+                                          : "opacity-60"
+                                      }
+                                    `}
+                                        title={`Seat: ${seat.label}\nType: ${seat.ticketType}\nPrice: $${seat.price}`}
+                                      >
+                                        {seat.label.replace(/^[A-Z]+/i, "")}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            )}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {section.rows} rows × {section.seatsPerRow} seats ={" "}
-                            {section.rows * section.seatsPerRow} total seats
+                          {/* Legend */}
+                          <div className="flex flex-wrap gap-4 mt-4 items-center">
+                            {(() => {
+                              const ticketTypesShown: Record<string, boolean> =
+                                {};
+                              return seatMap
+                                .filter((seat) => {
+                                  if (ticketTypesShown[seat.ticketType])
+                                    return false;
+                                  ticketTypesShown[seat.ticketType] = true;
+                                  return true;
+                                })
+                                .map((seat) => (
+                                  <div
+                                    key={seat.ticketType}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <span
+                                      className={`inline-block w-4 h-4 rounded-full border ${
+                                        ticketTypeColors[seat.ticketType]
+                                      }`}
+                                    ></span>
+                                    <span className="text-xs text-gray-700">
+                                      {seat.ticketType}
+                                    </span>
+                                  </div>
+                                ));
+                            })()}
+                            <span className="inline-block w-4 h-4 rounded-full border bg-gray-300 ml-4"></span>
+                            <span className="text-xs text-gray-500">
+                              Unavailable
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      Total capacity:{" "}
-                      {seatMap.sections.reduce(
-                        (sum, section) =>
-                          sum + section.rows * section.seatsPerRow,
-                        0
-                      )}{" "}
-                      seats
-                    </p>
-                  </div>
-                )}
+                        <p className="text-sm text-gray-500 mt-2">
+                          Total seats: {seatMap.length}
+                        </p>
+                      </div>
+                    );
+                  })()}
               </CardContent>
             </Card>
 
