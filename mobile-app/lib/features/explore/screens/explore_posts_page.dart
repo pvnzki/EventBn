@@ -144,7 +144,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               child: RefreshIndicator(
                 onRefresh: _refreshPosts,
                 color: colorScheme.primary,
-                child: _buildHorizontalFeed(),
+                child: _buildVerticalFeed(),
               ),
             ),
           ],
@@ -337,445 +337,190 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     );
   }
 
-  Widget _buildHorizontalFeed() {
+  Widget _buildVerticalFeed() {
     if (_postService.posts.isEmpty && !_postService.isLoading) {
       return _buildEmptyState();
     }
 
     final posts = _postService.posts.toList();
-    const int postsPerPage = 6; // 3 rows x 2 columns
-    return ScrollConfiguration(
-      behavior: _NoScrollGlowBehavior(),
-      child: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.horizontal,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        if (scrollInfo is ScrollEndNotification && 
+            scrollInfo.metrics.extentAfter < 500) {
+          _loadMorePosts();
+        }
+        return false;
+      },
+      child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
-        onPageChanged: (index) {
-          // Load more when near end
-          if (index >= posts.length ~/ postsPerPage - 2) {
-            _loadMorePosts();
-          }
-        },
-        itemCount: (posts.length / postsPerPage).ceil() +
-            (_postService.isLoading ? 1 : 0),
-        itemBuilder: (context, pageIndex) {
-          if (pageIndex >= (posts.length / postsPerPage).ceil()) {
-            return _buildLoadingPage(postsPerPage);
-          }
-          return _buildPostsGrid(posts, pageIndex, postsPerPage);
-        },
-      ),
-    );
-  }
-
-  Widget _buildPostsGrid(List posts, int pageIndex, int postsPerPage) {
-    final startIndex = pageIndex * postsPerPage;
-    final endIndex = (startIndex + postsPerPage).clamp(0, posts.length).toInt();
-    final pagePosts = posts.sublist(startIndex, endIndex);
-    return Container(
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 2,
-        bottom: MediaQuery.of(context).padding.bottom + 8, // minimal bottom
-      ),
-      child: GridView.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        physics: const NeverScrollableScrollPhysics(),
-        children: List.generate(postsPerPage, (index) {
-          if (index < pagePosts.length) {
-            return _buildTileCard(pagePosts[index], startIndex + index);
-          } else {
-            return _buildEmptyTile();
-          }
-        }),
-      ),
-    );
-  }
-
-  Widget _buildTileCard(post, int index) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  if (index < posts.length) {
+                    return _buildInstagramTile(posts[index]);
+                  } else if (_postService.isLoading && index < posts.length + 6) {
+                    return _buildLoadingTile();
+                  }
+                  return null;
+                },
+                childCount: posts.length + (_postService.isLoading ? 6 : 0),
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 2,
+                mainAxisSpacing: 2,
+                childAspectRatio: 1.0,
+              ),
+            ),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: GestureDetector(
-          onTap: () {
-            print('🔍 Explore: Tapping post ${post.id}');
-            context.push('/explore/post/${post.id}');
-          },
-          child: Stack(
-            children: [
-              // Background Image
-              SizedBox(
-                height: double.infinity,
-                width: double.infinity,
-                child: post.imageUrls.isNotEmpty
-                    ? Image.network(
-                        post.imageUrls.first,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: colorScheme.surfaceContainerHighest,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes !=
-                                        null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                colorScheme.errorContainer,
-                                colorScheme.errorContainer.withOpacity(0.7),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported_rounded,
-                              color: colorScheme.onErrorContainer,
-                              size: 24,
-                            ),
-                          ),
+    );
+  }
+
+  Widget _buildInstagramTile(ExplorePost post) {
+    return GestureDetector(
+      onTap: () {
+        print('🔍 Explore: Tapping post ${post.id}');
+        context.push('/explore/igtv/${post.id}');
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Main image
+            post.imageUrls.isNotEmpty
+                ? Image.network(
+                    post.imageUrls.first,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colorScheme.primaryContainer,
-                              colorScheme.secondaryContainer,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.image_rounded,
-                            color:
-                                colorScheme.onSurfaceVariant.withOpacity(0.6),
-                            size: 32,
-                          ),
-                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
                       ),
-              ),
-              // Gradient Overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.6),
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.8),
-                    ],
-                    stops: const [0.0, 0.3, 0.6, 1.0],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    ),
+                  )
+                : Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(Icons.image, color: Colors.grey),
+                    ),
+                  ),
+            
+            // Overlay for video posts or multiple images
+            if (post.imageUrls.length > 1)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.collections,
+                    color: Colors.white,
+                    size: 14,
                   ),
                 ),
               ),
-              // Content Overlay
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            
+            // Bottom engagement overlay
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Top - Author info
-                    Row(
-                      children: [
-                        Container(
-                          height: 24,
-                          width: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.2),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.4),
-                              width: 1,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              post.userDisplayName.isNotEmpty
-                                  ? post.userDisplayName[0].toUpperCase()
-                                  : "?",
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            post.userDisplayName,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const Icon(
+                      Icons.favorite,
+                      color: Colors.white,
+                      size: 12,
                     ),
-                    const Spacer(),
-                    // Bottom - Content and engagement
+                    const SizedBox(width: 3),
                     Text(
-                      post.content,
+                      _formatCount(post.likesCount),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _buildTileEngagementButton(
-                          Icons.favorite_rounded,
-                          post.likesCount,
-                          Colors.red.shade400,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildTileEngagementButton(
-                          Icons.chat_bubble_rounded,
-                          post.commentsCount,
-                          Colors.blue.shade400,
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.bookmark_border_rounded,
-                            color: Colors.white,
-                            size: 12,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
-              // Tap effect
-              Positioned.fill(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    splashColor: Colors.white.withOpacity(0.1),
-                    highlightColor: Colors.white.withOpacity(0.05),
-                    onTap: () {
-                      print('🔍 Explore: Tapping post ${post.id}');
-                      context.push('/explore/post/${post.id}');
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTileEngagementButton(IconData icon, int count, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 12,
-          color: color,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          count > 999
-              ? '${(count / 1000).toStringAsFixed(1)}K'
-              : count.toString(),
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyTile() {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.add_rounded,
-          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-          size: 32,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingPage(int postsPerPage) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 2,
-        bottom: MediaQuery.of(context).padding.bottom + 8,
-      ),
-      child: GridView.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        physics: const NeverScrollableScrollPhysics(),
-        children: List.generate(
-            postsPerPage,
-            (index) => Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )),
-      ),
-    );
-  }
-
-  Widget _buildEngagementButton({
-    required IconData icon,
-    required int count,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: color,
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Text(
-                count > 999
-                    ? '${(count / 1000).toStringAsFixed(1)}K'
-                    : count.toString(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildLoadingCard() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final cardWidth = screenWidth * 0.72;
-    final cardHeight = screenHeight * 0.65;
-
+  Widget _buildLoadingTile() {
     return Container(
-      width: cardWidth,
-      height: cardHeight,
-      margin: const EdgeInsets.only(right: 12, bottom: 8, top: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      color: Colors.grey[200],
       child: const Center(
         child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }
 
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
+  }
+
+
+
   Widget _buildLoadingSkeleton() {
-    return Column(
-      children: [
-        _buildAppBar(),
-        _buildSearchAndFilters(),
-        Expanded(
-          child: _buildLoadingPage(6),
+    final colorScheme = Theme.of(context).colorScheme;
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
+          sliver: SliverGrid(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => Container(
+                color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              childCount: 12,
+            ),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 2,
+              mainAxisSpacing: 2,
+              childAspectRatio: 1.0,
+            ),
+          ),
         ),
       ],
     );
@@ -815,11 +560,4 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   }
 }
 
-// Custom scroll behavior to remove scroll glow effect
-class _NoScrollGlowBehavior extends ScrollBehavior {
-  @override
-  Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
-    return child;
-  }
-}
+
