@@ -20,12 +20,12 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     with SingleTickerProviderStateMixin {
   final ExplorePostService _postService = ExplorePostService();
   final PageController _pageController = PageController();
-  
+
   List<ExplorePost> _posts = [];
   int _currentIndex = 0;
   bool _isLoading = true;
   late AnimationController _animationController;
-  
+
   // Bottom sheet for comments
   final TextEditingController _commentController = TextEditingController();
 
@@ -67,17 +67,17 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     try {
       await _postService.loadPosts(refresh: true);
       final posts = _postService.posts.toList();
-      
+
       // Find the index of the selected post
       int initialIndex = posts.indexWhere((post) => post.id == widget.postId);
       if (initialIndex == -1) initialIndex = 0;
-      
+
       setState(() {
         _posts = posts;
         _currentIndex = initialIndex;
         _isLoading = false;
       });
-      
+
       // Jump to the selected post
       if (_posts.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -99,7 +99,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     setState(() {
       _currentIndex = index;
     });
-    
+
     // Load more posts when near the end
     if (index >= _posts.length - 3) {
       _loadMorePosts();
@@ -129,7 +129,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   void _showCommentsSheet() {
     _animationController.forward();
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -185,7 +185,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
               return _buildPostPage(_posts[index]);
             },
           ),
-          
+
           // Top app bar
           Positioned(
             top: 0,
@@ -193,14 +193,14 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             right: 0,
             child: _buildTopBar(),
           ),
-          
+
           // Right side actions
           Positioned(
             right: 16,
             bottom: 200,
             child: _buildActionButtons(),
           ),
-          
+
           // Bottom user info and content
           Positioned(
             left: 16,
@@ -282,7 +282,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
               errorBuilder: (context, error, stackTrace) => Container(
                 color: Colors.grey[900],
                 child: const Center(
-                  child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+                  child:
+                      Icon(Icons.broken_image, color: Colors.white, size: 64),
                 ),
               ),
             )
@@ -293,7 +294,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                 child: Icon(Icons.image, color: Colors.white, size: 64),
               ),
             ),
-          
+
           // Gradient overlays for better text visibility
           Container(
             decoration: BoxDecoration(
@@ -317,7 +318,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   Widget _buildActionButtons() {
     final currentPost = _posts[_currentIndex];
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -346,9 +347,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Comment button
         GestureDetector(
           onTap: _showCommentsSheet,
@@ -371,9 +372,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ],
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Share button
         GestureDetector(
           onTap: () {
@@ -398,9 +399,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ],
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Bookmark button
         GestureDetector(
           onTap: () {
@@ -422,7 +423,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   Widget _buildBottomContent() {
     final currentPost = _posts[_currentIndex];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -492,9 +493,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Post content
         Text(
           currentPost.content,
@@ -506,9 +507,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
-        
+
         const SizedBox(height: 8),
-        
+
         // Hashtags or tags
         if (currentPost.content.contains('#'))
           Wrap(
@@ -553,10 +554,11 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // Comments header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
                     const Text(
@@ -577,9 +579,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   ],
                 ),
               ),
-              
+
               const Divider(height: 1),
-              
+
               // Comments list
               Expanded(
                 child: ListView.builder(
@@ -591,7 +593,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   },
                 ),
               ),
-              
+
               // Comment input
               Container(
                 padding: EdgeInsets.only(
@@ -652,9 +654,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       {'user': 'mike_jones', 'comment': 'Count me in! 🙌'},
       {'user': 'lisa_wang', 'comment': 'This is going to be epic! 🔥'},
     ];
-    
+
     final comment = mockComments[index % mockComments.length];
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
