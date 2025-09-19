@@ -9,6 +9,7 @@ import '../../features/booking/screens/order_summary_screen.dart';
 import '../../features/booking/screens/payment_success_screen.dart';
 import '../../features/tickets/screens/e_ticket_screen.dart' as tickets;
 import '../../features/explore/screens/explore_posts_page.dart';
+import '../../features/explore/screens/igtv_feed_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/auth/screens/welcome_login_screen.dart';
@@ -155,6 +156,17 @@ class AppRouter {
           final postId = state.pathParameters['postId']!;
           print('🛣️ Router: Building PostDetailScreen for postId: $postId');
           return PostDetailScreen(postId: postId);
+        },
+      ),
+
+      // IGTV Feed Route
+      GoRoute(
+        path: '/explore/igtv/:postId',
+        name: 'igtv-feed',
+        builder: (context, state) {
+          final postId = state.pathParameters['postId']!;
+          print('🛣️ Router: Building IGTVFeedScreen for postId: $postId');
+          return IGTVFeedScreen(postId: postId);
         },
       ),
 
