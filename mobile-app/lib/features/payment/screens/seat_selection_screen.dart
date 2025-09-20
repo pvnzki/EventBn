@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/services.dart' show rootBundle, HapticFeedback;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
 import '../../../common_widgets/custom_button.dart';
+import '../services/seat_lock_service.dart';
 
 class SeatSelectionScreen extends StatefulWidget {
   final String eventId;
@@ -29,6 +31,20 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   String eventDate = '';
   String venueLayout = 'theater'; // theater, concert, conference, custom
   Map<String, dynamic> layoutConfig = {};
+  
+  // Seat locking service
+  final SeatLockService _seatLockService = SeatLockService();
+  Map<String, bool> lockedSeats = {}; // Track locked seats
+  
+  // Global session timer (starts when first seat is selected)
+  Timer? _sessionTimer;
+  int _sessionTimeLeft = 0; // in seconds
+  bool _sessionActive = false;
+  
+  // Global selection timer
+  Timer? _selectionTimer;
+  int _timeRemaining = 0; // seconds
+  bool _hasSelectedSeats = false;
   
   // Zoom and pan controllers
   final TransformationController _transformationController = TransformationController();
@@ -56,13 +72,85 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     
     _loadSeatMap();
     _loadEventDetails();
+    _loadEventLocks(); // Load initially locked seats
+    _startLockPolling(); // Start polling for lock updates
   }
 
   @override
   void dispose() {
     _transformationController.dispose();
     _pulseController.dispose();
+    _sessionTimer?.cancel();
+    _selectionTimer?.cancel();
+    _seatLockService.stopPollingEventLocks(widget.eventId);
     super.dispose();
+  }
+
+  // Start the 5-minute session timer when first seat is selected
+  void _startSessionTimer() {
+    if (_sessionActive) return; // Already started
+    
+    _sessionActive = true;
+    _sessionTimeLeft = 5 * 60; // 5 minutes in seconds
+    
+    _sessionTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _sessionTimeLeft--;
+        });
+        
+        if (_sessionTimeLeft <= 0) {
+          _expireSession();
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  // Expire the session - release all locks and refresh
+  void _expireSession() {
+    _sessionTimer?.cancel();
+    
+    // Release all selected seat locks
+    for (int seatId in selectedSeats) {
+      _seatLockService.releaseSeatLock(eventId: widget.eventId, seatId: seatId.toString());
+    }
+    
+    // Clear state and refresh page
+    setState(() {
+      selectedSeats.clear();
+      lockedSeats.clear();
+      _sessionActive = false;
+      _sessionTimeLeft = 0;
+    });
+    
+    // Show expiration message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Selection time expired. Please select your seats again.'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Extend session timer during payment
+  void _extendSessionTimer() {
+    if (_sessionActive) {
+      setState(() {
+        _sessionTimeLeft = 10 * 60; // Extend to 10 minutes during payment
+      });
+    }
+  }
+
+  // Stop the session timer when no seats are selected
+  void _stopSessionTimer() {
+    _sessionTimer?.cancel();
+    setState(() {
+      _sessionActive = false;
+      _sessionTimeLeft = 0;
+    });
   }
 
   Future<void> _loadSeatMap() async {
@@ -225,16 +313,183 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     }
   }
 
-  void _toggleSeat(int seatId) {
-    setState(() {
-      if (selectedSeats.contains(seatId)) {
+  void _toggleSeat(int seatId) async {
+    // Check if we're deselecting
+    if (selectedSeats.contains(seatId)) {
+      setState(() {
         selectedSeats.remove(seatId);
-        HapticFeedback.lightImpact(); // Light haptic for deselection
-      } else {
+      });
+      
+      // Release the lock
+      await _seatLockService.releaseSeatLock(
+        eventId: widget.eventId,
+        seatId: seatId.toString(),
+      );
+      
+      // Stop session timer if no seats selected
+      if (selectedSeats.isEmpty) {
+        _stopSessionTimer();
+      }
+      
+      HapticFeedback.lightImpact();
+      return;
+    }
+    
+    // Check if seat is locked by another user
+    if (lockedSeats[seatId.toString()] == true) {
+      _showSeatLockedDialog();
+      return;
+    }
+    
+    // Try to lock and select the seat
+    final lockResult = await _seatLockService.lockSeat(
+      eventId: widget.eventId,
+      seatId: seatId.toString(),
+    );
+    
+    if (lockResult['success'] == true) {
+      setState(() {
         selectedSeats.add(seatId);
-        HapticFeedback.mediumImpact(); // Medium haptic for selection
+      });
+      
+      // Start session timer on first seat selection
+      if (selectedSeats.length == 1) {
+        _startSessionTimer();
+      }
+      
+      HapticFeedback.mediumImpact();
+    } else {
+      // Show error dialog
+      _showSeatLockFailedDialog(lockResult['message'] ?? 'Failed to select seat');
+      
+      // Update locked seats if this seat is now locked
+      if (lockResult['isLocked'] == true) {
+        setState(() {
+          lockedSeats[seatId.toString()] = true;
+        });
+      }
+    }
+  }
+
+  /// Load initially locked seats from the server
+  Future<void> _loadEventLocks() async {
+    try {
+      final result = await _seatLockService.getEventLockedSeats(
+        eventId: widget.eventId,
+      );
+      
+      if (result['success'] == true) {
+        final List<dynamic> locks = result['lockedSeats'] ?? [];
+        final Map<String, bool> newLockedSeats = {};
+        
+        for (final lock in locks) {
+          newLockedSeats[lock['seatId']] = true;
+        }
+        
+        if (mounted) {
+          setState(() {
+            lockedSeats = newLockedSeats;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading event locks: $e');
+    }
+  }
+
+  /// Start polling for lock updates
+  void _startLockPolling() {
+    _seatLockService.startPollingEventLocks(
+      eventId: widget.eventId,
+      interval: const Duration(seconds: 15), // Poll every 15 seconds
+    );
+    
+    // Listen to lock updates
+    _seatLockService.getLockUpdateStream(widget.eventId)?.listen((update) {
+      if (!mounted) return;
+      
+      switch (update['action']) {
+        case 'poll_update':
+          _handlePollUpdate(update['lockedSeats'] ?? []);
+          break;
+        case 'locked':
+          _handleSeatLocked(update['seatId']);
+          break;
+        case 'released':
+          _handleSeatReleased(update['seatId']);
+          break;
       }
     });
+  }
+
+  /// Handle poll update with latest locked seats
+  void _handlePollUpdate(List<dynamic> lockedSeatsList) {
+    final Map<String, bool> newLockedSeats = {};
+    
+    for (final lock in lockedSeatsList) {
+      newLockedSeats[lock['seatId']] = true;
+    }
+    
+    setState(() {
+      lockedSeats = newLockedSeats;
+    });
+  }
+
+  /// Handle seat locked event
+  void _handleSeatLocked(String seatId) {
+    setState(() {
+      lockedSeats[seatId] = true;
+    });
+  }
+
+  /// Handle seat released event
+  void _handleSeatReleased(String seatId) {
+    setState(() {
+      lockedSeats.remove(seatId);
+    });
+  }
+
+  /// Show dialog when seat is locked by another user
+  void _showSeatLockedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Seat Unavailable'),
+        content: const Text(
+          'This seat is currently being selected by another user. Please choose a different seat or try again in a moment.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show dialog when seat lock fails
+  void _showSeatLockFailedDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unable to Select Seat'),
+        content: Text(message.replaceAll('lock', 'select').replaceAll('Lock', 'Selection')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Format time in seconds to MM:SS format
+  String _formatTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -273,6 +528,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
           
           // Compact Event Info Header
           _buildCompactEventHeader(theme),
+          
+          // Global Session Timer (appears when seats are selected)
+          if (_sessionActive) _buildSessionTimer(theme),
           
           // Full Screen Seat Map Section
           Expanded(
@@ -394,6 +652,54 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionTimer(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        border: Border.all(color: Colors.orange.shade300, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.timer,
+            color: Colors.orange.shade700,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Selection expires in:',
+              style: TextStyle(
+                color: Colors.orange.shade800,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade600,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              _formatTime(_sessionTimeLeft),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'monospace',
+              ),
             ),
           ),
         ],
@@ -611,13 +917,19 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
             color: theme.brightness == Brightness.dark 
                 ? theme.colorScheme.surfaceVariant
                 : theme.colorScheme.surface,
-            label: 'Free',
+            label: 'Available',
             theme: theme,
           ),
           const SizedBox(width: 8),
           _buildCompactLegendItem(
-            color: theme.primaryColor,
+            color: Colors.orange.withOpacity(0.9),
             label: 'Selected',
+            theme: theme,
+          ),
+          const SizedBox(width: 8),
+          _buildCompactLegendItem(
+            color: Colors.amber.withOpacity(0.8),
+            label: 'Locked',
             theme: theme,
           ),
           const SizedBox(width: 8),
@@ -629,7 +941,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
           const SizedBox(width: 8),
           _buildCompactLegendItem(
             color: theme.colorScheme.error.withOpacity(0.8),
-            label: 'Taken',
+            label: 'Booked',
             theme: theme,
           ),
         ],
@@ -1073,6 +1385,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     final isAvailable = seat['available'] as bool;
     final isSelected = selectedSeats.contains(seatId);
     final ticketType = seat['ticketType'] as String;
+    final isLocked = lockedSeats[seatId.toString()] == true;
     
     // Calculate font size based on seat size - better scaling for very small seats
     final double fontSize = (seatSize * 0.5).clamp(3.0, 10.0); // Even smaller minimum font for tiny seats
@@ -1082,12 +1395,19 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     IconData? seatIcon;
     
     if (!isAvailable) {
+      // Seat is permanently booked (payment completed) - RED
       seatColor = theme.colorScheme.error.withOpacity(0.8);
       textColor = theme.colorScheme.onError;
       seatIcon = Icons.close_rounded;
+    } else if (isLocked && !isSelected) {
+      // Seat temporarily locked by another user - YELLOW/AMBER
+      seatColor = Colors.amber.withOpacity(0.8);
+      textColor = Colors.black87;
+      seatIcon = Icons.schedule_rounded; // Clock icon to show temporary
     } else if (isSelected) {
-      seatColor = theme.primaryColor;
-      textColor = theme.colorScheme.onPrimary;
+      // Selected by current user - ORANGE (locked behind the scenes)
+      seatColor = Colors.orange.withOpacity(0.9);
+      textColor = Colors.white;
       seatIcon = Icons.check_rounded;
     } else if (ticketType == 'VIP' || ticketType == 'Premium') {
       seatColor = theme.colorScheme.tertiary.withOpacity(0.8);
@@ -1104,7 +1424,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     }
     
     return GestureDetector(
-      onTap: isAvailable ? () => _toggleSeat(seatId) : null,
+      onTap: (isAvailable && !isLocked) || isSelected ? () => _toggleSeat(seatId) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: seatSize,
@@ -1140,21 +1460,25 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
           builder: (context, child) {
             return Transform.scale(
               scale: isSelected ? _pulseAnimation.value : 1.0,
-              child: Center(
-                child: seatIcon != null
-                    ? Icon(
-                        seatIcon,
-                        color: textColor,
-                        size: fontSize,
-                      )
-                    : Text(
-                        seatLabel.length > 2 ? seatLabel.substring(1) : seatLabel, // Show number part for compact view
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: fontSize,
-                        ),
-                      ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: seatIcon != null
+                        ? Icon(
+                            seatIcon,
+                            color: textColor,
+                            size: fontSize,
+                          )
+                        : Text(
+                            seatLabel.length > 2 ? seatLabel.substring(1) : seatLabel, // Show number part for compact view
+                            style: TextStyle(
+                              color: textColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: fontSize,
+                            ),
+                          ),
+                  ),
+                ],
               ),
             );
           },
@@ -1295,6 +1619,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                   ? 'Continue to Booking' 
                   : 'Select seats to continue',
               onPressed: canProceed ? () {
+                // Extend session timer for payment process
+                _extendSessionTimer();
+                
                 // Get selected seat data with full details
                 List<Map<String, dynamic>> selectedSeatData = [];
                 for (int seatId in selectedSeats) {
