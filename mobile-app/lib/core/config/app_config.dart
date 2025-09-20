@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   // API Configuration
   static String get baseUrl {
-    final url = dotenv.env['BASE_URL'] ?? 'http://localhost:3000';
+    final url = dotenv.env['BASE_URL'] ?? 'http://localhost:3001';
     print('🔧 AppConfig: BASE_URL from .env: ${dotenv.env['BASE_URL']}');
     print('🔧 AppConfig: Final baseUrl: $url');
     return url;

@@ -9,13 +9,18 @@ class PostService {
   }
 
   // Health check
-  async healthCheck() {
+  async health() {
     return {
       service: 'post-service',
-      status: 'healthy',
+      status: 'ok',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
     };
+  }
+
+  // Legacy healthCheck method for backward compatibility
+  async healthCheck() {
+    return await this.health();
   }
 
   // Initialize service
@@ -30,5 +35,8 @@ class PostService {
     }
   }
 }
+
+// NOTE: Server startup is handled by server.js
+// This file only exports the PostService class for use by server.js
 
 module.exports = new PostService();

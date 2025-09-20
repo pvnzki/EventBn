@@ -12,6 +12,10 @@ BigInt.prototype.toJSON = function() {
 
 const app = express();
 
+// NOTE: Currently running as a monolith with service modules.
+// Services are organized for future microservice separation but share the same process/database.
+// To convert to true microservices: split into separate Node.js applications with their own ports.
+
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
@@ -108,9 +112,36 @@ app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 
+// Service health endpoints (prepare for microservice separation)
+app.get("/api/services/core/health", async (req, res) => {
+  try {
+    const coreService = require("./services/core-service");
+    const health = await coreService.health();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      service: "core-service",
+      status: "error",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
-
-
+app.get("/api/services/post/health", async (req, res) => {
+  try {
+    const postService = require("./services/post-service");
+    const health = await postService.healthCheck();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      service: "post-service",
+      status: "error",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -1,0 +1,183 @@
+// This is your Prisma schema file for Post Service
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  content     String
+  mediaUrl    String?
+  authorId    String   // References user from core-service
+  authorName  String   // Denormalized for performance
+  authorAvatar String?
+  eventId     String?  // Optional: post can be related to an event
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Social features
+  likes       PostLike[]
+  comments    Comment[]
+  shares      PostShare[]
+  
+  // Analytics
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+  sharesCount   Int @default(0)
+  viewsCount    Int @default(0)
+  
+  // Moderation
+  isHidden    Boolean @default(false)
+  reportCount Int     @default(0)
+  
+  @@map("posts")
+  @@index([authorId])
+  @@index([eventId])
+  @@index([createdAt])
+}
+
+model PostLike {
+  id     String @id @default(cuid())
+  postId String
+  userId String // References user from core-service
+  
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([postId, userId])
+  @@map("post_likes")
+}
+
+model Comment {
+  id       String @id @default(cuid())
+  content  String
+  postId   String
+  authorId String // References user from core-service
+  authorName String // Denormalized
+  authorAvatar String?
+  parentId String? // For nested comments
+  
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+  likes    CommentLike[]
+  
+  likesCount Int @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Moderation
+  isHidden    Boolean @default(false)
+  reportCount Int     @default(0)
+  
+  @@map("comments")
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String @id @default(cuid())
+  commentId String
+  userId    String // References user from core-service
+  
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([commentId, userId])
+  @@map("comment_likes")
+}
+
+model PostShare {
+  id     String @id @default(cuid())
+  postId String
+  userId String // References user from core-service
+  sharedTo String? // platform where shared (twitter, facebook, etc)
+  
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@map("post_shares")
+  @@index([postId])
+  @@index([userId])
+}
+
+model UserFeed {
+  id       String @id @default(cuid())
+  userId   String // References user from core-service
+  postId   String
+  
+  // Feed algorithm data
+  relevanceScore Float   @default(0.0)
+  interactionScore Float @default(0.0)
+  timeScore      Float   @default(1.0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, postId])
+  @@map("user_feeds")
+  @@index([userId, relevanceScore])
+}
+
+model HashTag {
+  id    String @id @default(cuid())
+  name  String @unique
+  count Int    @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("hashtags")
+}
+
+model PostAnalytics {
+  id     String @id @default(cuid())
+  postId String @unique
+  
+  // Engagement metrics
+  impressions    Int @default(0)
+  clicks         Int @default(0)
+  likes          Int @default(0)
+  comments       Int @default(0)
+  shares         Int @default(0)
+  saves          Int @default(0)
+  
+  // Time-based metrics (JSON as String for SQLite compatibility)
+  hourlyViews    String? // Store hourly view data as JSON string
+  dailyViews     String? // Store daily view data as JSON string
+  
+  // Geographic data (JSON as String for SQLite compatibility)
+  topCountries   String? // Top countries viewing the post as JSON string
+  topCities      String? // Top cities viewing the post as JSON string
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("post_analytics")
+}
+
+// User event tracking for cross-service analytics
+model UserEvent {
+  id       String @id @default(cuid())
+  userId   String
+  eventType String // "profile_updated", "event_created", etc.
+  eventData String? // JSON data as string for SQLite compatibility
+  
+  createdAt DateTime @default(now())
+  
+  @@map("user_events")
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+}
