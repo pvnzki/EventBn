@@ -56,11 +56,13 @@ EventBn has been successfully transformed from a monolithic architecture to a tr
 ### 1. HTTP Communication (Synchronous)
 
 **Post Service → Core Service**
+
 - User data enrichment for posts/comments/likes
 - User verification and authentication
 - Event data for event-related posts
 
 **Endpoints:**
+
 ```
 Core Service Internal API:
 GET  /internal/v1/users/{userId}          - Get user details
@@ -72,6 +74,7 @@ GET  /internal/v1/events/{eventId}        - Get event details
 ### 2. RabbitMQ Messaging (Asynchronous)
 
 **Event Types:**
+
 - `user.created` - New user registration
 - `user.updated` - Profile updates
 - `user.deleted` - Account deletion
@@ -80,8 +83,9 @@ GET  /internal/v1/events/{eventId}        - Get event details
 - `comment.created` - New comment
 
 **Queues:**
+
 - `user_events` - User-related events
-- `post_events` - Post-related events  
+- `post_events` - Post-related events
 - `social_events` - Social interactions
 - `analytics_events` - Analytics data
 
@@ -90,6 +94,7 @@ GET  /internal/v1/events/{eventId}        - Get event details
 ### Core Service (Port 3001)
 
 **Responsibilities:**
+
 - User management and authentication
 - Event creation and management
 - Organization management
@@ -97,6 +102,7 @@ GET  /internal/v1/events/{eventId}        - Get event details
 - Core business logic
 
 **API Endpoints:**
+
 ```
 External API (Client Access):
 POST /api/v1/auth/login           - User authentication
@@ -122,6 +128,7 @@ GET  /health/live   - Liveness probe
 ### Post Service (Port 3002)
 
 **Responsibilities:**
+
 - Social media posts management
 - Comments and reactions
 - User feeds (home, explore)
@@ -129,6 +136,7 @@ GET  /health/live   - Liveness probe
 - Media upload handling
 
 **API Endpoints:**
+
 ```
 External API (Client Access):
 GET  /api/v1/posts                    - List posts
@@ -156,33 +164,45 @@ GET  /internal/v1/metrics                  - Service metrics
 
 Health Endpoints:
 GET  /health        - Basic health check
-GET  /health/ready  - Readiness probe  
+GET  /health/ready  - Readiness probe
 GET  /health/live   - Liveness probe
 ```
 
 ## Authentication & Security
 
 ### Service-to-Service Authentication
+
 - **Inter-Service Key**: Shared secret key for internal API calls
 - **Header**: `X-Service-Key: your-secret-key`
 
 ### Client Authentication
+
 - **JWT Tokens**: Bearer token authentication
 - **Header**: `Authorization: Bearer <token>`
 - **User ID**: Passed via `X-User-ID` header (temporary for development)
 
 ### CORS Configuration
+
 ```javascript
 // Core Service
-origin: ["http://localhost:3000", "http://localhost:3002", "http://localhost:8080"]
+origin: [
+  "http://localhost:3000",
+  "http://localhost:3002",
+  "http://localhost:8080",
+];
 
-// Post Service  
-origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:8080"]
+// Post Service
+origin: [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:8080",
+];
 ```
 
 ## Database Architecture
 
 ### Core Service Database
+
 ```sql
 Tables:
 - users (id, name, email, password, profile_picture, etc.)
@@ -193,6 +213,7 @@ Tables:
 ```
 
 ### Post Service Database
+
 ```sql
 Tables:
 - posts (id, user_id, content, media_url, created_at, etc.)
@@ -207,17 +228,19 @@ Tables:
 ### Development Setup
 
 1. **Install Dependencies:**
+
    ```bash
    # Core Service
    cd services/core-service
    npm install
-   
+
    # Post Service
    cd ../post-service
    npm install
    ```
 
 2. **Environment Configuration:**
+
    ```bash
    # Copy and configure environment files
    cp services/core-service/.env.example services/core-service/.env
@@ -225,6 +248,7 @@ Tables:
    ```
 
 3. **Database Setup:**
+
    ```bash
    # Run Prisma migrations for both services
    cd services/core-service && npx prisma migrate dev
@@ -232,22 +256,24 @@ Tables:
    ```
 
 4. **Start Services:**
+
    ```bash
    # Option 1: Use startup script
    cd services
    node start-microservices.js
-   
+
    # Option 2: Start individually
    # Terminal 1 - Core Service
    cd services/core-service && npm start
-   
-   # Terminal 2 - Post Service  
+
+   # Terminal 2 - Post Service
    cd services/post-service && npm start
    ```
 
 ### Production Deployment
 
 **Docker Configuration:**
+
 ```dockerfile
 # Core Service Dockerfile
 FROM node:18-alpine
@@ -269,8 +295,9 @@ CMD ["node", "server.js"]
 ```
 
 **Docker Compose:**
+
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   core-service:
     build: ./services/core-service
@@ -323,6 +350,7 @@ volumes:
 ## Monitoring & Observability
 
 ### Health Checks
+
 ```bash
 # Core Service
 curl http://localhost:3001/health
@@ -336,13 +364,16 @@ curl http://localhost:3002/health/ready
 ```
 
 ### Service Discovery
+
 Each service exposes metadata about itself:
+
 ```bash
 curl http://localhost:3001/      # Core service info
 curl http://localhost:3002/      # Post service info
 ```
 
 ### Logging
+
 - Structured logging with service identification
 - Request/response logging with correlation IDs
 - Error tracking with stack traces
@@ -362,6 +393,7 @@ curl http://localhost:3002/      # Post service info
 ## Migration from Monolith
 
 The migration has been completed with:
+
 - ✅ Separate service applications
 - ✅ Independent databases
 - ✅ HTTP inter-service communication

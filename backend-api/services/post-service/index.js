@@ -1,7 +1,7 @@
 // Post Service - Microservice for handling posts, comments, likes, shares
 // This service can run independently and communicate with core-service
 
-const posts = require('./posts');
+const posts = require("./posts");
 
 class PostService {
   constructor() {
@@ -11,10 +11,10 @@ class PostService {
   // Health check
   async health() {
     return {
-      service: 'post-service',
-      status: 'ok',
+      service: "post-service",
+      status: "ok",
       timestamp: new Date().toISOString(),
-      version: '1.0.0',
+      version: "1.0.0",
     };
   }
 
@@ -27,10 +27,10 @@ class PostService {
   async initialize() {
     try {
       // Any initialization logic here
-      console.log('Post Service initialized successfully');
+      console.log("Post Service initialized successfully");
       return true;
     } catch (error) {
-      console.error('Post Service initialization failed:', error);
+      console.error("Post Service initialization failed:", error);
       return false;
     }
   }

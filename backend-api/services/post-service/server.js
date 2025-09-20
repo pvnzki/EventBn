@@ -11,27 +11,36 @@ const { prisma, connectDatabase } = require("./lib/database");
 const postService = require("./index");
 
 // RabbitMQ services
-const { connectToRabbitMQ, getRabbitMQHealth, closeRabbitMQ } = require("./utils/rabbitmq-publisher");
-const { startConsumer: startRabbitMQConsumer, closeRabbitMQ: closeRabbitMQConsumer } = require("./utils/rabbitmq-consumer");
+const {
+  connectToRabbitMQ,
+  getRabbitMQHealth,
+  closeRabbitMQ,
+} = require("./utils/rabbitmq-publisher");
+const {
+  startConsumer: startRabbitMQConsumer,
+  closeRabbitMQ: closeRabbitMQConsumer,
+} = require("./utils/rabbitmq-consumer");
 
 // Handle BigInt serialization
-BigInt.prototype.toJSON = function() {
+BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
 const app = express();
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for development
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable for development
+  })
+);
 app.use(compression());
 
 // Rate limiting for social media endpoints (more permissive)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 2000, // Higher limit for social feeds
-  message: "Too many requests from this IP, please try again later."
+  message: "Too many requests from this IP, please try again later.",
 });
 app.use(limiter);
 
@@ -45,7 +54,7 @@ const corsOptions = {
     "http://localhost:3000",
     "http://localhost:3001", // core-service
     "http://localhost:8080",
-    /^http:\/\/localhost:\d+$/
+    /^http:\/\/localhost:\d+$/,
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -55,8 +64,8 @@ app.use(cors(corsOptions));
 
 // Service identification middleware
 app.use((req, res, next) => {
-  res.setHeader('X-Service-Name', 'post-service');
-  res.setHeader('X-Service-Version', '1.0.0');
+  res.setHeader("X-Service-Name", "post-service");
+  res.setHeader("X-Service-Version", "1.0.0");
   next();
 });
 
@@ -65,15 +74,15 @@ const apiRoutes = require("./routes/api");
 const internalRoutes = require("./routes/internal");
 
 // API Routes
-app.use('/api/v1', apiRoutes);           // External API for clients
-app.use('/internal/v1', internalRoutes); // Inter-service communication
+app.use("/api/v1", apiRoutes); // External API for clients
+app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Health check endpoints - Always returns 200 for service readiness
-app.get('/health', async (req, res) => {
+app.get("/health", async (req, res) => {
   let databaseStatus = "Connected";
   let rabbitMQHealth = "Unknown";
   let health = { service: "post-service", status: "ok" };
-  
+
   try {
     await prisma.$queryRaw`SELECT 1`;
     databaseStatus = "Connected";
@@ -81,25 +90,27 @@ app.get('/health', async (req, res) => {
     databaseStatus = "Disconnected";
     console.warn(`[POST-SERVICE] Database check failed: ${error.message}`);
   }
-  
+
   try {
     // Get service health if available
-    if (postService && typeof postService.health === 'function') {
+    if (postService && typeof postService.health === "function") {
       health = await postService.health();
     }
-    
+
     // Check RabbitMQ health only if enabled
-    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === 'true';
+    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
     if (isRabbitMQEnabled) {
       rabbitMQHealth = await getRabbitMQHealth();
     } else {
       rabbitMQHealth = "Disabled";
     }
   } catch (error) {
-    console.warn(`[POST-SERVICE] Service health check failed: ${error.message}`);
+    console.warn(
+      `[POST-SERVICE] Service health check failed: ${error.message}`
+    );
     rabbitMQHealth = "Disconnected";
   }
-  
+
   // Always return 200 OK for service readiness, regardless of database status
   res.status(200).json({
     ...health,
@@ -110,49 +121,49 @@ app.get('/health', async (req, res) => {
   });
 });
 
-app.get('/health/ready', async (req, res) => {
+app.get("/health/ready", async (req, res) => {
   try {
-    // Check database connectivity 
-    let databaseCheck = 'connected';
+    // Check database connectivity
+    let databaseCheck = "connected";
     try {
       await prisma.$queryRaw`SELECT 1`;
     } catch {
-      databaseCheck = 'disconnected';
+      databaseCheck = "disconnected";
     }
-    
+
     // Check RabbitMQ status
-    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === 'true';
-    const rabbitmqCheck = isRabbitMQEnabled ? 'connected' : 'disabled';
-    
+    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
+    const rabbitmqCheck = isRabbitMQEnabled ? "connected" : "disabled";
+
     // Get service health if available
-    let health = { status: 'ready' };
-    if (postService && typeof postService.health === 'function') {
+    let health = { status: "ready" };
+    if (postService && typeof postService.health === "function") {
       health = await postService.health();
     }
-    
+
     res.json({
-      status: 'ready',
-      service: 'post-service',
+      status: "ready",
+      service: "post-service",
       checks: {
         database: databaseCheck,
         rabbitmq: rabbitmqCheck,
-        core_service: 'unknown'
-      }
+        core_service: "unknown",
+      },
     });
   } catch (error) {
-    console.error('[HEALTH] Service not ready:', error);
+    console.error("[HEALTH] Service not ready:", error);
     res.status(503).json({
-      status: 'not_ready',
-      service: 'post-service',
-      error: error.message
+      status: "not_ready",
+      service: "post-service",
+      error: error.message,
     });
   }
 });
 
-app.get('/health/live', (req, res) => {
+app.get("/health/live", (req, res) => {
   res.json({
-    status: 'alive',
-    service: 'post-service'
+    status: "alive",
+    service: "post-service",
   });
 });
 
@@ -167,14 +178,14 @@ app.get("/", (req, res) => {
     endpoints: [
       "/health",
       "/api/v1/posts/*",
-      "/api/v1/feeds/*", 
+      "/api/v1/feeds/*",
       "/api/v1/comments/*",
       "/api/v1/likes/*",
-      "/internal/v1/*"
+      "/internal/v1/*",
     ],
     integrations: {
       core_service: process.env.CORE_SERVICE_URL || "http://localhost:3001",
-      rabbitmq: "Connected"
+      rabbitmq: "Connected",
     },
     timestamp: new Date().toISOString(),
   });
@@ -186,7 +197,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     service: "post-service",
     error: "Internal server error",
-    message: process.env.NODE_ENV === "development" ? err.message : "Something went wrong",
+    message:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Something went wrong",
     timestamp: new Date().toISOString(),
   });
 });
@@ -202,61 +216,61 @@ app.use("*", (req, res) => {
 });
 
 const PORT = process.env.POST_SERVICE_PORT || 3002;
-const HOST = process.env.POST_SERVICE_HOST || '0.0.0.0';
+const HOST = process.env.POST_SERVICE_HOST || "0.0.0.0";
 
 // Initialize RabbitMQ connections (optional)
 const initializeRabbitMQ = async () => {
   // Check if RabbitMQ is enabled
-  const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === 'true';
-  
+  const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
+
   if (!isRabbitMQEnabled) {
-    console.log('[POST-SERVICE] ⚠️  RabbitMQ disabled by configuration');
+    console.log("[POST-SERVICE] ⚠️  RabbitMQ disabled by configuration");
     return false;
   }
-  
+
   try {
-    console.log('[POST-SERVICE] Initializing RabbitMQ...');
-    
+    console.log("[POST-SERVICE] Initializing RabbitMQ...");
+
     // Connect publisher
     await connectToRabbitMQ();
-    console.log('[POST-SERVICE] ✅ RabbitMQ Publisher connected');
-    
+    console.log("[POST-SERVICE] ✅ RabbitMQ Publisher connected");
+
     // Start consumers
     await startRabbitMQConsumer();
-    console.log('[POST-SERVICE] ✅ RabbitMQ Consumers started');
-    
+    console.log("[POST-SERVICE] ✅ RabbitMQ Consumers started");
+
     return true;
   } catch (error) {
-    console.error('[POST-SERVICE] ❌ RabbitMQ initialization failed:', error);
+    console.error("[POST-SERVICE] ❌ RabbitMQ initialization failed:", error);
     return false;
   }
 };
 
 // Graceful shutdown handler
 const gracefulShutdown = async () => {
-  console.log('[POST-SERVICE] Initiating graceful shutdown...');
-  
+  console.log("[POST-SERVICE] Initiating graceful shutdown...");
+
   try {
     // Only close RabbitMQ connections if they were initialized
-    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === 'true';
+    const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
     if (isRabbitMQEnabled) {
       await closeRabbitMQ();
       await closeRabbitMQConsumer();
     }
-    
+
     await prisma.$disconnect();
-    
-    console.log('[POST-SERVICE] ✅ Graceful shutdown completed');
+
+    console.log("[POST-SERVICE] ✅ Graceful shutdown completed");
     process.exit(0);
   } catch (error) {
-    console.error('[POST-SERVICE] ❌ Error during shutdown:', error);
+    console.error("[POST-SERVICE] ❌ Error during shutdown:", error);
     process.exit(1);
   }
 };
 
 // Handle shutdown signals
-process.on('SIGINT', gracefulShutdown);
-process.on('SIGTERM', gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
 app.listen(PORT, HOST, async () => {
   console.log(`
@@ -269,37 +283,47 @@ app.listen(PORT, HOST, async () => {
 \x1b[32mEnv:\x1b[0m ${process.env.NODE_ENV || "development"}
 \x1b[32mURL:\x1b[0m http://localhost:${PORT}
 \x1b[32mHealth:\x1b[0m http://localhost:${PORT}/health
-\x1b[32mCore Service:\x1b[0m ${process.env.CORE_SERVICE_URL || "http://localhost:3001"}
+\x1b[32mCore Service:\x1b[0m ${
+    process.env.CORE_SERVICE_URL || "http://localhost:3001"
+  }
 \x1b[36m===============================\x1b[0m
 `);
-  
+
   // Initialize database connection
   let databaseReady = false;
   try {
     databaseReady = await connectDatabase();
     if (databaseReady) {
-      console.log('\x1b[32m✅ Post Service: Database connection established\x1b[0m');
+      console.log(
+        "\x1b[32m✅ Post Service: Database connection established\x1b[0m"
+      );
     }
   } catch (error) {
-    console.error('\x1b[31m❌ Post Service: Database connection failed\x1b[0m');
-    console.log('\x1b[33m⚠️  Post Service: Continuing without database...\x1b[0m');
+    console.error("\x1b[31m❌ Post Service: Database connection failed\x1b[0m");
+    console.log(
+      "\x1b[33m⚠️  Post Service: Continuing without database...\x1b[0m"
+    );
   }
-  
+
   // Initialize RabbitMQ after server starts
   let rabbitMQReady = false;
   try {
     rabbitMQReady = await initializeRabbitMQ();
   } catch (error) {
-    console.log('\x1b[33m⚠️  Post Service: RabbitMQ initialization skipped\x1b[0m');
+    console.log(
+      "\x1b[33m⚠️  Post Service: RabbitMQ initialization skipped\x1b[0m"
+    );
   }
-  
+
   if (rabbitMQReady && databaseReady) {
-    console.log('\x1b[32m🚀 Post Service: All systems ready!\x1b[0m');
+    console.log("\x1b[32m🚀 Post Service: All systems ready!\x1b[0m");
   } else {
-    console.log('\x1b[33m⚠️  Post Service: Running with limited functionality\x1b[0m');
+    console.log(
+      "\x1b[33m⚠️  Post Service: Running with limited functionality\x1b[0m"
+    );
   }
-  
-  console.log('\x1b[32m🎉 Post Service is ready to accept requests!\x1b[0m');
+
+  console.log("\x1b[32m🎉 Post Service is ready to accept requests!\x1b[0m");
 });
 
 module.exports = app;

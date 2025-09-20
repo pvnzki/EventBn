@@ -8,7 +8,7 @@ const rateLimit = require("express-rate-limit");
 const path = require("path");
 
 // Database for core-service
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
 
@@ -16,23 +16,25 @@ const prisma = new PrismaClient();
 // const { connectToRabbitMQ, publishUserEvent } = require("./utils/rabbitmq-publisher");
 
 // Handle BigInt serialization
-BigInt.prototype.toJSON = function() {
+BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
 const app = express();
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false, // Disable for development
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disable for development
+  })
+);
 app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
-  message: "Too many requests from this IP, please try again later."
+  message: "Too many requests from this IP, please try again later.",
 });
 app.use(limiter);
 
@@ -46,7 +48,7 @@ const corsOptions = {
     "http://localhost:3000",
     "http://localhost:3002", // post-service
     "http://localhost:8080",
-    /^http:\/\/localhost:\d+$/
+    /^http:\/\/localhost:\d+$/,
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -56,8 +58,8 @@ app.use(cors(corsOptions));
 
 // Service identification middleware
 app.use((req, res, next) => {
-  res.setHeader('X-Service-Name', 'core-service');
-  res.setHeader('X-Service-Version', '1.0.0');
+  res.setHeader("X-Service-Name", "core-service");
+  res.setHeader("X-Service-Version", "1.0.0");
   next();
 });
 
@@ -67,8 +69,8 @@ const internalRoutes = require("./routes/internal");
 
 // Health check - Always returns 200 for service readiness (no DB check for testing)
 app.get("/health", (req, res) => {
-  console.log('[CORE-SERVICE] Health check requested');
-  
+  console.log("[CORE-SERVICE] Health check requested");
+
   // Always return 200 OK for service readiness, regardless of database status
   res.status(200).json({
     service: "core-service",
@@ -81,9 +83,9 @@ app.get("/health", (req, res) => {
 });
 
 // API Routes
-app.use('/api/v1', apiRoutes);           // Versioned API for clients
-app.use('/api', apiRoutes);              // Legacy API for backward compatibility
-app.use('/internal/v1', internalRoutes); // Inter-service communication
+app.use("/api/v1", apiRoutes); // Versioned API for clients
+app.use("/api", apiRoutes); // Legacy API for backward compatibility
+app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Root route for testing
 app.get("/", (req, res) => {
@@ -91,7 +93,7 @@ app.get("/", (req, res) => {
     service: "EventBn Core Service",
     status: "running",
     version: "1.0.0",
-    health: "/health"
+    health: "/health",
   });
 });
 
@@ -106,10 +108,10 @@ app.get("/info", (req, res) => {
     endpoints: [
       "/health",
       "/api/auth/*",
-      "/api/users/*", 
+      "/api/users/*",
       "/api/events/*",
       "/api/organizations/*",
-      "/api/tickets/*"
+      "/api/tickets/*",
     ],
     timestamp: new Date().toISOString(),
   });
@@ -125,7 +127,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     service: "core-service",
     error: "Internal server error",
-    message: process.env.NODE_ENV === "development" ? err.message : "Something went wrong",
+    message:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Something went wrong",
     timestamp: new Date().toISOString(),
   });
 });
@@ -141,45 +146,48 @@ app.use("*", (req, res) => {
 });
 
 const PORT = process.env.CORE_SERVICE_PORT || 3001;
-const HOST = process.env.CORE_SERVICE_HOST || '0.0.0.0';
+const HOST = process.env.CORE_SERVICE_HOST || "0.0.0.0";
 
 // Initialize RabbitMQ connections (optional)
 const initializeRabbitMQ = async () => {
   try {
-    console.log('[CORE-SERVICE] Initializing RabbitMQ...');
-    
+    console.log("[CORE-SERVICE] Initializing RabbitMQ...");
+
     // Connect publisher
     await connectToRabbitMQ();
-    console.log('[CORE-SERVICE] ✅ RabbitMQ Publisher connected');
-    
+    console.log("[CORE-SERVICE] ✅ RabbitMQ Publisher connected");
+
     // Start consumers
     await startRabbitMQConsumer();
-    console.log('[CORE-SERVICE] ✅ RabbitMQ Consumers started');
-    
+    console.log("[CORE-SERVICE] ✅ RabbitMQ Consumers started");
+
     return true;
   } catch (error) {
-    console.warn('[CORE-SERVICE] ⚠️  RabbitMQ not available, continuing without it:', error.message);
+    console.warn(
+      "[CORE-SERVICE] ⚠️  RabbitMQ not available, continuing without it:",
+      error.message
+    );
     return false;
   }
 };
 
 // Graceful shutdown handler (simplified)
 const gracefulShutdown = async () => {
-  console.log('[CORE-SERVICE] Initiating graceful shutdown...');
-  
+  console.log("[CORE-SERVICE] Initiating graceful shutdown...");
+
   try {
     await prisma.$disconnect();
-    console.log('[CORE-SERVICE] ✅ Graceful shutdown completed');
+    console.log("[CORE-SERVICE] ✅ Graceful shutdown completed");
     process.exit(0);
   } catch (error) {
-    console.error('[CORE-SERVICE] ❌ Error during shutdown:', error);
+    console.error("[CORE-SERVICE] ❌ Error during shutdown:", error);
     process.exit(1);
   }
 };
 
 // Handle shutdown signals
-process.on('SIGINT', gracefulShutdown);
-process.on('SIGTERM', gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 
 app.listen(PORT, HOST, async () => {
   console.log(`
@@ -194,19 +202,23 @@ app.listen(PORT, HOST, async () => {
 \x1b[32mHealth:\x1b[0m http://localhost:${PORT}/health
 \x1b[36m===============================\x1b[0m
 `);
-  
+
   // Database connection test
   try {
     await prisma.$queryRaw`SELECT 1`;
-    console.log('\x1b[32m✅ Database connection established\x1b[0m');
+    console.log("\x1b[32m✅ Database connection established\x1b[0m");
   } catch (error) {
-    console.error('\x1b[31m❌ Database connection failed:', error.message, '\x1b[0m');
+    console.error(
+      "\x1b[31m❌ Database connection failed:",
+      error.message,
+      "\x1b[0m"
+    );
   }
-  
+
   // RabbitMQ temporarily disabled for testing
-  console.log('\x1b[33m⚠️  RabbitMQ disabled for testing\x1b[0m');
-  
-  console.log('\x1b[32m🚀 Core Service ready as microservice!\x1b[0m');
+  console.log("\x1b[33m⚠️  RabbitMQ disabled for testing\x1b[0m");
+
+  console.log("\x1b[32m🚀 Core Service ready as microservice!\x1b[0m");
 });
 
 module.exports = app;

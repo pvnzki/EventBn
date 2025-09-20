@@ -1,12 +1,12 @@
 require("dotenv").config();
 
 const express = require("express");
-const path = require("path")
+const path = require("path");
 const cors = require("cors");
 const prisma = require("./lib/database");
 
 // Handle BigInt serialization for JSON responses
-BigInt.prototype.toJSON = function() {
+BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === "development") {
 } else {
   // Production → only allow origins from .env
   const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+    ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
     : [
         "http://localhost:3000",
         "http://localhost:8080", // Flutter web default
@@ -65,7 +65,6 @@ const paymentRoutes = require("./routes/payments");
 const ticketRoutes = require("./routes/tickets");
 
 const analyticsRoutes = require("./routes/analytics");
-
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -163,7 +162,7 @@ app.use("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
+const HOST = process.env.HOST || "0.0.0.0"; // Listen on all network interfaces
 
 app.listen(PORT, HOST, () => {
   console.log(`

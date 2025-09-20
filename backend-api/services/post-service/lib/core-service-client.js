@@ -1,28 +1,30 @@
-const axios = require('axios');
+const axios = require("axios");
 
 class CoreServiceClient {
   constructor() {
-    this.baseURL = process.env.CORE_SERVICE_URL || 'http://localhost:3001';
-    this.serviceKey = process.env.INTER_SERVICE_KEY || 'dev-service-key';
+    this.baseURL = process.env.CORE_SERVICE_URL || "http://localhost:3001";
+    this.serviceKey = process.env.INTER_SERVICE_KEY || "dev-service-key";
     this.timeout = 5000; // 5 seconds
-    
+
     this.client = axios.create({
-      baseURL: this.baseURL + '/internal/v1',
+      baseURL: this.baseURL + "/internal/v1",
       timeout: this.timeout,
       headers: {
-        'X-Service-Key': this.serviceKey,
-        'Content-Type': 'application/json'
-      }
+        "X-Service-Key": this.serviceKey,
+        "Content-Type": "application/json",
+      },
     });
 
     // Request interceptor for logging
     this.client.interceptors.request.use(
       (config) => {
-        console.log(`[CORE-SERVICE-CLIENT] ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(
+          `[CORE-SERVICE-CLIENT] ${config.method?.toUpperCase()} ${config.url}`
+        );
         return config;
       },
       (error) => {
-        console.error('[CORE-SERVICE-CLIENT] Request error:', error);
+        console.error("[CORE-SERVICE-CLIENT] Request error:", error);
         return Promise.reject(error);
       }
     );
@@ -31,13 +33,14 @@ class CoreServiceClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        const message = error.response?.data?.error || error.message || 'Unknown error';
+        const message =
+          error.response?.data?.error || error.message || "Unknown error";
         console.error(`[CORE-SERVICE-CLIENT] Error: ${message}`);
-        
-        if (error.code === 'ECONNREFUSED') {
-          console.error('[CORE-SERVICE-CLIENT] Core service is not reachable');
+
+        if (error.code === "ECONNREFUSED") {
+          console.error("[CORE-SERVICE-CLIENT] Core service is not reachable");
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -49,7 +52,10 @@ class CoreServiceClient {
       const response = await this.client.get(`/users/${userId}`);
       return response.data;
     } catch (error) {
-      console.error(`[CORE-SERVICE-CLIENT] Failed to fetch user ${userId}:`, error.message);
+      console.error(
+        `[CORE-SERVICE-CLIENT] Failed to fetch user ${userId}:`,
+        error.message
+      );
       throw new Error(`Failed to fetch user details: ${error.message}`);
     }
   }
@@ -58,16 +64,19 @@ class CoreServiceClient {
   async getUsersBatch(userIds) {
     try {
       if (!Array.isArray(userIds) || userIds.length === 0) {
-        throw new Error('userIds must be a non-empty array');
+        throw new Error("userIds must be a non-empty array");
       }
 
-      const response = await this.client.post('/users/batch', {
-        userIds: userIds
+      const response = await this.client.post("/users/batch", {
+        userIds: userIds,
       });
-      
+
       return response.data;
     } catch (error) {
-      console.error('[CORE-SERVICE-CLIENT] Failed to fetch users batch:', error.message);
+      console.error(
+        "[CORE-SERVICE-CLIENT] Failed to fetch users batch:",
+        error.message
+      );
       throw new Error(`Failed to fetch users: ${error.message}`);
     }
   }
@@ -78,7 +87,10 @@ class CoreServiceClient {
       const response = await this.client.get(`/users/${userId}/verify`);
       return response.data;
     } catch (error) {
-      console.error(`[CORE-SERVICE-CLIENT] Failed to verify user ${userId}:`, error.message);
+      console.error(
+        `[CORE-SERVICE-CLIENT] Failed to verify user ${userId}:`,
+        error.message
+      );
       return { exists: false, active: false, verified: false };
     }
   }
@@ -89,7 +101,10 @@ class CoreServiceClient {
       const response = await this.client.get(`/events/${eventId}`);
       return response.data;
     } catch (error) {
-      console.error(`[CORE-SERVICE-CLIENT] Failed to fetch event ${eventId}:`, error.message);
+      console.error(
+        `[CORE-SERVICE-CLIENT] Failed to fetch event ${eventId}:`,
+        error.message
+      );
       throw new Error(`Failed to fetch event details: ${error.message}`);
     }
   }
@@ -97,16 +112,21 @@ class CoreServiceClient {
   // Health check for core service
   async healthCheck() {
     try {
-      const response = await axios.get(`${this.baseURL}/health`, { timeout: 3000 });
+      const response = await axios.get(`${this.baseURL}/health`, {
+        timeout: 3000,
+      });
       return {
-        status: 'healthy',
-        data: response.data
+        status: "healthy",
+        data: response.data,
       };
     } catch (error) {
-      console.error('[CORE-SERVICE-CLIENT] Health check failed:', error.message);
+      console.error(
+        "[CORE-SERVICE-CLIENT] Health check failed:",
+        error.message
+      );
       return {
-        status: 'unhealthy',
-        error: error.message
+        status: "unhealthy",
+        error: error.message,
       };
     }
   }
@@ -115,7 +135,7 @@ class CoreServiceClient {
   async isReachable() {
     try {
       const health = await this.healthCheck();
-      return health.status === 'healthy';
+      return health.status === "healthy";
     } catch (error) {
       return false;
     }

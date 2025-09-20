@@ -1,6 +1,6 @@
 require("dotenv").config();
-const amqp = require('amqplib');
-const prisma = require('../../lib/database.js');
+const amqp = require("amqplib");
+const prisma = require("../../lib/database.js");
 
 class CoreServiceRabbitMQConsumer {
   constructor() {
@@ -11,16 +11,16 @@ class CoreServiceRabbitMQConsumer {
     this.reconnectDelay = 5000;
     this.maxReconnectAttempts = 10;
     this.reconnectAttempts = 0;
-    
+
     this.config = {
-      url: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
-      exchange: process.env.RABBITMQ_EXCHANGE || 'eventbn_exchange',
+      url: process.env.RABBITMQ_URL || "amqp://localhost:5672",
+      exchange: process.env.RABBITMQ_EXCHANGE || "eventbn_exchange",
       queues: {
-        postEvents: process.env.RABBITMQ_POST_QUEUE || 'post_events',
-        socialEvents: process.env.RABBITMQ_SOCIAL_QUEUE || 'social_events',
-        analyticsEvents: 'analytics_events'
+        postEvents: process.env.RABBITMQ_POST_QUEUE || "post_events",
+        socialEvents: process.env.RABBITMQ_SOCIAL_QUEUE || "social_events",
+        analyticsEvents: "analytics_events",
       },
-      prefetch: 10
+      prefetch: 10,
     };
   }
 
@@ -36,55 +36,61 @@ class CoreServiceRabbitMQConsumer {
     this.isConnecting = true;
 
     try {
-      console.log('[CORE-RABBITMQ-CONSUMER] Connecting to RabbitMQ...');
-      
+      console.log("[CORE-RABBITMQ-CONSUMER] Connecting to RabbitMQ...");
+
       this.connection = await amqp.connect(this.config.url);
       this.channel = await this.connection.createChannel();
 
       await this.channel.prefetch(this.config.prefetch);
 
       // Setup exchange
-      await this.channel.assertExchange(this.config.exchange, 'topic', { 
-        durable: true 
+      await this.channel.assertExchange(this.config.exchange, "topic", {
+        durable: true,
       });
 
       // Setup queues
       for (const [name, queueName] of Object.entries(this.config.queues)) {
-        await this.channel.assertQueue(queueName, { 
+        await this.channel.assertQueue(queueName, {
           durable: true,
           arguments: {
-            'x-message-ttl': 24 * 60 * 60 * 1000,
-            'x-max-length': 10000,
-            'x-dead-letter-exchange': `${this.config.exchange}.dlx`,
-            'x-dead-letter-routing-key': `${queueName}.failed`
-          }
+            "x-message-ttl": 24 * 60 * 60 * 1000,
+            "x-max-length": 10000,
+            "x-dead-letter-exchange": `${this.config.exchange}.dlx`,
+            "x-dead-letter-routing-key": `${queueName}.failed`,
+          },
         });
       }
 
       // Setup dead letter exchange
-      await this.channel.assertExchange(`${this.config.exchange}.dlx`, 'direct', { 
-        durable: true 
-      });
+      await this.channel.assertExchange(
+        `${this.config.exchange}.dlx`,
+        "direct",
+        {
+          durable: true,
+        }
+      );
 
       // Connection error handlers
-      this.connection.on('error', (error) => {
-        console.error('[CORE-RABBITMQ-CONSUMER] Connection error:', error);
+      this.connection.on("error", (error) => {
+        console.error("[CORE-RABBITMQ-CONSUMER] Connection error:", error);
         this.handleConnectionError();
       });
 
-      this.connection.on('close', () => {
-        console.warn('[CORE-RABBITMQ-CONSUMER] Connection closed');
+      this.connection.on("close", () => {
+        console.warn("[CORE-RABBITMQ-CONSUMER] Connection closed");
         this.handleConnectionError();
       });
 
       this.reconnectAttempts = 0;
       this.isConnecting = false;
-      
-      console.log('✅ [CORE-RABBITMQ-CONSUMER] Connected successfully');
-      return true;
 
+      console.log("✅ [CORE-RABBITMQ-CONSUMER] Connected successfully");
+      return true;
     } catch (error) {
-      console.error('❌ [CORE-RABBITMQ-CONSUMER] Connection failed:', error.message);
+      console.error(
+        "❌ [CORE-RABBITMQ-CONSUMER] Connection failed:",
+        error.message
+      );
       this.isConnecting = false;
       this.handleConnectionError();
       return false;
@@ -100,9 +106,11 @@ class CoreServiceRabbitMQConsumer {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * this.reconnectAttempts;
-      
-      console.log(`[CORE-RABBITMQ-CONSUMER] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
-      
+
+      console.log(
+        `[CORE-RABBITMQ-CONSUMER] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`
+      );
+
       setTimeout(() => {
         this.connect().then(() => {
           this.restartAllConsumers();
@@ -122,93 +130,123 @@ class CoreServiceRabbitMQConsumer {
       if (!this.channel) {
         const connected = await this.connect();
         if (!connected) {
-          throw new Error('RabbitMQ connection not available');
+          throw new Error("RabbitMQ connection not available");
         }
       }
 
       this.consumers.set(queueName, messageHandler);
-      console.log(`[👂] [CORE-RABBITMQ-CONSUMER] Starting consumer for queue: ${queueName}`);
+      console.log(
+        `[👂] [CORE-RABBITMQ-CONSUMER] Starting consumer for queue: ${queueName}`
+      );
 
-      await this.channel.consume(queueName, async (msg) => {
-        if (msg !== null) {
-          const startTime = Date.now();
-          let event = null;
-          
-          try {
-            event = JSON.parse(msg.content.toString());
-            
-            console.log(`[📥] [CORE-RABBITMQ-CONSUMER] Processing event: ${event.type} (ID: ${event.id})`);
-            
-            const success = await Promise.race([
-              messageHandler(event),
-              this.createTimeoutPromise(30000)
-            ]);
+      await this.channel.consume(
+        queueName,
+        async (msg) => {
+          if (msg !== null) {
+            const startTime = Date.now();
+            let event = null;
 
-            const processingTime = Date.now() - startTime;
+            try {
+              event = JSON.parse(msg.content.toString());
 
-            if (success) {
-              this.channel.ack(msg);
-              console.log(`[✅] [CORE-RABBITMQ-CONSUMER] Successfully processed event: ${event.type} in ${processingTime}ms`);
-            } else {
-              const retryCount = (msg.properties.headers && msg.properties.headers['x-retry-count']) || 0;
-              
-              if (retryCount < 3) {
-                const delay = Math.pow(2, retryCount) * 1000;
-                console.log(`[⚠️] [CORE-RABBITMQ-CONSUMER] Processing failed, retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
-                
-                setTimeout(() => {
-                  this.channel.nack(msg, false, true);
-                }, delay);
+              console.log(
+                `[📥] [CORE-RABBITMQ-CONSUMER] Processing event: ${event.type} (ID: ${event.id})`
+              );
+
+              const success = await Promise.race([
+                messageHandler(event),
+                this.createTimeoutPromise(30000),
+              ]);
+
+              const processingTime = Date.now() - startTime;
+
+              if (success) {
+                this.channel.ack(msg);
+                console.log(
+                  `[✅] [CORE-RABBITMQ-CONSUMER] Successfully processed event: ${event.type} in ${processingTime}ms`
+                );
               } else {
-                console.log(`[❌] [CORE-RABBITMQ-CONSUMER] Max retries exceeded, sending to DLQ: ${event.type}`);
-                this.channel.nack(msg, false, false);
+                const retryCount =
+                  (msg.properties.headers &&
+                    msg.properties.headers["x-retry-count"]) ||
+                  0;
+
+                if (retryCount < 3) {
+                  const delay = Math.pow(2, retryCount) * 1000;
+                  console.log(
+                    `[⚠️] [CORE-RABBITMQ-CONSUMER] Processing failed, retrying in ${delay}ms (attempt ${
+                      retryCount + 1
+                    }/3)`
+                  );
+
+                  setTimeout(() => {
+                    this.channel.nack(msg, false, true);
+                  }, delay);
+                } else {
+                  console.log(
+                    `[❌] [CORE-RABBITMQ-CONSUMER] Max retries exceeded, sending to DLQ: ${event.type}`
+                  );
+                  this.channel.nack(msg, false, false);
+                }
               }
+            } catch (error) {
+              const processingTime = Date.now() - startTime;
+              console.error(
+                `[❌] [CORE-RABBITMQ-CONSUMER] Error processing message in ${processingTime}ms:`,
+                error
+              );
+              this.channel.nack(msg, false, false);
             }
-
-          } catch (error) {
-            const processingTime = Date.now() - startTime;
-            console.error(`[❌] [CORE-RABBITMQ-CONSUMER] Error processing message in ${processingTime}ms:`, error);
-            this.channel.nack(msg, false, false);
           }
-        }
-      }, { noAck: false });
+        },
+        { noAck: false }
+      );
 
-      console.log(`[✅] [CORE-RABBITMQ-CONSUMER] Consumer started for queue: ${queueName}`);
+      console.log(
+        `[✅] [CORE-RABBITMQ-CONSUMER] Consumer started for queue: ${queueName}`
+      );
       return true;
-
     } catch (error) {
-      console.error(`[❌] [CORE-RABBITMQ-CONSUMER] Failed to start consumer for ${queueName}:`, error);
+      console.error(
+        `[❌] [CORE-RABBITMQ-CONSUMER] Failed to start consumer for ${queueName}:`,
+        error
+      );
       return false;
     }
   }
 
   createTimeoutPromise(timeout) {
     return new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Processing timeout')), timeout);
+      setTimeout(() => reject(new Error("Processing timeout")), timeout);
     });
   }
 
   // Post event handlers
   async handlePostEvent(event) {
     const { type, data, metadata } = event;
-    
+
     try {
       switch (type) {
-        case 'POST_CREATED':
+        case "POST_CREATED":
           return await this.handlePostCreated(data);
-          
-        case 'POST_UPDATED':
+
+        case "POST_UPDATED":
           return await this.handlePostUpdated(data);
-          
-        case 'POST_DELETED':
+
+        case "POST_DELETED":
           return await this.handlePostDeleted(data);
-          
+
         default:
-          console.warn(`[CORE-RABBITMQ-CONSUMER] Unknown post event type: ${type}`);
+          console.warn(
+            `[CORE-RABBITMQ-CONSUMER] Unknown post event type: ${type}`
+          );
           return true;
       }
     } catch (error) {
-      console.error(`[CORE-RABBITMQ-CONSUMER] Error handling post event ${type}:`, error);
+      console.error(
+        `[CORE-RABBITMQ-CONSUMER] Error handling post event ${type}:`,
+        error
+      );
       return false;
     }
   }
@@ -216,27 +254,32 @@ class CoreServiceRabbitMQConsumer {
   // Social event handlers
   async handleSocialEvent(event) {
     const { type, data, metadata } = event;
-    
+
     try {
       switch (type) {
-        case 'POST_LIKED':
+        case "POST_LIKED":
           return await this.handlePostLiked(data);
-          
-        case 'POST_UNLIKED':
+
+        case "POST_UNLIKED":
           return await this.handlePostUnliked(data);
-          
-        case 'COMMENT_CREATED':
+
+        case "COMMENT_CREATED":
           return await this.handleCommentCreated(data);
-          
-        case 'USER_FOLLOWED':
+
+        case "USER_FOLLOWED":
           return await this.handleUserFollowed(data);
-          
+
         default:
-          console.warn(`[CORE-RABBITMQ-CONSUMER] Unknown social event type: ${type}`);
+          console.warn(
+            `[CORE-RABBITMQ-CONSUMER] Unknown social event type: ${type}`
+          );
           return true;
       }
     } catch (error) {
-      console.error(`[CORE-RABBITMQ-CONSUMER] Error handling social event ${type}:`, error);
+      console.error(
+        `[CORE-RABBITMQ-CONSUMER] Error handling social event ${type}:`,
+        error
+      );
       return false;
     }
   }
@@ -244,21 +287,26 @@ class CoreServiceRabbitMQConsumer {
   // Analytics event handlers
   async handleAnalyticsEvent(event) {
     const { type, data, metadata } = event;
-    
+
     try {
       switch (type) {
-        case 'ENGAGEMENT_METRICS':
+        case "ENGAGEMENT_METRICS":
           return await this.handleEngagementMetrics(data);
-          
-        case 'FEED_INTERACTION':
+
+        case "FEED_INTERACTION":
           return await this.handleFeedInteraction(data);
-          
+
         default:
-          console.warn(`[CORE-RABBITMQ-CONSUMER] Unknown analytics event type: ${type}`);
+          console.warn(
+            `[CORE-RABBITMQ-CONSUMER] Unknown analytics event type: ${type}`
+          );
           return true;
       }
     } catch (error) {
-      console.error(`[CORE-RABBITMQ-CONSUMER] Error handling analytics event ${type}:`, error);
+      console.error(
+        `[CORE-RABBITMQ-CONSUMER] Error handling analytics event ${type}:`,
+        error
+      );
       return false;
     }
   }
@@ -284,7 +332,9 @@ class CoreServiceRabbitMQConsumer {
       `;
     }
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for post creation: ${data.post_id}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for post creation: ${data.post_id}`
+    );
     return true;
   }
 
@@ -313,7 +363,9 @@ class CoreServiceRabbitMQConsumer {
       )
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Recorded like interaction: ${data.like_id}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Recorded like interaction: ${data.like_id}`
+    );
     return true;
   }
 
@@ -328,7 +380,9 @@ class CoreServiceRabbitMQConsumer {
       WHERE user_id = ${data.post_user_id}
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for unlike: ${data.post_id}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for unlike: ${data.post_id}`
+    );
     return true;
   }
 
@@ -345,7 +399,9 @@ class CoreServiceRabbitMQConsumer {
         updated_at = NOW()
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for comment: ${data.comment_id}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Updated stats for comment: ${data.comment_id}`
+    );
     return true;
   }
 
@@ -367,7 +423,9 @@ class CoreServiceRabbitMQConsumer {
         updated_at = NOW()
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Recorded follow relationship: ${data.follower_id} -> ${data.following_id}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Recorded follow relationship: ${data.follower_id} -> ${data.following_id}`
+    );
     return true;
   }
 
@@ -383,7 +441,9 @@ class CoreServiceRabbitMQConsumer {
       )
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Recorded engagement metric: ${data.engagement_type}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Recorded engagement metric: ${data.engagement_type}`
+    );
     return true;
   }
 
@@ -400,7 +460,9 @@ class CoreServiceRabbitMQConsumer {
       )
     `;
 
-    console.log(`[💾] [CORE-RABBITMQ-CONSUMER] Recorded feed interaction: ${data.interaction_type}`);
+    console.log(
+      `[💾] [CORE-RABBITMQ-CONSUMER] Recorded feed interaction: ${data.interaction_type}`
+    );
     return true;
   }
 
@@ -412,60 +474,65 @@ class CoreServiceRabbitMQConsumer {
 
     // Start consumers for different queues
     await this.startConsumer(
-      this.config.queues.postEvents, 
+      this.config.queues.postEvents,
       this.handlePostEvent.bind(this)
     );
 
     await this.startConsumer(
-      this.config.queues.socialEvents, 
+      this.config.queues.socialEvents,
       this.handleSocialEvent.bind(this)
     );
 
     await this.startConsumer(
-      this.config.queues.analyticsEvents, 
+      this.config.queues.analyticsEvents,
       this.handleAnalyticsEvent.bind(this)
     );
 
-    console.log('[✅] [CORE-RABBITMQ-CONSUMER] All consumers started successfully');
+    console.log(
+      "[✅] [CORE-RABBITMQ-CONSUMER] All consumers started successfully"
+    );
     return true;
   }
 
   async close() {
     try {
       this.consumers.clear();
-      
+
       if (this.channel) {
         await this.channel.close();
       }
       if (this.connection) {
         await this.connection.close();
       }
-      console.log('[CORE-RABBITMQ-CONSUMER] Connection closed gracefully');
+      console.log("[CORE-RABBITMQ-CONSUMER] Connection closed gracefully");
     } catch (error) {
-      console.error('[CORE-RABBITMQ-CONSUMER] Error closing connection:', error);
+      console.error(
+        "[CORE-RABBITMQ-CONSUMER] Error closing connection:",
+        error
+      );
     }
   }
 
   async healthCheck() {
     try {
       if (!this.connection || this.connection.connection.stream.destroyed) {
-        return { status: 'disconnected', error: 'No active connection' };
+        return { status: "disconnected", error: "No active connection" };
       }
 
       if (!this.channel) {
-        return { status: 'error', error: 'No active channel' };
+        return { status: "error", error: "No active channel" };
       }
 
-      return { 
-        status: 'connected',
+      return {
+        status: "connected",
         consumers: this.consumers.size,
         exchange: this.config.exchange,
-        queues: Object.keys(this.config.queues)
+        queues: Object.keys(this.config.queues),
       };
     } catch (error) {
-      return { 
-        status: 'error', 
-        error: error.message 
+      return {
+        status: "error",
+        error: error.message,
       };
     }
   }
@@ -478,5 +545,5 @@ module.exports = {
   coreRabbitMQConsumer,
   startConsumer: () => coreRabbitMQConsumer.startAllConsumers(),
   getRabbitMQHealth: () => coreRabbitMQConsumer.healthCheck(),
-  closeRabbitMQ: () => coreRabbitMQConsumer.close()
+  closeRabbitMQ: () => coreRabbitMQConsumer.close(),
 };

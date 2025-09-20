@@ -5,15 +5,17 @@ EventBn now supports **TWO deployment modes** - you can choose the one that suit
 ## 🏗️ Architecture Overview
 
 ### Mode 1: Monolithic Mode (Recommended for Development)
-- **Single Process**: All services run in one Node.js process  
+
+- **Single Process**: All services run in one Node.js process
 - **Shared Database**: All services share the same database connection
 - **Port**: 3001
 - **Perfect for**: Development, testing, Flutter app connectivity
 
 ### Mode 2: Microservices Mode (Production Ready)
+
 - **Separate Processes**: Each service runs independently
 - **Dedicated Databases**: Each service has its own database
-- **Ports**: Core Service (3001), Post Service (3002)  
+- **Ports**: Core Service (3001), Post Service (3002)
 - **Message Queue**: RabbitMQ for inter-service communication
 - **Perfect for**: Production, scalability, enterprise deployment
 
@@ -32,21 +34,23 @@ node server.js
 ```
 
 **What happens:**
+
 - Single server starts on port 3001
 - All services (users, events, posts) available via shared API
 - Uses SQLite database (no external dependencies)
 - Perfect for Flutter app development
 
 **Endpoints available:**
+
 - `http://localhost:3001/api/auth/*`
-- `http://localhost:3001/api/events/*` 
+- `http://localhost:3001/api/events/*`
 - `http://localhost:3001/api/users/*`
 - `http://localhost:3001/health`
 
 ### Running Microservices Mode
 
 ```bash
-# Navigate to the services directory  
+# Navigate to the services directory
 cd backend-api/services
 
 # Start all microservices
@@ -54,6 +58,7 @@ node start-microservices.js
 ```
 
 **What happens:**
+
 - Core Service starts on port 3001 (users, events, organizations, tickets)
 - Post Service starts on port 3002 (posts, comments, social features)
 - Each service connects to its own PostgreSQL database
@@ -61,6 +66,7 @@ node start-microservices.js
 - Enterprise-grade architecture with independent scaling
 
 **Endpoints available:**
+
 - **Core Service**: `http://localhost:3001/api/*`
 - **Post Service**: `http://localhost:3002/api/posts/*`
 - **Health checks**: `/health` on both services
@@ -79,7 +85,7 @@ backend-api/
 │   │   ├── .env                 # PostgreSQL config
 │   │   └── prisma/schema.prisma # Core database schema
 │   └── post-service/
-│       ├── server.js            # Independent post service  
+│       ├── server.js            # Independent post service
 │       ├── .env                 # PostgreSQL config
 │       └── prisma/schema.prisma # Posts database schema
 ├── routes/                      # Shared API routes (monolith)
@@ -91,6 +97,7 @@ backend-api/
 ## ⚙️ Configuration
 
 ### Monolithic Mode Configuration
+
 - **File**: `backend-api/.env`
 - **Database**: SQLite (`DATABASE_URL="file:./dev.db"`)
 - **Port**: 3001
@@ -98,6 +105,7 @@ backend-api/
 ### Microservices Mode Configuration
 
 #### Core Service (`services/core-service/.env`)
+
 ```env
 CORE_SERVICE_PORT=3001
 DATABASE_URL="postgresql://..."  # Supabase PostgreSQL
@@ -105,7 +113,8 @@ RABBITMQ_URL=amqp://localhost
 ```
 
 #### Post Service (`services/post-service/.env`)
-```env  
+
+```env
 POST_SERVICE_PORT=3002
 DATABASE_URL="postgresql://..."  # Different Supabase PostgreSQL
 CORE_SERVICE_URL=http://localhost:3001
@@ -117,10 +126,12 @@ RABBITMQ_URL=amqp://localhost
 ## 🔄 Switching Between Modes
 
 ### From Monolithic to Microservices
+
 1. Stop monolithic server: `Ctrl+C` or `taskkill /f /im node.exe`
 2. Start microservices: `cd services && node start-microservices.js`
 
-### From Microservices to Monolithic  
+### From Microservices to Monolithic
+
 1. Stop microservices: `Ctrl+C` in the services terminal
 2. Start monolith: `cd .. && node server.js`
 
@@ -129,13 +140,15 @@ RABBITMQ_URL=amqp://localhost
 ## 📱 Flutter App Connectivity
 
 ### For Monolithic Mode:
+
 ```dart
 // mobile-app/.env
 BASE_URL=http://10.0.2.2:3001
 ```
 
 ### For Microservices Mode:
-```dart  
+
+```dart
 // mobile-app/.env
 BASE_URL=http://10.0.2.2:3001  # Points to core-service
 POST_SERVICE_URL=http://10.0.2.2:3002  # Optional: Direct post service access
@@ -148,16 +161,18 @@ The Flutter app works with **both modes** using the same BASE_URL (port 3001)!
 ## 🔍 Health Checks & Monitoring
 
 ### Monolithic Mode:
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 ### Microservices Mode:
-```bash  
+
+```bash
 # Core Service
 curl http://localhost:3001/health
 
-# Post Service  
+# Post Service
 curl http://localhost:3002/health
 ```
 
@@ -165,30 +180,33 @@ curl http://localhost:3002/health
 
 ## 🎯 When to Use Which Mode?
 
-| Scenario | Recommended Mode |
-|----------|-----------------|
-| **Local Development** | Monolithic (simpler setup) |
-| **Flutter App Testing** | Monolithic (single endpoint) |
-| **Admin Panel Development** | Either (both work) |
-| **Production Deployment** | Microservices (scalable) |
-| **Team Development** | Microservices (parallel work) |
-| **CI/CD Pipeline** | Microservices (independent deploys) |
+| Scenario                    | Recommended Mode                    |
+| --------------------------- | ----------------------------------- |
+| **Local Development**       | Monolithic (simpler setup)          |
+| **Flutter App Testing**     | Monolithic (single endpoint)        |
+| **Admin Panel Development** | Either (both work)                  |
+| **Production Deployment**   | Microservices (scalable)            |
+| **Team Development**        | Microservices (parallel work)       |
+| **CI/CD Pipeline**          | Microservices (independent deploys) |
 
 ---
 
 ## 🛠️ Troubleshooting
 
 ### Monolithic Mode Issues:
+
 - **Port 3001 busy**: Stop other servers with `taskkill /f /im node.exe`
 - **Database errors**: Check `backend-api/.env` file exists
 - **CORS errors**: Verify CORS_ORIGIN settings
 
 ### Microservices Mode Issues:
+
 - **Service won't start**: Check PostgreSQL connection in service `.env`
-- **RabbitMQ errors**: Install RabbitMQ or disable in development  
+- **RabbitMQ errors**: Install RabbitMQ or disable in development
 - **Port conflicts**: Ensure 3001 and 3002 are available
 
 ### Quick Reset:
+
 ```bash
 # Stop all Node processes
 taskkill /f /im node.exe
