@@ -51,27 +51,12 @@ class RabbitMQConsumer {
         durable: true,
       });
 
-      // Setup queues with error handling
+      // Setup queues with simplified configuration
       for (const [name, queueName] of Object.entries(this.config.queues)) {
         await this.channel.assertQueue(queueName, {
           durable: true,
-          arguments: {
-            "x-message-ttl": 24 * 60 * 60 * 1000, // 24 hours TTL
-            "x-max-length": 10000, // Max 10k messages
-            "x-dead-letter-exchange": `${this.config.exchange}.dlx`,
-            "x-dead-letter-routing-key": `${queueName}.failed`,
-          },
         });
       }
-
-      // Setup dead letter exchange for failed messages
-      await this.channel.assertExchange(
-        `${this.config.exchange}.dlx`,
-        "direct",
-        {
-          durable: true,
-        }
-      );
 
       // Connection error handlers
       this.connection.on("error", (error) => {

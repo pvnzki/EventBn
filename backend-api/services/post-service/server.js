@@ -20,6 +20,7 @@ const {
   startConsumer: startRabbitMQConsumer,
   closeRabbitMQ: closeRabbitMQConsumer,
 } = require("./utils/rabbitmq-consumer");
+const UserDataService = require("./services/user-data-service");
 
 // Handle BigInt serialization
 BigInt.prototype.toJSON = function () {
@@ -75,6 +76,7 @@ const internalRoutes = require("./routes/internal");
 
 // API Routes
 app.use("/api/v1", apiRoutes); // External API for clients
+app.use("/api", apiRoutes); // Also mount at /api for Flutter compatibility
 app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Health check endpoints - Always returns 200 for service readiness
@@ -84,7 +86,8 @@ app.get("/health", async (req, res) => {
   let health = { service: "post-service", status: "ok" };
 
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    // Use $connect() to check database connection without prepared statements
+    await prisma.$connect();
     databaseStatus = "Connected";
   } catch (error) {
     databaseStatus = "Disconnected";
@@ -239,6 +242,10 @@ const initializeRabbitMQ = async () => {
     await startRabbitMQConsumer();
     console.log("[POST-SERVICE] ✅ RabbitMQ Consumers started");
 
+    // Initialize user data service
+    await UserDataService.initialize();
+    console.log("[POST-SERVICE] ✅ User Data Service initialized");
+
     return true;
   } catch (error) {
     console.error("[POST-SERVICE] ❌ RabbitMQ initialization failed:", error);
@@ -254,6 +261,7 @@ const gracefulShutdown = async () => {
     // Only close RabbitMQ connections if they were initialized
     const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
     if (isRabbitMQEnabled) {
+      await UserDataService.cleanup();
       await closeRabbitMQ();
       await closeRabbitMQConsumer();
     }
@@ -289,10 +297,14 @@ app.listen(PORT, HOST, async () => {
 \x1b[36m===============================\x1b[0m
 `);
 
-  // Initialize database connection
+  // Add initial startup delay
+  console.log("⏳ Waiting 2 seconds for system readiness...");
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // Initialize database connection with retry logic
   let databaseReady = false;
   try {
-    databaseReady = await connectDatabase();
+    databaseReady = await connectDatabase(5, 2000); // 5 attempts, 2s initial delay
     if (databaseReady) {
       console.log(
         "\x1b[32m✅ Post Service: Database connection established\x1b[0m"

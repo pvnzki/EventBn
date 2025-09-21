@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../models/post_model.dart';
+import '../services/explore_post_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -14,8 +14,6 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
-  PostType _selectedPostType = PostType.eventMoment;
-  PostCategory _selectedCategory = PostCategory.all;
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
 
@@ -26,6 +24,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _pickImages() async {
+    // Check if we've reached the maximum number of images
+    const maxImages = 5;
+    if (_selectedImages.length >= maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum $maxImages images allowed'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final List<XFile> images = await _picker.pickMultiImage(
         maxWidth: 1080,
@@ -34,9 +44,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       );
 
       if (images.isNotEmpty) {
+        // Calculate how many more images we can add
+        final remainingSlots = maxImages - _selectedImages.length;
+        final imagesToAdd = images.take(remainingSlots).toList();
+
         setState(() {
-          _selectedImages.addAll(images.map((xFile) => File(xFile.path)));
+          _selectedImages.addAll(imagesToAdd.map((xFile) => File(xFile.path)));
         });
+
+        // Show warning if we had to limit the selection
+        if (images.length > remainingSlots) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Only added ${imagesToAdd.length} images (max $maxImages total)'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,6 +71,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _takePhoto() async {
+    // Check if we've reached the maximum number of images
+    const maxImages = 5;
+    if (_selectedImages.length >= maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum $maxImages images allowed'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
@@ -73,9 +110,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _createPost() async {
-    if (_contentController.text.trim().isEmpty && _selectedImages.isEmpty) {
+    final content = _contentController.text.trim();
+
+    // Validation
+    if (content.isEmpty && _selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add some content or images')),
+        const SnackBar(
+          content: Text('Please add some content or images'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Additional validation for content length
+    if (content.length > 2000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Post content is too long (max 2000 characters)'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -85,20 +139,54 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      // TODO: Implement actual post creation logic
-      // For now, just simulate the process
-      await Future.delayed(const Duration(seconds: 2));
+      final postService = ExplorePostService();
+
+      // Convert selected images to paths
+      List<String>? imagePaths;
+      if (_selectedImages.isNotEmpty) {
+        imagePaths = _selectedImages.map((file) => file.path).toList();
+      }
+
+      print('🚀 Creating post with ${imagePaths?.length ?? 0} images');
+
+      final success = await postService.createPost(
+        content: content,
+        imagePaths: imagePaths,
+        // TODO: Add event selection functionality
+        eventId: null,
+      );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post created successfully!')),
-        );
-        context.pop();
+        if (success) {
+          // Clear form
+          _contentController.clear();
+          _selectedImages.clear();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🎉 Post created successfully!'),
+              backgroundColor: Color(0xFF32CD32),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          context.pop(true); // Return true to indicate success
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Failed to create post. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
+        print('💥 Error in _createPost: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating post: $e')),
+          SnackBar(
+            content: Text('💥 Network error: Please check your connection'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -113,7 +201,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -159,14 +246,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Post Type Selection
-            _buildPostTypeSelector(),
-            const SizedBox(height: 20),
-
-            // Category Selection
-            _buildCategorySelector(),
-            const SizedBox(height: 20),
-
             // Content Input
             _buildContentInput(),
             const SizedBox(height: 20),
@@ -180,103 +259,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPostTypeSelector() {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Post Type',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: theme.textTheme.titleMedium?.color,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: PostType.values.map((type) {
-            final isSelected = _selectedPostType == type;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedPostType = type),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF32CD32)
-                      : Colors.transparent, // Lime Green
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF32CD32)
-                        : theme.dividerColor, // Lime Green
-                  ),
-                ),
-                child: Text(
-                  type.toString().split('.').last.replaceAll('event', ''),
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : theme.textTheme.bodyMedium?.color,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Category',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: theme.textTheme.titleMedium?.color,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<PostCategory>(
-          value: _selectedCategory,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          items: PostCategory.values.map((category) {
-            return DropdownMenuItem(
-              value: category,
-              child: Text(
-                category.toString().split('.').last.toUpperCase(),
-                style: TextStyle(color: theme.textTheme.bodyMedium?.color),
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedCategory = value);
-            }
-          },
-        ),
-      ],
     );
   }
 
@@ -298,13 +280,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         TextField(
           controller: _contentController,
           maxLines: 5,
-          maxLength: 500,
+          maxLength: 2000,
+          onChanged: (value) {
+            // Trigger rebuild to update character counter color
+            setState(() {});
+          },
           decoration: InputDecoration(
             hintText: 'Share your thoughts, experiences, or memories...',
+            hintStyle: TextStyle(
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.dividerColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF32CD32), width: 2),
             ),
             contentPadding: const EdgeInsets.all(16),
+            counterStyle: TextStyle(
+              color: _contentController.text.length > 1800
+                  ? Colors.orange
+                  : _contentController.text.length > 1950
+                      ? Colors.red
+                      : theme.textTheme.bodySmall?.color,
+            ),
           ),
         ),
       ],
@@ -317,13 +318,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Add Photos',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: theme.textTheme.titleMedium?.color,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Add Photos',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.titleMedium?.color,
+              ),
+            ),
+            Text(
+              '${_selectedImages.length}/5',
+              style: TextStyle(
+                fontSize: 14,
+                color: _selectedImages.length >= 5
+                    ? Colors.red
+                    : theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Row(

@@ -9,6 +9,14 @@ class AppConfig {
     return url;
   }
 
+  static String get postServiceUrl {
+    final url = dotenv.env['POST_SERVICE_URL'] ?? 'http://localhost:3002';
+    print(
+        '🔧 AppConfig: POST_SERVICE_URL from .env: ${dotenv.env['POST_SERVICE_URL']}');
+    print('🔧 AppConfig: Final postServiceUrl: $url');
+    return url;
+  }
+
   // Stripe Configuration
   static String get stripePublishableKey =>
       dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';

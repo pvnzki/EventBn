@@ -1,7 +1,7 @@
 {
   "name": "eventbn-post-service",
   "version": "1.0.0",
-  "description": "EventBn Post Service - Social media functionality, posts, comments, reactions",
+  "description": "EventBn Post Service - Social posts, media upload, user-generated content",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,21 +9,24 @@
     "test": "jest"
   },
   "dependencies": {
-    "@prisma/client": "^5.4.2",
+    "@prisma/client": "^6.16.2",
     "amqplib": "^0.10.3",
     "axios": "^1.5.0",
-    "compression": "^1.7.4",
+    "cloudinary": "^1.41.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^6.10.0",
-    "helmet": "^7.0.0",
-    "pg": "^8.11.0",
-    "prisma": "^5.4.2"
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^6.11.2",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "prisma": "^6.16.2"
   },
   "engines": {
     "node": ">=18.0.0"

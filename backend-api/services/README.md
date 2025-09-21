@@ -26,8 +26,6 @@ Handles social features:
 - **Posts**: User posts, comments, likes, shares
 - **Feed**: Timeline generation and social interactions
 
-### Upload Service (`/services/upload-service/`)
-
 Handles file operations:
 
 - **Media**: Image/video uploads via Cloudinary
@@ -53,7 +51,6 @@ To convert to separate microservices:
 # Create separate Node.js apps
 backend-core-service/     # Port 3001
 backend-post-service/     # Port 3002
-backend-upload-service/   # Port 3003
 ```
 
 ### 2. Database Strategy
@@ -88,10 +85,6 @@ services:
   post-service:
     build: ./backend-post-service
     ports: ["3002:3000"]
-
-  upload-service:
-    build: ./backend-upload-service
-    ports: ["3003:3000"]
 ```
 
 ## Benefits of Current Modular Structure

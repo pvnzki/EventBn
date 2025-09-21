@@ -16,7 +16,6 @@ class PostServiceRabbitMQPublisher {
       queues: {
         postEvents: process.env.RABBITMQ_POST_QUEUE || "post_events",
         socialEvents: process.env.RABBITMQ_SOCIAL_QUEUE || "social_events",
-        analyticsEvents: "analytics_events",
       },
     };
   }
@@ -47,10 +46,6 @@ class PostServiceRabbitMQPublisher {
       for (const [name, queueName] of Object.entries(this.config.queues)) {
         await this.channel.assertQueue(queueName, {
           durable: true,
-          arguments: {
-            "x-message-ttl": 24 * 60 * 60 * 1000,
-            "x-max-length": 10000,
-          },
         });
       }
 
@@ -65,12 +60,6 @@ class PostServiceRabbitMQPublisher {
         this.config.queues.socialEvents,
         this.config.exchange,
         "social.*"
-      );
-
-      await this.channel.bindQueue(
-        this.config.queues.analyticsEvents,
-        this.config.exchange,
-        "*.analytics"
       );
 
       // Connection error handlers

@@ -1,6 +1,8 @@
 require("dotenv").config();
 const amqp = require("amqplib");
-const prisma = require("../../lib/database.js");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 class CoreServiceRabbitMQConsumer {
   constructor() {
@@ -16,9 +18,9 @@ class CoreServiceRabbitMQConsumer {
       url: process.env.RABBITMQ_URL || "amqp://localhost:5672",
       exchange: process.env.RABBITMQ_EXCHANGE || "eventbn_exchange",
       queues: {
-        postEvents: process.env.RABBITMQ_POST_QUEUE || "post_events",
+        postEvents: process.env.RABBITMQ_POST_Q || "post_events",
         socialEvents: process.env.RABBITMQ_SOCIAL_QUEUE || "social_events",
-        analyticsEvents: "analytics_events",
+        userDataRequests: "user_data_requests", // New queue for user data requests
       },
       prefetch: 10,
     };
@@ -52,23 +54,8 @@ class CoreServiceRabbitMQConsumer {
       for (const [name, queueName] of Object.entries(this.config.queues)) {
         await this.channel.assertQueue(queueName, {
           durable: true,
-          arguments: {
-            "x-message-ttl": 24 * 60 * 60 * 1000,
-            "x-max-length": 10000,
-            "x-dead-letter-exchange": `${this.config.exchange}.dlx`,
-            "x-dead-letter-routing-key": `${queueName}.failed`,
-          },
         });
       }
-
-      // Setup dead letter exchange
-      await this.channel.assertExchange(
-        `${this.config.exchange}.dlx`,
-        "direct",
-        {
-          durable: true,
-        }
-      );
 
       // Connection error handlers
       this.connection.on("error", (error) => {
@@ -311,6 +298,176 @@ class CoreServiceRabbitMQConsumer {
     }
   }
 
+  // User data request handler
+  async handleUserDataRequest(event) {
+    const { type, data, replyTo, correlationId } = event;
+
+    try {
+      switch (type) {
+        case "GET_USER_DATA":
+          return await this.handleGetUserData(data, replyTo, correlationId);
+
+        case "GET_USERS_BATCH":
+          return await this.handleGetUsersBatch(data, replyTo, correlationId);
+
+        default:
+          console.warn(
+            `[CORE-RABBITMQ-CONSUMER] Unknown user data request type: ${type}`
+          );
+          return true;
+      }
+    } catch (error) {
+      console.error(
+        `[CORE-RABBITMQ-CONSUMER] Error handling user data request ${type}:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  // User data request implementations
+  async handleGetUserData(data, replyTo, correlationId) {
+    const { userId } = data;
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { user_id: parseInt(userId) },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          profile_picture: true,
+          is_active: true,
+          created_at: true,
+        },
+      });
+
+      const response = {
+        success: true,
+        user: user
+          ? {
+              id: user.user_id,
+              name: user.name,
+              email: user.email,
+              profilePicture: user.profile_picture,
+              isActive: user.is_active,
+              createdAt: user.created_at,
+            }
+          : null,
+      };
+
+      // Send response back via RabbitMQ
+      if (replyTo && correlationId) {
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(response)),
+          {
+            correlationId,
+          }
+        );
+      }
+
+      console.log(
+        `[📤] [CORE-RABBITMQ-CONSUMER] Sent user data for user: ${userId}`
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting user data:`,
+        error
+      );
+
+      if (replyTo && correlationId) {
+        const errorResponse = {
+          success: false,
+          error: "Failed to retrieve user data",
+        };
+
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(errorResponse)),
+          {
+            correlationId,
+          }
+        );
+      }
+
+      return false;
+    }
+  }
+
+  async handleGetUsersBatch(data, replyTo, correlationId) {
+    const { userIds } = data;
+
+    try {
+      const users = await prisma.user.findMany({
+        where: {
+          user_id: {
+            in: userIds.map((id) => parseInt(id)),
+          },
+        },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          profile_picture: true,
+          is_active: true,
+          created_at: true,
+        },
+      });
+
+      const response = {
+        success: true,
+        users: users.map((user) => ({
+          id: user.user_id,
+          name: user.name,
+          email: user.email,
+          profilePicture: user.profile_picture,
+          isActive: user.is_active,
+          createdAt: user.created_at,
+        })),
+      };
+
+      // Send response back via RabbitMQ
+      if (replyTo && correlationId) {
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(response)),
+          {
+            correlationId,
+          }
+        );
+      }
+
+      console.log(
+        `[📤] [CORE-RABBITMQ-CONSUMER] Sent batch user data for ${userIds.length} users`
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting batch user data:`,
+        error
+      );
+
+      if (replyTo && correlationId) {
+        const errorResponse = {
+          success: false,
+          error: "Failed to retrieve batch user data",
+        };
+
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(errorResponse)),
+          {
+            correlationId,
+          }
+        );
+      }
+
+      return false;
+    }
+  }
+
   // Specific event implementations
   async handlePostCreated(data) {
     // Update user statistics
@@ -483,9 +640,15 @@ class CoreServiceRabbitMQConsumer {
       this.handleSocialEvent.bind(this)
     );
 
+    // Analytics events queue not needed for current functionality
+    // await this.startConsumer(
+    //   this.config.queues.analyticsEvents,
+    //   this.handleAnalyticsEvent.bind(this)
+    // );
+
     await this.startConsumer(
-      this.config.queues.analyticsEvents,
-      this.handleAnalyticsEvent.bind(this)
+      this.config.queues.userDataRequests,
+      this.handleUserDataRequest.bind(this)
     );
 
     console.log(

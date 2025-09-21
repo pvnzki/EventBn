@@ -17,7 +17,6 @@ class RabbitMQPublisher {
       queues: {
         userEvents: process.env.RABBITMQ_USER_QUEUE || "user_events",
         eventEvents: process.env.RABBITMQ_EVENT_QUEUE || "event_events",
-        analyticsEvents: "analytics_events",
       },
     };
   }
@@ -48,10 +47,6 @@ class RabbitMQPublisher {
       for (const [name, queueName] of Object.entries(this.config.queues)) {
         await this.channel.assertQueue(queueName, {
           durable: true,
-          arguments: {
-            "x-message-ttl": 24 * 60 * 60 * 1000, // 24 hours TTL
-            "x-max-length": 10000, // Max 10k messages
-          },
         });
       }
 
@@ -66,12 +61,6 @@ class RabbitMQPublisher {
         this.config.queues.eventEvents,
         this.config.exchange,
         "event.*"
-      );
-
-      await this.channel.bindQueue(
-        this.config.queues.analyticsEvents,
-        this.config.exchange,
-        "*.analytics"
       );
 
       // Setup connection error handlers
