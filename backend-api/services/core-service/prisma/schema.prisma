@@ -1,0 +1,160 @@
+// This is your Prisma schema file for Core Service
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  user_id           Int      @id @default(autoincrement())
+  name              String
+  email             String   @unique
+  password_hash     String
+  phone_number      String?
+  profile_picture   String?
+  is_active         Boolean  @default(true)
+  is_email_verified Boolean  @default(false)
+  role              String   @default("USER")
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now()) @updatedAt
+
+  // Relations
+  organizations Organization[]
+  search_logs   Search_Log[]
+  payments      Payment[]
+  ticket_purchases TicketPurchase[]
+  
+  @@map("User")
+}
+
+model Organization {
+  organization_id Int      @id @default(autoincrement())
+  user_id         Int
+  name            String
+  description     String?
+  logo_url        String?
+  contact_email   String?
+  contact_number  String?
+  website_url     String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+
+  // Relations
+  user   User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  events Event[]
+
+  @@map("Organization")
+}
+
+model Event {
+  event_id         Int      @id @default(autoincrement())
+  organization_id  Int
+  title            String
+  description      String?
+  location         String
+  datetime         DateTime
+  end_datetime     DateTime?
+  category         String?
+  image_url        String?
+  capacity         Int?
+  is_active        Boolean  @default(true)
+  ticket_price     Decimal  @db.Decimal(10, 2)
+  seat_map_json    Json?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now()) @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  search_logs  Search_Log[]
+  payments     Payment[]
+  ticket_purchases TicketPurchase[]
+
+  @@map("Event")
+}
+
+model Search_Log {
+  search_id   Int      @id @default(autoincrement())
+  user_id     Int?
+  event_id    Int?
+  search_term String
+  created_at  DateTime @default(now())
+
+  // Relations
+  user  User?  @relation(fields: [user_id], references: [user_id], onDelete: SetNull)
+  event Event? @relation(fields: [event_id], references: [event_id], onDelete: SetNull)
+
+  @@map("Search_Log")
+}
+
+model Payment {
+  payment_id     Int      @id @default(autoincrement())
+  user_id        Int
+  event_id       Int
+  amount         Decimal  @db.Decimal(10, 2)
+  currency       String   @default("LKR")
+  payment_method String?
+  payment_status String   @default("PENDING")
+  transaction_id String?  @unique
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now()) @updatedAt
+
+  // Relations
+  user             User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  event            Event            @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  ticket_purchases TicketPurchase[]
+
+  @@map("Payment")
+}
+
+model TicketPurchase {
+  ticket_id      Int      @id @default(autoincrement())
+  user_id        Int
+  event_id       Int
+  payment_id     Int?
+  seat_number    String?
+  qr_code        String?  @unique
+  ticket_status  String   @default("ACTIVE")
+  purchased_at   DateTime @default(now())
+
+  // Relations
+  user    User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  event   Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  payment Payment? @relation(fields: [payment_id], references: [payment_id], onDelete: SetNull)
+
+  @@map("TicketPurchase")
+}
+
+// Analytics tables for core service
+model UserAnalytics {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  total_events    Int      @default(0)
+  total_tickets   Int      @default(0)
+  total_spent     Decimal  @default(0) @db.Decimal(10, 2)
+  last_activity   DateTime @default(now())
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@unique([user_id])
+  @@map("UserAnalytics")
+}
+
+model EventAnalytics {
+  id               Int      @id @default(autoincrement())
+  event_id         Int
+  total_tickets    Int      @default(0)
+  tickets_sold     Int      @default(0)
+  revenue          Decimal  @default(0) @db.Decimal(10, 2)
+  views_count      Int      @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@unique([event_id])
+  @@map("EventAnalytics")
+}
