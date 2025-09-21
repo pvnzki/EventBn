@@ -10,15 +10,15 @@ function initializePrisma() {
       errorFormat: "pretty",
       datasources: {
         db: {
-          url: process.env.DATABASE_URL
-        }
+          url: process.env.DATABASE_URL,
+        },
       },
       // Disable prepared statements to avoid conflicts with other services
       __internal: {
         engine: {
-          enableEngineDebugMode: false
-        }
-      }
+          enableEngineDebugMode: false,
+        },
+      },
     });
   }
   return prisma;
@@ -29,32 +29,36 @@ async function connectDatabase(retryAttempts = 5, delayMs = 3000) {
   if (!prisma) {
     prisma = initializePrisma();
   }
-  
+
   for (let attempt = 1; attempt <= retryAttempts; attempt++) {
     try {
-      console.log(`🔄 Database connection attempt ${attempt}/${retryAttempts}...`);
-      
+      console.log(
+        `🔄 Database connection attempt ${attempt}/${retryAttempts}...`
+      );
+
       // Test the connection
       await prisma.$connect();
       console.log("✓ Database connected successfully");
       return true;
-      
     } catch (error) {
-      console.error(`✗ Database connection attempt ${attempt} failed:`, error.message);
-      
+      console.error(
+        `✗ Database connection attempt ${attempt} failed:`,
+        error.message
+      );
+
       if (attempt === retryAttempts) {
         console.error("❌ All database connection attempts failed");
         return false;
       }
-      
+
       console.log(`⏳ Waiting ${delayMs}ms before retry...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-      
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
       // Increase delay for next attempt (exponential backoff)
       delayMs = Math.min(delayMs * 1.5, 10000);
     }
   }
-  
+
   return false;
 }
 

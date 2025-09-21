@@ -56,15 +56,15 @@ const fetchUserInfo = async (userId) => {
 
 // Helper function to transform post data to match Flutter ExplorePost model
 const transformPostForFlutter = async (post, currentUserId = null) => {
-  console.log("🔄 [TRANSFORM] Starting post transformation for post:", post.post_id);
+  console.log(
+    "🔄 [TRANSFORM] Starting post transformation for post:",
+    post.post_id
+  );
   let userData = null;
 
   // Fetch user data via RabbitMQ
   try {
-    console.log(
-      "🔍 [TRANSFORM] Fetching user data for user_id:",
-      post.user_id
-    );
+    console.log("🔍 [TRANSFORM] Fetching user data for user_id:", post.user_id);
     const userResponse = await getUserData(post.user_id);
     if (userResponse.success && userResponse.user) {
       userData = userResponse.user;

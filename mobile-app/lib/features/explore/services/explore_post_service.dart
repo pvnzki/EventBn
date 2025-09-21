@@ -71,10 +71,10 @@ class ExplorePostService {
       print('📤 Request headers: $headers');
 
       final response = await http.get(uri, headers: headers);
-      
+
       print('📥 Response status: ${response.statusCode}');
       print('📄 Response body: ${response.body}');
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {

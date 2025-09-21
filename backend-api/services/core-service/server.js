@@ -13,8 +13,14 @@ const prisma = new PrismaClient();
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
 
 // RabbitMQ
-const { connectToRabbitMQ, publishUserEvent, getRabbitMQHealth } = require("./utils/rabbitmq-publisher");
-const { startConsumer: startRabbitMQConsumer } = require("./utils/rabbitmq-consumer");
+const {
+  connectToRabbitMQ,
+  publishUserEvent,
+  getRabbitMQHealth,
+} = require("./utils/rabbitmq-publisher");
+const {
+  startConsumer: startRabbitMQConsumer,
+} = require("./utils/rabbitmq-consumer");
 
 // Handle BigInt serialization
 BigInt.prototype.toJSON = function () {
@@ -218,26 +224,36 @@ app.listen(PORT, HOST, async () => {
   }
 
   // Initialize RabbitMQ if enabled
-  if (process.env.RABBITMQ_ENABLED === 'true') {
+  if (process.env.RABBITMQ_ENABLED === "true") {
     try {
       console.log("\x1b[34m⏳ Initializing RabbitMQ Publisher...\x1b[0m");
       const rabbitMQConnected = await connectToRabbitMQ();
       if (rabbitMQConnected) {
-        console.log("\x1b[32m✅ RabbitMQ Publisher connected successfully\x1b[0m");
-        
+        console.log(
+          "\x1b[32m✅ RabbitMQ Publisher connected successfully\x1b[0m"
+        );
+
         // Start RabbitMQ consumer for handling user data requests
         console.log("\x1b[34m⏳ Starting RabbitMQ Consumer...\x1b[0m");
         const consumerStarted = await startRabbitMQConsumer();
         if (consumerStarted) {
-          console.log("\x1b[32m✅ RabbitMQ Consumer started successfully\x1b[0m");
+          console.log(
+            "\x1b[32m✅ RabbitMQ Consumer started successfully\x1b[0m"
+          );
         } else {
           console.log("\x1b[33m⚠️  RabbitMQ Consumer failed to start\x1b[0m");
         }
       } else {
-        console.log("\x1b[33m⚠️  RabbitMQ connection failed, continuing without it\x1b[0m");
+        console.log(
+          "\x1b[33m⚠️  RabbitMQ connection failed, continuing without it\x1b[0m"
+        );
       }
     } catch (error) {
-      console.error("\x1b[31m❌ RabbitMQ initialization error:", error.message, "\x1b[0m");
+      console.error(
+        "\x1b[31m❌ RabbitMQ initialization error:",
+        error.message,
+        "\x1b[0m"
+      );
       console.log("\x1b[33m⚠️  Continuing without RabbitMQ\x1b[0m");
     }
   } else {

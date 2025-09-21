@@ -299,7 +299,7 @@ app.listen(PORT, HOST, async () => {
 
   // Add initial startup delay
   console.log("⏳ Waiting 2 seconds for system readiness...");
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   // Initialize database connection with retry logic
   let databaseReady = false;
