@@ -4,6 +4,7 @@ const express = require("express");
 const path = require("path")
 const cors = require("cors");
 const prisma = require("./lib/database");
+const { connectRedis } = require("./lib/redis");
 
 // Handle BigInt serialization for JSON responses
 BigInt.prototype.toJSON = function() {
@@ -59,6 +60,8 @@ const userRoutes = require("./routes/users");
 const organizationRoutes = require("./routes/organizations");
 const paymentRoutes = require("./routes/payments");
 const ticketRoutes = require("./routes/tickets");
+const seatLockRoutes = require("./routes/seatLocks");
+const queueRoutes = require("./routes/queueRoutes");
 
 const analyticsRoutes = require("./routes/analytics");
 
@@ -87,12 +90,14 @@ app.get("/health", async (req, res) => {
       environment: process.env.NODE_ENV,
       uptime: process.uptime(),
       database: "Connected",
+      redis: "Connected"
     });
   } catch (error) {
     res.status(500).json({
       status: "ERROR",
       timestamp: new Date().toISOString(),
       database: "Disconnected",
+      redis: "Unknown",
       error: error.message,
     });
   }
@@ -105,6 +110,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/seat-locks", seatLockRoutes);
+app.use("/api/queue", queueRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 
@@ -134,8 +141,15 @@ app.use("*", (req, res) => {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
 
-app.listen(PORT, HOST, () => {
-  console.log(`
+// Initialize Redis connection
+const startServer = async () => {
+  try {
+    // Connect to Redis
+    await connectRedis();
+    
+    // Start the server
+    app.listen(PORT, HOST, () => {
+      console.log(`
 \x1b[36m==============================\x1b[0m
 \x1b[35m EventBn API Server Started \x1b[0m
 \x1b[36m------------------------------\x1b[0m
@@ -145,8 +159,16 @@ app.listen(PORT, HOST, () => {
 \x1b[32mLocal URL:\x1b[0m http://localhost:${PORT}
 \x1b[32mNetwork URL:\x1b[0m http://192.168.1.19:${PORT}
 \x1b[32mHealth:\x1b[0m /health
+\x1b[32mRedis:\x1b[0m Connected
 \x1b[36m==============================\x1b[0m
 `);
-});
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
