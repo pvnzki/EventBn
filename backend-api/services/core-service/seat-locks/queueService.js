@@ -1,4 +1,4 @@
-const { getRedisClient } = require('../lib/redis');
+const { getRedisClient } = require('../../../lib/redis');
 const { v4: uuidv4 } = require('uuid');
 const EventEmitter = require('events');
 

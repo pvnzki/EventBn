@@ -1,6 +1,6 @@
-const seatLockService = require('../services/seatLockService');
-const queueService = require('../services/queueService');
-const { getRedisClient } = require('../lib/redis');
+const seatLockService = require('./seatLockService');
+const queueService = require('./queueService');
+const { getRedisClient } = require('../../../lib/redis');
 
 class HybridSeatLockService {
   constructor() {

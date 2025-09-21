@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const queueService = require('../services/queueService');
+const queueService = require('../services/core-service/seat-locks/queueService');
 const { authenticateToken } = require('../middleware/auth');
 
 // Add seat lock request to queue

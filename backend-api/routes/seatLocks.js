@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const seatLockService = require('../services/seatLockService');
-const hybridSeatLockService = require('../services/hybridSeatLockService');
-const queueService = require('../services/queueService');
+const seatLockService = require('../services/core-service/seat-locks/seatLockService');
+const hybridSeatLockService = require('../services/core-service/seat-locks/hybridSeatLockService');
+const queueService = require('../services/core-service/seat-locks/queueService');
 const { authenticateToken } = require('../middleware/auth');
 
 // HYBRID ENDPOINTS (recommended for high-concurrency events)

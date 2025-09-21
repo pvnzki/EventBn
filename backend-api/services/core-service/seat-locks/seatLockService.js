@@ -1,4 +1,4 @@
-const { getRedisClient } = require('../lib/redis');
+const { getRedisClient } = require('../../../lib/redis');
 
 class SeatLockService {
   constructor() {

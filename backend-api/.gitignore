@@ -47,3 +47,7 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+
+# Documentation files (development notes)
+QUEUE-SYSTEM.md
+SEAT-LOCKING.md
