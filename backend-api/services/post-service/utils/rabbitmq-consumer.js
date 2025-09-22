@@ -2,7 +2,9 @@ require("dotenv").config();
 const amqp = require("amqplib");
 // Use shared Prisma client to prevent multiple engines / prepared statement conflicts
 const { prisma } = require("../lib/database");
-console.log(`[POST-SERVICE][RABBITMQ-CONSUMER] Using shared Prisma client (pid=${process.pid})`);
+console.log(
+  `[POST-SERVICE][RABBITMQ-CONSUMER] Using shared Prisma client (pid=${process.pid})`
+);
 
 class RabbitMQConsumer {
   constructor() {

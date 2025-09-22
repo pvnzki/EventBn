@@ -3,10 +3,14 @@ const { PrismaClient } = require("@prisma/client");
 let prisma;
 
 function buildDatabaseUrl() {
-  let url = process.env.DATABASE_URL || '';
+  let url = process.env.DATABASE_URL || "";
   // Append ?pgbouncer=true if DISABLE_PREPARED_STMTS flag set and param not present
-  if (process.env.PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS === '1' && url && !url.includes('pgbouncer=true')) {
-    url += (url.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  if (
+    process.env.PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS === "1" &&
+    url &&
+    !url.includes("pgbouncer=true")
+  ) {
+    url += (url.includes("?") ? "&" : "?") + "pgbouncer=true";
   }
   return url;
 }
@@ -14,12 +18,17 @@ function buildDatabaseUrl() {
 // Initialize Prisma Client with proper configuration
 function initializePrisma() {
   if (!prisma) {
-    const disablePrepared = process.env.PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS === '1';
+    const disablePrepared =
+      process.env.PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS === "1";
     const dbUrl = buildDatabaseUrl();
     if (dbUrl && dbUrl !== process.env.DATABASE_URL) {
-      console.log('[POST-SERVICE][DB] Using modified DATABASE_URL with pgbouncer param appended');
+      console.log(
+        "[POST-SERVICE][DB] Using modified DATABASE_URL with pgbouncer param appended"
+      );
     }
-    console.log(`[POST-SERVICE][DB] Prepared statements disabled: ${disablePrepared}`);
+    console.log(
+      `[POST-SERVICE][DB] Prepared statements disabled: ${disablePrepared}`
+    );
     prisma = new PrismaClient({
       log: ["query", "info", "warn", "error"],
       errorFormat: "pretty",
@@ -34,7 +43,14 @@ function initializePrisma() {
           enableEngineDebugMode: false,
         },
       },
-      ...(disablePrepared ? { __internal: { ...({} || {}), engine: { enableEngineDebugMode: false } } } : {}),
+      ...(disablePrepared
+        ? {
+            __internal: {
+              ...({} || {}),
+              engine: { enableEngineDebugMode: false },
+            },
+          }
+        : {}),
     });
     // Prisma currently uses prepared statements internally; the env var turns them off without extra client options.
   }

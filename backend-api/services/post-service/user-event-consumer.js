@@ -8,7 +8,9 @@ const { prisma } = require("./lib/database");
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
 const queueName = process.env.RABBITMQ_USER_QUEUE || "user_events_queue";
 
-console.log(`[POST-SERVICE][USER-EVENT-CONSUMER] Using shared Prisma client (pid=${process.pid})`);
+console.log(
+  `[POST-SERVICE][USER-EVENT-CONSUMER] Using shared Prisma client (pid=${process.pid})`
+);
 
 async function handleUserEvent(event) {
   console.log(`[📥] Received event: ${event.type}`);
