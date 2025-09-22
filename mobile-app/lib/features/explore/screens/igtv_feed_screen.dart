@@ -259,7 +259,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   Widget _buildPostPage(ExplorePost post) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
@@ -387,7 +387,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                 color: Colors.white,
                 size: 32,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Share',
                 style: TextStyle(

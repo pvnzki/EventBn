@@ -28,7 +28,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     const maxImages = 5;
     if (_selectedImages.length >= maxImages) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Maximum $maxImages images allowed'),
           backgroundColor: Colors.orange,
         ),
@@ -75,7 +75,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     const maxImages = 5;
     if (_selectedImages.length >= maxImages) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Maximum $maxImages images allowed'),
           backgroundColor: Colors.orange,
         ),
@@ -183,7 +183,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (mounted) {
         print('💥 Error in _createPost: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('💥 Network error: Please check your connection'),
             backgroundColor: Colors.red,
           ),
@@ -230,9 +230,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(
+                : const Text(
                     'Post',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFF32CD32), // Lime Green
                       fontWeight: FontWeight.w600,
                       fontSize: 16,

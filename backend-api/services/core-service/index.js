@@ -11,6 +11,7 @@ module.exports = {
   organizations: require("./organizations"),
   events: require("./events"),
   tickets: require("./tickets"),
+  payments: require("./payments"),
   auth: require("./auth"),
   // Health probe for service monitoring
   async health() {

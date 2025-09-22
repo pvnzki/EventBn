@@ -1,6 +1,7 @@
 require("dotenv").config();
 const amqp = require("amqplib");
-const { v4: uuidv4 } = require("uuid");
+// Replaced uuid v4 (ESM) with built-in crypto.randomUUID to avoid ERR_REQUIRE_ESM in CommonJS context
+const { randomUUID } = require("crypto");
 
 class UserDataService {
   constructor() {
@@ -100,7 +101,7 @@ class UserDataService {
     }
 
     return new Promise((resolve, reject) => {
-      const correlationId = uuidv4();
+      const correlationId = randomUUID();
 
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(correlationId);
@@ -138,7 +139,7 @@ class UserDataService {
     }
 
     return new Promise((resolve, reject) => {
-      const correlationId = uuidv4();
+      const correlationId = randomUUID();
 
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(correlationId);

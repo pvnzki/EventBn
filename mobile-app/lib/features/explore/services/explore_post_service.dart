@@ -273,7 +273,7 @@ class ExplorePostService {
               contentType: MediaType.parse(contentType),
             );
             request.files.add(multipartFile);
-            print('📎 Added image ${i + 1}: ${file.path} (${contentType})');
+            print('📎 Added image ${i + 1}: ${file.path} ($contentType)');
           }
         }
       }

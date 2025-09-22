@@ -1,14 +1,14 @@
 // post-service/user-event-consumer.js
 require("dotenv").config();
 const amqp = require("amqplib");
-const { PrismaClient } = require("@prisma/client");
+// Use shared Prisma instance to avoid creating multiple PrismaClient connections
+const { prisma } = require("./lib/database");
 
 // Use environment variables
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
 const queueName = process.env.RABBITMQ_USER_QUEUE || "user_events_queue";
 
-// Use Prisma client for database operations
-const prisma = new PrismaClient();
+console.log(`[POST-SERVICE][USER-EVENT-CONSUMER] Using shared Prisma client (pid=${process.pid})`);
 
 async function handleUserEvent(event) {
   console.log(`[📥] Received event: ${event.type}`);

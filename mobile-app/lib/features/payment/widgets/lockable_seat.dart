@@ -331,7 +331,7 @@ class _LockableSeatState extends State<LockableSeat>
           Center(
             child: Text(
               widget.seatLabel,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,

@@ -13,7 +13,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
     with TickerProviderStateMixin {
   bool _showWheel = false;
   int _spinsLeft = 3;
-  DateTime _nextSpinTime =
+  final DateTime _nextSpinTime =
       DateTime.now().add(const Duration(hours: 23, minutes: 9, seconds: 7));
 
   // Animation controllers
@@ -222,8 +222,8 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
     final targetAngle = (targetIndex * singleSegment) + (singleSegment / 2);
 
     // Enhanced spin physics - more rotations and better easing
-    final minSpins = 6;
-    final maxSpins = 10;
+    const minSpins = 6;
+    const maxSpins = 10;
     final spins = minSpins + random.nextDouble() * (maxSpins - minSpins);
     final fullSpins = spins * 2 * pi;
     final finalAngle = _wheelAngle + fullSpins + (2 * pi - targetAngle);
@@ -448,7 +448,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                         ),
                         const SizedBox(height: 20),
                         // Enhanced Title
-                        Text(
+                        const Text(
                           'Lucky Spin',
                           style: TextStyle(
                             fontSize: 38,
@@ -467,7 +467,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                           ),
                           child: Text(
                             'Next free spins: ${_formatTimer(_nextSpinTime)}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               color: Colors.black54,
                               fontWeight: FontWeight.w500,
@@ -492,7 +492,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                                         ? LinearGradient(
                                             colors: [Colors.grey.shade400, Colors.grey.shade600],
                                           )
-                                        : LinearGradient(
+                                        : const LinearGradient(
                                             colors: [Color(0xFF32CD32), Color(0xFF1DE9B6)],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
@@ -513,7 +513,7 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         if (_isSpinning) ...[
-                                          SizedBox(
+                                          const SizedBox(
                                             width: 24,
                                             height: 24,
                                             child: CircularProgressIndicator(

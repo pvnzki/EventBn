@@ -372,27 +372,54 @@ class CoreServiceRabbitMQConsumer {
       );
       return true;
     } catch (error) {
+      const allowFallback = process.env.ALLOW_JWT_FALLBACK === "true";
+      const isInitError = /Can't reach database server/i.test(error.message);
+      if (allowFallback && isInitError) {
+        console.warn(
+          `[⚠️] [CORE-RABBITMQ-CONSUMER] DB unreachable, sending fallback user (ALLOW_JWT_FALLBACK) for userId=${userId}`
+        );
+        const response = {
+          success: true,
+          user: {
+            id: parseInt(userId),
+            name: `User ${userId}`,
+            email: null,
+            profilePicture: null,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            fallback: true,
+          },
+          fallback: true,
+        };
+        if (replyTo && correlationId) {
+          await this.channel.sendToQueue(
+            replyTo,
+            Buffer.from(JSON.stringify(response)),
+            { correlationId }
+          );
+        }
+        return true; // treat as handled to avoid retries
+      }
+
       console.error(
-        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting user data:`,
-        error
+        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting user data (no fallback):`,
+        error.message
       );
 
       if (replyTo && correlationId) {
         const errorResponse = {
           success: false,
-          error: "Failed to retrieve user data",
+          error: allowFallback
+            ? "User data unavailable"
+            : "Failed to retrieve user data",
         };
-
         await this.channel.sendToQueue(
           replyTo,
           Buffer.from(JSON.stringify(errorResponse)),
-          {
-            correlationId,
-          }
+          { correlationId }
         );
       }
-
-      return false;
+      return isInitError ? true : false; // avoid endless retries on init error
     }
   }
 
@@ -444,40 +471,60 @@ class CoreServiceRabbitMQConsumer {
       );
       return true;
     } catch (error) {
+      const allowFallback = process.env.ALLOW_JWT_FALLBACK === "true";
+      const isInitError = /Can't reach database server/i.test(error.message);
+      if (allowFallback && isInitError) {
+        console.warn(
+          `[⚠️] [CORE-RABBITMQ-CONSUMER] DB unreachable, sending fallback batch users (ALLOW_JWT_FALLBACK) count=${userIds.length}`
+        );
+        const response = {
+          success: true,
+          users: userIds.map((id) => ({
+            id: parseInt(id),
+            name: `User ${id}`,
+            email: null,
+            profilePicture: null,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            fallback: true,
+          })),
+          fallback: true,
+        };
+        if (replyTo && correlationId) {
+          await this.channel.sendToQueue(
+            replyTo,
+            Buffer.from(JSON.stringify(response)),
+            { correlationId }
+          );
+        }
+        return true;
+      }
+
       console.error(
-        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting batch user data:`,
-        error
+        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting batch user data (no fallback):`,
+        error.message
       );
 
       if (replyTo && correlationId) {
         const errorResponse = {
           success: false,
-          error: "Failed to retrieve batch user data",
+          error: allowFallback
+            ? "Batch user data unavailable"
+            : "Failed to retrieve batch user data",
         };
-
         await this.channel.sendToQueue(
           replyTo,
           Buffer.from(JSON.stringify(errorResponse)),
-          {
-            correlationId,
-          }
+          { correlationId }
         );
       }
-
-      return false;
+      return isInitError ? true : false;
     }
   }
 
   // Specific event implementations
   async handlePostCreated(data) {
-    // Update user statistics
-    await prisma.$executeRaw`
-      INSERT INTO user_stats (user_id, total_posts, created_at, updated_at)
-      VALUES (${data.user_id}, 1, NOW(), NOW())
-      ON CONFLICT (user_id) DO UPDATE SET
-        total_posts = user_stats.total_posts + 1,
-        updated_at = NOW()
-    `;
+    // user_stats tracking removed as unnecessary; keeping event engagement update only
 
     // If post is related to an event, update event engagement
     if (data.event_id) {

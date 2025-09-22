@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
+// Use shared Prisma client (avoid multiple PrismaClient instances causing prepared statement collisions)
+const { prisma } = require("../lib/database");
 const { publishPostCreated } = require("../utils/rabbitmq-publisher");
 const { getUserData, getUsersBatch } = require("../services/user-data-service");
 const {
@@ -11,28 +12,30 @@ const {
 } = require("../services/image-upload-service");
 
 const router = express.Router();
-const prisma = new PrismaClient();
+console.log(`[POST-SERVICE] Using shared Prisma client (pid=${process.pid}) for routes/api.js`);
 
-// JWT Authentication middleware
+// JWT Authentication middleware (enhanced logging for debugging device POST failures)
 const verifyJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const reqId = `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  req._reqId = reqId;
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        error: "Authorization header required",
-      });
+    if (!authHeader) {
+      console.warn(`🔐 [AUTH][${reqId}] Missing Authorization header path=${req.method} ${req.path}`);
+      return res.status(401).json({ success: false, error: "Authorization header required", code: 'NO_AUTH_HEADER' });
     }
-
+    if (!authHeader.startsWith("Bearer ")) {
+      console.warn(`🔐 [AUTH][${reqId}] Malformed header value='${authHeader.slice(0,20)}...'`);
+      return res.status(401).json({ success: false, error: "Malformed Authorization header", code: 'BAD_AUTH_HEADER' });
+    }
     const token = authHeader.slice(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    console.log(`🔐 [AUTH][${reqId}] Authenticated userId=${decoded.userId || decoded.user_id || decoded.id}`);
     next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      error: "Invalid or expired token",
-    });
+    console.warn(`🔐 [AUTH][${reqId}] Token verification failed: ${error.message}`);
+    return res.status(401).json({ success: false, error: "Invalid or expired token", code: 'TOKEN_INVALID', message: process.env.DEBUG ? error.message : undefined });
   }
 };
 
@@ -135,53 +138,89 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
   return transformedPost;
 };
 
-// GET /api/posts/explore - Get explore feed (public posts)
-router.get("/posts/explore", async (req, res) => {
+// Helper for 42P05 mitigation: retry once after DEALLOCATE ALL
+async function fetchExplorePosts({ where, limit, skip }) {
+  const start = process.hrtime.bigint();
   try {
-    console.log("📋 [EXPLORE] Explore posts request received");
-    console.log("📋 [EXPLORE] Query params:", req.query);
-    const { page = 1, limit = 20, eventId } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const where = {};
-    if (eventId) {
-      where.event_id = parseInt(eventId);
-    }
-
     const posts = await prisma.post.findMany({
       where,
       orderBy: [{ created_at: "desc" }],
-      take: parseInt(limit),
+      take: limit,
       skip,
     });
+    const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+    return { posts, retry: false, elapsedMs };
+  } catch (err) {
+    // Detect prepared statement collision (Postgres 42P05)
+    if (err?.message?.includes('42P05')) {
+      console.warn('⚠️ [EXPLORE] 42P05 detected. Attempting DEALLOCATE ALL then single retry.');
+      try {
+        await prisma.$executeRawUnsafe('DEALLOCATE ALL');
+      } catch (deErr) {
+        console.warn('⚠️ [EXPLORE] DEALLOCATE ALL failed:', deErr.message);
+      }
+      const retryStart = process.hrtime.bigint();
+      const posts = await prisma.post.findMany({
+        where,
+        orderBy: [{ created_at: 'desc' }],
+        take: limit,
+        skip,
+      });
+      const retryElapsedMs = Number(process.hrtime.bigint() - retryStart) / 1e6;
+      return { posts, retry: true, elapsedMs: retryElapsedMs };
+    }
+    throw err;
+  }
+}
 
-    console.log("📋 [EXPLORE] Found posts count:", posts.length);
+// GET /api/posts/explore - Get explore feed (public posts) with diagnostics & retry logic
+router.get('/posts/explore', async (req, res) => {
+  const reqId = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const reqStart = process.hrtime.bigint();
+  try {
+    console.log(`📋 [EXPLORE][${reqId}] Request received params=%j`, req.query);
+    const { page = 1, limit = 20, eventId } = req.query;
+    const parsedLimit = Math.min(parseInt(limit), 100);
+    const parsedPage = Math.max(parseInt(page), 1);
+    const skip = (parsedPage - 1) * parsedLimit;
+    const where = {};
+    if (eventId) where.event_id = parseInt(eventId);
+
+    const { posts, retry, elapsedMs } = await fetchExplorePosts({ where, limit: parsedLimit, skip });
+    const countStart = process.hrtime.bigint();
     const totalPosts = await prisma.post.count({ where });
-    console.log("📋 [EXPLORE] Total posts in database:", totalPosts);
+    const countElapsedMs = Number(process.hrtime.bigint() - countStart) / 1e6;
 
-    // Transform posts for Flutter (handle async)
-    const flutterPosts = await Promise.all(
-      posts.map((post) => transformPostForFlutter(post))
-    );
+    console.log(`📋 [EXPLORE][${reqId}] posts=${posts.length} total=${totalPosts} queryMs=${elapsedMs.toFixed(2)} countMs=${countElapsedMs.toFixed(2)} retry=${retry}`);
 
-    console.log("📋 [EXPLORE] Transformed posts count:", flutterPosts.length);
-    console.log("📋 [EXPLORE] Sending successful response");
+    const transformStart = process.hrtime.bigint();
+    const flutterPosts = await Promise.all(posts.map(p => transformPostForFlutter(p)));
+    const transformElapsedMs = Number(process.hrtime.bigint() - transformStart) / 1e6;
+
+    const totalElapsedMs = Number(process.hrtime.bigint() - reqStart) / 1e6;
+    console.log(`📋 [EXPLORE][${reqId}] response posts=${flutterPosts.length} transformMs=${transformElapsedMs.toFixed(2)} totalMs=${totalElapsedMs.toFixed(2)}`);
 
     res.json({
       success: true,
       posts: flutterPosts,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parsedPage,
+        limit: parsedLimit,
         total: totalPosts,
-        totalPages: Math.ceil(totalPosts / parseInt(limit)),
+        totalPages: Math.ceil(totalPosts / parsedLimit),
       },
+      diagnostics: { retry, queryMs: elapsedMs, countMs: countElapsedMs, transformMs: transformElapsedMs, totalMs: totalElapsedMs }
     });
   } catch (error) {
-    console.error("Error fetching explore feed:", error);
+    const totalElapsedMs = Number(process.hrtime.bigint() - reqStart) / 1e6;
+    console.error(`❌ [EXPLORE][${reqId}] Error after ${totalElapsedMs.toFixed(2)}ms:`, error);
+    const isPreparedStmt = error?.message?.includes('42P05');
     res.status(500).json({
       success: false,
-      error: "Failed to fetch explore feed",
+      error: 'Failed to fetch explore feed',
+      code: isPreparedStmt ? 'PREPARED_STATEMENT_COLLISION' : 'UNKNOWN',
+      message: error.message,
+      retryHint: isPreparedStmt ? 'Consider adding ?pgbouncer=true to DATABASE_URL or ensure single PrismaClient per process' : undefined
     });
   }
 });
@@ -232,10 +271,10 @@ router.post(
   getUploadMiddleware("images", 5),
   async (req, res) => {
     try {
-      console.log("📝 [POST CREATION] Starting post creation process...");
-      console.log("User from JWT:", req.user);
-      console.log("Request body:", req.body);
-      console.log("Files:", req.files?.length || 0);
+      const reqId = req._reqId || `${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+      console.log(`📝 [POST CREATION][${reqId}] Start ip=${req.ip} contentType='${req.headers['content-type']}' files=${req.files?.length || 0}`);
+      console.log(`📝 [POST CREATION][${reqId}] User payload:`, { user: req.user });
+      console.log(`📝 [POST CREATION][${reqId}] Body keys:`, Object.keys(req.body || {}));
 
       const userId = req.user.userId || req.user.user_id || req.user.id;
       const { content, eventId } = req.body;
@@ -336,7 +375,8 @@ router.post(
         uploadedImages: uploadedImageCount,
       });
     } catch (error) {
-      console.error("❌ [POST CREATION] Error creating post:", error);
+      const reqId = req._reqId || 'no-id';
+      console.error(`❌ [POST CREATION][${reqId}] Error creating post:`, error);
       console.error("Stack trace:", error.stack);
       res.status(500).json({
         success: false,
@@ -346,6 +386,16 @@ router.post(
     }
   }
 );
+
+// Lightweight debug endpoint to test device connectivity & auth header presence
+router.get('/posts/debug/ping', (req, res) => {
+  res.json({
+    success: true,
+    message: 'post-service alive',
+    preparedStatementsDisabled: process.env.PRISMA_CLIENT_DISABLE_PREPARED_STATEMENTS === '1',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // PUT /api/posts/:postId - Update post
 router.put("/posts/:postId", verifyJWT, async (req, res) => {

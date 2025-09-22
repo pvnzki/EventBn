@@ -1,9 +1,8 @@
 require("dotenv").config();
 const amqp = require("amqplib");
-const { PrismaClient } = require("@prisma/client");
-
-// Use post-service's own Prisma client
-const prisma = new PrismaClient();
+// Use shared Prisma client to prevent multiple engines / prepared statement conflicts
+const { prisma } = require("../lib/database");
+console.log(`[POST-SERVICE][RABBITMQ-CONSUMER] Using shared Prisma client (pid=${process.pid})`);
 
 class RabbitMQConsumer {
   constructor() {

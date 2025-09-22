@@ -25,22 +25,18 @@ const authenticateUser = (req, res, next) => {
     // Standardize userId
     req.userId = decoded.userId || decoded.user_id || decoded.id;
     if (!req.userId) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          error: "Invalid token payload (missing userId)",
-        });
+      return res.status(401).json({
+        success: false,
+        error: "Invalid token payload (missing userId)",
+      });
     }
     next();
   } catch (e) {
-    return res
-      .status(401)
-      .json({
-        success: false,
-        error: "Invalid or expired token",
-        message: e.message,
-      });
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired token",
+      message: e.message,
+    });
   }
 };
 
@@ -136,13 +132,11 @@ router.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Email and password are required",
-          message: "Email and password are required",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required",
+        message: "Email and password are required",
+      });
     }
     let result;
     try {
@@ -150,13 +144,11 @@ router.post("/auth/login", async (req, res) => {
         throw new Error("Auth service unavailable");
       result = await coreService.auth.login({ email, password });
     } catch (e) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          error: e.message || "Login failed",
-          message: e.message || "Login failed",
-        });
+      return res.status(401).json({
+        success: false,
+        error: e.message || "Login failed",
+        message: e.message || "Login failed",
+      });
     }
     res.status(200).json({
       success: true,
@@ -183,22 +175,18 @@ router.post("/auth/register", async (req, res) => {
     const { name, email, password, phone_number, profile_picture } =
       req.body || {};
     if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "Name, email, and password are required",
-          message: "Name, email, and password are required",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "Name, email, and password are required",
+        message: "Name, email, and password are required",
+      });
     }
     if (!coreService?.auth?.register) {
-      return res
-        .status(503)
-        .json({
-          success: false,
-          error: "Auth service unavailable",
-          message: "Auth service unavailable",
-        });
+      return res.status(503).json({
+        success: false,
+        error: "Auth service unavailable",
+        message: "Auth service unavailable",
+      });
     }
     let result;
     try {
@@ -210,13 +198,11 @@ router.post("/auth/register", async (req, res) => {
         profile_picture,
       });
     } catch (e) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: e.message || "Registration failed",
-          message: e.message || "Registration failed",
-        });
+      return res.status(400).json({
+        success: false,
+        error: e.message || "Registration failed",
+        message: e.message || "Registration failed",
+      });
     }
     res.status(201).json({
       success: true,
@@ -228,13 +214,11 @@ router.post("/auth/register", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Registration error:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Registration failed",
-        message: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Registration failed",
+      message: error.message,
+    });
   }
 });
 
@@ -379,15 +363,13 @@ router.get("/events/featured", async (req, res) => {
       service: "core-service",
     });
   } catch (e) {
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: [],
-        fallback: true,
-        service: "core-service",
-        error: e.message,
-      });
+    res.status(200).json({
+      success: true,
+      data: [],
+      fallback: true,
+      service: "core-service",
+      error: e.message,
+    });
   }
 });
 
@@ -424,15 +406,13 @@ router.get("/events/search/:query", async (req, res) => {
       service: "core-service",
     });
   } catch (e) {
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: [],
-        fallback: true,
-        service: "core-service",
-        error: e.message,
-      });
+    res.status(200).json({
+      success: true,
+      data: [],
+      fallback: true,
+      service: "core-service",
+      error: e.message,
+    });
   }
 });
 
@@ -465,15 +445,13 @@ router.get("/events/category/:category", async (req, res) => {
       service: "core-service",
     });
   } catch (e) {
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: [],
-        fallback: true,
-        service: "core-service",
-        error: e.message,
-      });
+    res.status(200).json({
+      success: true,
+      data: [],
+      fallback: true,
+      service: "core-service",
+      error: e.message,
+    });
   }
 });
 
@@ -488,13 +466,11 @@ router.get("/events/:eventId/attendees", async (req, res) => {
       note: "Attendees endpoint stub (microservice mode)",
     });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch attendees",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch attendees",
+      message: e.message,
+    });
   }
 });
 
@@ -509,29 +485,73 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
       } catch (_) {}
     }
     if (!event) {
-      // attempt from unified fallback list
       const all = await getUnifiedEvents();
       event = all.find((e) => String(e.event_id) === String(eventId));
     }
-    if (!event)
+    if (!event) {
       return res.status(404).json({ success: false, error: "Event not found" });
-    let seatmap = event.seat_map || event.seatmap || [];
-    // annotate availability using in-memory seatLocks if exists
-    if (Array.isArray(seatmap) && memory?.seatLocks) {
-      const locked = memory.seatLocks.get(String(eventId));
-      if (locked) {
-        seatmap = seatmap.map((seat) => ({
-          ...seat,
-          available:
-            seat.available === false
-              ? false
-              : !locked.has(String(seat.id ?? seat.label)),
-        }));
-      }
     }
+
+    const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
+    const ticketTypesRaw = event.ticket_types || event.ticketTypes || null;
+
+    // Derive ticket types mapping (key -> { price, count }) for non custom seating
+    function deriveTicketTypes(seatMapArray) {
+      if (!Array.isArray(seatMapArray)) return {};
+      const map = {};
+      for (const seat of seatMapArray) {
+        const type = seat.ticketType || seat.type || seat.category || "General";
+        if (!map[type]) {
+          map[type] = { count: 0, price: seat.price ?? seat.cost ?? 0 };
+        }
+        map[type].count += 1;
+        // Prefer lowest price if varying
+        if (seat.price != null && seat.price < map[type].price)
+          map[type].price = seat.price;
+      }
+      return map;
+    }
+
+    let responsePayload;
+    if (rawSeatMap) {
+      // Custom seating mode
+      responsePayload = {
+        hasCustomSeating: true,
+        layout: "theater",
+        layoutConfig: {},
+        seats: rawSeatMap.map((s) => ({
+          ...s,
+          available: s.available !== false, // normalize
+        })),
+        ticketTypes: Object.keys(deriveTicketTypes(rawSeatMap)).length
+          ? deriveTicketTypes(rawSeatMap)
+          : undefined,
+      };
+    } else {
+      // No explicit seat_map -> treat as ticket type (general admission) flow
+      let ticketTypes = {};
+      if (Array.isArray(ticketTypesRaw)) {
+        // Array of objects each with name/label & price
+        for (const t of ticketTypesRaw) {
+          const key = t.name || t.label || t.type || "General";
+          ticketTypes[key] = { price: t.price || t.price_cents / 100 || 0 };
+        }
+      } else if (ticketTypesRaw && typeof ticketTypesRaw === "object") {
+        ticketTypes = ticketTypesRaw; // already a mapping
+      } else {
+        // Fallback single general ticket
+        ticketTypes = { General: { price: 0 } };
+      }
+      responsePayload = {
+        hasCustomSeating: false,
+        ticketTypes,
+        seats: [],
+      };
+    }
+
     res.json({
       success: true,
-      data: seatmap,
+      data: responsePayload,
       eventId,
       service: "core-service",
     });
@@ -569,13 +589,11 @@ router.get("/events/:eventId/booked-seats", async (req, res) => {
       service: "core-service",
     });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch booked seats",
-        error: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booked seats",
+      error: e.message,
+    });
   }
 });
 
@@ -613,6 +631,196 @@ function extractSeatNodes(seatMapJson) {
         for (const seat of row.seats || []) seats.push(seat);
       }
     }
+    // -------------------------------------------------------------
+    // Seat Locking (ported from monolith direct endpoints)
+    // Endpoints (prefix inside this unified router):
+    //   POST   /seat-locks/events/:eventId/seats/:seatId/lock        (auth)
+    //   GET    /seat-locks/events/:eventId/seats/:seatId/lock        (public status)
+    //   PUT    /seat-locks/events/:eventId/seats/:seatId/lock/extend (auth)
+    //   DELETE /seat-locks/events/:eventId/seats/:seatId/lock        (auth)
+    //   GET    /seat-locks/events/:eventId/locks                     (public list)
+    // Uses Redis (or in-memory fallback) via seatLockService with TTL auto-expiration.
+    // -------------------------------------------------------------
+    const seatLockService = require("../seat-locks/seatLockService");
+
+    // POST lock a seat
+    router.post(
+      "/seat-locks/events/:eventId/seats/:seatId/lock",
+      authenticateUser,
+      async (req, res) => {
+        try {
+          const { eventId, seatId } = req.params;
+          const userId = String(req.userId);
+
+          if (!eventId || !seatId) {
+            return res
+              .status(400)
+              .json({ success: false, message: "eventId & seatId required" });
+          }
+
+          const status = await seatLockService.isSeatLocked(eventId, seatId);
+          if (status.locked) {
+            if (String(status.userId) === userId) {
+              return res.json({
+                success: true,
+                message: "Seat already locked by you",
+                lockInfo: { eventId, seatId, userId, ttl: status.ttl },
+              });
+            }
+            return res
+              .status(409)
+              .json({
+                success: false,
+                message: "Seat is temporarily locked",
+                ttl: status.ttl,
+              });
+          }
+
+          const locked = await seatLockService.lockSeat(
+            eventId,
+            seatId,
+            userId
+          );
+          if (!locked) {
+            return res
+              .status(409)
+              .json({ success: false, message: "Failed to lock seat" });
+          }
+          res.json({
+            success: true,
+            message: "Seat locked successfully",
+            lockInfo: { eventId, seatId, userId, duration: "1 minute" },
+          });
+        } catch (err) {
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Internal server error",
+              error: err.message,
+            });
+        }
+      }
+    );
+
+    // GET seat lock status (public)
+    router.get(
+      "/seat-locks/events/:eventId/seats/:seatId/lock",
+      async (req, res) => {
+        try {
+          const { eventId, seatId } = req.params;
+          const status = await seatLockService.isSeatLocked(eventId, seatId);
+          return res.json({
+            success: true,
+            lockStatus: {
+              locked: status.locked,
+              ttl: status.ttl || null,
+              ...(status.locked
+                ? { userId: status.userId, timestamp: status.timestamp }
+                : {}),
+            },
+          });
+        } catch (err) {
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Internal server error",
+              error: err.message,
+            });
+        }
+      }
+    );
+
+    // PUT extend lock (payment phase)
+    router.put(
+      "/seat-locks/events/:eventId/seats/:seatId/lock/extend",
+      authenticateUser,
+      async (req, res) => {
+        try {
+          const { eventId, seatId } = req.params;
+          const userId = String(req.userId);
+          const extended = await seatLockService.extendLock(
+            eventId,
+            seatId,
+            userId
+          );
+          if (!extended)
+            return res
+              .status(403)
+              .json({ success: false, message: "Cannot extend lock" });
+          res.json({
+            success: true,
+            message: "Lock extended",
+            duration: "10 minutes",
+          });
+        } catch (err) {
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Internal server error",
+              error: err.message,
+            });
+        }
+      }
+    );
+
+    // DELETE release lock
+    router.delete(
+      "/seat-locks/events/:eventId/seats/:seatId/lock",
+      authenticateUser,
+      async (req, res) => {
+        try {
+          const { eventId, seatId } = req.params;
+          const userId = String(req.userId);
+          const released = await seatLockService.releaseLock(
+            eventId,
+            seatId,
+            userId
+          );
+          if (!released)
+            return res
+              .status(403)
+              .json({ success: false, message: "Cannot release lock" });
+          res.json({ success: true, message: "Lock released" });
+        } catch (err) {
+          res
+            .status(500)
+            .json({
+              success: false,
+              message: "Internal server error",
+              error: err.message,
+            });
+        }
+      }
+    );
+
+    // GET all locked seats for event (public, userId not exposed)
+    router.get("/seat-locks/events/:eventId/locks", async (req, res) => {
+      try {
+        const { eventId } = req.params;
+        const locks = await seatLockService.getEventLockedSeats(eventId);
+        res.json({
+          success: true,
+          eventId,
+          lockedSeats: locks.map((l) => ({
+            seatId: l.seatId,
+            ttl: l.ttl,
+            timestamp: l.timestamp,
+          })),
+        });
+      } catch (err) {
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Internal server error",
+            error: err.message,
+          });
+      }
+    });
+
     return seats;
   } catch {
     return [];
@@ -657,13 +865,11 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
       !Array.isArray(selected_seats) ||
       selected_seats.length === 0
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: "event_id and selected_seats[] required",
-          message: "event_id and selected_seats[] required",
-        });
+      return res.status(400).json({
+        success: false,
+        error: "event_id and selected_seats[] required",
+        message: "event_id and selected_seats[] required",
+      });
     }
     // Fetch event & current booked seats
     const event = await prisma.event.findUnique({
@@ -671,13 +877,66 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
       select: { event_id: true, seat_map: true, title: true },
     });
     if (!event)
-      return res
-        .status(404)
-        .json({
+      return res.status(404).json({
+        success: false,
+        error: "Event not found",
+        message: "Event not found",
+      });
+    // ------------------------------------------------------
+    // Seat lock validation (configurable)
+    // Set ENFORCE_SEAT_LOCKS=false to bypass in dev OR add ?skipLockValidation=1
+    // If enforcement enabled and locks missing, will try auto-lock before failing.
+    // ------------------------------------------------------
+    const enforceLocks =
+      (process.env.ENFORCE_SEAT_LOCKS || "true") !== "false" &&
+      req.query.skipLockValidation !== "1";
+    const lockDebug = {
+      enforceLocks,
+      checked: [],
+      autoLocked: [],
+      missing: [],
+    };
+    if (event.seat_map && enforceLocks) {
+      for (const seatId of selected_seats) {
+        try {
+          const lockStatus = await seatLockService.isSeatLocked(
+            String(event.event_id),
+            String(seatId)
+          );
+          lockDebug.checked.push({
+            seatId,
+            locked: lockStatus.locked,
+            owner: lockStatus.userId,
+          });
+          if (!lockStatus.locked) {
+            // Attempt auto-lock (best effort) to reduce friction
+            const auto = await seatLockService.lockSeat(
+              String(event.event_id),
+              String(seatId),
+              String(req.userId)
+            );
+            if (auto) {
+              lockDebug.autoLocked.push(seatId);
+              continue;
+            }
+            lockDebug.missing.push(seatId);
+          } else if (String(lockStatus.userId) !== String(req.userId)) {
+            lockDebug.missing.push(seatId);
+          }
+        } catch (e) {
+          lockDebug.missing.push(seatId);
+        }
+      }
+      if (lockDebug.missing.length) {
+        return res.status(409).json({
           success: false,
-          error: "Event not found",
-          message: "Event not found",
+          error: "Seat lock validation failed",
+          message: "Some seats are not locked by you. Re-select seats.",
+          details: lockDebug,
+          hint: "For development you can set ENFORCE_SEAT_LOCKS=false or add ?skipLockValidation=1",
         });
+      }
+    }
 
     // Collect already booked seats (pending/completed payments)
     const existingTickets = await prisma.ticketPurchase.findMany({
@@ -692,13 +951,11 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     );
     const conflicts = selected_seats.filter((s) => taken.has(String(s)));
     if (conflicts.length) {
-      return res
-        .status(409)
-        .json({
-          success: false,
-          error: "Some seats already booked",
-          conflicts,
-        });
+      return res.status(409).json({
+        success: false,
+        error: "Some seats already booked",
+        conflicts,
+      });
     }
 
     // Determine price per seat from selectedSeatData or default (1000 cents placeholder)
@@ -795,6 +1052,19 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         location: true,
       },
     });
+
+    // Best-effort release of locks now that booking is confirmed
+    if (event.seat_map) {
+      for (const seatId of selected_seats) {
+        seatLockService
+          .releaseLock(
+            String(event.event_id),
+            String(seatId),
+            String(req.userId)
+          )
+          .catch(() => {});
+      }
+    }
     res.status(201).json({
       success: true,
       message: "Payment record created successfully",
@@ -804,6 +1074,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         price: Number(t.price),
         event: eventInfo,
       })),
+      lockDebug: event.seat_map ? lockDebug : undefined,
     });
   } catch (error) {
     if (error.message && error.message.startsWith("Seat(s) just booked")) {
@@ -811,13 +1082,11 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         .status(409)
         .json({ success: false, error: error.message, message: error.message });
     }
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to create payment record",
-        message: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to create payment record",
+      message: error.message,
+    });
   }
 });
 
@@ -831,13 +1100,11 @@ router.get("/payments/my-payments", authenticateUser, async (req, res) => {
     });
     res.json({ success: true, payments });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch payments",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch payments",
+      message: e.message,
+    });
   }
 });
 
@@ -853,13 +1120,11 @@ router.get("/payments/:payment_id", authenticateUser, async (req, res) => {
         .json({ success: false, error: "Payment not found" });
     res.json({ success: true, payment });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch payment",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch payment",
+      message: e.message,
+    });
   }
 });
 
@@ -891,13 +1156,11 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
       })),
     });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch tickets",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch tickets",
+      message: e.message,
+    });
   }
 });
 
@@ -929,13 +1192,11 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
       ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
     });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch ticket",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch ticket",
+      message: e.message,
+    });
   }
 });
 
@@ -967,13 +1228,11 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
       ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
     });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch ticket by QR",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch ticket by QR",
+      message: e.message,
+    });
   }
 });
 
@@ -1008,13 +1267,11 @@ router.get(
         ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
       });
     } catch (e) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          error: "Failed to fetch ticket by payment",
-          message: e.message,
-        });
+      res.status(500).json({
+        success: false,
+        error: "Failed to fetch ticket by payment",
+        message: e.message,
+      });
     }
   }
 );
@@ -1024,6 +1281,9 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
     const { ticketId } = req.params;
+    console.log(
+      `[CORE-SERVICE][TICKETS] /tickets/:ticketId/attend userId=${userId} ticketId=${ticketId}`
+    );
     // User can only mark own ticket for now (future: organizer scan logic)
     const ticket = await prisma.ticketPurchase.findUnique({
       where: { ticket_id: ticketId },
@@ -1053,17 +1313,47 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
       where: { ticket_id: ticketId },
       data: { attended: true },
     });
+    console.log(`[CORE-SERVICE][TICKETS] Marked attended ticket=${ticketId}`);
     res.json({
       success: true,
       message: "Ticket marked as attended",
       ticket: { ...updated, price: Number(updated.price), event: ticket.event },
     });
   } catch (e) {
+    console.error("[CORE-SERVICE][TICKETS] Error marking attendance", e);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update ticket attendance",
+      message: e.message,
+    });
+  }
+});
+
+// Debug endpoint for ticket/payment counts (appended)
+router.get("/debug/tickets-stats", authenticateUser, async (req, res) => {
+  try {
+    const userId = parseInt(req.userId);
+    const [userTicketCount, totalTicketCount, userPaymentCount] =
+      await Promise.all([
+        prisma.ticketPurchase.count({ where: { user_id: userId } }),
+        prisma.ticketPurchase.count(),
+        prisma.payment.count({ where: { user_id: userId } }),
+      ]);
+    res.json({
+      success: true,
+      userId,
+      userTicketCount,
+      totalTicketCount,
+      userPaymentCount,
+      hint: "If userTicketCount>0 but /tickets/my-tickets empty, investigate auth userId mapping or serialization.",
+    });
+  } catch (e) {
+    console.error("[CORE-SERVICE][TICKETS] Debug stats error", e);
     res
       .status(500)
       .json({
         success: false,
-        error: "Failed to update ticket attendance",
+        error: "Failed to get debug stats",
         message: e.message,
       });
   }
@@ -1092,13 +1382,11 @@ router.get("/users/profile", async (req, res) => {
       return res.status(404).json({ success: false, error: "User not found" });
     res.json({ success: true, user, service: "core-service" });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch profile",
-        message: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch profile",
+      message: error.message,
+    });
   }
 });
 
@@ -1129,13 +1417,11 @@ router.put("/users/profile", async (req, res) => {
       service: "core-service",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to update profile",
-        message: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to update profile",
+      message: error.message,
+    });
   }
 });
 
