@@ -232,17 +232,14 @@ const initializeRabbitMQ = async () => {
   }
 
   try {
-    console.log("[POST-SERVICE] Initializing RabbitMQ...");
+    console.log("[POST-SERVICE] Analytics/RabbitMQ disabled - focusing on core functionality");
 
-    // Connect publisher
-    await connectToRabbitMQ();
-    console.log("[POST-SERVICE] ✅ RabbitMQ Publisher connected");
+    // Analytics and engagement tracking disabled for better separation of concerns
+    // await connectToRabbitMQ();
+    // await startRabbitMQConsumer();
+    console.log("[POST-SERVICE] ✅ Core post/comment functionality ready (analytics disabled)");
 
-    // Start consumers
-    await startRabbitMQConsumer();
-    console.log("[POST-SERVICE] ✅ RabbitMQ Consumers started");
-
-    // Initialize user data service
+    // Initialize user data service (still needed for user info)
     await UserDataService.initialize();
     console.log("[POST-SERVICE] ✅ User Data Service initialized");
 

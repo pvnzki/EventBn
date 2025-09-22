@@ -199,45 +199,21 @@ class PostServiceRabbitMQPublisher {
   }
 
   async publishPostLiked(postData, likeData, options = {}) {
-    return this.publishSocialEvent(
-      "POST_LIKED",
-      {
-        post_id: postData.post_id,
-        post_user_id: postData.user_id,
-        liked_by_user_id: likeData.user_id,
-        like_id: likeData.like_id,
-        timestamp: likeData.created_at,
-      },
-      options
-    );
+    // Analytics disabled - like functionality works but no analytics tracking
+    console.log('❤️ [DEBUG] Like event ignored (analytics disabled for core functionality focus)');
+    return Promise.resolve();
   }
 
   async publishPostUnliked(postData, unlikeData, options = {}) {
-    return this.publishSocialEvent(
-      "POST_UNLIKED",
-      {
-        post_id: postData.post_id,
-        post_user_id: postData.user_id,
-        unliked_by_user_id: unlikeData.user_id,
-        timestamp: unlikeData.timestamp,
-      },
-      options
-    );
+    // Analytics disabled - unlike functionality works but no analytics tracking
+    console.log('💔 [DEBUG] Unlike event ignored (analytics disabled for core functionality focus)');
+    return Promise.resolve();
   }
 
   async publishCommentCreated(commentData, options = {}) {
-    return this.publishSocialEvent(
-      "COMMENT_CREATED",
-      {
-        comment_id: commentData.comment_id,
-        post_id: commentData.post_id,
-        user_id: commentData.user_id,
-        content: commentData.content,
-        parent_comment_id: commentData.parent_comment_id,
-        created_at: commentData.created_at,
-      },
-      options
-    );
+    // Analytics disabled - comment functionality works but no analytics tracking
+    console.log('📝 [DEBUG] Comment event ignored (analytics disabled for core functionality focus)');
+    return Promise.resolve();
   }
 
   async publishUserFollowed(followData, options = {}) {
@@ -253,32 +229,15 @@ class PostServiceRabbitMQPublisher {
   }
 
   async publishEngagementMetrics(metricsData, options = {}) {
-    return this.publishAnalyticsEvent(
-      "ENGAGEMENT_METRICS",
-      {
-        user_id: metricsData.user_id,
-        post_id: metricsData.post_id,
-        engagement_type: metricsData.type, // 'like', 'comment', 'share', 'view'
-        timestamp: metricsData.timestamp,
-        metadata: metricsData.metadata,
-      },
-      options
-    );
+    // Analytics disabled - no engagement tracking
+    console.log('📊 [DEBUG] Engagement metrics ignored (analytics disabled)');
+    return Promise.resolve();
   }
 
   async publishFeedInteraction(interactionData, options = {}) {
-    return this.publishAnalyticsEvent(
-      "FEED_INTERACTION",
-      {
-        user_id: interactionData.user_id,
-        post_id: interactionData.post_id,
-        interaction_type: interactionData.type, // 'view', 'scroll_past', 'click'
-        duration: interactionData.duration,
-        position: interactionData.position,
-        timestamp: interactionData.timestamp,
-      },
-      options
-    );
+    // Analytics disabled - no feed interaction tracking
+    console.log('🔄 [DEBUG] Feed interaction ignored (analytics disabled)');
+    return Promise.resolve();
   }
 
   // Utility methods

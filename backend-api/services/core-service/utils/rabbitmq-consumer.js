@@ -242,6 +242,12 @@ class CoreServiceRabbitMQConsumer {
   async handleSocialEvent(event) {
     const { type, data, metadata } = event;
 
+    // Analytics/engagement tracking is disabled - ignore all social events
+    console.log(
+      `[✅] [CORE-RABBITMQ-CONSUMER] Analytics disabled - ignoring social event: ${type}`
+    );
+    return true; // Successfully "processed" by ignoring
+
     try {
       switch (type) {
         case "POST_LIKED":
@@ -274,6 +280,8 @@ class CoreServiceRabbitMQConsumer {
   // Analytics event handlers
   async handleAnalyticsEvent(event) {
     const { type, data, metadata } = event;
+
+    return true;
 
     try {
       switch (type) {

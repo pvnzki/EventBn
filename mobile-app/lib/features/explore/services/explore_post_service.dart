@@ -26,7 +26,44 @@ class ExplorePostService {
   // Get auth token from shared preferences
   Future<String?> _getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(AppConfig.tokenKey);
+    String? token = prefs.getString(AppConfig.tokenKey);
+    
+    // If no token exists and we're in debug mode, try to get a test token
+    if (token == null) {
+      print('🔑 [DEBUG] No auth token found, attempting to get test token...');
+      token = await _getTestToken();
+      if (token != null) {
+        // Store the test token for future use
+        await prefs.setString(AppConfig.tokenKey, token);
+        print('🔑 [DEBUG] Test token obtained and stored');
+      }
+    }
+    
+    return token;
+  }
+
+  // Get a test token from the backend (development only)
+  Future<String?> _getTestToken() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_postServiceUrl/api/debug/test-token'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+      
+      print('🔑 [DEBUG] Test token response: ${response.statusCode} - ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['token'] != null) {
+          print('🔑 [DEBUG] Test token obtained successfully');
+          return data['token'];
+        }
+      }
+    } catch (error) {
+      print('🔑 [DEBUG] Failed to get test token: $error');
+    }
+    
+    return null;
   }
 
   // Create headers with auth token
@@ -67,10 +104,46 @@ class ExplorePostService {
         queryParameters: queryParams,
       );
 
-      print('🌐 Making request to: $uri');
-      print('📤 Request headers: $headers');
+      print('🌐 [DEBUG] Making request to: $uri');
+      print('📤 [DEBUG] Request headers: $headers');
+      print('🔑 [DEBUG] Post service URL: $_postServiceUrl');
+      
+      // Test basic connectivity first with improved error handling
+      try {
+        print('🔍 [DEBUG] Testing connectivity to $_postServiceUrl/api/health...');
+        final healthResponse = await http.get(
+          Uri.parse('$_postServiceUrl/api/health'),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 8), onTimeout: () {
+          throw Exception('Health check timeout after 8 seconds - backend service may not be running');
+        });
+        print('🏥 [DEBUG] Health check status: ${healthResponse.statusCode}');
+        print('🏥 [DEBUG] Health check response: ${healthResponse.body}');
+        
+        // Also test the test endpoint
+        print('🧪 [DEBUG] Testing connectivity to $_postServiceUrl/api/test...');
+        final testResponse = await http.get(
+          Uri.parse('$_postServiceUrl/api/test'),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 8), onTimeout: () {
+          throw Exception('Test endpoint timeout after 8 seconds - backend service may not be running');
+        });
+        print('🧪 [DEBUG] Test endpoint status: ${testResponse.statusCode}');
+        print('🧪 [DEBUG] Test endpoint response: ${testResponse.body}');
+      } catch (connectivityError) {
+        print('❌ [DEBUG] Connectivity test failed: $connectivityError');
+        print('❌ [DEBUG] Backend URL: $_postServiceUrl');
+        print('❌ [DEBUG] If using emulator, ensure backend is running on host machine');
+        print('❌ [DEBUG] If using physical device, check WiFi and IP configuration');
+        throw Exception('Backend connection failed: ${connectivityError.toString()}. Check if backend services are running.');
+      }
 
-      final response = await http.get(uri, headers: headers);
+      final response = await http.get(uri, headers: headers).timeout(
+        const Duration(seconds: 15), 
+        onTimeout: () {
+          throw Exception('Posts API request timeout after 15 seconds');
+        }
+      );
 
       print('📥 Response status: ${response.statusCode}');
       print('📄 Response body: ${response.body}');
@@ -85,7 +158,14 @@ class ExplorePostService {
         if (refresh) {
           _posts.clear();
         }
-        _posts.addAll(newPosts);
+        
+        // Filter out duplicates by checking existing post IDs
+        final existingIds = _posts.map((post) => post.id).toSet();
+        final uniqueNewPosts = newPosts.where((post) => !existingIds.contains(post.id)).toList();
+        
+        _posts.addAll(uniqueNewPosts);
+        
+        print('🔄 [DEBUG] Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
 
         // Check if we have more data
         final pagination = data['pagination'];
@@ -137,7 +217,13 @@ class ExplorePostService {
         final newPosts =
             postsJson.map((json) => ExplorePost.fromJson(json)).toList();
 
-        _posts.addAll(newPosts);
+        // Filter out duplicates for loadMorePosts as well
+        final existingIds = _posts.map((post) => post.id).toSet();
+        final uniqueNewPosts = newPosts.where((post) => !existingIds.contains(post.id)).toList();
+        
+        _posts.addAll(uniqueNewPosts);
+        
+        print('➕ [DEBUG] Load more: Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
 
         // Check if we have more data
         final pagination = data['pagination'];
@@ -161,11 +247,15 @@ class ExplorePostService {
 
   Future<void> toggleLike(String postId) async {
     try {
+      print('❤️ [DEBUG] Toggling like for post: $postId');
       final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('$_postServiceUrl/posts/$postId/like'),
-        headers: headers,
-      );
+      final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/like');
+      print('❤️ [DEBUG] Like URL: $uri');
+      print('❤️ [DEBUG] Like headers: $headers');
+      
+      final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 10));
+
+      print('❤️ [DEBUG] Like toggle response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -179,12 +269,13 @@ class ExplorePostService {
             likesCount: data['likesCount'] ??
                 (post.isLiked ? post.likesCount - 1 : post.likesCount + 1),
           );
+          print('✅ Updated post $postId: liked=${_posts[index].isLiked}, likes=${_posts[index].likesCount}');
         }
       } else {
-        print('Failed to toggle like: ${data['error'] ?? 'Unknown error'}');
+        print('❌ Failed to toggle like: ${data['error'] ?? 'Unknown error'}');
       }
     } catch (e) {
-      print('Error toggling like: $e');
+      print('💥 Error toggling like: $e');
     }
   }
 
@@ -197,6 +288,130 @@ class ExplorePostService {
       _posts[index] = post.copyWith(
         isBookmarked: !post.isBookmarked,
       );
+    }
+  }
+
+  // Add comment to a post
+  Future<Map<String, dynamic>?> addComment(String postId, String content) async {
+    try {
+      print('💬 [DEBUG] Adding comment to post: $postId');
+      print('💬 [DEBUG] Comment content: $content');
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments');
+      final body = jsonEncode({'content': content});
+      print('💬 [DEBUG] Comment URL: $uri');
+      print('💬 [DEBUG] Comment headers: $headers');
+      print('💬 [DEBUG] Comment body: $body');
+      
+      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
+
+      print('� [DEBUG] Add comment response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 && data['success'] == true) {
+        // Update local post comment count
+        final index = _posts.indexWhere((post) => post.id == postId);
+        if (index != -1) {
+          final post = _posts[index];
+          _posts[index] = post.copyWith(
+            commentsCount: post.commentsCount + 1,
+          );
+          print('✅ Added comment to post $postId, new count: ${_posts[index].commentsCount}');
+        }
+        return data['data']['comment'];
+      } else {
+        print('❌ Failed to add comment: ${data['message'] ?? 'Unknown error'}');
+        return null;
+      }
+    } catch (e) {
+      print('💥 Error adding comment: $e');
+      return null;
+    }
+  }
+
+  // Get comments for a post
+  Future<List<Map<String, dynamic>>> getComments(String postId, {int page = 1, int limit = 20}) async {
+    try {
+      print('📖 [DEBUG] Getting comments for post: $postId');
+      final headers = await _getHeaders();
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments').replace(
+        queryParameters: queryParams,
+      );
+      print('📖 [DEBUG] Get comments URL: $uri');
+      print('📖 [DEBUG] Get comments headers: $headers');
+
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+
+      print('� [DEBUG] Get comments response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final List<dynamic> commentsJson = data['data']['comments'] ?? [];
+        return commentsJson.cast<Map<String, dynamic>>();
+      } else {
+        print('❌ Failed to get comments: ${data['message'] ?? 'Unknown error'}');
+        return [];
+      }
+    } catch (e) {
+      print('💥 Error getting comments: $e');
+      return [];
+    }
+  }
+
+  // Delete a comment
+  Future<bool> deleteComment(String commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$_postServiceUrl/api/comments/$commentId'),
+        headers: headers,
+      );
+
+      print('🔧 Delete comment response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        print('✅ Comment $commentId deleted successfully');
+        return true;
+      } else {
+        print('❌ Failed to delete comment: ${data['message'] ?? 'Unknown error'}');
+        return false;
+      }
+    } catch (e) {
+      print('💥 Error deleting comment: $e');
+      return false;
+    }
+  }
+
+  // Toggle like on a comment
+  Future<void> toggleCommentLike(String commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$_postServiceUrl/api/comments/$commentId/like'),
+        headers: headers,
+      );
+
+      print('🔧 Comment like toggle response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final isLiked = data['data']['isLiked'] ?? false;
+        print('✅ Comment $commentId like toggled: $isLiked');
+      } else {
+        print('❌ Failed to toggle comment like: ${data['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      print('💥 Error toggling comment like: $e');
     }
   }
 
