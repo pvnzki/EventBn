@@ -27,7 +27,7 @@ class ExplorePostService {
   Future<String?> _getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString(AppConfig.tokenKey);
-    
+
     // If no token exists and we're in debug mode, try to get a test token
     if (token == null) {
       print('🔑 [DEBUG] No auth token found, attempting to get test token...');
@@ -38,7 +38,7 @@ class ExplorePostService {
         print('🔑 [DEBUG] Test token obtained and stored');
       }
     }
-    
+
     return token;
   }
 
@@ -49,9 +49,10 @@ class ExplorePostService {
         Uri.parse('$_postServiceUrl/api/debug/test-token'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
-      
-      print('🔑 [DEBUG] Test token response: ${response.statusCode} - ${response.body}');
-      
+
+      print(
+          '🔑 [DEBUG] Test token response: ${response.statusCode} - ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['token'] != null) {
@@ -62,7 +63,7 @@ class ExplorePostService {
     } catch (error) {
       print('🔑 [DEBUG] Failed to get test token: $error');
     }
-    
+
     return null;
   }
 
@@ -107,43 +108,49 @@ class ExplorePostService {
       print('🌐 [DEBUG] Making request to: $uri');
       print('📤 [DEBUG] Request headers: $headers');
       print('🔑 [DEBUG] Post service URL: $_postServiceUrl');
-      
+
       // Test basic connectivity first with improved error handling
       try {
-        print('🔍 [DEBUG] Testing connectivity to $_postServiceUrl/api/health...');
+        print(
+            '🔍 [DEBUG] Testing connectivity to $_postServiceUrl/api/health...');
         final healthResponse = await http.get(
           Uri.parse('$_postServiceUrl/api/health'),
           headers: {'Content-Type': 'application/json'},
         ).timeout(const Duration(seconds: 8), onTimeout: () {
-          throw Exception('Health check timeout after 8 seconds - backend service may not be running');
+          throw Exception(
+              'Health check timeout after 8 seconds - backend service may not be running');
         });
         print('🏥 [DEBUG] Health check status: ${healthResponse.statusCode}');
         print('🏥 [DEBUG] Health check response: ${healthResponse.body}');
-        
+
         // Also test the test endpoint
-        print('🧪 [DEBUG] Testing connectivity to $_postServiceUrl/api/test...');
+        print(
+            '🧪 [DEBUG] Testing connectivity to $_postServiceUrl/api/test...');
         final testResponse = await http.get(
           Uri.parse('$_postServiceUrl/api/test'),
           headers: {'Content-Type': 'application/json'},
         ).timeout(const Duration(seconds: 8), onTimeout: () {
-          throw Exception('Test endpoint timeout after 8 seconds - backend service may not be running');
+          throw Exception(
+              'Test endpoint timeout after 8 seconds - backend service may not be running');
         });
         print('🧪 [DEBUG] Test endpoint status: ${testResponse.statusCode}');
         print('🧪 [DEBUG] Test endpoint response: ${testResponse.body}');
       } catch (connectivityError) {
         print('❌ [DEBUG] Connectivity test failed: $connectivityError');
         print('❌ [DEBUG] Backend URL: $_postServiceUrl');
-        print('❌ [DEBUG] If using emulator, ensure backend is running on host machine');
-        print('❌ [DEBUG] If using physical device, check WiFi and IP configuration');
-        throw Exception('Backend connection failed: ${connectivityError.toString()}. Check if backend services are running.');
+        print(
+            '❌ [DEBUG] If using emulator, ensure backend is running on host machine');
+        print(
+            '❌ [DEBUG] If using physical device, check WiFi and IP configuration');
+        throw Exception(
+            'Backend connection failed: ${connectivityError.toString()}. Check if backend services are running.');
       }
 
-      final response = await http.get(uri, headers: headers).timeout(
-        const Duration(seconds: 15), 
-        onTimeout: () {
-          throw Exception('Posts API request timeout after 15 seconds');
-        }
-      );
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 15), onTimeout: () {
+        throw Exception('Posts API request timeout after 15 seconds');
+      });
 
       print('📥 Response status: ${response.statusCode}');
       print('📄 Response body: ${response.body}');
@@ -158,14 +165,16 @@ class ExplorePostService {
         if (refresh) {
           _posts.clear();
         }
-        
+
         // Filter out duplicates by checking existing post IDs
         final existingIds = _posts.map((post) => post.id).toSet();
-        final uniqueNewPosts = newPosts.where((post) => !existingIds.contains(post.id)).toList();
-        
+        final uniqueNewPosts =
+            newPosts.where((post) => !existingIds.contains(post.id)).toList();
+
         _posts.addAll(uniqueNewPosts);
-        
-        print('🔄 [DEBUG] Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
+
+        print(
+            '🔄 [DEBUG] Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
 
         // Check if we have more data
         final pagination = data['pagination'];
@@ -219,11 +228,13 @@ class ExplorePostService {
 
         // Filter out duplicates for loadMorePosts as well
         final existingIds = _posts.map((post) => post.id).toSet();
-        final uniqueNewPosts = newPosts.where((post) => !existingIds.contains(post.id)).toList();
-        
+        final uniqueNewPosts =
+            newPosts.where((post) => !existingIds.contains(post.id)).toList();
+
         _posts.addAll(uniqueNewPosts);
-        
-        print('➕ [DEBUG] Load more: Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
+
+        print(
+            '➕ [DEBUG] Load more: Added ${uniqueNewPosts.length} unique posts (${newPosts.length - uniqueNewPosts.length} duplicates filtered)');
 
         // Check if we have more data
         final pagination = data['pagination'];
@@ -252,10 +263,13 @@ class ExplorePostService {
       final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/like');
       print('❤️ [DEBUG] Like URL: $uri');
       print('❤️ [DEBUG] Like headers: $headers');
-      
-      final response = await http.post(uri, headers: headers).timeout(const Duration(seconds: 10));
 
-      print('❤️ [DEBUG] Like toggle response: ${response.statusCode} - ${response.body}');
+      final response = await http
+          .post(uri, headers: headers)
+          .timeout(const Duration(seconds: 10));
+
+      print(
+          '❤️ [DEBUG] Like toggle response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -269,7 +283,8 @@ class ExplorePostService {
             likesCount: data['likesCount'] ??
                 (post.isLiked ? post.likesCount - 1 : post.likesCount + 1),
           );
-          print('✅ Updated post $postId: liked=${_posts[index].isLiked}, likes=${_posts[index].likesCount}');
+          print(
+              '✅ Updated post $postId: liked=${_posts[index].isLiked}, likes=${_posts[index].likesCount}');
         }
       } else {
         print('❌ Failed to toggle like: ${data['error'] ?? 'Unknown error'}');
@@ -292,7 +307,8 @@ class ExplorePostService {
   }
 
   // Add comment to a post
-  Future<Map<String, dynamic>?> addComment(String postId, String content) async {
+  Future<Map<String, dynamic>?> addComment(
+      String postId, String content) async {
     try {
       print('💬 [DEBUG] Adding comment to post: $postId');
       print('💬 [DEBUG] Comment content: $content');
@@ -302,10 +318,13 @@ class ExplorePostService {
       print('💬 [DEBUG] Comment URL: $uri');
       print('💬 [DEBUG] Comment headers: $headers');
       print('💬 [DEBUG] Comment body: $body');
-      
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
 
-      print('� [DEBUG] Add comment response: ${response.statusCode} - ${response.body}');
+      final response = await http
+          .post(uri, headers: headers, body: body)
+          .timeout(const Duration(seconds: 10));
+
+      print(
+          '� [DEBUG] Add comment response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -317,7 +336,8 @@ class ExplorePostService {
           _posts[index] = post.copyWith(
             commentsCount: post.commentsCount + 1,
           );
-          print('✅ Added comment to post $postId, new count: ${_posts[index].commentsCount}');
+          print(
+              '✅ Added comment to post $postId, new count: ${_posts[index].commentsCount}');
         }
         return data['data']['comment'];
       } else {
@@ -331,7 +351,8 @@ class ExplorePostService {
   }
 
   // Get comments for a post
-  Future<List<Map<String, dynamic>>> getComments(String postId, {int page = 1, int limit = 20}) async {
+  Future<List<Map<String, dynamic>>> getComments(String postId,
+      {int page = 1, int limit = 20}) async {
     try {
       print('📖 [DEBUG] Getting comments for post: $postId');
       final headers = await _getHeaders();
@@ -340,15 +361,19 @@ class ExplorePostService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments').replace(
+      final uri =
+          Uri.parse('$_postServiceUrl/api/posts/$postId/comments').replace(
         queryParameters: queryParams,
       );
       print('📖 [DEBUG] Get comments URL: $uri');
       print('📖 [DEBUG] Get comments headers: $headers');
 
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 10));
 
-      print('� [DEBUG] Get comments response: ${response.statusCode} - ${response.body}');
+      print(
+          '� [DEBUG] Get comments response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -356,7 +381,8 @@ class ExplorePostService {
         final List<dynamic> commentsJson = data['data']['comments'] ?? [];
         return commentsJson.cast<Map<String, dynamic>>();
       } else {
-        print('❌ Failed to get comments: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ Failed to get comments: ${data['message'] ?? 'Unknown error'}');
         return [];
       }
     } catch (e) {
@@ -374,7 +400,8 @@ class ExplorePostService {
         headers: headers,
       );
 
-      print('🔧 Delete comment response: ${response.statusCode} - ${response.body}');
+      print(
+          '🔧 Delete comment response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -382,7 +409,8 @@ class ExplorePostService {
         print('✅ Comment $commentId deleted successfully');
         return true;
       } else {
-        print('❌ Failed to delete comment: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ Failed to delete comment: ${data['message'] ?? 'Unknown error'}');
         return false;
       }
     } catch (e) {
@@ -400,7 +428,8 @@ class ExplorePostService {
         headers: headers,
       );
 
-      print('🔧 Comment like toggle response: ${response.statusCode} - ${response.body}');
+      print(
+          '🔧 Comment like toggle response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -408,7 +437,8 @@ class ExplorePostService {
         final isLiked = data['data']['isLiked'] ?? false;
         print('✅ Comment $commentId like toggled: $isLiked');
       } else {
-        print('❌ Failed to toggle comment like: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ Failed to toggle comment like: ${data['message'] ?? 'Unknown error'}');
       }
     } catch (e) {
       print('💥 Error toggling comment like: $e');

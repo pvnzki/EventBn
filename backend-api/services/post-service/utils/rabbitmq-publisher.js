@@ -200,19 +200,25 @@ class PostServiceRabbitMQPublisher {
 
   async publishPostLiked(postData, likeData, options = {}) {
     // Analytics disabled - like functionality works but no analytics tracking
-    console.log('❤️ [DEBUG] Like event ignored (analytics disabled for core functionality focus)');
+    console.log(
+      "❤️ [DEBUG] Like event ignored (analytics disabled for core functionality focus)"
+    );
     return Promise.resolve();
   }
 
   async publishPostUnliked(postData, unlikeData, options = {}) {
     // Analytics disabled - unlike functionality works but no analytics tracking
-    console.log('💔 [DEBUG] Unlike event ignored (analytics disabled for core functionality focus)');
+    console.log(
+      "💔 [DEBUG] Unlike event ignored (analytics disabled for core functionality focus)"
+    );
     return Promise.resolve();
   }
 
   async publishCommentCreated(commentData, options = {}) {
     // Analytics disabled - comment functionality works but no analytics tracking
-    console.log('📝 [DEBUG] Comment event ignored (analytics disabled for core functionality focus)');
+    console.log(
+      "📝 [DEBUG] Comment event ignored (analytics disabled for core functionality focus)"
+    );
     return Promise.resolve();
   }
 
@@ -230,13 +236,13 @@ class PostServiceRabbitMQPublisher {
 
   async publishEngagementMetrics(metricsData, options = {}) {
     // Analytics disabled - no engagement tracking
-    console.log('📊 [DEBUG] Engagement metrics ignored (analytics disabled)');
+    console.log("📊 [DEBUG] Engagement metrics ignored (analytics disabled)");
     return Promise.resolve();
   }
 
   async publishFeedInteraction(interactionData, options = {}) {
     // Analytics disabled - no feed interaction tracking
-    console.log('🔄 [DEBUG] Feed interaction ignored (analytics disabled)');
+    console.log("🔄 [DEBUG] Feed interaction ignored (analytics disabled)");
     return Promise.resolve();
   }
 

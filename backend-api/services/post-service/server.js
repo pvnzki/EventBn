@@ -232,12 +232,16 @@ const initializeRabbitMQ = async () => {
   }
 
   try {
-    console.log("[POST-SERVICE] Analytics/RabbitMQ disabled - focusing on core functionality");
+    console.log(
+      "[POST-SERVICE] Analytics/RabbitMQ disabled - focusing on core functionality"
+    );
 
     // Analytics and engagement tracking disabled for better separation of concerns
     // await connectToRabbitMQ();
     // await startRabbitMQConsumer();
-    console.log("[POST-SERVICE] ✅ Core post/comment functionality ready (analytics disabled)");
+    console.log(
+      "[POST-SERVICE] ✅ Core post/comment functionality ready (analytics disabled)"
+    );
 
     // Initialize user data service (still needed for user info)
     await UserDataService.initialize();

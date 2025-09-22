@@ -63,7 +63,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _post = post;
         _isLoading = false;
       });
-      
+
       // Load comments after post is loaded
       print('📝 [DEBUG] About to load comments for post: ${_post!.id}');
       await _loadComments();
@@ -82,7 +82,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _loadComments() async {
     if (_post == null) return;
-    
+
     setState(() {
       _commentsLoading = true;
     });
@@ -90,18 +90,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     try {
       print('📝 Loading comments for post: ${_post!.id}');
       final comments = await _postService.getComments(_post!.id);
-      
+
       setState(() {
         _comments = comments.map((comment) {
           print('📝 [DEBUG] Processing comment: $comment');
           try {
             return {
               'id': (comment['comment_id'] ?? comment['id'] ?? '0').toString(),
-              'user': comment['user']?['full_name'] ?? comment['user'] ?? 'Unknown User',
-              'userId': (comment['user_id'] ?? comment['userId'] ?? '0').toString(),
-              'comment': comment['comment_text'] ?? comment['content'] ?? comment['comment'] ?? '',
-              'time': _formatCommentTime(comment['created_at'] ?? comment['createdAt']),
-              'timestamp': DateTime.tryParse(comment['created_at'] ?? comment['createdAt'] ?? '') ?? DateTime.now(),
+              'user': comment['user']?['full_name'] ??
+                  comment['user'] ??
+                  'Unknown User',
+              'userId':
+                  (comment['user_id'] ?? comment['userId'] ?? '0').toString(),
+              'comment': comment['comment_text'] ??
+                  comment['content'] ??
+                  comment['comment'] ??
+                  '',
+              'time': _formatCommentTime(
+                  comment['created_at'] ?? comment['createdAt']),
+              'timestamp': DateTime.tryParse(
+                      comment['created_at'] ?? comment['createdAt'] ?? '') ??
+                  DateTime.now(),
               'likes': comment['like_count'] ?? comment['likes'] ?? 0,
               'isLiked': comment['is_liked'] ?? false,
             };
@@ -121,14 +130,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         }).toList();
         _commentsLoading = false;
       });
-      
+
       print('📝 Loaded ${comments.length} comments');
     } catch (e) {
       print('❌ Error loading comments: $e');
       setState(() {
         _commentsLoading = false;
       });
-      
+
       // Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,12 +152,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   String _formatCommentTime(String? createdAt) {
     if (createdAt == null) return 'now';
-    
+
     try {
       final timestamp = DateTime.parse(createdAt);
       final now = DateTime.now();
       final difference = now.difference(timestamp);
-      
+
       if (difference.inMinutes < 1) {
         return 'now';
       } else if (difference.inMinutes < 60) {
@@ -288,7 +297,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              backgroundColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               child: _post!.userAvatarUrl.isNotEmpty
                   ? ClipOval(
                       child: Image.network(
@@ -720,14 +730,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         onTap: () => _toggleCommentLike(comment),
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                (comment['is_liked'] ?? false) ? Icons.favorite : Icons.favorite_outline,
+                                (comment['is_liked'] ?? false)
+                                    ? Icons.favorite
+                                    : Icons.favorite_outline,
                                 size: 16,
-                                color: (comment['is_liked'] ?? false) ? Colors.red : colorScheme.onSurfaceVariant,
+                                color: (comment['is_liked'] ?? false)
+                                    ? Colors.red
+                                    : colorScheme.onSurfaceVariant,
                               ),
                               if ((comment['likes'] ?? 0) > 0) ...[
                                 const SizedBox(width: 4),
@@ -829,9 +844,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     // Navigate to the specific event page
     if (_post!.relatedEventId != null) {
       print('🎯 Navigating to event: ${_post!.relatedEventId}');
-  print('🚀 Route: /events/${_post!.relatedEventId}');
+      print('🚀 Route: /events/${_post!.relatedEventId}');
       try {
-  context.push('/events/${_post!.relatedEventId}');
+        context.push('/events/${_post!.relatedEventId}');
         print('✅ Event navigation successful');
       } catch (e) {
         print('❌ Event navigation failed: $e');
@@ -852,11 +867,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Future<void> _handleLike() async {
     if (_post == null) return;
-    
+
     try {
       print('❤️ [DEBUG] Attempting to like post: ${_post!.id}');
       await _postService.toggleLike(_post!.id);
-      
+
       setState(() {
         _post = _post!.copyWith(
           isLiked: !_post!.isLiked,
@@ -864,8 +879,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               _post!.isLiked ? _post!.likesCount - 1 : _post!.likesCount + 1,
         );
       });
-      
-      print('❤️ [DEBUG] Post like updated locally: isLiked=${_post!.isLiked}, count=${_post!.likesCount}');
+
+      print(
+          '❤️ [DEBUG] Post like updated locally: isLiked=${_post!.isLiked}, count=${_post!.likesCount}');
     } catch (e) {
       print('❌ [DEBUG] Error liking post: $e');
       if (mounted) {
@@ -899,18 +915,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     try {
       print('❤️ Toggling like for comment: $commentId');
       await _postService.toggleCommentLike(commentId);
-      
+
       // Update local state optimistically
       setState(() {
         final isCurrentlyLiked = comment['is_liked'] ?? false;
         comment['is_liked'] = !isCurrentlyLiked;
-        comment['likes'] = (comment['likes'] ?? 0) + (isCurrentlyLiked ? -1 : 1);
+        comment['likes'] =
+            (comment['likes'] ?? 0) + (isCurrentlyLiked ? -1 : 1);
       });
-      
+
       print('❤️ Comment like toggled successfully');
     } catch (e) {
       print('❌ Error toggling comment like: $e');
-      
+
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -927,15 +944,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (_commentController.text.trim().isEmpty || _post == null) return;
 
     final commentContent = _commentController.text.trim();
-    
+
     // Clear the input immediately for better UX
     _commentController.clear();
     FocusScope.of(context).unfocus();
-    
+
     try {
       print('📝 Posting comment: $commentContent');
       await _postService.addComment(_post!.id, commentContent);
-      
+
       // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -943,13 +960,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-      
+
       // Reload comments to get the latest from server
       await _loadComments();
-      
     } catch (e) {
       print('❌ Error posting comment: $e');
-      
+
       // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -959,7 +975,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
         );
       }
-      
+
       // Restore the comment text on error
       _commentController.text = commentContent;
     }

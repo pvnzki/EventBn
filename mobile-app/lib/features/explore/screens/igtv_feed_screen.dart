@@ -30,11 +30,11 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   // Bottom sheet for comments
   final TextEditingController _commentController = TextEditingController();
-  
+
   // Comments management
   List<Map<String, dynamic>> _comments = [];
   bool _commentsLoading = false;
-  
+
   // Track user interaction states
   final Map<String, bool> _userHasCommented = {};
 
@@ -56,11 +56,11 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       parent: _likeAnimationController,
       curve: Curves.elasticOut,
     ));
-    
+
     // Check backend connectivity first
     _checkBackendConnectivity();
     _loadPosts();
-    
+
     // Set status bar to transparent for full screen experience
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -74,16 +74,16 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   Future<void> _checkBackendConnectivity() async {
     try {
       print('🔍 [DEBUG] IGTV: Checking backend connectivity...');
-      
+
       // Try to reach the health endpoint
       final response = await http.get(
         Uri.parse('http://localhost:3002/health'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
-      
+
       if (response.statusCode == 200) {
         print('✅ [DEBUG] IGTV: Backend is reachable');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -94,7 +94,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
           );
         }
       } else {
-        print('⚠️ [DEBUG] IGTV: Backend returned status ${response.statusCode}');
+        print(
+            '⚠️ [DEBUG] IGTV: Backend returned status ${response.statusCode}');
         // _showBackendError('Backend service returned error status ${response.statusCode}');
       }
     } catch (e) {
@@ -111,15 +112,15 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('❌ Backend Connection Issue', 
-                style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('❌ Backend Connection Issue',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(message),
               const SizedBox(height: 8),
-              const Text('• Comments and likes may not persist to database', 
-                style: TextStyle(fontSize: 12)),
-              const Text('• To fix: Start backend services from terminal', 
-                style: TextStyle(fontSize: 12)),
+              const Text('• Comments and likes may not persist to database',
+                  style: TextStyle(fontSize: 12)),
+              const Text('• To fix: Start backend services from terminal',
+                  style: TextStyle(fontSize: 12)),
             ],
           ),
           backgroundColor: Colors.red,
@@ -207,28 +208,34 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     });
 
     try {
-      print('� [DEBUG] IGTV: Loading comments for post $postId from database...');
+      print(
+          '� [DEBUG] IGTV: Loading comments for post $postId from database...');
       final comments = await _postService.getComments(postId);
-      
+
       print('📊 [DEBUG] IGTV: Received ${comments.length} comments from API');
       if (comments.isNotEmpty) {
         print('📊 [DEBUG] IGTV: Sample comment structure: ${comments.first}');
       }
-      
+
       setState(() {
         // Filter out optimistic updates (temporary comments)
-        _comments = comments.where((comment) => comment['is_optimistic'] != true).toList();
+        _comments = comments
+            .where((comment) => comment['is_optimistic'] != true)
+            .toList();
         _commentsLoading = false;
-        
+
         // Check if current user has commented on this post
-        const currentUserId = 'current_user'; // This should come from auth service
-        _userHasCommented[postId] = comments.any((comment) => 
-            comment['user_id']?.toString() == currentUserId);
+        const currentUserId =
+            'current_user'; // This should come from auth service
+        _userHasCommented[postId] = comments
+            .any((comment) => comment['user_id']?.toString() == currentUserId);
       });
-      
-      print('✅ [DEBUG] IGTV: Successfully loaded ${_comments.length} real comments from database');
-      print('👤 [DEBUG] IGTV: User has commented: ${_userHasCommented[postId]}');
-      
+
+      print(
+          '✅ [DEBUG] IGTV: Successfully loaded ${_comments.length} real comments from database');
+      print(
+          '👤 [DEBUG] IGTV: User has commented: ${_userHasCommented[postId]}');
+
       // Show success feedback if comments were loaded
       if (mounted && comments.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -245,19 +252,19 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
           ),
         );
       }
-      
     } catch (e) {
       print('❌ [ERROR] IGTV: Failed to load comments from database: $e');
       setState(() {
         _comments = [];
         _commentsLoading = false;
       });
-      
+
       // Show detailed error message to user
-      final isConnectionError = e.toString().toLowerCase().contains('connection') || 
-                                e.toString().toLowerCase().contains('socket') ||
-                                e.toString().toLowerCase().contains('network');
-      
+      final isConnectionError =
+          e.toString().toLowerCase().contains('connection') ||
+              e.toString().toLowerCase().contains('socket') ||
+              e.toString().toLowerCase().contains('network');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -269,18 +276,19 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   children: [
                     Icon(Icons.cloud_off, color: Colors.white, size: 16),
                     SizedBox(width: 8),
-                    Text('❌ Failed to load comments', 
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('❌ Failed to load comments',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(isConnectionError 
+                Text(isConnectionError
                     ? 'Cannot connect to backend (service not running)'
                     : 'Database error: ${e.toString()}'),
                 if (isConnectionError) ...[
                   const SizedBox(height: 4),
-                  const Text('• Comments will only show temporarily until backend starts', 
-                    style: TextStyle(fontSize: 12)),
+                  const Text(
+                      '• Comments will only show temporarily until backend starts',
+                      style: TextStyle(fontSize: 12)),
                 ],
               ],
             ),
@@ -298,31 +306,33 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   Future<void> _postComment() async {
-    if (_commentController.text.trim().isEmpty || _currentIndex >= _posts.length) return;
+    if (_commentController.text.trim().isEmpty ||
+        _currentIndex >= _posts.length) return;
 
     final commentContent = _commentController.text.trim();
     final currentPost = _posts[_currentIndex];
-    
+
     print('📝 [DEBUG] IGTV: Starting comment post process...');
     print('📝 [DEBUG] IGTV: Post ID: ${currentPost.id}');
     print('📝 [DEBUG] IGTV: Comment content: "$commentContent"');
-    print('📝 [DEBUG] IGTV: Current comments count: ${currentPost.commentsCount}');
-    
+    print(
+        '📝 [DEBUG] IGTV: Current comments count: ${currentPost.commentsCount}');
+
     // Clear the input immediately for better UX
     _commentController.clear();
     FocusScope.of(context).unfocus();
-    
+
     // Optimistic UI update - immediately add comment and update count
     final tempCommentId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
     setState(() {
       // Mark that user has commented on this post
       _userHasCommented[currentPost.id] = true;
-      
+
       // Update post comment count
       _posts[_currentIndex] = currentPost.copyWith(
         commentsCount: currentPost.commentsCount + 1,
       );
-      
+
       // Add optimistic comment to the list (will appear at top since we reverse)
       _comments.insert(0, {
         'comment_id': tempCommentId,
@@ -335,16 +345,18 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
         'is_optimistic': true, // Flag to identify optimistic updates
       });
     });
-    
-    print('✅ [DEBUG] IGTV: Optimistic UI updated - comments count: ${_posts[_currentIndex].commentsCount}');
-    
+
+    print(
+        '✅ [DEBUG] IGTV: Optimistic UI updated - comments count: ${_posts[_currentIndex].commentsCount}');
+
     try {
       print('🌐 [DEBUG] IGTV: Making API call to post comment...');
-      final result = await _postService.addComment(currentPost.id, commentContent);
-      
+      final result =
+          await _postService.addComment(currentPost.id, commentContent);
+
       if (result != null) {
         print('✅ [DEBUG] IGTV: Comment API call successful!');
-        
+
         // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -359,36 +371,37 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Reload comments to get the real data from server and replace optimistic comment
         print('🔄 [DEBUG] IGTV: Reloading comments from server...');
         await _loadComments(currentPost.id);
-        
       } else {
         throw Exception('API returned null result');
       }
-      
     } catch (e) {
       print('❌ [ERROR] IGTV: Failed to post comment to database: $e');
-      
+
       // Revert optimistic updates on error
       setState(() {
         _userHasCommented[currentPost.id] = false;
         _posts[_currentIndex] = currentPost.copyWith(
-          commentsCount: currentPost.commentsCount, // Revert back to original count
+          commentsCount:
+              currentPost.commentsCount, // Revert back to original count
         );
-        
+
         // Remove the optimistic comment
-        _comments.removeWhere((comment) => comment['comment_id'] == tempCommentId);
+        _comments
+            .removeWhere((comment) => comment['comment_id'] == tempCommentId);
       });
-      
+
       print('🔄 [DEBUG] IGTV: Optimistic UI reverted due to API failure');
-      
+
       // Show detailed error message
-      final isConnectionError = e.toString().toLowerCase().contains('connection') || 
-                                e.toString().toLowerCase().contains('socket') ||
-                                e.toString().toLowerCase().contains('network');
-      
+      final isConnectionError =
+          e.toString().toLowerCase().contains('connection') ||
+              e.toString().toLowerCase().contains('socket') ||
+              e.toString().toLowerCase().contains('network');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -400,18 +413,19 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   children: [
                     Icon(Icons.error, color: Colors.white, size: 16),
                     SizedBox(width: 8),
-                    Text('❌ Failed to save comment', 
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('❌ Failed to save comment',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(isConnectionError 
+                Text(isConnectionError
                     ? 'Cannot connect to backend service (not running)'
                     : 'Database error: ${e.toString().length > 100 ? '${e.toString().substring(0, 100)}...' : e.toString()}'),
                 if (isConnectionError) ...[
                   const SizedBox(height: 4),
-                  const Text('• Start backend services to enable database persistence', 
-                    style: TextStyle(fontSize: 12)),
+                  const Text(
+                      '• Start backend services to enable database persistence',
+                      style: TextStyle(fontSize: 12)),
                 ],
               ],
             ),
@@ -427,7 +441,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
           ),
         );
       }
-      
+
       // Restore the comment text on error
       _commentController.text = commentContent;
     }
@@ -435,28 +449,30 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   Future<void> _toggleLike() async {
     if (_currentIndex >= _posts.length) return;
-    
+
     final currentPost = _posts[_currentIndex];
     print('❤️ [DEBUG] IGTV: Toggling like for post ${currentPost.id}');
-    
+
     // Trigger like animation
     _likeAnimationController.forward().then((_) {
       _likeAnimationController.reverse();
     });
-    
+
     // Optimistic UI update - immediately toggle the like state and update count
     setState(() {
       final wasLiked = currentPost.isLiked;
       _posts[_currentIndex] = currentPost.copyWith(
         isLiked: !wasLiked, // Toggle like state
-        likesCount: wasLiked ? currentPost.likesCount - 1 : currentPost.likesCount + 1, // Update count
+        likesCount: wasLiked
+            ? currentPost.likesCount - 1
+            : currentPost.likesCount + 1, // Update count
       );
     });
-    
+
     try {
       // Call the real API to toggle like
       await _postService.toggleLike(currentPost.id);
-      
+
       // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -465,24 +481,25 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
           backgroundColor: Colors.green,
         ),
       );
-      
     } catch (e) {
       print('❌ [ERROR] IGTV: Failed to toggle like: $e');
-      
+
       // Revert optimistic update on error
       setState(() {
         final currentLikedState = _posts[_currentIndex].isLiked;
         _posts[_currentIndex] = _posts[_currentIndex].copyWith(
           isLiked: !currentLikedState, // Revert like state
-          likesCount: currentLikedState ? _posts[_currentIndex].likesCount - 1 : _posts[_currentIndex].likesCount + 1, // Revert count
+          likesCount: currentLikedState
+              ? _posts[_currentIndex].likesCount - 1
+              : _posts[_currentIndex].likesCount + 1, // Revert count
         );
       });
-      
+
       // Show detailed error message
-      final errorMessage = e.toString().contains('Connection') 
+      final errorMessage = e.toString().contains('Connection')
           ? 'Cannot connect to server. Please check if services are running.'
           : 'Failed to update like: ${e.toString()}';
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
@@ -500,7 +517,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   void _showCommentsSheet() {
     if (_currentIndex >= _posts.length) return;
-    
+
     final currentPost = _posts[_currentIndex];
     _loadComments(currentPost.id);
     _animationController.forward();
@@ -710,16 +727,20 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        boxShadow: currentPost.isLiked ? [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.3),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ] : null,
+                        boxShadow: currentPost.isLiked
+                            ? [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Icon(
-                        currentPost.isLiked ? Icons.favorite : Icons.favorite_border,
+                        currentPost.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
                         color: currentPost.isLiked ? Colors.red : Colors.white,
                         size: 32,
                       ),
@@ -754,20 +775,22 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.transparent,
-                    boxShadow: (_userHasCommented[currentPost.id] == true) ? [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 6,
-                        spreadRadius: 2,
-                      ),
-                    ] : null,
+                    boxShadow: (_userHasCommented[currentPost.id] == true)
+                        ? [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.3),
+                              blurRadius: 6,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Icon(
-                    _userHasCommented[currentPost.id] == true 
-                        ? Icons.chat_bubble 
+                    _userHasCommented[currentPost.id] == true
+                        ? Icons.chat_bubble
                         : Icons.chat_bubble_outline,
-                    color: _userHasCommented[currentPost.id] == true 
-                        ? Colors.blue 
+                    color: _userHasCommented[currentPost.id] == true
+                        ? Colors.blue
                         : Colors.white,
                     size: 32,
                   ),
@@ -1104,8 +1127,10 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                             itemCount: _comments.length,
                             itemBuilder: (context, index) {
                               // Show latest comments first by reversing the index
-                              final reversedIndex = _comments.length - 1 - index;
-                              return _buildCommentItem(_comments[reversedIndex]);
+                              final reversedIndex =
+                                  _comments.length - 1 - index;
+                              return _buildCommentItem(
+                                  _comments[reversedIndex]);
                             },
                           ),
               ),
@@ -1119,14 +1144,15 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   Widget _buildCommentItem(Map<String, dynamic> comment) {
     // Extract comment data safely
     final userId = comment['user_id']?.toString() ?? '';
-    final userName = comment['user_display_name']?.toString() ?? 
-                    comment['user_name']?.toString() ?? 
-                    'User $userId';
-    final commentText = comment['comment_text']?.toString() ?? 
-                       comment['content']?.toString() ?? 
-                       'No comment text';
+    final userName = comment['user_display_name']?.toString() ??
+        comment['user_name']?.toString() ??
+        'User $userId';
+    final commentText = comment['comment_text']?.toString() ??
+        comment['content']?.toString() ??
+        'No comment text';
     final createdAt = comment['created_at']?.toString() ?? '';
-    final commentId = comment['comment_id']?.toString() ?? comment['id']?.toString() ?? '';
+    final commentId =
+        comment['comment_id']?.toString() ?? comment['id']?.toString() ?? '';
     final isLiked = comment['is_liked'] == true;
     final likesCount = comment['likes_count'] ?? 0;
 
@@ -1205,7 +1231,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
           ),
           IconButton(
-            onPressed: commentId.isNotEmpty ? () => _toggleCommentLike(commentId) : null,
+            onPressed: commentId.isNotEmpty
+                ? () => _toggleCommentLike(commentId)
+                : null,
             icon: Icon(
               isLiked ? Icons.favorite : Icons.favorite_border,
               size: 18,
@@ -1228,7 +1256,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   String _formatCommentTime(String createdAt) {
     if (createdAt.isEmpty) return 'now';
-    
+
     try {
       final DateTime commentTime = DateTime.parse(createdAt);
       final DateTime now = DateTime.now();
@@ -1252,7 +1280,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     try {
       print('❤️ [DEBUG] IGTV: Toggling comment like for comment $commentId');
       await _postService.toggleCommentLike(commentId);
-      
+
       // Reload comments to get updated like status
       if (_currentIndex < _posts.length) {
         await _loadComments(_posts[_currentIndex].id);
