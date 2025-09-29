@@ -437,31 +437,6 @@ module.exports = {
       });
     } catch (error) {
 
-      throw new Error(`Failed to fetch upcoming events: ${error.message}`);
-    }
-  },
-
-  // Get events by category
-  async getEventsByCategory(category, limit = 20) {
-    try {
-      return await prisma.event.findMany({
-        where: {
-          category: category,
-          status: "ACTIVE",
-        },
-        include: {
-          organization: {
-            select: {
-              organization_id: true,
-              name: true,
-              logo_url: true,
-            },
-          },
-        },
-        orderBy: { start_time: "asc" },
-        take: limit,
-      });
-    } catch (error) {
       throw new Error(`Failed to fetch events by category: ${error.message}`);
     }
   },
