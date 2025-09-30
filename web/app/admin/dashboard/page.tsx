@@ -70,11 +70,12 @@ const AdminDashboardPage = () => {
   type User = { role: string } | null;
   const [user, setUser] = useState<User>(null);
   type AnalyticsData = {
-    month: number;
-    total_events: number;
-    total_attendees: number;
-    total_revenue: number;
-    growth_rate: number;
+    totalRevenue: number;
+    ticketsSold: number;
+    conversionRate: number;
+    pageViews: number;
+    totalPayments: number;
+    totalEvents: number;
   };
   type Event = {
     event_id: number;
@@ -96,7 +97,16 @@ const AdminDashboardPage = () => {
     organization?: { name: string; organization_id: number; logo_url: string };
   };
 
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null
+  );
+  const [chartData, setChartData] = useState<
+    {
+      month: string;
+      revenue: number;
+      events: number;
+    }[]
+  >([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
@@ -112,7 +122,7 @@ const AdminDashboardPage = () => {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/analytics")
+    fetch("http://localhost:3000/api/analytics/dashboard/overview")
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
@@ -120,6 +130,17 @@ const AdminDashboardPage = () => {
         }
       })
       .catch((err) => console.error("Error fetching analytics:", err));
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/analytics/dashboard/revenue-trend")
+      .then((res) => res.json())
+      .then((response) => {
+        if (response.success) {
+          setChartData(response.data);
+        }
+      })
+      .catch((err) => console.error("Error fetching chart data:", err));
   }, []);
 
   useEffect(() => {
@@ -266,53 +287,17 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const recentData = analyticsData[0] || {
-    total_events: 0,
-    total_attendees: 0,
-    total_revenue: 0,
-    growth_rate: 0,
+  const recentData = analyticsData || {
+    totalEvents: 0,
+    ticketsSold: 0,
+    totalRevenue: 0,
+    conversionRate: 0,
   };
 
-  const previousData = analyticsData[1] || recentData;
+  // For now, we'll show current data without comparison since dashboard overview gives us current totals
+  // In a real app, you'd want to implement historical comparison
 
-  const eventsChange =
-    previousData.total_events === 0
-      ? 0
-      : ((recentData.total_events - previousData.total_events) /
-          previousData.total_events) *
-        100;
-
-  const attendeesChange =
-    previousData.total_attendees === 0
-      ? 0
-      : ((recentData.total_attendees - previousData.total_attendees) /
-          previousData.total_attendees) *
-        100;
-
-  const revenueChange =
-    previousData.total_revenue === 0
-      ? 0
-      : ((recentData.total_revenue - previousData.total_revenue) /
-          previousData.total_revenue) *
-        100;
-
-  const growthChange = recentData.growth_rate - previousData.growth_rate;
-
-  let chartData: {
-    month: string;
-    sales: number;
-    Ascending: true;
-    events: number;
-  }[] = [];
-  if (analyticsData.length > 0) {
-    const lastSix = analyticsData.slice(0, 6).reverse();
-    chartData = lastSix.map((item) => ({
-      month: monthNames[item.month - 1],
-      sales: item.total_revenue,
-      events: item.total_events,
-      Ascending: true,
-    }));
-  }
+  // Chart data is now managed in state and fetched from revenue trend endpoint
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -368,11 +353,10 @@ const AdminDashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_events.toLocaleString()}
+                  {recentData.totalEvents.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {eventsChange > 0 ? "+" : ""}
-                  {eventsChange.toFixed(1)}% from last month
+                  Total active events
                 </p>
               </CardContent>
             </Card>
@@ -380,17 +364,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Attendees
+                  Tickets Sold
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_attendees.toLocaleString()}
+                  {recentData.ticketsSold.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {attendeesChange > 0 ? "+" : ""}
-                  {attendeesChange.toFixed(1)}% from last month
+                  Total tickets purchased
                 </p>
               </CardContent>
             </Card>
@@ -402,11 +385,10 @@ const AdminDashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${recentData.total_revenue.toLocaleString()}
+                  ${recentData.totalRevenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {revenueChange > 0 ? "+" : ""}
-                  {revenueChange.toFixed(1)}% from last month
+                  Total revenue generated
                 </p>
               </CardContent>
             </Card>
@@ -414,18 +396,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Growth Rate
+                  Conversion Rate
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.growth_rate > 0 ? "+" : ""}
-                  {recentData.growth_rate.toFixed(2)}%
+                  {recentData.conversionRate.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {growthChange > 0 ? "+" : ""}
-                  {growthChange.toFixed(1)}% from last month
+                  Tickets per event ratio
                 </p>
               </CardContent>
             </Card>
@@ -442,7 +422,7 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
+                    revenue: {
                       label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
@@ -461,8 +441,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Legend />
                       <Bar
-                        dataKey="sales"
-                        fill="var(--color-sales)"
+                        dataKey="revenue"
+                        fill="var(--color-revenue)"
                         name="Revenue ($)"
                       />
                       <Bar
@@ -484,8 +464,8 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
-                      label: "Sales",
+                    revenue: {
+                      label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
                   }}
@@ -499,8 +479,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
                         type="monotone"
-                        dataKey="sales"
-                        stroke="var(--color-sales)"
+                        dataKey="revenue"
+                        stroke="var(--color-revenue)"
                         strokeWidth={2}
                         name="Revenue ($)"
                       />
