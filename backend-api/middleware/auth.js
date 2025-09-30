@@ -10,7 +10,8 @@ const authenticateToken = async (req, res, next) => {
 
     if (!token) {
       return res.status(401).json({ 
-        error: 'Access token required',
+        success: false,
+        message: 'Access token required',
         code: 'NO_TOKEN'
       });
     }
@@ -34,7 +35,8 @@ const authenticateToken = async (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({ 
-        error: 'User not found',
+        success: false,
+        message: 'User not found',
         code: 'USER_NOT_FOUND'
       });
     }
@@ -44,22 +46,23 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
-      return res.status(403).json({ 
-        error: 'Invalid token',
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid token',
         code: 'INVALID_TOKEN'
       });
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(403).json({ 
-        error: 'Token expired',
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Token expired',
         code: 'TOKEN_EXPIRED'
       });
     }
     
-    console.error('Authentication error:', error);
     return res.status(500).json({ 
-      error: 'Internal server error',
-      code: 'SERVER_ERROR'
+      success: false,
+      message: 'Authentication error',
+      code: 'AUTH_ERROR'
     });
   }
 };
@@ -77,15 +80,15 @@ const optionalAuth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { user_id: decoded.userId },
       select: {
-        id: true,
+        user_id: true,
+        name: true,
         email: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        avatar: true,
-        isVerified: true,
+        phone_number: true,
+        profile_picture: true,
+        is_email_verified: true,
+        role: true,
       }
     });
 
@@ -102,14 +105,16 @@ const optionalAuth = async (req, res, next) => {
 const requireVerified = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ 
-      error: 'Authentication required',
+      success: false,
+      message: 'Authentication required',
       code: 'AUTH_REQUIRED'
     });
   }
 
-  if (!req.user.isVerified) {
+  if (!req.user.is_email_verified) {
     return res.status(403).json({ 
-      error: 'Email verification required',
+      success: false,
+      message: 'Email verification required',
       code: 'EMAIL_NOT_VERIFIED'
     });
   }
@@ -117,21 +122,44 @@ const requireVerified = (req, res, next) => {
   next();
 };
 
+// Check if user has organizer role
+const requireOrganizer = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false,
+      message: 'Authentication required',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  if (req.user.role !== 'ORGANIZER') {
+    return res.status(403).json({ 
+      success: false,
+      message: 'Organizer access required',
+      code: 'ORGANIZER_REQUIRED'
+    });
+  }
+
+  next();
+};
+
 // Check if user owns resource
-const requireOwnership = (userIdField = 'userId') => {
+const requireOwnership = (userIdField = 'user_id') => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ 
-        error: 'Authentication required',
+        success: false,
+        message: 'Authentication required',
         code: 'AUTH_REQUIRED'
       });
     }
 
     const resourceUserId = req.params[userIdField] || req.body[userIdField];
     
-    if (req.user.id !== resourceUserId) {
+    if (req.user.user_id !== parseInt(resourceUserId)) {
       return res.status(403).json({ 
-        error: 'Access denied',
+        success: false,
+        message: 'Access denied',
         code: 'ACCESS_DENIED'
       });
     }
@@ -144,5 +172,6 @@ module.exports = {
   authenticateToken,
   optionalAuth,
   requireVerified,
+  requireOrganizer,
   requireOwnership,
 };

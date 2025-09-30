@@ -1,7 +1,8 @@
 const express = require('express');
-const multer =require('multer');
+const multer = require('multer');
 const router = express.Router();
 const usersService = require('../services/core-service/users');
+const { ValidationError } = require('../lib/validation');
 
 // Get all users
 router.get('/', async (req, res) => {
@@ -12,6 +13,14 @@ router.get('/', async (req, res) => {
       data: users
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message
@@ -34,6 +43,14 @@ router.get('/:id', async (req, res) => {
       data: user
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message
@@ -51,6 +68,14 @@ router.post('/', async (req, res) => {
       data: newUser
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message
@@ -89,6 +114,14 @@ router.put("/:id", upload.single("profile_picture"), async (req, res) => {
       data: user,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message,
@@ -106,6 +139,14 @@ router.delete('/:id', async (req, res) => {
       message: 'User deleted successfully'
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(500).json({
       success: false,
       message: error.message

@@ -1,5 +1,6 @@
 // Events module
 const prisma = require("../../../lib/database");
+const { ValidationError } = require("../../../lib/validation");
 
 // Default seat map for events without custom seat maps - designed for ticket type selection
 const DEFAULT_SEAT_MAP = [
@@ -144,6 +145,28 @@ module.exports = {
   async createEvent(data) {
 
     try {
+      // Validate required fields
+      const errors = [];
+      
+      if (!data.title || !data.title.trim()) {
+        errors.push({ field: 'title', message: 'Title is required' });
+      }
+      if (!data.start_time) {
+        errors.push({ field: 'start_time', message: 'Start time is required' });
+      }
+      if (!data.end_time) {
+        errors.push({ field: 'end_time', message: 'End time is required' });
+      }
+      if (!data.location || !data.location.trim()) {
+        errors.push({ field: 'location', message: 'Location is required' });
+      }
+      
+      if (errors.length > 0) {
+        const error = new ValidationError('Event validation failed');
+        error.errors = errors;
+        throw error;
+      }
+
       // Debug log incoming data
       console.log("[createEvent] seat_map type:", typeof data.seat_map, data.seat_map);
       console.log("[createEvent] ticket_types type:", typeof data.ticket_types, data.ticket_types);
