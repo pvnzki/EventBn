@@ -70,6 +70,37 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Get organization by user ID
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    if (!userId) {
+      return res.status(400).json({ error: "Invalid user ID." });
+    }
+
+    const organization = await prisma.organization.findFirst({
+      where: { user_id: userId },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found for this user." });
+    }
+
+    res.json(organization);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get organization by ID
 router.get("/:organizationId", async (req, res) => {
   try {
