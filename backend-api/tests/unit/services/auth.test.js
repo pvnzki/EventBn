@@ -1,10 +1,10 @@
-const authService = require('../services/core-service/auth/index');
+const authService = require('../../../services/core-service/auth/index');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/database');
+const prisma = require('../../../lib/database');
 
 // Mock dependencies
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),

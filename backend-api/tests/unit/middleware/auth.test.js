@@ -1,13 +1,13 @@
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../../../middleware/auth');
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/database');
+const prisma = require('../../../lib/database');
 
 // Mock dependencies
 jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
 }));
 
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   user: {
     findUnique: jest.fn(),
   },

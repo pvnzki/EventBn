@@ -1,8 +1,8 @@
-const analyticsController = require('../controllers/analytics');
-const analyticsService = require('../services/core-service/analytics');
+const analyticsController = require('../../../controllers/analytics');
+const analyticsService = require('../../../services/core-service/analytics');
 
 // Mock the analytics service
-jest.mock('../services/core-service/analytics', () => ({
+jest.mock('../../../services/core-service/analytics', () => ({
   getAllAnalytics: jest.fn(),
   getAnalyticsByYear: jest.fn(),
   getAnalyticsByMonth: jest.fn(),

@@ -1,9 +1,9 @@
-const postService = require('../services/post-service/index');
-const postsModule = require('../services/post-service/posts/index');
-const prisma = require('../lib/database');
+const postService = require('../../../services/post-service/index');
+const postsModule = require('../../../services/post-service/posts/index');
+const prisma = require('../../../lib/database');
 
 // Mock Prisma
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   post: {
     findUnique: jest.fn(),
     create: jest.fn(),

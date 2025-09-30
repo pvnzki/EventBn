@@ -1,7 +1,7 @@
 // Unit tests for events service (getEventById and getAllEvents)
-const eventsService = require('../services/core-service/events');
+const eventsService = require('../../../services/core-service/events');
 
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   event: {
     findUnique: jest.fn().mockImplementation(({ where, select }) => {
       if (where.event_id === 1) {
@@ -221,7 +221,7 @@ describe('eventsService.getUpcomingEvents', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getUpcomingEvents()).rejects.toThrow('Failed to fetch upcoming events: DB error');
   });
@@ -233,7 +233,7 @@ describe('eventsService.deleteEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.delete.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.deleteEvent(1)).rejects.toThrow('Failed to delete event: DB error');
   });
@@ -253,7 +253,7 @@ describe('eventsService.updateEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.$queryRawUnsafe.mockImplementationOnce(() => { throw new Error('DB error'); });
     await expect(eventsService.updateEvent(1, { title: 'Fail Event' })).rejects.toThrow('Failed to update event: DB error');
   });
@@ -318,7 +318,7 @@ describe('eventsService.createEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.create.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.createEvent({
       organization_id: 1,
@@ -533,7 +533,7 @@ describe('eventsService.getEventById', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findUnique.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getEventById(1)).rejects.toThrow('Failed to fetch event: DB error');
   });
@@ -562,7 +562,7 @@ describe('eventsService.getAllEvents', () => {
       });
 
       it('should throw error if db fails', async () => {
-        const db = require('../lib/database');
+        const db = require('../../../lib/database');
         db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
         await expect(eventsService.searchEvents('Search')).rejects.toThrow('Failed to search events: DB error');
       });
@@ -595,7 +595,7 @@ describe('eventsService.getAllEvents', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getAllEvents()).rejects.toThrow('Failed to fetch events: DB error');
   });
@@ -618,7 +618,7 @@ describe('eventsService.getEventsByCategory', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getEventsByCategory('Sports')).rejects.toThrow('Failed to fetch events by category: DB error');
   });
@@ -663,7 +663,7 @@ describe('eventsService.getSeatMap', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findUnique.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getSeatMap(1)).rejects.toThrow('Failed to fetch seat map: DB error');
   });
@@ -681,7 +681,7 @@ describe('eventsService.updateSeatMap', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.update.mockRejectedValueOnce(new Error('DB error'));
     
     const newSeatMap = [{ id: 'A1', row: 'A', seat: 1, status: 'booked' }];
