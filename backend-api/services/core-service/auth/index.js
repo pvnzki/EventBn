@@ -2,6 +2,11 @@
 const prisma = require('../../../lib/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { 
+  ValidationError, 
+  validateUserRegistration, 
+  validateLoginCredentials 
+} = require('../../../lib/validation');
 
 class AuthService {
   // Generate JWT token
@@ -21,14 +26,22 @@ class AuthService {
   // Register new user
 async register(userData) {
   try {
-    const { name, email, password, phone_number, profile_picture } = userData;
+    // Validate input data
+    validateUserRegistration(userData);
+    
+    const { name, email, password, phone, phone_number, profile_picture, role } = userData;
+    
+    // Normalize phone field (support both 'phone' and 'phone_number')
+    const normalizedPhone = phone || phone_number;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase().trim() }
     });
     if (existingUser) {
-      throw new Error('Email already registered');
+      const error = new ValidationError('Email already registered');
+      error.errors = [{ field: 'email', message: 'Email already registered' }];
+      throw error;
     }
 
     // Hash password
@@ -37,12 +50,12 @@ async register(userData) {
     // Create user
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
         password_hash: hashedPassword,
-        phone_number: phone_number || null,
+        phone_number: normalizedPhone || null,
         profile_picture: profile_picture || null,
-        role: "GUEST", // or "USER" or whatever default you want
+        role: role || "ATTENDEE", // Default role
         is_active: true,
         is_email_verified: false
       },
@@ -72,6 +85,9 @@ async register(userData) {
       token,
     };
   } catch (error) {
+    if (error instanceof ValidationError) {
+      throw error; // Re-throw validation errors as-is
+    }
     throw new Error(`Registration failed: ${error.message}`);
   }
 }
@@ -80,18 +96,23 @@ async register(userData) {
 async login(credentials) {
   try {
     console.log("Login called with:", credentials);
+    
+    // Validate input credentials
+    validateLoginCredentials(credentials);
+    
     const { email, password } = credentials;
 
-    // Find user by email
+    // Find user by email (case insensitive)
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase().trim() }
     });
 
     if (!user) {
       throw new Error('Invalid email or password');
     }
+    
     if (!user.password_hash) {
-      throw new Error('User has no password set');
+      throw new Error('Account setup incomplete');
     }
 
     // Verify password using bcrypt.compare
@@ -143,6 +164,9 @@ async login(credentials) {
       token,
     };
   } catch (error) {
+    if (error instanceof ValidationError) {
+      throw error; // Re-throw validation errors as-is
+    }
     throw new Error(`Login failed: ${error.message}`);
   }
 }

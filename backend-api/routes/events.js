@@ -5,6 +5,8 @@ const eventsService = require("../services/core-service/events");
 const prisma = require("../lib/database");
 const multer = require("multer");
 const cloudinary = require("../lib/cloudinary");
+const { ValidationError } = require('../lib/validation');
+const { authenticateToken, requireOrganizer } = require('../middleware/auth');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all events
@@ -47,7 +49,7 @@ router.get("/:id", async (req, res) => {
 
 
 // Create new event with media upload
-router.post("/", upload.fields([
+router.post("/", authenticateToken, requireOrganizer, upload.fields([
   { name: "cover_image", maxCount: 1 },
   { name: "other_images", maxCount: 10 },
   { name: "video", maxCount: 1 },
