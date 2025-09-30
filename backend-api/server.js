@@ -19,9 +19,15 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 // CORS Configuration
 let corsOptions = {};
 
-if (process.env.NODE_ENV === "development") {
-  // Development → allow all origins
-  corsOptions = { origin: true, credentials: true };
+if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+  // Development & Test → allow all origins
+  corsOptions = { 
+    origin: true, 
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["access-control-allow-origin"]
+  };
 } else {
   // Production → only allow origins from .env
   const allowedOrigins = process.env.CORS_ORIGIN
@@ -115,10 +121,20 @@ app.use("/api/analytics", analyticsRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // Handle JSON parsing errors
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format',
+      code: 'INVALID_JSON'
+    });
+  }
+  
   res.status(500).json({
-    error: "Something went wrong!",
-    message:
-      process.env.NODE_ENV === "Dev" ? err.message : "Internal Server Error",
+    success: false,
+    message: process.env.NODE_ENV === "development" ? err.message : "Internal Server Error",
+    code: 'SERVER_ERROR'
   });
 });
 
@@ -134,8 +150,10 @@ app.use("*", (req, res) => {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
 
-app.listen(PORT, HOST, () => {
-  console.log(`
+// Only start server if this file is run directly (not imported for testing)
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`
 \x1b[36m==============================\x1b[0m
 \x1b[35m EventBn API Server Started \x1b[0m
 \x1b[36m------------------------------\x1b[0m
@@ -147,6 +165,7 @@ app.listen(PORT, HOST, () => {
 \x1b[32mHealth:\x1b[0m /health
 \x1b[36m==============================\x1b[0m
 `);
-});
+  });
+}
 
 module.exports = app;
