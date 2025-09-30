@@ -25,6 +25,7 @@ import {
   Target,
   Eye,
   ShoppingCart,
+  Loader2,
 } from "lucide-react";
 import {
   Bar,
@@ -45,50 +46,27 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { useAnalytics } from "@/hooks/use-analytics";
 
 interface User {
   role: "admin" | "organizer";
   name: string;
 }
 
-const revenueData = [
-  { month: "Jan", revenue: 4000, tickets: 120, events: 5 },
-  { month: "Feb", revenue: 3000, tickets: 90, events: 4 },
-  { month: "Mar", revenue: 5000, tickets: 150, events: 7 },
-  { month: "Apr", revenue: 4500, tickets: 135, events: 6 },
-  { month: "May", revenue: 6000, tickets: 180, events: 8 },
-  { month: "Jun", revenue: 5500, tickets: 165, events: 7 },
-];
-
-const categoryData = [
-  { name: "Conferences", value: 35, color: "#8884d8" },
-  { name: "Workshops", value: 25, color: "#82ca9d" },
-  { name: "Concerts", value: 20, color: "#ffc658" },
-  { name: "Sports", value: 15, color: "#ff7300" },
-  { name: "Others", value: 5, color: "#00ff00" },
-];
-
-const attendeeData = [
-  { day: "Mon", attendees: 120 },
-  { day: "Tue", attendees: 150 },
-  { day: "Wed", attendees: 180 },
-  { day: "Thu", attendees: 200 },
-  { day: "Fri", attendees: 250 },
-  { day: "Sat", attendees: 300 },
-  { day: "Sun", attendees: 280 },
-];
-
-const topEvents = [
-  { name: "Tech Summit 2024", attendees: 500, revenue: 25000, conversion: 85 },
-  { name: "Music Festival", revenue: 45000, attendees: 800, conversion: 92 },
-  { name: "Business Workshop", attendees: 150, revenue: 7500, conversion: 78 },
-  { name: "Art Exhibition", attendees: 200, revenue: 10000, conversion: 65 },
-  { name: "Sports Tournament", attendees: 350, revenue: 17500, conversion: 88 },
-];
-
 export default function AnalyticsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [timeRange, setTimeRange] = useState("6months");
+
+  const {
+    overview,
+    revenueData,
+    categoryData,
+    attendeeData,
+    topEvents,
+    loading,
+    error,
+    refetch,
+  } = useAnalytics(timeRange);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -98,6 +76,57 @@ export default function AnalyticsPage() {
   }, []);
 
   const isAdmin = user?.role === "admin";
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("en-US").format(num);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Loading analytics...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-2">
+                Error Loading Analytics
+              </h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={refetch}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -141,10 +170,12 @@ export default function AnalyticsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$28,000</div>
+                <div className="text-2xl font-bold">
+                  {overview ? formatCurrency(overview.totalRevenue) : "$0"}
+                </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +12.5% from last period
+                  {overview?.totalPayments || 0} payments completed
                 </div>
               </CardContent>
             </Card>
@@ -157,10 +188,12 @@ export default function AnalyticsPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">840</div>
+                <div className="text-2xl font-bold">
+                  {overview ? formatNumber(overview.ticketsSold) : "0"}
+                </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +8.2% from last period
+                  Across {overview?.totalEvents || 0} events
                 </div>
               </CardContent>
             </Card>
@@ -173,10 +206,12 @@ export default function AnalyticsPage() {
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">82.4%</div>
-                <div className="flex items-center text-xs text-red-600">
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                  -2.1% from last period
+                <div className="text-2xl font-bold">
+                  {overview ? `${overview.conversionRate.toFixed(1)}%` : "0%"}
+                </div>
+                <div className="flex items-center text-xs text-gray-600">
+                  <Target className="h-3 w-3 mr-1" />
+                  Tickets per event
                 </div>
               </CardContent>
             </Card>
@@ -189,10 +224,12 @@ export default function AnalyticsPage() {
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12,450</div>
+                <div className="text-2xl font-bold">
+                  {overview ? formatNumber(overview.pageViews) : "0"}
+                </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +15.3% from last period
+                  Search activities tracked
                 </div>
               </CardContent>
             </Card>
@@ -208,45 +245,51 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    revenue: {
-                      label: "Revenue",
-                      color: "hsl(var(--chart-1))",
-                    },
-                    tickets: {
-                      label: "Tickets",
-                      color: "hsl(var(--chart-2))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Legend />
-                      <Area
-                        type="monotone"
-                        dataKey="revenue"
-                        stackId="1"
-                        stroke="var(--color-revenue)"
-                        fill="var(--color-revenue)"
-                        name="Revenue ($)"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="tickets"
-                        stackId="2"
-                        stroke="var(--color-tickets)"
-                        fill="var(--color-tickets)"
-                        name="Tickets Sold"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {revenueData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      revenue: {
+                        label: "Revenue",
+                        color: "hsl(var(--chart-1))",
+                      },
+                      tickets: {
+                        label: "Tickets",
+                        color: "hsl(var(--chart-2))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={revenueData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend />
+                        <Area
+                          type="monotone"
+                          dataKey="revenue"
+                          stackId="1"
+                          stroke="var(--color-revenue)"
+                          fill="var(--color-revenue)"
+                          name="Revenue ($)"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="tickets"
+                          stackId="2"
+                          stroke="var(--color-tickets)"
+                          fill="var(--color-tickets)"
+                          name="Tickets Sold"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No revenue data available for the selected period
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -258,36 +301,43 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    conferences: { label: "Conferences", color: "#8884d8" },
-                    workshops: { label: "Workshops", color: "#82ca9d" },
-                    concerts: { label: "Concerts", color: "#ffc658" },
-                    sports: { label: "Sports", color: "#ff7300" },
-                    others: { label: "Others", color: "#00ff00" },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, percent }) =>
-                          `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                        }
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {categoryData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      conferences: { label: "Conferences", color: "#8884d8" },
+                      workshops: { label: "Workshops", color: "#82ca9d" },
+                      concerts: { label: "Concerts", color: "#ffc658" },
+                      sports: { label: "Sports", color: "#ff7300" },
+                      others: { label: "Others", color: "#00ff00" },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ name, percent }) =>
+                            `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
+                          }
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No category data available. Add categories to events to see
+                    distribution.
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -302,29 +352,35 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    attendees: {
-                      label: "Attendees",
-                      color: "hsl(var(--chart-3))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={attendeeData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar
-                        dataKey="attendees"
-                        fill="var(--color-attendees)"
-                        name="Attendees"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                {attendeeData.length > 0 ? (
+                  <ChartContainer
+                    config={{
+                      attendees: {
+                        label: "Attendees",
+                        color: "hsl(var(--chart-3))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={attendeeData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="day" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar
+                          dataKey="attendees"
+                          fill="var(--color-attendees)"
+                          name="Attendees"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center text-gray-500">
+                    No attendance data available for the last 7 days
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -337,33 +393,39 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {topEvents.map((event, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{event.name}</h4>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className="text-xs text-gray-600">
-                            {event.attendees} attendees
-                          </span>
-                          <span className="text-xs text-gray-600">
-                            ${event.revenue.toLocaleString()}
-                          </span>
+                  {topEvents.length > 0 ? (
+                    topEvents.map((event, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{event.name}</h4>
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className="text-xs text-gray-600">
+                              {formatNumber(event.attendees)} attendees
+                            </span>
+                            <span className="text-xs text-gray-600">
+                              {formatCurrency(event.revenue)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge
+                            variant={
+                              event.conversion >= 80 ? "default" : "secondary"
+                            }
+                          >
+                            {event.conversion.toFixed(1)}% conversion
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge
-                          variant={
-                            event.conversion >= 80 ? "default" : "secondary"
-                          }
-                        >
-                          {event.conversion}% conversion
-                        </Badge>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No event data available yet
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -383,12 +445,15 @@ export default function AnalyticsPage() {
                   <div className="flex items-center mb-2">
                     <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
                     <h4 className="font-medium text-green-800">
-                      Revenue Growth
+                      Revenue Status
                     </h4>
                   </div>
                   <p className="text-sm text-green-700">
-                    Revenue increased by 12.5% compared to last period. Weekend
-                    events show higher conversion rates.
+                    {overview && overview.totalRevenue > 0
+                      ? `Total revenue of ${formatCurrency(
+                          overview.totalRevenue
+                        )} across ${overview.totalEvents} events.`
+                      : "No revenue data available yet. Start by creating events and processing payments."}
                   </p>
                 </div>
 
@@ -400,8 +465,13 @@ export default function AnalyticsPage() {
                     </h4>
                   </div>
                   <p className="text-sm text-blue-700">
-                    Tech conferences have the highest attendance rates. Consider
-                    expanding this category.
+                    {overview && overview.ticketsSold > 0
+                      ? `${formatNumber(
+                          overview.ticketsSold
+                        )} tickets sold with ${overview.conversionRate.toFixed(
+                          1
+                        )} tickets per event on average.`
+                      : "No ticket sales data available yet."}
                   </p>
                 </div>
 
@@ -409,12 +479,17 @@ export default function AnalyticsPage() {
                   <div className="flex items-center mb-2">
                     <Target className="h-5 w-5 text-orange-600 mr-2" />
                     <h4 className="font-medium text-orange-800">
-                      Optimization
+                      Category Insights
                     </h4>
                   </div>
                   <p className="text-sm text-orange-700">
-                    Conversion rate dropped slightly. Consider improving event
-                    descriptions and early bird pricing.
+                    {categoryData.length > 0
+                      ? `${
+                          categoryData[0]?.name || "Unknown"
+                        } is your top category with ${
+                          categoryData[0]?.value || 0
+                        }% of events.`
+                      : "No category data available. Add categories to your events for better insights."}
                   </p>
                 </div>
               </div>
