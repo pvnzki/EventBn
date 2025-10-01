@@ -26,8 +26,7 @@ if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
     origin: true, 
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["access-control-allow-origin"]
+    allowedHeaders: ["Content-Type", "Authorization"]
   };
 } else {
   // Production → only allow origins from .env
@@ -58,6 +57,19 @@ if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
 }
 
 app.use(cors(corsOptions));
+
+// Explicit preflight handling (some environments need this when custom headers appear later)
+app.options('*', (req, res) => {
+  // Mirror the request origin in dev/test when origin: true was used
+  if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && req.headers.origin) {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return res.sendStatus(204);
+});
 
 // Routes
 const authRoutes = require("./routes/auth");
