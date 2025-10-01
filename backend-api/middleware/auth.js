@@ -28,10 +28,12 @@ const authenticateToken = async (req, res, next) => {
     });
     
     // Check if this is a test environment (TEST_MODE or test email)
-    const isTestMode = process.env.TEST_MODE === 'true' || decoded.email?.includes('@test.com');
+    const isTestMode = process.env.NODE_ENV === 'test' && 
+                      (process.env.TEST_MODE === 'true' || decoded.email?.includes('@test.com'));
     
     if (isTestMode) {
       // For testing: create mock user object from JWT payload without database lookup
+      // SECURITY: Only allow in actual test environment
       console.log('🧪 Test mode: Using mock user from JWT payload');
       req.user = {
         user_id: decoded.userId,
@@ -206,7 +208,11 @@ const requireOwnership = (userIdField = 'user_id') => {
 
     const resourceUserId = req.params[userIdField] || req.body[userIdField];
     
-    if (req.user.user_id !== parseInt(resourceUserId)) {
+    // Convert both to numbers for proper comparison (URL params are strings)
+    const userIdNum = parseInt(req.user.user_id);
+    const resourceUserIdNum = parseInt(resourceUserId);
+    
+    if (isNaN(resourceUserIdNum) || userIdNum !== resourceUserIdNum) {
       return res.status(403).json({ 
         success: false,
         message: 'Access denied',

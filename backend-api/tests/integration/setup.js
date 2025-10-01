@@ -11,6 +11,31 @@ const prisma = require('../../lib/database');
 
 // Test database setup
 const setupTestDatabase = async () => {
+  // CRITICAL SAFETY CHECK: Only allow database truncation in test environment
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error(`
+❌ CRITICAL ERROR: Attempted to truncate database in ${process.env.NODE_ENV} environment!
+This operation will DELETE ALL DATA from your database.
+
+To run integration tests safely:
+1. Set NODE_ENV=test
+2. Configure a separate test database in .env.test
+3. Never run integration tests against production/development databases
+
+Current DATABASE_URL: ${process.env.DATABASE_URL?.substring(0, 50)}...
+    `);
+  }
+
+  // Additional safety check: Ensure we're not using production database URLs
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl.includes('supabase.com') && !dbUrl.includes('test')) {
+    console.warn(`
+⚠️  WARNING: You appear to be using a Supabase database for testing.
+Make sure this is a dedicated TEST database, not your production database!
+Current database: ${dbUrl.substring(0, 50)}...
+    `);
+  }
+
   // Clean up database before tests
   const tablenames = await prisma.$queryRaw`
     SELECT tablename FROM pg_tables WHERE schemaname='public'
@@ -24,9 +49,12 @@ const setupTestDatabase = async () => {
 
   if (tables.length > 0) {
     try {
+      console.log(`🧹 Cleaning test database tables: ${tables}`);
       await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} CASCADE;`);
+      console.log('✅ Test database cleaned successfully');
     } catch (error) {
-      console.log('Error cleaning database:', error.message);
+      console.log('❌ Error cleaning database:', error.message);
+      throw error;
     }
   }
 };

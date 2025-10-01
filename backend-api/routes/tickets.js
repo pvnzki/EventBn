@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const prisma = require("../lib/database");
+const { validateUUID, ValidationError } = require("../lib/validation");
 
 // Get user's tickets
 router.get("/my-tickets", authenticateToken, async (req, res) => {
@@ -50,6 +51,142 @@ router.get("/my-tickets", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch tickets",
+      error: error.message,
+    });
+  }
+});
+
+// Get tickets for events created by the organizer (my organizations' events)
+router.get("/my-events-tickets", authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+
+    // Get all tickets for events owned by user's organizations
+    const ticketsData = await prisma.ticketPurchase.findMany({
+      where: {
+        event: {
+          organization: {
+            user_id: user_id // Events from organizations owned by this user
+          }
+        }
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone_number: true,
+          },
+        },
+        event: {
+          select: {
+            event_id: true,
+            title: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true,
+            capacity: true,
+          },
+        },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
+        },
+      },
+      orderBy: {
+        purchase_date: 'desc'
+      }
+    });
+
+    // Get unique events from the tickets
+    const events = await prisma.event.findMany({
+      where: {
+        organization: {
+          user_id: user_id
+        }
+      },
+      select: {
+        event_id: true,
+        title: true,
+        description: true,
+        start_time: true,
+        end_time: true,
+        venue: true,
+        location: true,
+        cover_image_url: true,
+        capacity: true,
+      }
+    });
+
+    // Group tickets by event
+    const ticketsByEvent = [];
+    const eventMap = new Map();
+
+    for (const event of events) {
+      const eventTickets = ticketsData.filter(ticket => ticket.event.event_id === event.event_id);
+      
+      const eventWithTickets = {
+        event_id: event.event_id,
+        title: event.title,
+        description: event.description,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        venue: event.venue,
+        location: event.location,
+        cover_image_url: event.cover_image_url,
+        capacity: event.capacity,
+        tickets: eventTickets.map(ticket => ({
+          ...ticket,
+          price: Number(ticket.price)
+        })),
+        ticketCount: eventTickets.length,
+        attendedCount: eventTickets.filter(ticket => ticket.attended).length
+      };
+
+      ticketsByEvent.push(eventWithTickets);
+      eventMap.set(event.event_id, eventWithTickets);
+    }
+
+    // Calculate statistics
+    const totalTickets = ticketsData.length;
+    const totalAttended = ticketsData.filter(ticket => ticket.attended).length;
+    const totalRevenue = ticketsData.reduce((sum, ticket) => sum + Number(ticket.price), 0);
+    const averageTicketPrice = totalTickets > 0 ? (totalRevenue / totalTickets) : 0;
+
+    const statistics = {
+      totalTickets,
+      totalAttended,
+      attendanceRate: totalTickets > 0 ? (totalAttended / totalTickets * 100) : 0,
+      totalRevenue,
+      totalEvents: events.length,
+      averageTicketPrice
+    };
+
+    // Serialize tickets for response
+    const serializedTickets = ticketsData.map(ticket => ({
+      ...ticket,
+      price: Number(ticket.price)
+    }));
+
+    res.json({
+      success: true,
+      tickets: serializedTickets,
+      events: events,
+      ticketsByEvent: ticketsByEvent,
+      statistics: statistics,
+    });
+  } catch (error) {
+    console.error("Error fetching organizer tickets:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch organizer tickets",
       error: error.message,
     });
   }
@@ -118,6 +255,17 @@ router.get("/:ticketId", authenticateToken, async (req, res) => {
   try {
     const { ticketId } = req.params;
     const user_id = req.user.user_id;
+
+    // Validate that ticketId is a proper UUID
+    try {
+      validateUUID(ticketId, 'Ticket ID');
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+        error: "INVALID_TICKET_ID"
+      });
+    }
 
     const ticket = await prisma.ticketPurchase.findFirst({
       where: {
@@ -303,6 +451,17 @@ router.get("/by-payment/:paymentId", authenticateToken, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const user_id = req.user.user_id;
+
+    // Validate that paymentId is a proper UUID
+    try {
+      validateUUID(paymentId, 'Payment ID');
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+        error: "INVALID_PAYMENT_ID"
+      });
+    }
 
     const ticket = await prisma.ticketPurchase.findFirst({
       where: {

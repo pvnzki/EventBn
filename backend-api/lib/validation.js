@@ -80,6 +80,24 @@ const validateRequired = (value, fieldName) => {
   return value;
 };
 
+const validateUUID = (uuid, fieldName = 'UUID') => {
+  if (!uuid) {
+    throw new ValidationError(`${fieldName} is required`, fieldName.toLowerCase());
+  }
+  if (typeof uuid !== 'string') {
+    throw new ValidationError(`${fieldName} must be a string`, fieldName.toLowerCase());
+  }
+  
+  // UUID v4 regex pattern
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+  if (!UUID_REGEX.test(uuid)) {
+    throw new ValidationError(`${fieldName} must be a valid UUID format`, fieldName.toLowerCase());
+  }
+  
+  return uuid;
+};
+
 const validateEventData = (eventData) => {
   const errors = [];
   
@@ -192,6 +210,7 @@ module.exports = {
   validateName,
   validatePhone,
   validateRequired,
+  validateUUID,
   validateEventData,
   validateUserRegistration,
   validateLoginCredentials,
