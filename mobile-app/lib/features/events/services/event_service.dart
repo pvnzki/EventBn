@@ -68,7 +68,9 @@ class EventService {
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          // Don't send Access-Control-Allow-Origin from client; it's a response header set by server.
+          // Adding it here causes the browser to include it in the preflight request headers, which
+          // leads to: "Request header field access-control-allow-origin is not allowed by Access-Control-Allow-Headers".
         },
       ).timeout(const Duration(seconds: 10));
 
