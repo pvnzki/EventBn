@@ -127,8 +127,8 @@ app.get("/info", (req, res) => {
 });
 
 // API Routes
-app.use('/api', apiRoutes);           // External API for clients
-app.use('/internal/v1', internalRoutes); // Inter-service communication
+app.use("/api", apiRoutes); // External API for clients
+app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -236,7 +236,9 @@ app.listen(PORT, HOST, async () => {
       error.message,
       "\x1b[0m"
     );
-    console.log("\x1b[33m⚠️  Continuing without Redis (seat locking disabled)\x1b[0m");
+    console.log(
+      "\x1b[33m⚠️  Continuing without Redis (seat locking disabled)\x1b[0m"
+    );
   }
 
   // Initialize RabbitMQ if enabled

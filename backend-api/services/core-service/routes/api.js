@@ -133,25 +133,25 @@ function placeholderImageForCategory(category) {
 router.get("/debug/db-test", async (req, res) => {
   try {
     console.log("[DEBUG] Testing database connection...");
-    
+
     // Test basic connectivity
     const result = await prisma.$queryRaw`SELECT 1 as test`;
     console.log("[DEBUG] Basic query result:", result);
-    
+
     // Test user count
     const userCount = await prisma.user.count();
     console.log("[DEBUG] User count:", userCount);
-    
+
     // Test if TicketPurchase table exists
     const ticketCount = await prisma.ticketPurchase.count();
     console.log("[DEBUG] Ticket purchase count:", ticketCount);
-    
+
     res.json({
       success: true,
       database: "connected",
       userCount,
       ticketCount,
-      message: "Database connection successful"
+      message: "Database connection successful",
     });
   } catch (e) {
     console.error("[DEBUG] Database test failed:", e);
@@ -159,7 +159,7 @@ router.get("/debug/db-test", async (req, res) => {
       success: false,
       error: "Database test failed",
       message: e.message,
-      stack: process.env.NODE_ENV === "development" ? e.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? e.stack : undefined,
     });
   }
 });
@@ -177,8 +177,8 @@ router.post("/auth/login", async (req, res) => {
     }
 
     // Direct database authentication
-    const bcrypt = require('bcrypt');
-    
+    const bcrypt = require("bcrypt");
+
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
       select: {
@@ -188,8 +188,8 @@ router.post("/auth/login", async (req, res) => {
         password_hash: true,
         role: true,
         is_active: true,
-        profile_picture: true
-      }
+        profile_picture: true,
+      },
     });
 
     if (!user) {
@@ -226,7 +226,7 @@ router.post("/auth/login", async (req, res) => {
     };
 
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-      expiresIn: '7d'
+      expiresIn: "7d",
     });
 
     const userData = {
@@ -269,11 +269,11 @@ router.post("/auth/register", async (req, res) => {
     }
 
     // Direct database registration
-    const bcrypt = require('bcrypt');
-    
+    const bcrypt = require("bcrypt");
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email: email.toLowerCase() },
     });
 
     if (existingUser) {
@@ -298,7 +298,7 @@ router.post("/auth/register", async (req, res) => {
         profile_picture: profile_picture?.trim() || null,
         is_active: true,
         is_email_verified: false,
-        role: "USER"
+        role: "USER",
       },
       select: {
         user_id: true,
@@ -306,8 +306,8 @@ router.post("/auth/register", async (req, res) => {
         email: true,
         role: true,
         profile_picture: true,
-        created_at: true
-      }
+        created_at: true,
+      },
     });
 
     // Generate JWT token
@@ -319,7 +319,7 @@ router.post("/auth/register", async (req, res) => {
     };
 
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-      expiresIn: '7d'
+      expiresIn: "7d",
     });
 
     const userData = {
@@ -329,7 +329,7 @@ router.post("/auth/register", async (req, res) => {
       email: newUser.email,
       role: newUser.role,
       profile_picture: newUser.profile_picture,
-      created_at: newUser.created_at
+      created_at: newUser.created_at,
     };
 
     res.status(201).json({
@@ -363,7 +363,7 @@ router.get("/events", async (req, res) => {
 
     // Build where clause for filtering
     const where = {
-      status: "ACTIVE"
+      status: "ACTIVE",
     };
 
     if (category && category !== "all") {
@@ -372,15 +372,15 @@ router.get("/events", async (req, res) => {
 
     if (location) {
       where.OR = [
-        { location: { contains: location, mode: 'insensitive' } },
-        { venue: { contains: location, mode: 'insensitive' } }
+        { location: { contains: location, mode: "insensitive" } },
+        { venue: { contains: location, mode: "insensitive" } },
       ];
     }
 
     // Fetch events from database
     const events = await prisma.event.findMany({
       where,
-      orderBy: { start_time: 'asc' },
+      orderBy: { start_time: "asc" },
       skip,
       take: limitNum,
       select: {
@@ -401,10 +401,10 @@ router.get("/events", async (req, res) => {
         organization: {
           select: {
             name: true,
-            logo_url: true
-          }
-        }
-      }
+            logo_url: true,
+          },
+        },
+      },
     });
 
     // If no events found, use fallback
@@ -444,7 +444,7 @@ router.get("/events/:eventId", async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "Invalid event ID",
-        message: "Event ID must be a number"
+        message: "Event ID must be a number",
       });
     }
 
@@ -457,24 +457,24 @@ router.get("/events/:eventId", async (req, res) => {
             name: true,
             logo_url: true,
             contact_email: true,
-            contact_number: true
-          }
-        }
-      }
+            contact_number: true,
+          },
+        },
+      },
     });
 
     if (!event) {
       return res.status(404).json({
         success: false,
         error: "Event not found",
-        message: `Event with ID ${eventId} not found`
+        message: `Event with ID ${eventId} not found`,
       });
     }
 
     // Convert BigInt fields to numbers for JSON serialization
     const eventData = {
       ...event,
-      event_id: Number(event.event_id)
+      event_id: Number(event.event_id),
     };
 
     res.json({
@@ -489,7 +489,7 @@ router.get("/events/:eventId", async (req, res) => {
       success: false,
       error: "Failed to fetch event",
       message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 });
@@ -501,16 +501,16 @@ async function getUnifiedEvents() {
   try {
     const events = await prisma.event.findMany({
       where: { status: "ACTIVE" },
-      orderBy: { start_time: 'asc' },
+      orderBy: { start_time: "asc" },
       take: 500,
       include: {
         organization: {
           select: {
             name: true,
-            logo_url: true
-          }
-        }
-      }
+            logo_url: true,
+          },
+        },
+      },
     });
     return events.length > 0 ? events : FALLBACK_EVENTS;
   } catch (e) {
@@ -674,7 +674,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "Invalid event ID",
-        message: "Event ID must be a number"
+        message: "Event ID must be a number",
       });
     }
 
@@ -685,15 +685,15 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
         event_id: true,
         title: true,
         seat_map: true,
-        ticket_types: true
-      }
+        ticket_types: true,
+      },
     });
 
     if (!event) {
-      return res.status(404).json({ 
-        success: false, 
+      return res.status(404).json({
+        success: false,
         error: "Event not found",
-        message: `Event with ID ${eventId} not found`
+        message: `Event with ID ${eventId} not found`,
       });
     }
 
@@ -701,24 +701,31 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     const bookedSeats = await prisma.ticketPurchase.findMany({
       where: {
         event_id: eventIdNum,
-        payment: { 
-          status: { 
-            in: ["pending", "completed"] 
-          } 
+        payment: {
+          status: {
+            in: ["pending", "completed"],
+          },
         },
       },
-      select: { 
-        seat_id: true, 
-        seat_label: true 
+      select: {
+        seat_id: true,
+        seat_label: true,
       },
     });
 
     // Create a set of booked seat IDs for quick lookup
-    const bookedSeatIds = new Set(bookedSeats.map(seat => seat.seat_id).filter(Boolean));
-    const bookedSeatLabels = new Set(bookedSeats.map(seat => seat.seat_label).filter(Boolean));
+    const bookedSeatIds = new Set(
+      bookedSeats.map((seat) => seat.seat_id).filter(Boolean)
+    );
+    const bookedSeatLabels = new Set(
+      bookedSeats.map((seat) => seat.seat_label).filter(Boolean)
+    );
 
-    console.log(`[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`, 
-      Array.from(bookedSeatIds), Array.from(bookedSeatLabels));
+    console.log(
+      `[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`,
+      Array.from(bookedSeatIds),
+      Array.from(bookedSeatLabels)
+    );
 
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
     const ticketTypesRaw = event.ticket_types || null;
@@ -749,14 +756,15 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
         layoutConfig: {},
         seats: rawSeatMap.map((s) => {
           // Check if seat is booked by seat_id or seat_label
-          const isBooked = bookedSeatIds.has(s.id) || 
-                          bookedSeatIds.has(s.seat_id) || 
-                          bookedSeatLabels.has(s.label) ||
-                          bookedSeatLabels.has(s.seat_label);
-          
+          const isBooked =
+            bookedSeatIds.has(s.id) ||
+            bookedSeatIds.has(s.seat_id) ||
+            bookedSeatLabels.has(s.label) ||
+            bookedSeatLabels.has(s.seat_label);
+
           return {
             ...s,
-            available: !isBooked && (s.available !== false), // Mark as unavailable if booked
+            available: !isBooked && s.available !== false, // Mark as unavailable if booked
           };
         }),
         ticketTypes: Object.keys(deriveTicketTypes(rawSeatMap)).length
@@ -793,13 +801,11 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     });
   } catch (e) {
     console.error("[SEATMAP ERROR]", e);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to fetch seatmap",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch seatmap",
+      message: e.message,
+    });
   }
 });
 
@@ -889,9 +895,9 @@ function extractSeatNodes(seatMapJson) {
           console.log("[SEAT LOCK] Request received:", {
             eventId: req.params.eventId,
             seatId: req.params.seatId,
-            userId: req.userId
+            userId: req.userId,
           });
-          
+
           const { eventId, seatId } = req.params;
           const userId = String(req.userId);
 
@@ -905,7 +911,7 @@ function extractSeatNodes(seatMapJson) {
           console.log("[SEAT LOCK] Checking seat lock status...");
           const status = await seatLockService.isSeatLocked(eventId, seatId);
           console.log("[SEAT LOCK] Current status:", status);
-          
+
           if (status.locked) {
             if (String(status.userId) === userId) {
               console.log("[SEAT LOCK] Seat already locked by user");
@@ -915,13 +921,11 @@ function extractSeatNodes(seatMapJson) {
                 lockInfo: { eventId, seatId, userId, ttl: status.ttl },
               });
             }
-            return res
-              .status(409)
-              .json({
-                success: false,
-                message: "Seat is temporarily locked",
-                ttl: status.ttl,
-              });
+            return res.status(409).json({
+              success: false,
+              message: "Seat is temporarily locked",
+              ttl: status.ttl,
+            });
           }
 
           console.log("[SEAT LOCK] Attempting to lock seat...");
@@ -931,14 +935,14 @@ function extractSeatNodes(seatMapJson) {
             userId
           );
           console.log("[SEAT LOCK] Lock result:", locked);
-          
+
           if (!locked) {
             console.log("[SEAT LOCK] Failed to lock seat");
             return res
               .status(409)
               .json({ success: false, message: "Failed to lock seat" });
           }
-          
+
           console.log("[SEAT LOCK] Seat locked successfully");
           res.json({
             success: true,
@@ -947,14 +951,13 @@ function extractSeatNodes(seatMapJson) {
           });
         } catch (err) {
           console.error("[SEAT LOCK ERROR]", err);
-          res
-            .status(500)
-            .json({
-              success: false,
-              message: "Internal server error",
-              error: err.message,
-              stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-            });
+          res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: err.message,
+            stack:
+              process.env.NODE_ENV === "development" ? err.stack : undefined,
+          });
         }
       }
     );
@@ -977,13 +980,11 @@ function extractSeatNodes(seatMapJson) {
             },
           });
         } catch (err) {
-          res
-            .status(500)
-            .json({
-              success: false,
-              message: "Internal server error",
-              error: err.message,
-            });
+          res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: err.message,
+          });
         }
       }
     );
@@ -1011,13 +1012,11 @@ function extractSeatNodes(seatMapJson) {
             duration: "10 minutes",
           });
         } catch (err) {
-          res
-            .status(500)
-            .json({
-              success: false,
-              message: "Internal server error",
-              error: err.message,
-            });
+          res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: err.message,
+          });
         }
       }
     );
@@ -1041,13 +1040,11 @@ function extractSeatNodes(seatMapJson) {
               .json({ success: false, message: "Cannot release lock" });
           res.json({ success: true, message: "Lock released" });
         } catch (err) {
-          res
-            .status(500)
-            .json({
-              success: false,
-              message: "Internal server error",
-              error: err.message,
-            });
+          res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: err.message,
+          });
         }
       }
     );
@@ -1067,13 +1064,11 @@ function extractSeatNodes(seatMapJson) {
           })),
         });
       } catch (err) {
-        res
-          .status(500)
-          .json({
-            success: false,
-            message: "Internal server error",
-            error: err.message,
-          });
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+          error: err.message,
+        });
       }
     });
 
@@ -1103,9 +1098,9 @@ router.post(
       console.log("[SEAT LOCK] Request received:", {
         eventId: req.params.eventId,
         seatId: req.params.seatId,
-        userId: req.userId
+        userId: req.userId,
       });
-      
+
       const { eventId, seatId } = req.params;
       const userId = String(req.userId);
 
@@ -1136,20 +1131,16 @@ router.post(
       }
 
       console.log("[SEAT LOCK] Attempting to lock seat...");
-      const locked = await seatLockService.lockSeat(
-        eventId,
-        seatId,
-        userId
-      );
+      const locked = await seatLockService.lockSeat(eventId, seatId, userId);
       console.log("[SEAT LOCK] Lock result:", locked);
-      
+
       if (!locked) {
         console.log("[SEAT LOCK] Failed to lock seat");
         return res
           .status(409)
           .json({ success: false, message: "Failed to lock seat" });
       }
-      
+
       console.log("[SEAT LOCK] Seat locked successfully");
       res.json({
         success: true,
@@ -1158,14 +1149,12 @@ router.post(
       });
     } catch (err) {
       console.error("[SEAT LOCK ERROR]", err);
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Internal server error",
-          error: err.message,
-          stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: err.message,
+        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      });
     }
   }
 );
@@ -1683,9 +1672,9 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
         .json({ success: false, error: "Ticket not found" });
     res.json({
       success: true,
-      ticket: { 
-        ...ticket, 
-        price: Number(ticket.price), 
+      ticket: {
+        ...ticket,
+        price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
         event: ticket.event,
@@ -1741,9 +1730,9 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
         .json({ success: false, error: "Ticket not found" });
     res.json({
       success: true,
-      ticket: { 
-        ...ticket, 
-        price: Number(ticket.price), 
+      ticket: {
+        ...ticket,
+        price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
         event: ticket.event,
@@ -1802,9 +1791,9 @@ router.get(
           .json({ success: false, error: "Ticket not found" });
       res.json({
         success: true,
-        ticket: { 
-          ...ticket, 
-          price: Number(ticket.price), 
+        ticket: {
+          ...ticket,
+          price: Number(ticket.price),
           user_id: Number(ticket.user_id),
           event_id: Number(ticket.event_id),
           event: ticket.event,
@@ -1895,13 +1884,11 @@ router.get("/debug/tickets-stats", authenticateUser, async (req, res) => {
     });
   } catch (e) {
     console.error("[CORE-SERVICE][TICKETS] Debug stats error", e);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Failed to get debug stats",
-        message: e.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Failed to get debug stats",
+      message: e.message,
+    });
   }
 });
 
@@ -1975,18 +1962,20 @@ router.put("/users/profile", async (req, res) => {
 router.get("/analytics/dashboard", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
-    
+
     // Provide basic analytics data directly from database
     const [userTickets, userPayments] = await Promise.all([
-      prisma.ticketPurchase.count({ where: { user_id: parseInt(userId) || 0 } }),
-      prisma.payment.count({ where: { user_id: parseInt(userId) || 0 } })
+      prisma.ticketPurchase.count({
+        where: { user_id: parseInt(userId) || 0 },
+      }),
+      prisma.payment.count({ where: { user_id: parseInt(userId) || 0 } }),
     ]);
 
     const analytics = {
       totalTickets: userTickets,
       totalPayments: userPayments,
       totalSpent: 0, // Would need to calculate from payments
-      upcomingEvents: 0 // Would need to calculate from tickets
+      upcomingEvents: 0, // Would need to calculate from tickets
     };
 
     res.json({
