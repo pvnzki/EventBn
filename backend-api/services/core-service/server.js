@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: "../../.env" });
 
 const express = require("express");
 const cors = require("cors");
@@ -7,10 +7,12 @@ const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 
-// Database for core-service
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+// Database for core-service (shared)
+const prisma = require("../../lib/database");
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
+
+// Redis
+const { connectRedis } = require("../../lib/redis");
 
 // RabbitMQ
 const {
@@ -124,9 +126,9 @@ app.get("/info", (req, res) => {
   });
 });
 
-// API Routes (temporarily disabled for testing)
-// app.use('/api/v1', apiRoutes);           // External API for clients
-// app.use('/internal/v1', internalRoutes); // Inter-service communication
+// API Routes
+app.use('/api', apiRoutes);           // External API for clients
+app.use('/internal/v1', internalRoutes); // Inter-service communication
 
 // Error handling
 app.use((err, req, res, next) => {
@@ -221,6 +223,20 @@ app.listen(PORT, HOST, async () => {
       error.message,
       "\x1b[0m"
     );
+  }
+
+  // Initialize Redis for seat locking
+  try {
+    console.log("\x1b[34m⏳ Initializing Redis...\x1b[0m");
+    await connectRedis();
+    console.log("\x1b[32m✅ Redis connected successfully\x1b[0m");
+  } catch (error) {
+    console.error(
+      "\x1b[31m❌ Redis connection failed:",
+      error.message,
+      "\x1b[0m"
+    );
+    console.log("\x1b[33m⚠️  Continuing without Redis (seat locking disabled)\x1b[0m");
   }
 
   // Initialize RabbitMQ if enabled

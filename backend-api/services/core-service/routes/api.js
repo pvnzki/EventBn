@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const coreService = require("../index");
+// const coreService = require("../index"); // Disabled to prevent circular dependencies
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../../../lib/database");
+
+// Import seat lock service at the top level
+const seatLockService = require("../seat-locks/seatLockService");
 
 // Authentication middleware (production style)
 const authenticateUser = (req, res, next) => {
@@ -127,6 +129,41 @@ function placeholderImageForCategory(category) {
   );
 }
 
+// Debug endpoint to test database connection
+router.get("/debug/db-test", async (req, res) => {
+  try {
+    console.log("[DEBUG] Testing database connection...");
+    
+    // Test basic connectivity
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    console.log("[DEBUG] Basic query result:", result);
+    
+    // Test user count
+    const userCount = await prisma.user.count();
+    console.log("[DEBUG] User count:", userCount);
+    
+    // Test if TicketPurchase table exists
+    const ticketCount = await prisma.ticketPurchase.count();
+    console.log("[DEBUG] Ticket purchase count:", ticketCount);
+    
+    res.json({
+      success: true,
+      database: "connected",
+      userCount,
+      ticketCount,
+      message: "Database connection successful"
+    });
+  } catch (e) {
+    console.error("[DEBUG] Database test failed:", e);
+    res.status(500).json({
+      success: false,
+      error: "Database test failed",
+      message: e.message,
+      stack: process.env.NODE_ENV === "development" ? e.stack : undefined
+    });
+  }
+});
+
 // Public auth routes (no authentication required)
 router.post("/auth/login", async (req, res) => {
   try {
@@ -138,26 +175,75 @@ router.post("/auth/login", async (req, res) => {
         message: "Email and password are required",
       });
     }
-    let result;
-    try {
-      if (!coreService?.auth?.login)
-        throw new Error("Auth service unavailable");
-      result = await coreService.auth.login({ email, password });
-    } catch (e) {
+
+    // Direct database authentication
+    const bcrypt = require('bcrypt');
+    
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        password_hash: true,
+        role: true,
+        is_active: true,
+        profile_picture: true
+      }
+    });
+
+    if (!user) {
       return res.status(401).json({
         success: false,
-        error: e.message || "Login failed",
-        message: e.message || "Login failed",
+        error: "Invalid email or password",
+        message: "Invalid email or password",
       });
     }
+
+    if (!user.is_active) {
+      return res.status(401).json({
+        success: false,
+        error: "Account is inactive",
+        message: "Account is inactive",
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        error: "Invalid email or password",
+        message: "Invalid email or password",
+      });
+    }
+
+    // Generate JWT token
+    const tokenPayload = {
+      userId: user.user_id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: '7d'
+    });
+
+    const userData = {
+      id: user.user_id,
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profile_picture: user.profile_picture,
+    };
+
     res.status(200).json({
       success: true,
       message: "Login successful",
-      token: result.token,
-      // Mobile client expects user in `data`.
-      data: result.user,
-      // Provide `user` key for any existing web code.
-      user: result.user,
+      token: token,
+      data: userData,
+      user: userData,
       service: "core-service",
     });
   } catch (error) {
@@ -181,35 +267,77 @@ router.post("/auth/register", async (req, res) => {
         message: "Name, email, and password are required",
       });
     }
-    if (!coreService?.auth?.register) {
-      return res.status(503).json({
-        success: false,
-        error: "Auth service unavailable",
-        message: "Auth service unavailable",
-      });
-    }
-    let result;
-    try {
-      result = await coreService.auth.register({
-        name,
-        email,
-        password,
-        phone_number,
-        profile_picture,
-      });
-    } catch (e) {
+
+    // Direct database registration
+    const bcrypt = require('bcrypt');
+    
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (existingUser) {
       return res.status(400).json({
         success: false,
-        error: e.message || "Registration failed",
-        message: e.message || "Registration failed",
+        error: "User with this email already exists",
+        message: "User with this email already exists",
       });
     }
+
+    // Hash password
+    const saltRounds = 12;
+    const password_hash = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const newUser = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password_hash,
+        phone_number: phone_number?.trim() || null,
+        profile_picture: profile_picture?.trim() || null,
+        is_active: true,
+        is_email_verified: false,
+        role: "USER"
+      },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        role: true,
+        profile_picture: true,
+        created_at: true
+      }
+    });
+
+    // Generate JWT token
+    const tokenPayload = {
+      userId: newUser.user_id,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+      expiresIn: '7d'
+    });
+
+    const userData = {
+      id: newUser.user_id,
+      user_id: newUser.user_id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      profile_picture: newUser.profile_picture,
+      created_at: newUser.created_at
+    };
+
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      token: result.token,
-      data: result.user,
-      user: result.user,
+      token: token,
+      data: userData,
+      user: userData,
       service: "core-service",
     });
   } catch (error) {
@@ -229,43 +357,67 @@ router.post("/auth/register", async (req, res) => {
 router.get("/events", async (req, res) => {
   try {
     const { page = 1, limit = 20, category, location } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-    let events = [];
-    // Prefer real service if available
-    if (coreService?.events?.getAllEvents) {
-      try {
-        const result = await coreService.events.getAllEvents({
-          category,
-          location,
-          page: parseInt(page),
-          limit: parseInt(limit),
-        });
-        if (Array.isArray(result)) {
-          events = result;
-        } else if (result?.data) {
-          // If later we wrap with { data, pagination }
-          events = result.data;
+    // Build where clause for filtering
+    const where = {
+      status: "ACTIVE"
+    };
+
+    if (category && category !== "all") {
+      where.category = category;
+    }
+
+    if (location) {
+      where.OR = [
+        { location: { contains: location, mode: 'insensitive' } },
+        { venue: { contains: location, mode: 'insensitive' } }
+      ];
+    }
+
+    // Fetch events from database
+    const events = await prisma.event.findMany({
+      where,
+      orderBy: { start_time: 'asc' },
+      skip,
+      take: limitNum,
+      select: {
+        event_id: true,
+        title: true,
+        description: true,
+        category: true,
+        venue: true,
+        location: true,
+        start_time: true,
+        end_time: true,
+        capacity: true,
+        cover_image_url: true,
+        other_images_url: true,
+        video_url: true,
+        status: true,
+        created_at: true,
+        organization: {
+          select: {
+            name: true,
+            logo_url: true
+          }
         }
-      } catch (innerErr) {
-        console.warn(
-          "[API] getAllEvents failed, using fallback:",
-          innerErr.message
-        );
       }
-    }
+    });
 
-    if (!events || events.length === 0) {
-      events = FALLBACK_EVENTS;
-    }
+    // If no events found, use fallback
+    const finalEvents = events.length > 0 ? events : FALLBACK_EVENTS;
 
     res.json({
       success: true,
-      fallback: events === FALLBACK_EVENTS,
-      count: events.length,
+      fallback: events.length === 0,
+      count: finalEvents.length,
       // Preferred key for mobile client
-      data: events,
+      data: finalEvents,
       // Backward compatibility with earlier microservice shape
-      events,
+      events: finalEvents,
       service: "core-service",
     });
   } catch (error) {
@@ -286,26 +438,58 @@ router.get("/events", async (req, res) => {
 router.get("/events/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
-    const event = await coreService.events.getEventById(eventId);
+    const eventIdNum = parseInt(eventId);
 
-    if (!event) {
-      return res.status(404).json({
-        error: "Event not found",
+    if (isNaN(eventIdNum)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid event ID",
+        message: "Event ID must be a number"
       });
     }
 
+    // Fetch event from database
+    const event = await prisma.event.findUnique({
+      where: { event_id: eventIdNum },
+      include: {
+        organization: {
+          select: {
+            name: true,
+            logo_url: true,
+            contact_email: true,
+            contact_number: true
+          }
+        }
+      }
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        error: "Event not found",
+        message: `Event with ID ${eventId} not found`
+      });
+    }
+
+    // Convert BigInt fields to numbers for JSON serialization
+    const eventData = {
+      ...event,
+      event_id: Number(event.event_id)
+    };
+
     res.json({
       success: true,
-      // Standardize on 'data' key for mobile client consistency
-      data: event,
-      event, // backward compatibility
+      data: eventData,
+      event: eventData, // backward compatibility
       service: "core-service",
     });
   } catch (error) {
     console.error("[API] Error fetching event:", error);
     res.status(500).json({
+      success: false,
       error: "Failed to fetch event",
       message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
   }
 });
@@ -314,19 +498,25 @@ router.get("/events/:eventId", async (req, res) => {
 
 // Utility to obtain a unified events array (real or fallback)
 async function getUnifiedEvents() {
-  if (coreService?.events?.getAllEvents) {
-    try {
-      const result = await coreService.events.getAllEvents({
-        page: 1,
-        limit: 500,
-      });
-      if (Array.isArray(result)) return result;
-      if (result?.data && Array.isArray(result.data)) return result.data;
-    } catch (e) {
-      console.warn("[API] getUnifiedEvents falling back:", e.message);
-    }
+  try {
+    const events = await prisma.event.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { start_time: 'asc' },
+      take: 500,
+      include: {
+        organization: {
+          select: {
+            name: true,
+            logo_url: true
+          }
+        }
+      }
+    });
+    return events.length > 0 ? events : FALLBACK_EVENTS;
+  } catch (e) {
+    console.warn("[API] getUnifiedEvents falling back:", e.message);
+    return FALLBACK_EVENTS;
   }
-  return FALLBACK_EVENTS;
 }
 
 // GET /events/featured - naive selection (first N or those with a future start_date)
@@ -478,22 +668,60 @@ router.get("/events/:eventId/attendees", async (req, res) => {
 router.get("/events/:eventId/seatmap", async (req, res) => {
   try {
     const { eventId } = req.params;
-    let event = null;
-    if (coreService?.events?.getEventById) {
-      try {
-        event = await coreService.events.getEventById(eventId);
-      } catch (_) {}
-    }
-    if (!event) {
-      const all = await getUnifiedEvents();
-      event = all.find((e) => String(e.event_id) === String(eventId));
-    }
-    if (!event) {
-      return res.status(404).json({ success: false, error: "Event not found" });
+    const eventIdNum = parseInt(eventId);
+
+    if (isNaN(eventIdNum)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid event ID",
+        message: "Event ID must be a number"
+      });
     }
 
+    // Fetch event directly from database
+    const event = await prisma.event.findUnique({
+      where: { event_id: eventIdNum },
+      select: {
+        event_id: true,
+        title: true,
+        seat_map: true,
+        ticket_types: true
+      }
+    });
+
+    if (!event) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Event not found",
+        message: `Event with ID ${eventId} not found`
+      });
+    }
+
+    // Fetch booked seats for this event (from completed/pending payments)
+    const bookedSeats = await prisma.ticketPurchase.findMany({
+      where: {
+        event_id: eventIdNum,
+        payment: { 
+          status: { 
+            in: ["pending", "completed"] 
+          } 
+        },
+      },
+      select: { 
+        seat_id: true, 
+        seat_label: true 
+      },
+    });
+
+    // Create a set of booked seat IDs for quick lookup
+    const bookedSeatIds = new Set(bookedSeats.map(seat => seat.seat_id).filter(Boolean));
+    const bookedSeatLabels = new Set(bookedSeats.map(seat => seat.seat_label).filter(Boolean));
+
+    console.log(`[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`, 
+      Array.from(bookedSeatIds), Array.from(bookedSeatLabels));
+
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
-    const ticketTypesRaw = event.ticket_types || event.ticketTypes || null;
+    const ticketTypesRaw = event.ticket_types || null;
 
     // Derive ticket types mapping (key -> { price, count }) for non custom seating
     function deriveTicketTypes(seatMapArray) {
@@ -514,15 +742,23 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
 
     let responsePayload;
     if (rawSeatMap) {
-      // Custom seating mode
+      // Custom seating mode - mark booked seats as unavailable
       responsePayload = {
         hasCustomSeating: true,
         layout: "theater",
         layoutConfig: {},
-        seats: rawSeatMap.map((s) => ({
-          ...s,
-          available: s.available !== false, // normalize
-        })),
+        seats: rawSeatMap.map((s) => {
+          // Check if seat is booked by seat_id or seat_label
+          const isBooked = bookedSeatIds.has(s.id) || 
+                          bookedSeatIds.has(s.seat_id) || 
+                          bookedSeatLabels.has(s.label) ||
+                          bookedSeatLabels.has(s.seat_label);
+          
+          return {
+            ...s,
+            available: !isBooked && (s.available !== false), // Mark as unavailable if booked
+          };
+        }),
         ticketTypes: Object.keys(deriveTicketTypes(rawSeatMap)).length
           ? deriveTicketTypes(rawSeatMap)
           : undefined,
@@ -556,6 +792,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
       service: "core-service",
     });
   } catch (e) {
+    console.error("[SEATMAP ERROR]", e);
     res
       .status(500)
       .json({
@@ -649,18 +886,29 @@ function extractSeatNodes(seatMapJson) {
       authenticateUser,
       async (req, res) => {
         try {
+          console.log("[SEAT LOCK] Request received:", {
+            eventId: req.params.eventId,
+            seatId: req.params.seatId,
+            userId: req.userId
+          });
+          
           const { eventId, seatId } = req.params;
           const userId = String(req.userId);
 
           if (!eventId || !seatId) {
+            console.log("[SEAT LOCK] Missing parameters");
             return res
               .status(400)
               .json({ success: false, message: "eventId & seatId required" });
           }
 
+          console.log("[SEAT LOCK] Checking seat lock status...");
           const status = await seatLockService.isSeatLocked(eventId, seatId);
+          console.log("[SEAT LOCK] Current status:", status);
+          
           if (status.locked) {
             if (String(status.userId) === userId) {
+              console.log("[SEAT LOCK] Seat already locked by user");
               return res.json({
                 success: true,
                 message: "Seat already locked by you",
@@ -676,28 +924,36 @@ function extractSeatNodes(seatMapJson) {
               });
           }
 
+          console.log("[SEAT LOCK] Attempting to lock seat...");
           const locked = await seatLockService.lockSeat(
             eventId,
             seatId,
             userId
           );
+          console.log("[SEAT LOCK] Lock result:", locked);
+          
           if (!locked) {
+            console.log("[SEAT LOCK] Failed to lock seat");
             return res
               .status(409)
               .json({ success: false, message: "Failed to lock seat" });
           }
+          
+          console.log("[SEAT LOCK] Seat locked successfully");
           res.json({
             success: true,
             message: "Seat locked successfully",
             lockInfo: { eventId, seatId, userId, duration: "1 minute" },
           });
         } catch (err) {
+          console.error("[SEAT LOCK ERROR]", err);
           res
             .status(500)
             .json({
               success: false,
               message: "Internal server error",
               error: err.message,
+              stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
             });
         }
       }
@@ -826,6 +1082,210 @@ function extractSeatNodes(seatMapJson) {
     return [];
   }
 }
+
+// -------------------------------------------------------------
+// Seat Locking Routes
+// Endpoints:
+//   POST   /seat-locks/events/:eventId/seats/:seatId/lock        (auth)
+//   GET    /seat-locks/events/:eventId/seats/:seatId/lock        (public status)
+//   PUT    /seat-locks/events/:eventId/seats/:seatId/lock/extend (auth)
+//   DELETE /seat-locks/events/:eventId/seats/:seatId/lock        (auth)
+//   GET    /seat-locks/events/:eventId/locks                     (public list)
+// Uses Redis (or in-memory fallback) via seatLockService with TTL auto-expiration.
+// -------------------------------------------------------------
+
+// POST lock a seat
+router.post(
+  "/seat-locks/events/:eventId/seats/:seatId/lock",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      console.log("[SEAT LOCK] Request received:", {
+        eventId: req.params.eventId,
+        seatId: req.params.seatId,
+        userId: req.userId
+      });
+      
+      const { eventId, seatId } = req.params;
+      const userId = String(req.userId);
+
+      if (!eventId || !seatId) {
+        console.log("[SEAT LOCK] Missing parameters");
+        return res
+          .status(400)
+          .json({ success: false, message: "eventId & seatId required" });
+      }
+
+      const status = await seatLockService.isSeatLocked(eventId, seatId);
+      if (status.locked) {
+        if (String(status.userId) === userId) {
+          return res.json({
+            success: true,
+            message: "Seat already locked by you",
+            lockInfo: { eventId, seatId, userId },
+            ttl: status.ttl,
+          });
+        } else {
+          return res.status(409).json({
+            success: false,
+            message: "Seat is already locked by another user",
+            lockInfo: { eventId, seatId, lockedBy: status.userId },
+            ttl: status.ttl,
+          });
+        }
+      }
+
+      console.log("[SEAT LOCK] Attempting to lock seat...");
+      const locked = await seatLockService.lockSeat(
+        eventId,
+        seatId,
+        userId
+      );
+      console.log("[SEAT LOCK] Lock result:", locked);
+      
+      if (!locked) {
+        console.log("[SEAT LOCK] Failed to lock seat");
+        return res
+          .status(409)
+          .json({ success: false, message: "Failed to lock seat" });
+      }
+      
+      console.log("[SEAT LOCK] Seat locked successfully");
+      res.json({
+        success: true,
+        message: "Seat locked successfully",
+        lockInfo: { eventId, seatId, userId, duration: "1 minute" },
+      });
+    } catch (err) {
+      console.error("[SEAT LOCK ERROR]", err);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Internal server error",
+          error: err.message,
+          stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+        });
+    }
+  }
+);
+
+// GET seat lock status (public)
+router.get(
+  "/seat-locks/events/:eventId/seats/:seatId/lock",
+  async (req, res) => {
+    try {
+      const { eventId, seatId } = req.params;
+      if (!eventId || !seatId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "eventId & seatId required" });
+      }
+      const status = await seatLockService.isSeatLocked(eventId, seatId);
+      res.json({
+        success: true,
+        locked: status.locked,
+        lockInfo: status.locked
+          ? { eventId, seatId, userId: status.userId, ttl: status.ttl }
+          : null,
+      });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ success: false, message: "Server error", error: err.message });
+    }
+  }
+);
+
+// PUT extend seat lock (auth)
+router.put(
+  "/seat-locks/events/:eventId/seats/:seatId/lock/extend",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { eventId, seatId } = req.params;
+      const userId = String(req.userId);
+      if (!eventId || !seatId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "eventId & seatId required" });
+      }
+      const extended = await seatLockService.extendLock(
+        eventId,
+        seatId,
+        userId
+      );
+      if (!extended) {
+        return res
+          .status(409)
+          .json({ success: false, message: "Lock not found or not owned" });
+      }
+      res.json({ success: true, message: "Lock extended successfully" });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ success: false, message: "Server error", error: err.message });
+    }
+  }
+);
+
+// DELETE unlock seat (auth)
+router.delete(
+  "/seat-locks/events/:eventId/seats/:seatId/lock",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { eventId, seatId } = req.params;
+      const userId = String(req.userId);
+      if (!eventId || !seatId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "eventId & seatId required" });
+      }
+      const unlocked = await seatLockService.unlockSeat(
+        eventId,
+        seatId,
+        userId
+      );
+      if (!unlocked) {
+        return res
+          .status(409)
+          .json({ success: false, message: "Lock not found or not owned" });
+      }
+      res.json({ success: true, message: "Seat unlocked successfully" });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ success: false, message: "Server error", error: err.message });
+    }
+  }
+);
+
+// GET all locks for an event (public list)
+router.get("/seat-locks/events/:eventId/locks", async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!eventId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "eventId required" });
+    }
+    const locks = await seatLockService.getAllLocksForEvent(eventId);
+    res.json({
+      success: true,
+      eventId,
+      locks: locks.map((lock) => ({
+        seatId: lock.seatId,
+        userId: lock.userId,
+        ttl: lock.ttl,
+      })),
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+});
 
 function markSeatsBooked(seatMapJson, seatIds) {
   if (!seatMapJson) return seatMapJson;
@@ -1145,6 +1605,20 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
             location: true,
           },
         },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            phone_number: true,
+          },
+        },
       },
     });
     res.json({
@@ -1152,14 +1626,20 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
       tickets: tickets.map((t) => ({
         ...t,
         price: Number(t.price),
+        user_id: Number(t.user_id),
+        event_id: Number(t.event_id),
         event: t.event,
+        payment: t.payment,
+        user: t.user,
       })),
     });
   } catch (e) {
+    console.error("[TICKETS ERROR]", e);
     res.status(500).json({
       success: false,
       error: "Failed to fetch tickets",
       message: e.message,
+      stack: process.env.NODE_ENV === "development" ? e.stack : undefined,
     });
   }
 });
@@ -1181,6 +1661,20 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
             location: true,
           },
         },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            phone_number: true,
+          },
+        },
       },
     });
     if (!ticket || ticket.user_id !== userId)
@@ -1189,7 +1683,15 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
         .json({ success: false, error: "Ticket not found" });
     res.json({
       success: true,
-      ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
+      ticket: { 
+        ...ticket, 
+        price: Number(ticket.price), 
+        user_id: Number(ticket.user_id),
+        event_id: Number(ticket.event_id),
+        event: ticket.event,
+        payment: ticket.payment,
+        user: ticket.user,
+      },
     });
   } catch (e) {
     res.status(500).json({
@@ -1217,6 +1719,20 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
             location: true,
           },
         },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            phone_number: true,
+          },
+        },
       },
     });
     if (!ticket)
@@ -1225,7 +1741,15 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
         .json({ success: false, error: "Ticket not found" });
     res.json({
       success: true,
-      ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
+      ticket: { 
+        ...ticket, 
+        price: Number(ticket.price), 
+        user_id: Number(ticket.user_id),
+        event_id: Number(ticket.event_id),
+        event: ticket.event,
+        payment: ticket.payment,
+        user: ticket.user,
+      },
     });
   } catch (e) {
     res.status(500).json({
@@ -1256,6 +1780,20 @@ router.get(
               location: true,
             },
           },
+          payment: {
+            select: {
+              payment_id: true,
+              status: true,
+              payment_method: true,
+              transaction_ref: true,
+            },
+          },
+          user: {
+            select: {
+              name: true,
+              phone_number: true,
+            },
+          },
         },
       });
       if (!ticket)
@@ -1264,7 +1802,15 @@ router.get(
           .json({ success: false, error: "Ticket not found" });
       res.json({
         success: true,
-        ticket: { ...ticket, price: Number(ticket.price), event: ticket.event },
+        ticket: { 
+          ...ticket, 
+          price: Number(ticket.price), 
+          user_id: Number(ticket.user_id),
+          event_id: Number(ticket.event_id),
+          event: ticket.event,
+          payment: ticket.payment,
+          user: ticket.user,
+        },
       });
     } catch (e) {
       res.status(500).json({
@@ -1429,7 +1975,19 @@ router.put("/users/profile", async (req, res) => {
 router.get("/analytics/dashboard", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
-    const analytics = await coreService.analytics.getUserDashboard(userId);
+    
+    // Provide basic analytics data directly from database
+    const [userTickets, userPayments] = await Promise.all([
+      prisma.ticketPurchase.count({ where: { user_id: parseInt(userId) || 0 } }),
+      prisma.payment.count({ where: { user_id: parseInt(userId) || 0 } })
+    ]);
+
+    const analytics = {
+      totalTickets: userTickets,
+      totalPayments: userPayments,
+      totalSpent: 0, // Would need to calculate from payments
+      upcomingEvents: 0 // Would need to calculate from tickets
+    };
 
     res.json({
       success: true,
@@ -1439,6 +1997,7 @@ router.get("/analytics/dashboard", async (req, res) => {
   } catch (error) {
     console.error("[API] Error fetching analytics:", error);
     res.status(500).json({
+      success: false,
       error: "Failed to fetch analytics",
       message: error.message,
     });
