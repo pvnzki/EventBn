@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config(); // Load post-service's own .env file
 
 const express = require("express");
 const cors = require("cors");
