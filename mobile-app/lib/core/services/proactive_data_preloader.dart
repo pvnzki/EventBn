@@ -5,7 +5,8 @@ import 'smart_bottom_sheet_service.dart';
 /// Proactive data preloader that anticipates user actions
 /// and preloads data before bottom sheets are shown
 class ProactiveDataPreloader {
-  static final ProactiveDataPreloader _instance = ProactiveDataPreloader._internal();
+  static final ProactiveDataPreloader _instance =
+      ProactiveDataPreloader._internal();
   factory ProactiveDataPreloader() => _instance;
   ProactiveDataPreloader._internal();
 
@@ -18,27 +19,28 @@ class ProactiveDataPreloader {
   /// Initialize the preloader with app lifecycle awareness
   void initialize(BuildContext context) {
     print('🚀 [PROACTIVE_PRELOADER] Initialized');
-    
+
     // Start proactive preloading based on user patterns
     _scheduleCommonPreloads();
   }
 
   /// Preload comments when user hovers over comment button
-  void preloadCommentsOnHover(String postId, {Future<Map<String, dynamic>> Function()? dataLoader}) {
+  void preloadCommentsOnHover(String postId,
+      {Future<Map<String, dynamic>> Function()? dataLoader}) {
     final key = 'comments_$postId';
-    
+
     if (_currentlyPreloading.contains(key)) return;
-    
+
     _currentlyPreloading.add(key);
-    
+
     // Cancel any existing timer
     _preloadTimers[key]?.cancel();
-    
+
     // Start preloading after a short delay (user might just be scrolling)
     _preloadTimers[key] = Timer(const Duration(milliseconds: 300), () async {
       try {
         print('🔄 [PROACTIVE_PRELOADER] Preloading comments for post: $postId');
-        
+
         if (dataLoader != null) {
           await _smartBottomSheet.preloadData(
             cacheKey: key,
@@ -46,12 +48,14 @@ class ProactiveDataPreloader {
           );
         } else {
           // Use default SmartCommentsBottomSheet loader if available
-          print('⚠️ [PROACTIVE_PRELOADER] No data loader provided for comments');
+          print(
+              '⚠️ [PROACTIVE_PRELOADER] No data loader provided for comments');
         }
-        
+
         print('✅ [PROACTIVE_PRELOADER] Comments preloaded for post: $postId');
       } catch (e) {
-        print('⚠️ [PROACTIVE_PRELOADER] Failed to preload comments for $postId: $e');
+        print(
+            '⚠️ [PROACTIVE_PRELOADER] Failed to preload comments for $postId: $e');
       } finally {
         _currentlyPreloading.remove(key);
         _preloadTimers.remove(key);
@@ -60,17 +64,18 @@ class ProactiveDataPreloader {
   }
 
   /// Preload events when user navigates to create post screen
-  void preloadEventsForCreatePost({Future<Map<String, dynamic>> Function()? dataLoader}) {
+  void preloadEventsForCreatePost(
+      {Future<Map<String, dynamic>> Function()? dataLoader}) {
     const key = 'available_events';
-    
+
     if (_currentlyPreloading.contains(key)) return;
-    
+
     _currentlyPreloading.add(key);
-    
+
     Timer(const Duration(milliseconds: 100), () async {
       try {
         print('🔄 [PROACTIVE_PRELOADER] Preloading events for create post');
-        
+
         if (dataLoader != null) {
           await _smartBottomSheet.preloadData(
             cacheKey: key,
@@ -79,7 +84,7 @@ class ProactiveDataPreloader {
         } else {
           print('⚠️ [PROACTIVE_PRELOADER] No data loader provided for events');
         }
-        
+
         print('✅ [PROACTIVE_PRELOADER] Events preloaded for create post');
       } catch (e) {
         print('⚠️ [PROACTIVE_PRELOADER] Failed to preload events: $e');
@@ -93,14 +98,15 @@ class ProactiveDataPreloader {
   void preloadPopularContent(List<String> popularPostIds) {
     for (final postId in popularPostIds) {
       final key = 'comments_$postId';
-      
+
       if (_currentlyPreloading.contains(key)) continue;
-      
+
       _currentlyPreloading.add(key);
-      
+
       // Stagger preloading to avoid overwhelming the server
-      final delay = Duration(milliseconds: 500 * popularPostIds.indexOf(postId));
-      
+      final delay =
+          Duration(milliseconds: 500 * popularPostIds.indexOf(postId));
+
       Timer(delay, () async {
         try {
           // Preload without data since the service handles it
@@ -109,7 +115,8 @@ class ProactiveDataPreloader {
             dataLoader: () async => <String, dynamic>{}, // Empty data loader
           );
         } catch (e) {
-          print('⚠️ [PROACTIVE_PRELOADER] Failed to preload popular content for $postId: $e');
+          print(
+              '⚠️ [PROACTIVE_PRELOADER] Failed to preload popular content for $postId: $e');
         } finally {
           _currentlyPreloading.remove(key);
         }
@@ -151,7 +158,7 @@ class ProactiveDataPreloader {
     }
     _preloadTimers.clear();
     _currentlyPreloading.clear();
-    
+
     print('🛑 [PROACTIVE_PRELOADER] Disposed');
   }
 }

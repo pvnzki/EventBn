@@ -16,7 +16,8 @@ import '../../../core/performance/performance_monitor.dart';
 /// Highly optimized ExplorePostService with advanced caching, performance monitoring,
 /// and intelligent data management strategies.
 class OptimizedExplorePostService {
-  static final OptimizedExplorePostService _instance = OptimizedExplorePostService._internal();
+  static final OptimizedExplorePostService _instance =
+      OptimizedExplorePostService._internal();
   factory OptimizedExplorePostService() => _instance;
   OptimizedExplorePostService._internal() {
     _initializeService();
@@ -24,36 +25,38 @@ class OptimizedExplorePostService {
 
   // Core configuration
   static String get _postServiceUrl => AppConfig.postServiceUrl;
-  
+
   // Performance and caching
   final MemoryCache<String, ExplorePost> _postCache = MemoryCache(maxSize: 500);
-  final MemoryCache<String, List<Map<String, dynamic>>> _commentCache = MemoryCache(maxSize: 200);
+  final MemoryCache<String, List<Map<String, dynamic>>> _commentCache =
+      MemoryCache(maxSize: 200);
   final MemoryCache<String, String> _imageCache = MemoryCache(maxSize: 1000);
   final DiskCache _diskCache = DiskCache();
   final ConnectionPool _connectionPool = ConnectionPool();
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
-  
+
   // Data management
   final List<ExplorePost> _posts = [];
   final Map<String, DateTime> _postLastFetch = {};
   final Map<String, bool> _postOptimisticUpdates = {};
-  
+
   // State management
   bool _isLoading = false;
   bool _hasMoreData = true;
   int _currentPage = 1;
   String? _cachedAuthToken;
   DateTime? _tokenExpiry;
-  
-  // Performance metrics  
+
+  // Performance metrics
   int _networkFetchCount = 0;
   int _cacheHitCount = 0;
-  
+
   // Getters
   List<ExplorePost> get posts => _posts;
   bool get isLoading => _isLoading;
   bool get hasMoreData => _hasMoreData;
-  Map<String, dynamic> get performanceMetrics => _performanceMonitor.getMetrics();
+  Map<String, dynamic> get performanceMetrics =>
+      _performanceMonitor.getMetrics();
 
   Future<void> _initializeService() async {
     await _diskCache.initialize();
@@ -72,9 +75,10 @@ class OptimizedExplorePostService {
       final cachedPosts = await _diskCache.getPostsFromDisk();
       if (cachedPosts.isNotEmpty) {
         _posts.addAll(cachedPosts);
-        print('📦 [CACHE] Preloaded ${cachedPosts.length} posts from disk cache');
+        print(
+            '📦 [CACHE] Preloaded ${cachedPosts.length} posts from disk cache');
       }
-      
+
       // Preload auth token
       await _getAuthToken();
     } catch (e) {
@@ -85,14 +89,14 @@ class OptimizedExplorePostService {
   /// Optimized auth token management with caching and expiry
   Future<String?> _getAuthToken() async {
     // Return cached token if still valid
-    if (_cachedAuthToken != null && 
-        _tokenExpiry != null && 
+    if (_cachedAuthToken != null &&
+        _tokenExpiry != null &&
         DateTime.now().isBefore(_tokenExpiry!)) {
       return _cachedAuthToken;
     }
 
     final stopwatch = Stopwatch()..start();
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString(AppConfig.tokenKey);
@@ -109,7 +113,8 @@ class OptimizedExplorePostService {
         _tokenExpiry = DateTime.now().add(const Duration(hours: 12));
       }
 
-      _performanceMonitor.recordMetric('auth_token_fetch_ms', stopwatch.elapsedMilliseconds);
+      _performanceMonitor.recordMetric(
+          'auth_token_fetch_ms', stopwatch.elapsedMilliseconds);
       return token;
     } catch (e) {
       _performanceMonitor.recordError('auth_token_fetch_error', e.toString());
@@ -154,7 +159,8 @@ class OptimizedExplorePostService {
 
   /// Generate cache key for requests
   String _generateCacheKey(String endpoint, Map<String, String> params) {
-    final content = '$endpoint${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
+    final content =
+        '$endpoint${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
     return sha256.convert(utf8.encode(content)).toString().substring(0, 16);
   }
 
@@ -169,7 +175,7 @@ class OptimizedExplorePostService {
 
     final stopwatch = Stopwatch()..start();
     final operationId = 'load_posts_${DateTime.now().millisecondsSinceEpoch}';
-    
+
     try {
       _isLoading = true;
       _performanceMonitor.startOperation(operationId);
@@ -194,7 +200,8 @@ class OptimizedExplorePostService {
         if (cachedPosts.isNotEmpty) {
           _posts.addAll(cachedPosts);
           _performanceMonitor.recordCacheHit('memory_cache');
-          print('⚡ [CACHE] Loaded ${cachedPosts.length} posts from memory cache');
+          print(
+              '⚡ [CACHE] Loaded ${cachedPosts.length} posts from memory cache');
           return;
         }
       }
@@ -209,8 +216,9 @@ class OptimizedExplorePostService {
           _addPostsToCache(diskCachedPosts, cacheKey);
           _posts.addAll(diskCachedPosts);
           _performanceMonitor.recordCacheHit('disk_cache');
-          print('💾 [CACHE] Loaded ${diskCachedPosts.length} posts from disk cache');
-          
+          print(
+              '💾 [CACHE] Loaded ${diskCachedPosts.length} posts from disk cache');
+
           // Background refresh if data is older than 2 minutes
           _backgroundRefreshIfNeeded(cacheKey);
           return;
@@ -225,8 +233,8 @@ class OptimizedExplorePostService {
         refresh: refresh,
       );
 
-      _performanceMonitor.recordMetric('total_load_time_ms', stopwatch.elapsedMilliseconds);
-      
+      _performanceMonitor.recordMetric(
+          'total_load_time_ms', stopwatch.elapsedMilliseconds);
     } catch (e) {
       _performanceMonitor.recordError('load_posts_error', e.toString());
       print('❌ [ERROR] Failed to load posts: $e');
@@ -262,28 +270,31 @@ class OptimizedExplorePostService {
   }) async {
     final client = _connectionPool.getClient();
     final headers = await _getHeaders();
-    
+
     final queryParams = {
       'page': _currentPage.toString(),
       'limit': '20',
       'compress': 'true', // Request compressed response
       if (searchQuery?.isNotEmpty == true) 'search': searchQuery!,
-      if (category != null && category != PostCategory.all) 'category': category.name,
+      if (category != null && category != PostCategory.all)
+        'category': category.name,
     };
 
     final uri = Uri.parse('$_postServiceUrl/api/posts/explore').replace(
       queryParameters: queryParams,
     );
 
-    final response = await client.get(uri, headers: headers)
+    final response = await client
+        .get(uri, headers: headers)
         .timeout(const Duration(seconds: 12));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      
+
       if (data['success'] == true) {
         final List<dynamic> postsJson = data['posts'] ?? [];
-        final newPosts = postsJson.map((json) => ExplorePost.fromJson(json)).toList();
+        final newPosts =
+            postsJson.map((json) => ExplorePost.fromJson(json)).toList();
 
         // Intelligent duplicate filtering
         final uniqueNewPosts = _filterDuplicates(newPosts);
@@ -304,7 +315,8 @@ class OptimizedExplorePostService {
           _hasMoreData = newPosts.length >= 20;
         }
 
-        _performanceMonitor.recordMetric('network_fetch_count', uniqueNewPosts.length);
+        _performanceMonitor.recordMetric(
+            'network_fetch_count', uniqueNewPosts.length);
         print('🌐 [NETWORK] Fetched ${uniqueNewPosts.length} unique posts');
       }
     } else {
@@ -319,13 +331,14 @@ class OptimizedExplorePostService {
   }
 
   /// Multi-level caching strategy
-  Future<void> _cachePostsMultiLevel(List<ExplorePost> posts, String cacheKey) async {
+  Future<void> _cachePostsMultiLevel(
+      List<ExplorePost> posts, String cacheKey) async {
     // Memory cache (immediate access)
     _addPostsToCache(posts, cacheKey);
-    
+
     // Disk cache (persistent across app restarts)
     await _diskCache.savePostsToDisk(posts, cacheKey);
-    
+
     // Update fetch timestamps
     final now = DateTime.now();
     for (final post in posts) {
@@ -367,28 +380,29 @@ class OptimizedExplorePostService {
   /// Optimized like toggle with optimistic updates and batch processing
   Future<void> toggleLike(String postId) async {
     final stopwatch = Stopwatch()..start();
-    
+
     try {
       // Optimistic update
       final postIndex = _posts.indexWhere((post) => post.id == postId);
       if (postIndex != -1) {
         final post = _posts[postIndex];
         final newLikeState = !post.isLiked;
-        final newLikeCount = newLikeState ? post.likesCount + 1 : post.likesCount - 1;
-        
+        final newLikeCount =
+            newLikeState ? post.likesCount + 1 : post.likesCount - 1;
+
         _posts[postIndex] = post.copyWith(
           isLiked: newLikeState,
           likesCount: newLikeCount,
         );
-        
+
         _postOptimisticUpdates[postId] = true;
       }
 
       // Background network request
       _performNetworkLikeToggle(postId);
-      
-      _performanceMonitor.recordMetric('like_toggle_time_ms', stopwatch.elapsedMilliseconds);
-      
+
+      _performanceMonitor.recordMetric(
+          'like_toggle_time_ms', stopwatch.elapsedMilliseconds);
     } catch (e) {
       _performanceMonitor.recordError('like_toggle_error', e.toString());
       // Revert optimistic update on error
@@ -406,7 +420,8 @@ class OptimizedExplorePostService {
         final headers = await _getHeaders();
         final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/like');
 
-        final response = await client.post(uri, headers: headers)
+        final response = await client
+            .post(uri, headers: headers)
             .timeout(const Duration(seconds: 8));
 
         final data = jsonDecode(response.body);
@@ -414,11 +429,11 @@ class OptimizedExplorePostService {
         if (response.statusCode == 200 && data['success'] == true) {
           // Confirm optimistic update was correct
           _postOptimisticUpdates.remove(postId);
-          
+
           // Update with server response if different
           final serverLiked = data['liked'];
           final serverCount = data['likesCount'];
-          
+
           final postIndex = _posts.indexWhere((post) => post.id == postId);
           if (postIndex != -1) {
             final post = _posts[postIndex];

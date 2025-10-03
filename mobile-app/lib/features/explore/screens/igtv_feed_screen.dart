@@ -74,12 +74,12 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     _bookmarkShimmerController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _bookmarkPulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.05,
@@ -87,7 +87,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       parent: _bookmarkPulseController!,
       curve: Curves.easeInOut,
     ));
-    
+
     _bookmarkShimmerAnimation = Tween<double>(
       begin: -1.0,
       end: 1.0,
@@ -95,7 +95,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       parent: _bookmarkShimmerController!,
       curve: Curves.easeInOut,
     ));
-    
+
     // Start bookmark animations
     _bookmarkPulseController?.repeat(reverse: true);
     _bookmarkShimmerController?.repeat();
@@ -593,7 +593,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             },
             onPanUpdate: (details) {
               if (!_isSwipeActive) return;
-              
+
               // Only track horizontal left swipes for event navigation
               if (details.delta.dx < 0) {
                 setState(() {
@@ -605,12 +605,14 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             },
             onPanEnd: (details) {
               if (!_isSwipeActive) return;
-              
+
               // If swiped left more than 80 pixels and current post has event, navigate to event
-              if (_swipeOffset < -80 && _currentIndex < _posts.length && _hasCurrentEvent()) {
+              if (_swipeOffset < -80 &&
+                  _currentIndex < _posts.length &&
+                  _hasCurrentEvent()) {
                 _onGoToEventWithAnimation(_getCurrentEventId());
               }
-              
+
               // Reset swipe state
               setState(() {
                 _swipeOffset = 0.0;
@@ -1410,7 +1412,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   children: [
                     // Shimmer effect overlay
                     AnimatedBuilder(
-                      animation: _bookmarkShimmerAnimation ?? const AlwaysStoppedAnimation(0.0),
+                      animation: _bookmarkShimmerAnimation ??
+                          const AlwaysStoppedAnimation(0.0),
                       builder: (context, child) {
                         return Positioned.fill(
                           child: ClipRRect(
@@ -1427,8 +1430,16 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
-                                  begin: Alignment(-1.0 + (_bookmarkShimmerAnimation?.value ?? 0.0), -0.5),
-                                  end: Alignment(1.0 + (_bookmarkShimmerAnimation?.value ?? 0.0), 0.5),
+                                  begin: Alignment(
+                                      -1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      -0.5),
+                                  end: Alignment(
+                                      1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      0.5),
                                 ),
                               ),
                             ),
@@ -1438,7 +1449,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                     ),
                     // Main content
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1457,7 +1469,11 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                           const SizedBox(height: 5),
                           Flexible(
                             child: Text(
-                              post.relatedEventName?.split(' ').take(2).join('\n') ?? 'Event',
+                              post.relatedEventName
+                                      ?.split(' ')
+                                      .take(2)
+                                      .join('\n') ??
+                                  'Event',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -1478,7 +1494,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
@@ -1549,7 +1566,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                   children: [
                     // Shimmer effect overlay
                     AnimatedBuilder(
-                      animation: _bookmarkShimmerAnimation ?? const AlwaysStoppedAnimation(0.0),
+                      animation: _bookmarkShimmerAnimation ??
+                          const AlwaysStoppedAnimation(0.0),
                       builder: (context, child) {
                         return Positioned.fill(
                           child: ClipRRect(
@@ -1566,8 +1584,16 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
-                                  begin: Alignment(-1.0 + (_bookmarkShimmerAnimation?.value ?? 0.0), -0.5),
-                                  end: Alignment(1.0 + (_bookmarkShimmerAnimation?.value ?? 0.0), 0.5),
+                                  begin: Alignment(
+                                      -1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      -0.5),
+                                  end: Alignment(
+                                      1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      0.5),
                                 ),
                               ),
                             ),
@@ -1577,7 +1603,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                     ),
                     // Main content
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1617,7 +1644,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
@@ -1650,7 +1678,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   String _getCurrentEventId() {
     if (_currentIndex >= _posts.length) return "";
     final currentPost = _posts[_currentIndex];
-    
+
     if (currentPost.relatedEventId != null) {
       return currentPost.relatedEventId!;
     } else if (currentPost.id == "1") {
@@ -1661,10 +1689,10 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   void _onGoToEventWithAnimation(String eventId) {
     HapticFeedback.lightImpact();
-    
+
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => 
+        pageBuilder: (context, animation, secondaryAnimation) =>
             EventDetailsScreen(eventId: eventId),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);

@@ -8,7 +8,8 @@ import '../../features/explore/services/enhanced_post_service.dart';
 /// Master optimization service that coordinates all performance enhancements
 /// This is the main entry point for all optimized functionality
 class OptimizationMasterService {
-  static final OptimizationMasterService _instance = OptimizationMasterService._internal();
+  static final OptimizationMasterService _instance =
+      OptimizationMasterService._internal();
   factory OptimizationMasterService() => _instance;
   OptimizationMasterService._internal();
 
@@ -35,23 +36,23 @@ class OptimizationMasterService {
   Future<void> _performInitialization() async {
     try {
       print('🚀 [OPTIMIZATION_MASTER] Starting initialization...');
-      
+
       // Initialize core services
       _connectionPool = ConnectionPool();
       _performanceMonitor = PerformanceMonitor();
-      
+
       // Initialize optimization services
       _imageService = ImageOptimizationService();
       _commentService = CommentOptimizationService();
       await _commentService.initialize();
-      
+
       // Initialize enhanced post service
       _postService = EnhancedExplorePostService();
       // Note: EnhancedExplorePostService doesn't have initialize method
-      
+
       _initialized = true;
       _initCompleter.complete();
-      
+
       print('✅ [OPTIMIZATION_MASTER] All services initialized successfully');
     } catch (e) {
       print('❌ [OPTIMIZATION_MASTER] Initialization failed: $e');
@@ -87,10 +88,12 @@ class OptimizationMasterService {
   /// Get comprehensive performance statistics
   Future<Map<String, dynamic>> getPerformanceStats() async {
     await initialize();
-    
+
     return {
       'timestamp': DateTime.now().toIso8601String(),
-      'post_service': {'status': 'active'}, // Simplified since method doesn't exist
+      'post_service': {
+        'status': 'active'
+      }, // Simplified since method doesn't exist
       'image_service': _imageService.getCacheStats(),
       'comment_service': _commentService.getCacheStats(),
       'performance_monitor': _performanceMonitor.getMetrics(),
@@ -102,20 +105,20 @@ class OptimizationMasterService {
   /// Perform comprehensive cache cleanup
   Future<void> performCacheCleanup() async {
     await initialize();
-    
+
     print('🧹 [OPTIMIZATION_MASTER] Starting cache cleanup...');
-    
+
     try {
       // Clear image caches
       _imageService.clearImageCache();
-      
+
       // Clear comment caches
       _commentService.dispose();
       await _commentService.initialize();
-      
+
       // Clear post service caches (simplified since method doesn't exist)
       print('📱 [POST_SERVICE] Cache clearing not implemented');
-      
+
       print('✅ [OPTIMIZATION_MASTER] Cache cleanup completed');
     } catch (e) {
       print('❌ [OPTIMIZATION_MASTER] Cache cleanup failed: $e');
@@ -129,27 +132,28 @@ class OptimizationMasterService {
     int preloadCount = 10,
   }) async {
     await initialize();
-    
+
     print('⚡ [OPTIMIZATION_MASTER] Starting content preload...');
-    
+
     try {
       // Preload posts if needed
       if (postIds == null || postIds.isEmpty) {
         await _postService.loadPosts(refresh: true); // Use correct parameter
       }
-      
+
       // Preload images
       if (imageUrls != null && imageUrls.isNotEmpty) {
         // Note: This would need a BuildContext in a real implementation
         // await _imageService.preloadImages(imageUrls, context);
-        print('📸 [OPTIMIZATION_MASTER] Image preloading requires BuildContext');
+        print(
+            '📸 [OPTIMIZATION_MASTER] Image preloading requires BuildContext');
       }
-      
+
       // Preload comments for posts
       if (postIds != null && postIds.isNotEmpty) {
         await _commentService.preloadComments(postIds);
       }
-      
+
       print('✅ [OPTIMIZATION_MASTER] Content preloading completed');
     } catch (e) {
       print('❌ [OPTIMIZATION_MASTER] Content preloading failed: $e');
@@ -159,13 +163,13 @@ class OptimizationMasterService {
   /// Optimize app performance based on device capabilities
   Future<void> optimizeForDevice() async {
     await initialize();
-    
+
     final deviceInfo = await _getDeviceInfo();
     print('📱 [OPTIMIZATION_MASTER] Optimizing for device: $deviceInfo');
-    
+
     // Adjust cache sizes based on available memory
     final availableMemory = deviceInfo['memory_mb'] as int? ?? 1024;
-    
+
     if (availableMemory < 2048) {
       // Low memory device - reduce cache sizes
       print('🔧 [OPTIMIZATION_MASTER] Applying low-memory optimizations');
@@ -180,7 +184,7 @@ class OptimizationMasterService {
   /// Monitor and report performance issues
   void startPerformanceMonitoring() {
     _performanceMonitor.startMonitoring();
-    
+
     // Set up periodic performance reporting
     Timer.periodic(const Duration(minutes: 5), (timer) {
       _reportPerformanceMetrics();
@@ -195,7 +199,7 @@ class OptimizationMasterService {
   /// Get health check status for all services
   Future<Map<String, bool>> getHealthStatus() async {
     await initialize();
-    
+
     return {
       'post_service': true, // Would check actual health
       'image_service': true,
@@ -211,7 +215,7 @@ class OptimizationMasterService {
     try {
       final stats = await getPerformanceStats();
       final metrics = stats['performance_monitor'] as Map<String, dynamic>;
-      
+
       print('📊 [PERFORMANCE_REPORT] ${DateTime.now()}');
       print('   Memory Usage: ${metrics['memory_usage_mb']}MB');
       print('   API Response Time: ${metrics['avg_response_time']}ms');
@@ -246,23 +250,24 @@ class OptimizationMasterService {
   /// Ensure services are initialized before use
   void _ensureInitialized() {
     if (!_initialized) {
-      throw StateError('OptimizationMasterService not initialized. Call initialize() first.');
+      throw StateError(
+          'OptimizationMasterService not initialized. Call initialize() first.');
     }
   }
 
   /// Dispose all services and clean up resources
   Future<void> dispose() async {
     if (!_initialized) return;
-    
+
     print('🛑 [OPTIMIZATION_MASTER] Disposing services...');
-    
+
     try {
       stopPerformanceMonitoring();
       _imageService.dispose();
       _commentService.dispose();
       _postService.dispose(); // Remove await since it's void
       _connectionPool.dispose();
-      
+
       _initialized = false;
       print('✅ [OPTIMIZATION_MASTER] All services disposed');
     } catch (e) {
@@ -274,7 +279,8 @@ class OptimizationMasterService {
 /// Extension for easy access to optimization services
 extension OptimizationExtension on Object {
   /// Quick access to the optimization master service
-  static OptimizationMasterService get optimization => OptimizationMasterService();
+  static OptimizationMasterService get optimization =>
+      OptimizationMasterService();
 }
 
 /// Performance optimization configuration

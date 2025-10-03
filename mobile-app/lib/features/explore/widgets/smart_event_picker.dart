@@ -10,7 +10,7 @@ class SmartEventPicker {
     String? selectedEventId,
   }) async {
     final smartService = SmartBottomSheetService();
-    
+
     return await smartService.showBottomSheetWithData<Map<String, dynamic>>(
       context: context,
       cacheKey: 'available_events',
@@ -24,7 +24,8 @@ class SmartEventPicker {
   }
 
   /// Preload events in background
-  static Future<void> preloadEvents(Future<List<Map<String, dynamic>>> Function() eventLoader) async {
+  static Future<void> preloadEvents(
+      Future<List<Map<String, dynamic>>> Function() eventLoader) async {
     final smartService = SmartBottomSheetService();
     await smartService.preloadData(
       cacheKey: 'available_events',
@@ -38,11 +39,11 @@ class SmartEventPicker {
   ) async {
     try {
       print('🔄 [SMART_EVENT_PICKER] Loading events...');
-      
+
       final events = await eventLoader();
-      
+
       print('✅ [SMART_EVENT_PICKER] Loaded ${events.length} events');
-      
+
       return {
         'events': events,
         'count': events.length,
@@ -115,7 +116,8 @@ class _EventPickerContentState extends State<_EventPickerContent> {
       } else {
         _filteredEvents = _events.where((event) {
           final name = (event['name'] ?? '').toString().toLowerCase();
-          final description = (event['description'] ?? '').toString().toLowerCase();
+          final description =
+              (event['description'] ?? '').toString().toLowerCase();
           return name.contains(query) || description.contains(query);
         }).toList();
       }
@@ -132,7 +134,7 @@ class _EventPickerContentState extends State<_EventPickerContent> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: BoxDecoration(
@@ -172,7 +174,8 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(theme.primaryColor),
                     ),
                   )
                 else
@@ -180,7 +183,8 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                     '${_filteredEvents.length} events',
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      color:
+                          theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
                     ),
                   ),
                 const SizedBox(width: 8),
@@ -254,7 +258,9 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.red[900]?.withOpacity(0.2) : Colors.red[50],
+                    color: isDarkMode
+                        ? Colors.red[900]?.withOpacity(0.2)
+                        : Colors.red[50],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isDarkMode ? Colors.red[700]! : Colors.red[200]!,
@@ -262,10 +268,9 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.clear, 
-                        color: isDarkMode ? Colors.red[400] : Colors.red[600]
-                      ),
+                      Icon(Icons.clear,
+                          color:
+                              isDarkMode ? Colors.red[400] : Colors.red[600]),
                       const SizedBox(width: 12),
                       Text(
                         'Clear event selection',
@@ -290,14 +295,16 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                theme.primaryColor),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Loading events...',
                             style: TextStyle(
                               fontSize: 16,
-                              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                              color: theme.textTheme.bodyMedium?.color
+                                  ?.withOpacity(0.6),
                             ),
                           ),
                         ],
@@ -314,14 +321,16 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                               Icon(
                                 Icons.event_busy,
                                 size: 48,
-                                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.4),
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'No events available',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                                  color: theme.textTheme.bodyMedium?.color
+                                      ?.withOpacity(0.6),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -329,7 +338,8 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                                 'Create an event first to select it for your post.',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4),
+                                  color: theme.textTheme.bodyMedium?.color
+                                      ?.withOpacity(0.4),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -347,14 +357,16 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                                   Icon(
                                     Icons.search_off,
                                     size: 48,
-                                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4),
+                                    color: theme.textTheme.bodyMedium?.color
+                                        ?.withOpacity(0.4),
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'No events found',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                                      color: theme.textTheme.bodyMedium?.color
+                                          ?.withOpacity(0.6),
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -362,7 +374,8 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                                     'Try adjusting your search terms.',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4),
+                                      color: theme.textTheme.bodyMedium?.color
+                                          ?.withOpacity(0.4),
                                     ),
                                   ),
                                 ],
@@ -388,7 +401,7 @@ class _EventPickerContentState extends State<_EventPickerContent> {
     final isSelected = eventId == _selectedEventId;
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: InkWell(
@@ -404,14 +417,14 @@ class _EventPickerContentState extends State<_EventPickerContent> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected 
-              ? theme.primaryColor.withOpacity(0.1)
-              : (isDarkMode ? Colors.grey[800] : Colors.grey[50]),
+            color: isSelected
+                ? theme.primaryColor.withOpacity(0.1)
+                : (isDarkMode ? Colors.grey[800] : Colors.grey[50]),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected 
-                ? theme.primaryColor
-                : (isDarkMode ? Colors.grey[600]! : Colors.grey[200]!),
+              color: isSelected
+                  ? theme.primaryColor
+                  : (isDarkMode ? Colors.grey[600]! : Colors.grey[200]!),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -422,22 +435,22 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: isSelected 
-                    ? theme.primaryColor.withOpacity(0.2)
-                    : (isDarkMode ? Colors.grey[700] : Colors.grey[300]),
+                  color: isSelected
+                      ? theme.primaryColor.withOpacity(0.2)
+                      : (isDarkMode ? Colors.grey[700] : Colors.grey[300]),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.event,
-                  color: isSelected 
-                    ? theme.primaryColor
-                    : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                  color: isSelected
+                      ? theme.primaryColor
+                      : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                   size: 24,
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Event details
               Expanded(
                 child: Column(
@@ -448,21 +461,23 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isSelected 
-                          ? theme.primaryColor
-                          : theme.textTheme.bodyMedium?.color,
+                        color: isSelected
+                            ? theme.primaryColor
+                            : theme.textTheme.bodyMedium?.color,
                       ),
                     ),
-                    if (event['description'] != null && event['description'].toString().isNotEmpty)
+                    if (event['description'] != null &&
+                        event['description'].toString().isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           event['description'].toString(),
                           style: TextStyle(
                             fontSize: 14,
-                            color: isSelected 
-                              ? theme.primaryColor.withOpacity(0.8)
-                              : theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            color: isSelected
+                                ? theme.primaryColor.withOpacity(0.8)
+                                : theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.6),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -475,16 +490,17 @@ class _EventPickerContentState extends State<_EventPickerContent> {
                           event['date'].toString(),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isSelected 
-                              ? theme.primaryColor.withOpacity(0.7)
-                              : theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                            color: isSelected
+                                ? theme.primaryColor.withOpacity(0.7)
+                                : theme.textTheme.bodyMedium?.color
+                                    ?.withOpacity(0.5),
                           ),
                         ),
                       ),
                   ],
                 ),
               ),
-              
+
               // Selection indicator
               if (isSelected)
                 Container(

@@ -428,7 +428,8 @@ class ExplorePostService {
         headers: headers,
       );
 
-      print('💖 Like comment response: ${response.statusCode} - ${response.body}');
+      print(
+          '💖 Like comment response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -436,7 +437,8 @@ class ExplorePostService {
         print('✅ Comment $commentId liked successfully');
         return true;
       } else {
-        print('❌ Failed to like comment: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ Failed to like comment: ${data['message'] ?? 'Unknown error'}');
         return false;
       }
     } catch (e) {
@@ -454,7 +456,8 @@ class ExplorePostService {
         headers: headers,
       );
 
-      print('💔 Unlike comment response: ${response.statusCode} - ${response.body}');
+      print(
+          '💔 Unlike comment response: ${response.statusCode} - ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -462,7 +465,8 @@ class ExplorePostService {
         print('✅ Comment $commentId unliked successfully');
         return true;
       } else {
-        print('❌ Failed to unlike comment: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ Failed to unlike comment: ${data['message'] ?? 'Unknown error'}');
         return false;
       }
     } catch (e) {

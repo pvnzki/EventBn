@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 /// Enhanced bottom sheet service that automatically preloads data
 /// and provides smooth user experience without manual scrolling
 class SmartBottomSheetService {
-  static final SmartBottomSheetService _instance = SmartBottomSheetService._internal();
+  static final SmartBottomSheetService _instance =
+      SmartBottomSheetService._internal();
   factory SmartBottomSheetService() => _instance;
   SmartBottomSheetService._internal();
 
@@ -44,22 +45,25 @@ class SmartBottomSheetService {
 
     try {
       print('🔄 [SMART_BOTTOM_SHEET] Preloading data for key: $cacheKey');
-      
+
       final data = await dataLoader().timeout(
         timeout ?? _preloadTimeout,
-        onTimeout: () => throw TimeoutException('Data loading timeout', _preloadTimeout),
+        onTimeout: () =>
+            throw TimeoutException('Data loading timeout', _preloadTimeout),
       );
 
       // Cache the loaded data
       _dataCache[cacheKey] = data;
       _cacheTimestamps[cacheKey] = DateTime.now();
-      
+
       completer.complete(data);
-      print('✅ [SMART_BOTTOM_SHEET] Data preloaded successfully for key: $cacheKey');
-      
+      print(
+          '✅ [SMART_BOTTOM_SHEET] Data preloaded successfully for key: $cacheKey');
+
       return data;
     } catch (e) {
-      print('❌ [SMART_BOTTOM_SHEET] Failed to preload data for key $cacheKey: $e');
+      print(
+          '❌ [SMART_BOTTOM_SHEET] Failed to preload data for key $cacheKey: $e');
       completer.completeError(e);
       return null;
     } finally {
@@ -72,7 +76,8 @@ class SmartBottomSheetService {
     required BuildContext context,
     required String cacheKey,
     required Future<dynamic> Function() dataLoader,
-    required Widget Function(BuildContext context, dynamic data, bool isLoading) builder,
+    required Widget Function(BuildContext context, dynamic data, bool isLoading)
+        builder,
     bool isScrollControlled = true,
     bool isDismissible = true,
     Color? backgroundColor,
@@ -105,7 +110,9 @@ class SmartBottomSheetService {
   Widget buildDraggableSheetWithData({
     required String cacheKey,
     required Future<dynamic> Function() dataLoader,
-    required Widget Function(BuildContext context, ScrollController controller, dynamic data, bool isLoading) builder,
+    required Widget Function(BuildContext context, ScrollController controller,
+            dynamic data, bool isLoading)
+        builder,
     double initialChildSize = 0.7,
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
@@ -132,17 +139,17 @@ class SmartBottomSheetService {
   /// Get cached data if available and fresh
   T? _getCachedData<T>(String cacheKey) {
     if (!_dataCache.containsKey(cacheKey)) return null;
-    
+
     final timestamp = _cacheTimestamps[cacheKey];
     if (timestamp == null) return null;
-    
+
     // Check if data is still fresh
     if (DateTime.now().difference(timestamp) > _cacheExpiry) {
       _dataCache.remove(cacheKey);
       _cacheTimestamps.remove(cacheKey);
       return null;
     }
-    
+
     return _dataCache[cacheKey] as T?;
   }
 
@@ -177,7 +184,8 @@ class SmartBottomSheetService {
 class _SmartBottomSheetContent extends StatefulWidget {
   final String cacheKey;
   final Future<dynamic> preloadFuture;
-  final Widget Function(BuildContext context, dynamic data, bool isLoading) builder;
+  final Widget Function(BuildContext context, dynamic data, bool isLoading)
+      builder;
 
   const _SmartBottomSheetContent({
     required this.cacheKey,
@@ -186,7 +194,8 @@ class _SmartBottomSheetContent extends StatefulWidget {
   });
 
   @override
-  State<_SmartBottomSheetContent> createState() => _SmartBottomSheetContentState();
+  State<_SmartBottomSheetContent> createState() =>
+      _SmartBottomSheetContentState();
 }
 
 class _SmartBottomSheetContentState extends State<_SmartBottomSheetContent> {
@@ -203,7 +212,8 @@ class _SmartBottomSheetContentState extends State<_SmartBottomSheetContent> {
   void _loadData() async {
     try {
       // Check for immediately available cached data
-      final cachedData = SmartBottomSheetService()._getCachedData(widget.cacheKey);
+      final cachedData =
+          SmartBottomSheetService()._getCachedData(widget.cacheKey);
       if (cachedData != null) {
         setState(() {
           _data = cachedData;
@@ -281,7 +291,8 @@ class _SmartDraggableContent extends StatefulWidget {
   final ScrollController scrollController;
   final String cacheKey;
   final Future<dynamic> preloadFuture;
-  final Widget Function(BuildContext context, ScrollController controller, dynamic data, bool isLoading) builder;
+  final Widget Function(BuildContext context, ScrollController controller,
+      dynamic data, bool isLoading) builder;
 
   const _SmartDraggableContent({
     required this.scrollController,
@@ -307,7 +318,8 @@ class _SmartDraggableContentState extends State<_SmartDraggableContent> {
   void _loadData() async {
     try {
       // Check for immediately available cached data
-      final cachedData = SmartBottomSheetService()._getCachedData(widget.cacheKey);
+      final cachedData =
+          SmartBottomSheetService()._getCachedData(widget.cacheKey);
       if (cachedData != null) {
         setState(() {
           _data = cachedData;
@@ -346,7 +358,8 @@ extension SmartBottomSheetExtension on BuildContext {
   Future<T?> showSmartBottomSheet<T>({
     required String cacheKey,
     required Future<dynamic> Function() dataLoader,
-    required Widget Function(BuildContext context, dynamic data, bool isLoading) builder,
+    required Widget Function(BuildContext context, dynamic data, bool isLoading)
+        builder,
     bool isScrollControlled = true,
   }) {
     return SmartBottomSheetService().showBottomSheetWithData<T>(

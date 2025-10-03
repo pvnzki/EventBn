@@ -4,10 +4,10 @@ import 'dart:collection';
 class MemoryCache<K, V> {
   final int maxSize;
   final Duration? defaultTtl;
-  
+
   final LinkedHashMap<K, _CacheEntry<V>> _cache = LinkedHashMap();
   final Map<K, DateTime> _accessTimes = {};
-  
+
   MemoryCache({
     required this.maxSize,
     this.defaultTtl,
@@ -18,10 +18,10 @@ class MemoryCache<K, V> {
     final expiryTime = ttl != null || defaultTtl != null
         ? DateTime.now().add(ttl ?? defaultTtl!)
         : null;
-    
+
     _cache[key] = _CacheEntry(value, expiryTime);
     _accessTimes[key] = DateTime.now();
-    
+
     _evictIfNeeded();
   }
 
@@ -29,20 +29,20 @@ class MemoryCache<K, V> {
   V? get(K key) {
     final entry = _cache[key];
     if (entry == null) return null;
-    
+
     // Check if expired
     if (entry.expiryTime != null && DateTime.now().isAfter(entry.expiryTime!)) {
       remove(key);
       return null;
     }
-    
+
     // Update access time for LRU
     _accessTimes[key] = DateTime.now();
-    
+
     // Move to end (most recently used)
     final value = _cache.remove(key)!;
     _cache[key] = value;
-    
+
     return value.data;
   }
 
@@ -50,12 +50,12 @@ class MemoryCache<K, V> {
   bool containsKey(K key) {
     final entry = _cache[key];
     if (entry == null) return false;
-    
+
     if (entry.expiryTime != null && DateTime.now().isAfter(entry.expiryTime!)) {
       remove(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -87,14 +87,14 @@ class MemoryCache<K, V> {
       // Find the least recently used item
       K? oldestKey;
       DateTime? oldestTime;
-      
+
       for (final entry in _accessTimes.entries) {
         if (oldestTime == null || entry.value.isBefore(oldestTime)) {
           oldestTime = entry.value;
           oldestKey = entry.key;
         }
       }
-      
+
       if (oldestKey != null) {
         remove(oldestKey);
       } else {
@@ -107,13 +107,13 @@ class MemoryCache<K, V> {
 
   /// Get all values (for debugging)
   List<V> get values => _cache.values.map((e) => e.data).toList();
-  
+
   /// Get cache size
   int get size => _cache.length;
-  
+
   /// Check if cache is empty
   bool get isEmpty => _cache.isEmpty;
-  
+
   /// Check if cache is full
   bool get isFull => _cache.length >= maxSize;
 }
@@ -122,6 +122,6 @@ class MemoryCache<K, V> {
 class _CacheEntry<V> {
   final V data;
   final DateTime? expiryTime;
-  
+
   _CacheEntry(this.data, this.expiryTime);
 }

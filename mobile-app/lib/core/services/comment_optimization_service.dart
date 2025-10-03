@@ -5,7 +5,8 @@ import '../cache/disk_cache.dart';
 /// Advanced comment optimization service with virtualization,
 /// incremental loading, and smart caching
 class CommentOptimizationService {
-  static final CommentOptimizationService _instance = CommentOptimizationService._internal();
+  static final CommentOptimizationService _instance =
+      CommentOptimizationService._internal();
   factory CommentOptimizationService() => _instance;
   CommentOptimizationService._internal();
 
@@ -28,7 +29,7 @@ class CommentOptimizationService {
       maxSize: 200, // Cache 200 comment pages
       defaultTtl: _cacheExpiry,
     );
-    
+
     _diskCache = DiskCache();
     await _diskCache.initialize();
   }
@@ -39,7 +40,7 @@ class CommentOptimizationService {
       _commentStreams[postId] = StreamController<List<Comment>>.broadcast();
       _initializeCommentLoading(postId);
     }
-    
+
     return _commentStreams[postId]!.stream;
   }
 
@@ -84,8 +85,9 @@ class CommentOptimizationService {
 
       if (cachedComments == null) {
         // Load from network
-        cachedComments = await _loadCommentsFromNetwork(postId, state.currentPage);
-        
+        cachedComments =
+            await _loadCommentsFromNetwork(postId, state.currentPage);
+
         // Cache the results
         _commentCache.put(cacheKey, cachedComments);
         await _saveCommentsToDisk(cacheKey, cachedComments);
@@ -103,7 +105,6 @@ class CommentOptimizationService {
 
       // Notify listeners
       _commentStreams[postId]?.add(List.from(state.comments));
-
     } catch (e) {
       print('❌ [COMMENT_SERVICE] Error loading comments for $postId: $e');
     } finally {
@@ -120,7 +121,7 @@ class CommentOptimizationService {
   Future<void> refreshComments(String postId) async {
     // Clear caches for this post
     _clearPostCache(postId);
-    
+
     // Reload comments
     await _loadComments(postId, reload: true);
   }
@@ -149,10 +150,11 @@ class CommentOptimizationService {
 
       // Send to server
       final serverComment = await _addCommentToServer(postId, content, userId);
-      
+
       // Replace optimistic comment with server response
       if (state != null) {
-        final index = state.comments.indexWhere((c) => c.id == optimisticComment.id);
+        final index =
+            state.comments.indexWhere((c) => c.id == optimisticComment.id);
         if (index != -1) {
           state.comments[index] = serverComment;
           _commentStreams[postId]?.add(List.from(state.comments));
@@ -165,14 +167,14 @@ class CommentOptimizationService {
       return true;
     } catch (e) {
       print('❌ [COMMENT_SERVICE] Error adding comment: $e');
-      
+
       // Remove optimistic comment on error
       final state = _loadingStates[postId];
       if (state != null) {
         state.comments.removeWhere((c) => c.isOptimistic);
         _commentStreams[postId]?.add(List.from(state.comments));
       }
-      
+
       return false;
     }
   }
@@ -189,18 +191,18 @@ class CommentOptimizationService {
 
       final comment = state.comments[commentIndex];
       final wasLiked = comment.isLiked;
-      
+
       // Optimistic update
       state.comments[commentIndex] = comment.copyWith(
         isLiked: !wasLiked,
         likesCount: wasLiked ? comment.likesCount - 1 : comment.likesCount + 1,
       );
-      
+
       _commentStreams[postId]?.add(List.from(state.comments));
 
       // Send to server
       final success = await _toggleCommentLikeOnServer(commentId, !wasLiked);
-      
+
       if (!success) {
         // Revert on failure
         state.comments[commentIndex] = comment;
@@ -225,14 +227,14 @@ class CommentOptimizationService {
       if (commentIndex == -1) return false;
 
       final deletedComment = state.comments[commentIndex];
-      
+
       // Optimistic removal
       state.comments.removeAt(commentIndex);
       _commentStreams[postId]?.add(List.from(state.comments));
 
       // Send to server
       final success = await _deleteCommentOnServer(commentId);
-      
+
       if (!success) {
         // Revert on failure
         state.comments.insert(commentIndex, deletedComment);
@@ -266,14 +268,15 @@ class CommentOptimizationService {
   }
 
   /// Load comments from network (mock implementation)
-  Future<List<Comment>> _loadCommentsFromNetwork(String postId, int page) async {
+  Future<List<Comment>> _loadCommentsFromNetwork(
+      String postId, int page) async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // Mock data - replace with actual API call
     final comments = <Comment>[];
     final startIndex = page * _commentsPerPage;
-    
+
     for (int i = 0; i < _commentsPerPage; i++) {
       comments.add(Comment(
         id: 'comment_${postId}_${startIndex + i}',
@@ -286,14 +289,15 @@ class CommentOptimizationService {
         isLiked: (startIndex + i) % 3 == 0,
       ));
     }
-    
+
     return comments;
   }
 
   /// Add comment to server (mock implementation)
-  Future<Comment> _addCommentToServer(String postId, String content, String userId) async {
+  Future<Comment> _addCommentToServer(
+      String postId, String content, String userId) async {
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     return Comment(
       id: 'comment_${DateTime.now().millisecondsSinceEpoch}',
       postId: postId,
@@ -307,7 +311,8 @@ class CommentOptimizationService {
   }
 
   /// Toggle comment like on server (mock implementation)
-  Future<bool> _toggleCommentLikeOnServer(String commentId, bool isLiked) async {
+  Future<bool> _toggleCommentLikeOnServer(
+      String commentId, bool isLiked) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return true; // Success
   }
@@ -323,8 +328,9 @@ class CommentOptimizationService {
     try {
       // Use the custom cache key approach for comments
       final commentCacheKey = 'comments_$cacheKey';
-      final cacheData = await _diskCache.getPostsFromDisk(cacheKey: commentCacheKey);
-      
+      final cacheData =
+          await _diskCache.getPostsFromDisk(cacheKey: commentCacheKey);
+
       // Convert posts to comments if data exists
       if (cacheData.isNotEmpty) {
         // This is a simplified approach - in real implementation,
@@ -338,12 +344,14 @@ class CommentOptimizationService {
   }
 
   /// Save comments to disk cache
-  Future<void> _saveCommentsToDisk(String cacheKey, List<Comment> comments) async {
+  Future<void> _saveCommentsToDisk(
+      String cacheKey, List<Comment> comments) async {
     try {
       // For now, we'll skip disk caching of comments as the DiskCache
       // is designed for posts. In a real implementation, you'd extend
       // DiskCache to support generic data or create a separate CommentDiskCache
-      print('💭 [COMMENT_SERVICE] Skipping disk cache for comments (not implemented)');
+      print(
+          '💭 [COMMENT_SERVICE] Skipping disk cache for comments (not implemented)');
     } catch (e) {
       print('⚠️ [COMMENT_SERVICE] Error saving to disk cache: $e');
     }
@@ -353,7 +361,8 @@ class CommentOptimizationService {
   void _clearPostCache(String postId) {
     // Clear memory cache entries for this post
     // Since we can't iterate over keys, we'll clear specific known keys
-    for (int page = 0; page < 10; page++) { // Clear up to 10 pages
+    for (int page = 0; page < 10; page++) {
+      // Clear up to 10 pages
       final cacheKey = '${postId}_page_$page';
       _commentCache.remove(cacheKey);
     }

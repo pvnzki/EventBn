@@ -27,7 +27,7 @@ class ExplorePostCard extends StatefulWidget {
   State<ExplorePostCard> createState() => _ExplorePostCardState();
 }
 
-class _ExplorePostCardState extends State<ExplorePostCard> 
+class _ExplorePostCardState extends State<ExplorePostCard>
     with TickerProviderStateMixin {
   bool _isImageLoaded = false;
   double _swipeOffset = 0.0;
@@ -41,18 +41,18 @@ class _ExplorePostCardState extends State<ExplorePostCard>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize bookmark animations
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     _shimmerController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.05,
@@ -60,7 +60,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
-    
+
     _shimmerAnimation = Tween<double>(
       begin: -1.0,
       end: 1.0,
@@ -68,7 +68,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       parent: _shimmerController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Start subtle animations
     _pulseController.repeat(reverse: true);
     _shimmerController.repeat();
@@ -106,7 +106,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
         if (_swipeOffset < -50 && _hasEvent()) {
           _onGoToEventWithAnimation();
         }
-        
+
         // Reset swipe offset
         setState(() {
           _swipeOffset = 0.0;
@@ -119,33 +119,33 @@ class _ExplorePostCardState extends State<ExplorePostCard>
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Main post content
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildUserHeader(),
-                _buildContent(),
-                // Remove the large event connection from here
-                _buildEngagementBar(),
-              ],
-            ),
-            // Event bookmark at top right
-            if (widget.post.relatedEventId != null) 
-              _buildEventBookmark()
-            else if (widget.post.id == "1")
-              _buildDemoEventBookmark(),
-          ],
-        ),
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Main post content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildUserHeader(),
+                  _buildContent(),
+                  // Remove the large event connection from here
+                  _buildEngagementBar(),
+                ],
+              ),
+              // Event bookmark at top right
+              if (widget.post.relatedEventId != null)
+                _buildEventBookmark()
+              else if (widget.post.id == "1")
+                _buildDemoEventBookmark(),
+            ],
+          ),
         ),
       ),
     );
@@ -515,8 +515,10 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
-                                  begin: Alignment(-1.0 + _shimmerAnimation.value, -0.5),
-                                  end: Alignment(1.0 + _shimmerAnimation.value, 0.5),
+                                  begin: Alignment(
+                                      -1.0 + _shimmerAnimation.value, -0.5),
+                                  end: Alignment(
+                                      1.0 + _shimmerAnimation.value, 0.5),
                                 ),
                               ),
                             ),
@@ -526,7 +528,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                     ),
                     // Main content
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -545,7 +548,11 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                           const SizedBox(height: 5),
                           Flexible(
                             child: Text(
-                              widget.post.relatedEventName?.split(' ').take(2).join('\n') ?? 'Event',
+                              widget.post.relatedEventName
+                                      ?.split(' ')
+                                      .take(2)
+                                      .join('\n') ??
+                                  'Event',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -566,7 +573,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
@@ -607,13 +615,15 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                       children: [
                         Icon(Icons.star, color: Colors.amber),
                         SizedBox(width: 8),
-                        Text('🎪 Demo: Premium Event bookmark! Create posts with events to see real connections.'),
+                        Text(
+                            '🎪 Demo: Premium Event bookmark! Create posts with events to see real connections.'),
                       ],
                     ),
                     backgroundColor: const Color(0xFF84cc16),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 );
               },
@@ -670,8 +680,10 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
-                                  begin: Alignment(-1.0 + _shimmerAnimation.value, -0.5),
-                                  end: Alignment(1.0 + _shimmerAnimation.value, 0.5),
+                                  begin: Alignment(
+                                      -1.0 + _shimmerAnimation.value, -0.5),
+                                  end: Alignment(
+                                      1.0 + _shimmerAnimation.value, 0.5),
                                 ),
                               ),
                             ),
@@ -681,7 +693,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                     ),
                     // Main content
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -721,7 +734,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
@@ -837,7 +851,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF32CD32),
                     borderRadius: BorderRadius.circular(20),
@@ -869,7 +884,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('🎪 Demo: Go to Event functionality works! Create a post with an event to see real connections.'),
+                content: Text(
+                    '🎪 Demo: Go to Event functionality works! Create a post with an event to see real connections.'),
                 backgroundColor: Color(0xFF32CD32),
               ),
             );
@@ -915,22 +931,23 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                       Text(
                         'Demo Event Connection',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFFFF6B6B),
-                        ),
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFFF6B6B),
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Demo Location • Demo Date',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF6B6B),
                     borderRadius: BorderRadius.circular(20),
@@ -954,8 +971,18 @@ class _ExplorePostCardState extends State<ExplorePostCard>
 
   String _formatEventDate(DateTime dateTime) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[dateTime.month - 1]} ${dateTime.day}';
   }
@@ -973,15 +1000,16 @@ class _ExplorePostCardState extends State<ExplorePostCard>
 
   void _onGoToEventWithAnimation() {
     if (widget.post.relatedEventId != null) {
-      print('🎫 [ANIMATION] Navigating to event with slide: ${widget.post.relatedEventId}');
-      
+      print(
+          '🎫 [ANIMATION] Navigating to event with slide: ${widget.post.relatedEventId}');
+
       // Add a small scale animation to the bookmark
       final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
       if (renderBox != null) {
         // Create a subtle feedback animation
         HapticFeedback.lightImpact();
       }
-      
+
       // Navigate with custom slide transition
       Navigator.of(context).push(
         PageRouteBuilder(

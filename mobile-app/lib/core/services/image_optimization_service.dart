@@ -3,16 +3,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/http.dart' as http;
 
-/// Advanced image optimization service with progressive loading, 
+/// Advanced image optimization service with progressive loading,
 /// smart caching, and adaptive quality management
 class ImageOptimizationService {
-  static final ImageOptimizationService _instance = ImageOptimizationService._internal();
+  static final ImageOptimizationService _instance =
+      ImageOptimizationService._internal();
   factory ImageOptimizationService() => _instance;
   ImageOptimizationService._internal();
 
   // Network optimization
   final http.Client _httpClient = http.Client();
-  
+
   // Configuration
   static const int _thumbnailSize = 300;
   static const int _mediumSize = 800;
@@ -82,14 +83,15 @@ class ImageOptimizationService {
           memCacheHeight: (_thumbnailSize * height / width).round(),
           memCacheWidth: _thumbnailSize,
         ),
-        
+
         // Full quality layer (loads second)
         _buildCachedNetworkImage(
           url: optimizedUrl,
           width: width,
           height: height,
           fit: fit,
-          placeholder: const SizedBox.shrink(), // No placeholder for second layer
+          placeholder:
+              const SizedBox.shrink(), // No placeholder for second layer
           errorWidget: const SizedBox.shrink(),
           memCacheHeight: height.round(),
           memCacheWidth: width.round(),
@@ -137,8 +139,10 @@ class ImageOptimizationService {
       fit: fit,
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
-      placeholder: (context, url) => placeholder ?? _buildShimmerPlaceholder(width, height),
-      errorWidget: (context, url, error) => errorWidget ?? _buildDefaultErrorWidget(width, height),
+      placeholder: (context, url) =>
+          placeholder ?? _buildShimmerPlaceholder(width, height),
+      errorWidget: (context, url, error) =>
+          errorWidget ?? _buildDefaultErrorWidget(width, height),
       fadeInDuration: const Duration(milliseconds: 200),
       fadeOutDuration: const Duration(milliseconds: 100),
       httpHeaders: {
@@ -174,7 +178,9 @@ class ImageOptimizationService {
   /// Build optimized URL with size parameters
   String _buildOptimizedUrl(String originalUrl, int maxSize) {
     // If URL already has optimization parameters, don't modify
-    if (originalUrl.contains('w=') || originalUrl.contains('h=') || originalUrl.contains('size=')) {
+    if (originalUrl.contains('w=') ||
+        originalUrl.contains('h=') ||
+        originalUrl.contains('size=')) {
       return originalUrl;
     }
 
@@ -199,13 +205,14 @@ class ImageOptimizationService {
   String _addCloudinaryOptimizations(String url, int maxSize) {
     final uri = Uri.parse(url);
     final pathSegments = uri.pathSegments.toList();
-    
+
     // Insert transformation parameters after version
     if (pathSegments.length >= 2) {
-      pathSegments.insert(pathSegments.length - 1, 'c_fill,w_$maxSize,q_auto,f_auto');
+      pathSegments.insert(
+          pathSegments.length - 1, 'c_fill,w_$maxSize,q_auto,f_auto');
       return uri.replace(pathSegments: pathSegments).toString();
     }
-    
+
     return url;
   }
 
@@ -213,11 +220,11 @@ class ImageOptimizationService {
   String _addImgixOptimizations(String url, int maxSize) {
     final uri = Uri.parse(url);
     final queryParams = Map<String, String>.from(uri.queryParameters);
-    
+
     queryParams['w'] = maxSize.toString();
     queryParams['auto'] = 'format,compress';
     queryParams['q'] = '85';
-    
+
     return uri.replace(queryParameters: queryParams).toString();
   }
 
@@ -225,11 +232,11 @@ class ImageOptimizationService {
   String _addS3Optimizations(String url, int maxSize) {
     final uri = Uri.parse(url);
     final queryParams = Map<String, String>.from(uri.queryParameters);
-    
+
     queryParams['w'] = maxSize.toString();
     queryParams['q'] = '85';
     queryParams['format'] = 'auto';
-    
+
     return uri.replace(queryParameters: queryParams).toString();
   }
 
@@ -237,10 +244,10 @@ class ImageOptimizationService {
   String _addStandardOptimizations(String url, int maxSize) {
     final uri = Uri.parse(url);
     final queryParams = Map<String, String>.from(uri.queryParameters);
-    
+
     queryParams['size'] = maxSize.toString();
     queryParams['quality'] = '85';
-    
+
     return uri.replace(queryParameters: queryParams).toString();
   }
 
@@ -301,7 +308,7 @@ class ImageOptimizationService {
         // Preload thumbnail first
         final thumbnailUrl = _buildOptimizedUrl(url, _thumbnailSize);
         await precacheImage(CachedNetworkImageProvider(thumbnailUrl), context);
-        
+
         // Then preload medium quality
         final mediumUrl = _buildOptimizedUrl(url, _mediumSize);
         await precacheImage(CachedNetworkImageProvider(mediumUrl), context);
@@ -336,7 +343,7 @@ class ImageOptimizationService {
 /// Image quality levels
 enum ImageQuality {
   low,
-  medium, 
+  medium,
   high,
   auto,
 }

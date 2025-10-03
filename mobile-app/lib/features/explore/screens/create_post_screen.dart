@@ -21,13 +21,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<File> _selectedImages = [];
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
-  
+
   // Event selection state
   String? _selectedEventId;
   String? _selectedEventName;
   List<Event> _availableEvents = [];
   final EventService _eventService = EventService();
-  
+
   // User data state
   User? _currentUser;
   final AuthService _authService = AuthService();
@@ -142,7 +142,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   bool _canPost() {
-    return _contentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
+    return _contentController.text.trim().isNotEmpty ||
+        _selectedImages.isNotEmpty;
   }
 
   Future<void> _loadEvents() async {
@@ -160,7 +161,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void _showEventPicker() async {
     // Preload events in background before showing picker
     SmartEventPicker.preloadEvents(() => _loadEventsForPicker());
-    
+
     final result = await SmartEventPicker.show(
       context: context,
       eventLoader: () => _loadEventsForPicker(),
@@ -182,12 +183,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<List<Map<String, dynamic>>> _loadEventsForPicker() async {
     try {
       await _loadEvents(); // Load events using existing method
-      return _availableEvents.map((event) => {
-        'id': event.id,
-        'name': event.title, // Use title instead of name
-        'description': event.description,
-        'date': event.startDateTime.toString(), // Use startDateTime instead of startDate
-      }).toList();
+      return _availableEvents
+          .map((event) => {
+                'id': event.id,
+                'name': event.title, // Use title instead of name
+                'description': event.description,
+                'date': event.startDateTime
+                    .toString(), // Use startDateTime instead of startDate
+              })
+          .toList();
     } catch (e) {
       print('❌ [CREATE_POST] Failed to load events for picker: $e');
       return [];
@@ -220,7 +224,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -244,9 +248,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ],
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Events list
           Expanded(
             child: _availableEvents.isEmpty
@@ -266,7 +270,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     itemBuilder: (context, index) {
                       final event = _availableEvents[index];
                       final isSelected = _selectedEventId == event.id;
-                      
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
@@ -288,7 +292,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                       fit: BoxFit.cover,
                                     )
                                   : null,
-                              color: event.imageUrl.isEmpty ? Colors.grey[300] : null,
+                              color: event.imageUrl.isEmpty
+                                  ? Colors.grey[300]
+                                  : null,
                             ),
                             child: event.imageUrl.isEmpty
                                 ? Icon(Icons.event, color: Colors.grey[600])
@@ -297,7 +303,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           title: Text(
                             event.title,
                             style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
                             ),
                           ),
                           subtitle: Text(
@@ -308,7 +316,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             ),
                           ),
                           trailing: isSelected
-                              ? const Icon(Icons.check_circle, color: Color(0xFF32CD32))
+                              ? const Icon(Icons.check_circle,
+                                  color: Color(0xFF32CD32))
                               : null,
                         ),
                       );
@@ -322,8 +331,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   String _formatEventDate(DateTime dateTime) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[dateTime.month - 1]} ${dateTime.day}';
   }
@@ -444,12 +463,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: TextButton(
               onPressed: _isLoading ? null : _createPost,
               style: TextButton.styleFrom(
-                backgroundColor: _canPost() && !_isLoading ? 
-                  const Color(0xFF32CD32) : Colors.grey[300],
+                backgroundColor: _canPost() && !_isLoading
+                    ? const Color(0xFF32CD32)
+                    : Colors.grey[300],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -463,7 +484,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   : Text(
                       'Share',
                       style: TextStyle(
-                        color: _canPost() && !_isLoading ? Colors.white : Colors.grey,
+                        color: _canPost() && !_isLoading
+                            ? Colors.white
+                            : Colors.grey,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -482,26 +505,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 children: [
                   // Profile Section
                   _buildProfileSection(),
-                  
+
                   // Content Input
                   _buildContentInput(),
-                  
+
                   // Event Selection
                   _buildEventSection(),
-                  
+
                   // Media Section
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: _buildMediaSection(),
                   ),
-                  
+
                   // Image Preview
                   if (_selectedImages.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: _buildImagePreview(),
                     ),
-                  
+
                   const SizedBox(height: 80), // Bottom padding
                 ],
               ),
@@ -541,14 +564,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 : null,
           ),
           const SizedBox(width: 12),
-          
+
           // Username and Location
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _currentUser != null 
+                  _currentUser != null
                       ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
                       : 'Loading...',
                   style: const TextStyle(
@@ -577,7 +600,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ],
             ),
           ),
-          
+
           // Privacy Settings
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -654,7 +677,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 children: [
                   Icon(
                     Icons.event,
-                    color: _selectedEventId != null ? const Color(0xFF32CD32) : Colors.grey[600],
+                    color: _selectedEventId != null
+                        ? const Color(0xFF32CD32)
+                        : Colors.grey[600],
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -664,9 +689,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           ? 'Event: $_selectedEventName'
                           : 'Link to an event (optional)',
                       style: TextStyle(
-                        color: _selectedEventId != null ? Colors.black : Colors.grey[600],
+                        color: _selectedEventId != null
+                            ? Colors.black
+                            : Colors.grey[600],
                         fontSize: 14,
-                        fontWeight: _selectedEventId != null ? FontWeight.w500 : FontWeight.normal,
+                        fontWeight: _selectedEventId != null
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -742,7 +771,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Text(
                   '${_selectedImages.length}/10',
                   style: TextStyle(
-                    color: _selectedImages.length >= 10 ? Colors.red : Colors.grey[600],
+                    color: _selectedImages.length >= 10
+                        ? Colors.red
+                        : Colors.grey[600],
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),

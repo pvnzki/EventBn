@@ -9,7 +9,7 @@ class DiskCache {
   static const String _cacheDir = 'post_cache';
   static const String _metadataFile = 'cache_metadata.json';
   static const Duration _defaultMaxAge = Duration(hours: 24);
-  
+
   Directory? _cacheDirectory;
   Map<String, dynamic> _metadata = {};
   bool _initialized = false;
@@ -17,18 +17,18 @@ class DiskCache {
   /// Initialize the disk cache
   Future<void> initialize() async {
     if (_initialized) return;
-    
+
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
       _cacheDirectory = Directory('${appDocDir.path}/$_cacheDir');
-      
+
       if (!await _cacheDirectory!.exists()) {
         await _cacheDirectory!.create(recursive: true);
       }
-      
+
       await _loadMetadata();
       await _cleanExpiredCache();
-      
+
       _initialized = true;
       print('💾 [DISK_CACHE] Initialized successfully');
     } catch (e) {
@@ -39,7 +39,7 @@ class DiskCache {
   /// Save posts to disk with compression
   Future<void> savePostsToDisk(List<ExplorePost> posts, String cacheKey) async {
     if (!_initialized || posts.isEmpty) return;
-    
+
     try {
       final file = File('${_cacheDirectory!.path}/$cacheKey.json');
       final data = {
@@ -47,17 +47,17 @@ class DiskCache {
         'posts': posts.map((post) => post.toJson()).toList(),
         'count': posts.length,
       };
-      
+
       final jsonString = jsonEncode(data);
       await file.writeAsString(jsonString);
-      
+
       // Update metadata
       _metadata[cacheKey] = {
         'timestamp': DateTime.now().toIso8601String(),
         'size': jsonString.length,
         'count': posts.length,
       };
-      
+
       await _saveMetadata();
       print('💾 [DISK_CACHE] Saved ${posts.length} posts for key: $cacheKey');
     } catch (e) {
@@ -71,7 +71,7 @@ class DiskCache {
     Duration maxAge = _defaultMaxAge,
   }) async {
     if (!_initialized) return [];
-    
+
     try {
       if (cacheKey != null) {
         return await _getPostsForKey(cacheKey, maxAge);
@@ -85,11 +85,12 @@ class DiskCache {
   }
 
   /// Get posts for specific cache key
-  Future<List<ExplorePost>> _getPostsForKey(String cacheKey, Duration maxAge) async {
+  Future<List<ExplorePost>> _getPostsForKey(
+      String cacheKey, Duration maxAge) async {
     final file = File('${_cacheDirectory!.path}/$cacheKey.json');
-    
+
     if (!await file.exists()) return [];
-    
+
     // Check if file is too old
     final metadata = _metadata[cacheKey];
     if (metadata != null) {
@@ -99,10 +100,10 @@ class DiskCache {
         return [];
       }
     }
-    
+
     final jsonString = await file.readAsString();
     final data = jsonDecode(jsonString);
-    
+
     final List<dynamic> postsJson = data['posts'] ?? [];
     return postsJson.map((json) => ExplorePost.fromJson(json)).toList();
   }
@@ -110,7 +111,7 @@ class DiskCache {
   /// Get all cached posts (for app startup)
   Future<List<ExplorePost>> _getAllCachedPosts(Duration maxAge) async {
     final allPosts = <ExplorePost>[];
-    
+
     for (final entry in _metadata.entries) {
       final timestamp = DateTime.parse(entry.value['timestamp']);
       if (DateTime.now().difference(timestamp) <= maxAge) {
@@ -118,7 +119,7 @@ class DiskCache {
         allPosts.addAll(posts);
       }
     }
-    
+
     return allPosts;
   }
 
@@ -136,18 +137,18 @@ class DiskCache {
   Future<void> _cleanExpiredCache() async {
     final now = DateTime.now();
     final expiredKeys = <String>[];
-    
+
     for (final entry in _metadata.entries) {
       final timestamp = DateTime.parse(entry.value['timestamp']);
       if (now.difference(timestamp) > _defaultMaxAge) {
         expiredKeys.add(entry.key);
       }
     }
-    
+
     for (final key in expiredKeys) {
       await _deleteCache(key);
     }
-    
+
     if (expiredKeys.isNotEmpty) {
       print('💾 [DISK_CACHE] Cleaned ${expiredKeys.length} expired entries');
     }
@@ -156,7 +157,7 @@ class DiskCache {
   /// Load metadata from disk
   Future<void> _loadMetadata() async {
     final file = File('${_cacheDirectory!.path}/$_metadataFile');
-    
+
     if (await file.exists()) {
       try {
         final jsonString = await file.readAsString();
@@ -180,19 +181,17 @@ class DiskCache {
 
   /// Generate cache key from request parameters
   String generateCacheKey(Map<String, dynamic> params) {
-    final content = params.entries
-        .map((e) => '${e.key}=${e.value}')
-        .join('&');
+    final content = params.entries.map((e) => '${e.key}=${e.value}').join('&');
     return sha256.convert(utf8.encode(content)).toString().substring(0, 16);
   }
 
   /// Get cache statistics
   Future<Map<String, dynamic>> getStats() async {
     if (!_initialized) return {};
-    
+
     int totalSize = 0;
     int totalFiles = 0;
-    
+
     try {
       final files = await _cacheDirectory!.list().toList();
       for (final file in files) {
@@ -205,7 +204,7 @@ class DiskCache {
     } catch (e) {
       print('⚠️ [DISK_CACHE] Stats calculation failed: $e');
     }
-    
+
     return {
       'totalFiles': totalFiles,
       'totalSizeBytes': totalSize,
@@ -217,7 +216,7 @@ class DiskCache {
   /// Clear all cached data
   Future<void> clearAll() async {
     if (!_initialized) return;
-    
+
     try {
       final files = await _cacheDirectory!.list().toList();
       for (final file in files) {

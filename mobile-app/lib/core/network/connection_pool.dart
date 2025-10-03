@@ -4,16 +4,16 @@ import 'package:http/http.dart' as http;
 class ConnectionPool {
   static const int _maxConnections = 10;
   static const Duration _idleTimeout = Duration(minutes: 5);
-  
+
   final List<_PooledClient> _availableClients = [];
   final List<_PooledClient> _busyClients = [];
   final Map<String, DateTime> _hostLastUsed = {};
-  
+
   /// Get an HTTP client from the pool
   http.Client getClient() {
     // Clean up expired connections first
     _cleanupExpiredConnections();
-    
+
     // Try to get an available client
     if (_availableClients.isNotEmpty) {
       final pooledClient = _availableClients.removeAt(0);
@@ -21,7 +21,7 @@ class ConnectionPool {
       pooledClient.lastUsed = DateTime.now();
       return _WrappedClient(pooledClient, this);
     }
-    
+
     // Create new client if pool not full
     if (_getTotalConnections() < _maxConnections) {
       final client = _createOptimizedClient();
@@ -29,7 +29,7 @@ class ConnectionPool {
       _busyClients.add(pooledClient);
       return _WrappedClient(pooledClient, this);
     }
-    
+
     // Pool is full, create a temporary client
     print('⚠️ [POOL] Connection pool full, creating temporary client');
     return _createOptimizedClient();
@@ -38,21 +38,22 @@ class ConnectionPool {
   /// Create an optimized HTTP client with keep-alive and compression
   http.Client _createOptimizedClient() {
     final client = http.Client();
-    
+
     // Note: Advanced HTTP client configuration would require
     // platform-specific implementations or third-party packages
     // For now, we use the standard client with connection pooling logic
-    
+
     return client;
   }
 
   /// Return a client to the pool
   void _returnClient(_PooledClient pooledClient) {
     _busyClients.remove(pooledClient);
-    
+
     // Only add back to pool if it's not too old
     final age = DateTime.now().difference(pooledClient.created);
-    if (age < const Duration(hours: 1) && _availableClients.length < _maxConnections) {
+    if (age < const Duration(hours: 1) &&
+        _availableClients.length < _maxConnections) {
       pooledClient.lastUsed = DateTime.now();
       _availableClients.add(pooledClient);
     } else {
@@ -64,7 +65,7 @@ class ConnectionPool {
   /// Clean up expired connections
   void _cleanupExpiredConnections() {
     final now = DateTime.now();
-    
+
     // Clean up available clients
     _availableClients.removeWhere((pooledClient) {
       final age = now.difference(pooledClient.lastUsed);
@@ -74,7 +75,7 @@ class ConnectionPool {
       }
       return false;
     });
-    
+
     // Clean up busy clients that are too old (this shouldn't happen normally)
     _busyClients.removeWhere((pooledClient) {
       final age = now.difference(pooledClient.created);
@@ -122,7 +123,7 @@ class _PooledClient {
   final http.Client client;
   final DateTime created;
   DateTime lastUsed;
-  
+
   _PooledClient(this.client, this.created) : lastUsed = created;
 }
 
@@ -131,7 +132,7 @@ class _WrappedClient extends http.BaseClient {
   final _PooledClient _pooledClient;
   final ConnectionPool _pool;
   bool _closed = false;
-  
+
   _WrappedClient(this._pooledClient, this._pool);
 
   @override
@@ -139,11 +140,11 @@ class _WrappedClient extends http.BaseClient {
     if (_closed) {
       throw StateError('HTTP client has been closed');
     }
-    
+
     // Add performance headers
     request.headers.putIfAbsent('Connection', () => 'keep-alive');
     request.headers.putIfAbsent('Accept-Encoding', () => 'gzip, deflate');
-    
+
     return _pooledClient.client.send(request);
   }
 

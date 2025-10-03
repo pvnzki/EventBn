@@ -13,7 +13,8 @@ import '../../../core/config/app_config.dart';
 /// - Image optimization and progressive loading
 /// - Batch operations and request deduplication
 class EnhancedExplorePostService {
-  static final EnhancedExplorePostService _instance = EnhancedExplorePostService._internal();
+  static final EnhancedExplorePostService _instance =
+      EnhancedExplorePostService._internal();
   factory EnhancedExplorePostService() => _instance;
   EnhancedExplorePostService._internal() {
     _initializeService();
@@ -21,35 +22,36 @@ class EnhancedExplorePostService {
 
   // Core configuration
   static String get _postServiceUrl => AppConfig.postServiceUrl;
-  
+
   // Performance optimizations
   final Map<String, ExplorePost> _postCache = <String, ExplorePost>{};
-  final Map<String, List<Map<String, dynamic>>> _commentCache = <String, List<Map<String, dynamic>>>{};
+  final Map<String, List<Map<String, dynamic>>> _commentCache =
+      <String, List<Map<String, dynamic>>>{};
   final Map<String, DateTime> _cacheTimestamps = <String, DateTime>{};
   final Map<String, String> _imageUrlCache = <String, String>{};
-  
+
   // Connection management
   final http.Client _httpClient = http.Client();
-  
+
   // Data management
   final List<ExplorePost> _posts = [];
   final Map<String, DateTime> _postLastFetch = {};
   final Set<String> _pendingRequests = <String>{};
   final Map<String, bool> _optimisticUpdates = <String, bool>{};
-  
+
   // State management
   bool _isLoading = false;
   bool _hasMoreData = true;
   int _currentPage = 1;
   String? _cachedAuthToken;
   DateTime? _tokenExpiry;
-  
+
   // Performance tracking
   int _cacheHits = 0;
   int _cacheMisses = 0;
   int _networkRequests = 0;
   List<int> _requestTimes = [];
-  
+
   // Configuration
   static const Duration _cacheExpiration = Duration(minutes: 10);
   static const Duration _tokenValidDuration = Duration(hours: 12);
@@ -60,21 +62,23 @@ class EnhancedExplorePostService {
   List<ExplorePost> get posts => _posts;
   bool get isLoading => _isLoading;
   bool get hasMoreData => _hasMoreData;
-  
+
   /// Get performance metrics
   Map<String, dynamic> get performanceMetrics => {
-    'cache_hits': _cacheHits,
-    'cache_misses': _cacheMisses,
-    'cache_hit_rate': _cacheHits + _cacheMisses > 0 
-        ? (_cacheHits / (_cacheHits + _cacheMisses) * 100).toStringAsFixed(1) + '%'
-        : '0%',
-    'network_requests': _networkRequests,
-    'avg_request_time': _requestTimes.isNotEmpty 
-        ? '${(_requestTimes.reduce((a, b) => a + b) / _requestTimes.length).toStringAsFixed(0)}ms'
-        : '0ms',
-    'cached_posts': _postCache.length,
-    'cached_comments': _commentCache.length,
-  };
+        'cache_hits': _cacheHits,
+        'cache_misses': _cacheMisses,
+        'cache_hit_rate': _cacheHits + _cacheMisses > 0
+            ? (_cacheHits / (_cacheHits + _cacheMisses) * 100)
+                    .toStringAsFixed(1) +
+                '%'
+            : '0%',
+        'network_requests': _networkRequests,
+        'avg_request_time': _requestTimes.isNotEmpty
+            ? '${(_requestTimes.reduce((a, b) => a + b) / _requestTimes.length).toStringAsFixed(0)}ms'
+            : '0ms',
+        'cached_posts': _postCache.length,
+        'cached_comments': _commentCache.length,
+      };
 
   Future<void> _initializeService() async {
     await _preloadAuthToken();
@@ -101,8 +105,8 @@ class EnhancedExplorePostService {
   /// Enhanced auth token management with caching
   Future<String?> _getAuthToken() async {
     // Return cached token if still valid
-    if (_cachedAuthToken != null && 
-        _tokenExpiry != null && 
+    if (_cachedAuthToken != null &&
+        _tokenExpiry != null &&
         DateTime.now().isBefore(_tokenExpiry!)) {
       return _cachedAuthToken;
     }
@@ -170,7 +174,8 @@ class EnhancedExplorePostService {
 
   /// Generate cache key for requests
   String _generateCacheKey(String endpoint, Map<String, String> params) {
-    final content = '$endpoint${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
+    final content =
+        '$endpoint${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
     return sha256.convert(utf8.encode(content)).toString().substring(0, 16);
   }
 
@@ -191,7 +196,7 @@ class EnhancedExplorePostService {
     if (_isLoading && !forceFresh) return;
 
     final stopwatch = Stopwatch()..start();
-    
+
     try {
       _isLoading = true;
 
@@ -222,7 +227,8 @@ class EnhancedExplorePostService {
         if (cachedPosts.isNotEmpty) {
           _posts.addAll(cachedPosts);
           _cacheHits++;
-          print('⚡ [CACHE] Loaded ${cachedPosts.length} posts from memory cache');
+          print(
+              '⚡ [CACHE] Loaded ${cachedPosts.length} posts from memory cache');
           return;
         }
       }
@@ -230,7 +236,7 @@ class EnhancedExplorePostService {
       // Step 2: Fetch from network with optimizations
       _cacheMisses++;
       _pendingRequests.add(cacheKey);
-      
+
       try {
         await _fetchPostsFromNetwork(
           searchQuery: searchQuery,
@@ -246,7 +252,6 @@ class EnhancedExplorePostService {
       if (_requestTimes.length > 100) {
         _requestTimes.removeAt(0); // Keep only recent times
       }
-
     } catch (e) {
       print('❌ [ERROR] Failed to load posts: $e');
     } finally {
@@ -270,13 +275,14 @@ class EnhancedExplorePostService {
     bool refresh = false,
   }) async {
     final headers = await _getHeaders();
-    
+
     final queryParams = {
       'page': _currentPage.toString(),
       'limit': '20',
       'optimize': 'true', // Request optimized response
       if (searchQuery?.isNotEmpty == true) 'search': searchQuery!,
-      if (category != null && category != PostCategory.all) 'category': category.name,
+      if (category != null && category != PostCategory.all)
+        'category': category.name,
     };
 
     final uri = Uri.parse('$_postServiceUrl/api/posts/explore').replace(
@@ -284,15 +290,17 @@ class EnhancedExplorePostService {
     );
 
     _networkRequests++;
-    final response = await _httpClient.get(uri, headers: headers)
+    final response = await _httpClient
+        .get(uri, headers: headers)
         .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      
+
       if (data['success'] == true) {
         final List<dynamic> postsJson = data['posts'] ?? [];
-        final newPosts = postsJson.map((json) => ExplorePost.fromJson(json)).toList();
+        final newPosts =
+            postsJson.map((json) => ExplorePost.fromJson(json)).toList();
 
         // Intelligent duplicate filtering
         final uniqueNewPosts = _filterDuplicates(newPosts);
@@ -327,14 +335,14 @@ class EnhancedExplorePostService {
   /// Cache posts in memory with LRU eviction
   void _cachePostsInMemory(List<ExplorePost> posts, String cacheKey) {
     final now = DateTime.now();
-    
+
     for (final post in posts) {
       _postCache[post.id] = post;
       _postLastFetch[post.id] = now;
     }
-    
+
     _cacheTimestamps[cacheKey] = now;
-    
+
     // LRU eviction if cache is too large
     if (_postCache.length > _maxCacheSize) {
       _evictOldestCacheEntries();
@@ -345,8 +353,9 @@ class EnhancedExplorePostService {
   void _evictOldestCacheEntries() {
     final sortedEntries = _postLastFetch.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
-    
-    final entriesToRemove = sortedEntries.take(_postCache.length - _maxCacheSize + 50);
+
+    final entriesToRemove =
+        sortedEntries.take(_postCache.length - _maxCacheSize + 50);
     for (final entry in entriesToRemove) {
       _postCache.remove(entry.key);
       _postLastFetch.remove(entry.key);
@@ -357,23 +366,23 @@ class EnhancedExplorePostService {
   void _cleanupExpiredCache() {
     final now = DateTime.now();
     final expiredKeys = <String>[];
-    
+
     for (final entry in _cacheTimestamps.entries) {
       if (now.difference(entry.value) > _cacheExpiration) {
         expiredKeys.add(entry.key);
       }
     }
-    
+
     for (final key in expiredKeys) {
       _cacheTimestamps.remove(key);
     }
-    
+
     // Clean up old comment cache entries
     _commentCache.removeWhere((key, value) {
       final timestamp = _cacheTimestamps[key];
       return timestamp == null || now.difference(timestamp) > _cacheExpiration;
     });
-    
+
     if (expiredKeys.isNotEmpty) {
       print('🧹 [CLEANUP] Removed ${expiredKeys.length} expired cache entries');
     }
@@ -387,13 +396,14 @@ class EnhancedExplorePostService {
       if (postIndex != -1) {
         final post = _posts[postIndex];
         final newLikeState = !post.isLiked;
-        final newLikeCount = newLikeState ? post.likesCount + 1 : post.likesCount - 1;
-        
+        final newLikeCount =
+            newLikeState ? post.likesCount + 1 : post.likesCount - 1;
+
         _posts[postIndex] = post.copyWith(
           isLiked: newLikeState,
           likesCount: newLikeCount,
         );
-        
+
         // Update cache
         _postCache[postId] = _posts[postIndex];
         _optimisticUpdates[postId] = true;
@@ -401,7 +411,6 @@ class EnhancedExplorePostService {
 
       // Background network request
       _performLikeToggleInBackground(postId);
-      
     } catch (e) {
       print('❌ [LIKE] Toggle failed: $e');
       await _revertOptimisticUpdate(postId);
@@ -415,18 +424,19 @@ class EnhancedExplorePostService {
         final headers = await _getHeaders();
         final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/like');
 
-        final response = await _httpClient.post(uri, headers: headers)
+        final response = await _httpClient
+            .post(uri, headers: headers)
             .timeout(const Duration(seconds: 10));
 
         final data = jsonDecode(response.body);
 
         if (response.statusCode == 200 && data['success'] == true) {
           _optimisticUpdates.remove(postId);
-          
+
           // Update with server response if different
           final serverLiked = data['liked'];
           final serverCount = data['likesCount'];
-          
+
           final postIndex = _posts.indexWhere((post) => post.id == postId);
           if (postIndex != -1) {
             final post = _posts[postIndex];
@@ -466,7 +476,7 @@ class EnhancedExplorePostService {
   Future<List<Map<String, dynamic>>> getComments(String postId,
       {int page = 1, int limit = 20}) async {
     final cacheKey = 'comments_${postId}_${page}_$limit';
-    
+
     // Check cache first
     if (_isCacheValid(cacheKey) && _commentCache.containsKey(cacheKey)) {
       _cacheHits++;
@@ -481,11 +491,13 @@ class EnhancedExplorePostService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments').replace(
+      final uri =
+          Uri.parse('$_postServiceUrl/api/posts/$postId/comments').replace(
         queryParameters: queryParams,
       );
 
-      final response = await _httpClient.get(uri, headers: headers)
+      final response = await _httpClient
+          .get(uri, headers: headers)
           .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(response.body);
@@ -493,11 +505,11 @@ class EnhancedExplorePostService {
       if (response.statusCode == 200 && data['success'] == true) {
         final List<dynamic> commentsJson = data['data']['comments'] ?? [];
         final comments = commentsJson.cast<Map<String, dynamic>>();
-        
+
         // Cache the comments
         _commentCache[cacheKey] = comments;
         _cacheTimestamps[cacheKey] = DateTime.now();
-        
+
         return comments;
       } else {
         return [];

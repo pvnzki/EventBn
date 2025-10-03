@@ -603,7 +603,7 @@ class CoreServiceRabbitMQConsumer {
               startDateTime: event.start_time, // Use actual start_time field
               endDateTime: event.end_time, // Use actual end_time field
               category: event.category,
-              isActive: event.status === 'ACTIVE', // Map status to isActive boolean
+              isActive: event.status === "ACTIVE", // Map status to isActive boolean
               status: event.status,
               capacity: event.capacity,
               otherImages: event.other_images_url, // Additional images

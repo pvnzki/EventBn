@@ -19,11 +19,12 @@ class SmartPostInteractionDetector extends StatefulWidget {
   });
 
   @override
-  State<SmartPostInteractionDetector> createState() => _SmartPostInteractionDetectorState();
+  State<SmartPostInteractionDetector> createState() =>
+      _SmartPostInteractionDetectorState();
 }
 
-class _SmartPostInteractionDetectorState extends State<SmartPostInteractionDetector>
-    with ProactivePreloadingMixin {
+class _SmartPostInteractionDetectorState
+    extends State<SmartPostInteractionDetector> with ProactivePreloadingMixin {
   bool _isHoveringComment = false;
   DateTime? _hoverStartTime;
 
@@ -77,8 +78,8 @@ class _SmartPostInteractionDetectorState extends State<SmartPostInteractionDetec
 
     // Preload comments after a short delay (user might just be scrolling)
     Future.delayed(const Duration(milliseconds: 200), () {
-      if (_isHoveringComment && 
-          _hoverStartTime != null && 
+      if (_isHoveringComment &&
+          _hoverStartTime != null &&
           DateTime.now().difference(_hoverStartTime!).inMilliseconds >= 200) {
         onCommentButtonHover(widget.postId);
       }
@@ -303,7 +304,7 @@ class _SmartCreatePostFABState extends State<SmartCreatePostFAB>
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: _isPreloaded 
+                    colors: _isPreloaded
                         ? [Colors.green[400]!, Colors.blue[400]!]
                         : [Colors.blue[400]!, Colors.purple[400]!],
                   ),
