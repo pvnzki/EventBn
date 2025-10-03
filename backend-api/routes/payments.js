@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
+const emailService = require("../services/core-service/email");
 
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
@@ -209,6 +210,81 @@ router.post("/", authenticateToken, async (req, res) => {
           // Continue with payment success even if ticket creation fails
         }
       }
+    }
+
+    // Send automated email with tickets after successful payment and ticket creation
+    try {
+      // Fetch the created tickets with full details for email
+      const createdTickets = await prisma.ticketPurchase.findMany({
+        where: { 
+          payment_id: payment.payment_id 
+        },
+        include: {
+          event: {
+            select: {
+              title: true,
+              start_time: true,
+              venue: true,
+              location: true,
+            }
+          },
+          user: {
+            select: {
+              name: true,
+              email: true,
+            }
+          }
+        }
+      });
+
+      if (createdTickets.length > 0) {
+        // Prepare ticket data for email
+        const ticketsForEmail = createdTickets.map(ticket => ({
+          user_name: ticket.user.name,
+          user_email: ticket.user.email,
+          event_title: ticket.event.title,
+          event_venue: ticket.event.venue,
+          event_location: ticket.event.location,
+          event_start_time: ticket.event.start_time,
+          seat_label: ticket.seat_label,
+          price: Number(ticket.price), // Convert BigInt to number
+          qr_code: ticket.qr_code,
+          payment_id: payment.payment_id,
+          purchase_date: ticket.purchase_date
+        }));
+
+        // Send email asynchronously (don't wait for it to complete)
+        if (ticketsForEmail.length === 1) {
+          // Single ticket
+          emailService.sendTicketEmail(ticketsForEmail[0], payment.user.email)
+            .then(success => {
+              if (success) {
+                console.log(`✅ Ticket email sent to ${payment.user.email}`);
+              } else {
+                console.log(`⚠️ Failed to send ticket email to ${payment.user.email}`);
+              }
+            })
+            .catch(error => {
+              console.error('Email sending error:', error);
+            });
+        } else {
+          // Multiple tickets
+          emailService.sendMultipleTicketsEmail(ticketsForEmail, payment.user.email)
+            .then(success => {
+              if (success) {
+                console.log(`✅ Multiple tickets email sent to ${payment.user.email} (${ticketsForEmail.length} tickets)`);
+              } else {
+                console.log(`⚠️ Failed to send multiple tickets email to ${payment.user.email}`);
+              }
+            })
+            .catch(error => {
+              console.error('Email sending error:', error);
+            });
+        }
+      }
+    } catch (emailError) {
+      console.error('Error preparing ticket email:', emailError);
+      // Continue with success response even if email fails
     }
 
     res.status(201).json({
