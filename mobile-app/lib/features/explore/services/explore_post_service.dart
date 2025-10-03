@@ -419,6 +419,62 @@ class ExplorePostService {
     }
   }
 
+  // Like a comment
+  Future<bool> likeComment(String commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$_postServiceUrl/api/comments/$commentId/like'),
+        headers: headers,
+      );
+
+      print(
+          '💖 Like comment response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        print('✅ Comment $commentId liked successfully');
+        return true;
+      } else {
+        print(
+            '❌ Failed to like comment: ${data['message'] ?? 'Unknown error'}');
+        return false;
+      }
+    } catch (e) {
+      print('💥 Error liking comment: $e');
+      return false;
+    }
+  }
+
+  // Unlike a comment
+  Future<bool> unlikeComment(String commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$_postServiceUrl/api/comments/$commentId/like'),
+        headers: headers,
+      );
+
+      print(
+          '💔 Unlike comment response: ${response.statusCode} - ${response.body}');
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        print('✅ Comment $commentId unliked successfully');
+        return true;
+      } else {
+        print(
+            '❌ Failed to unlike comment: ${data['message'] ?? 'Unknown error'}');
+        return false;
+      }
+    } catch (e) {
+      print('💥 Error unliking comment: $e');
+      return false;
+    }
+  }
+
   // Toggle like on a comment
   Future<void> toggleCommentLike(String commentId) async {
     try {

@@ -21,6 +21,7 @@ class CoreServiceRabbitMQConsumer {
         postEvents: process.env.RABBITMQ_POST_Q || "post_events",
         socialEvents: process.env.RABBITMQ_SOCIAL_QUEUE || "social_events",
         userDataRequests: "user_data_requests", // New queue for user data requests
+        eventDataRequests: "event_data_requests", // New queue for event data requests
       },
       prefetch: 10,
     };
@@ -530,6 +531,126 @@ class CoreServiceRabbitMQConsumer {
     }
   }
 
+  // Event data request handler
+  async handleEventDataRequest(msg) {
+    try {
+      // Parse the message content
+      const messageData = JSON.parse(msg.content.toString());
+      const { action, eventId } = messageData;
+      const { correlationId, replyTo } = msg.properties;
+
+      console.log(
+        `[CORE-RABBITMQ-CONSUMER] Processing event data request: ${action} for event ID: ${eventId}`
+      );
+
+      switch (action) {
+        case "GET_EVENT":
+          return await this.handleGetEventData(
+            { eventId },
+            replyTo,
+            correlationId
+          );
+
+        default:
+          console.warn(
+            `[CORE-RABBITMQ-CONSUMER] Unknown event data request action: ${action}`
+          );
+          return true;
+      }
+    } catch (error) {
+      console.error(
+        `[CORE-RABBITMQ-CONSUMER] Error handling event data request:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  // Event data request implementations
+  async handleGetEventData(data, replyTo, correlationId) {
+    const { eventId } = data;
+
+    try {
+      const event = await prisma.event.findUnique({
+        where: { event_id: parseInt(eventId) },
+        select: {
+          event_id: true,
+          title: true,
+          description: true,
+          category: true,
+          venue: true,
+          location: true,
+          start_time: true,
+          end_time: true,
+          capacity: true,
+          cover_image_url: true,
+          other_images_url: true,
+          status: true,
+          created_at: true,
+        },
+      });
+
+      const response = {
+        success: true,
+        event: event
+          ? {
+              id: event.event_id,
+              title: event.title,
+              description: event.description,
+              imageUrl: event.cover_image_url, // Use actual cover_image_url field
+              venue: event.venue, // Use actual venue field
+              location: event.location, // Use actual location field
+              startDateTime: event.start_time, // Use actual start_time field
+              endDateTime: event.end_time, // Use actual end_time field
+              category: event.category,
+              isActive: event.status === "ACTIVE", // Map status to isActive boolean
+              status: event.status,
+              capacity: event.capacity,
+              otherImages: event.other_images_url, // Additional images
+              createdAt: event.created_at,
+            }
+          : null,
+        message: event ? "Event found" : "Event not found",
+      };
+
+      // Send response back via RabbitMQ
+      if (replyTo && correlationId) {
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(response)),
+          {
+            correlationId,
+          }
+        );
+      }
+
+      console.log(
+        `[📤] [CORE-RABBITMQ-CONSUMER] Sent event data for event: ${eventId}`
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        `[❌] [CORE-RABBITMQ-CONSUMER] Error getting event data:`,
+        error.message
+      );
+
+      if (replyTo && correlationId) {
+        const errorResponse = {
+          success: false,
+          event: null,
+          error: "Failed to fetch event data",
+          message: error.message,
+        };
+        await this.channel.sendToQueue(
+          replyTo,
+          Buffer.from(JSON.stringify(errorResponse)),
+          { correlationId }
+        );
+      }
+      return false;
+    }
+  }
+
   // Specific event implementations
   async handlePostCreated(data) {
     // user_stats tracking removed as unnecessary; keeping event engagement update only
@@ -678,6 +799,73 @@ class CoreServiceRabbitMQConsumer {
     return true;
   }
 
+  async startEventDataRequestConsumer() {
+    try {
+      if (!this.channel) {
+        const connected = await this.connect();
+        if (!connected) {
+          throw new Error("RabbitMQ connection not available");
+        }
+      }
+
+      const queueName = this.config.queues.eventDataRequests;
+      console.log(
+        `[👂] [CORE-RABBITMQ-CONSUMER] Starting event data request consumer for queue: ${queueName}`
+      );
+
+      await this.channel.consume(
+        queueName,
+        async (msg) => {
+          if (msg !== null) {
+            const startTime = Date.now();
+
+            try {
+              console.log(
+                `[📥] [CORE-RABBITMQ-CONSUMER] Processing event data request`
+              );
+
+              const success = await Promise.race([
+                this.handleEventDataRequest(msg),
+                this.createTimeoutPromise(30000),
+              ]);
+
+              const processingTime = Date.now() - startTime;
+
+              if (success) {
+                this.channel.ack(msg);
+                console.log(
+                  `[✅] [CORE-RABBITMQ-CONSUMER] Successfully processed event data request in ${processingTime}ms`
+                );
+              } else {
+                console.log(
+                  `[❌] [CORE-RABBITMQ-CONSUMER] Failed to process event data request`
+                );
+                this.channel.nack(msg, false, false);
+              }
+            } catch (error) {
+              console.error(
+                `[💥] [CORE-RABBITMQ-CONSUMER] Error processing event data request:`,
+                error
+              );
+              this.channel.nack(msg, false, false);
+            }
+          }
+        },
+        { noAck: false }
+      );
+
+      console.log(
+        `[✅] [CORE-RABBITMQ-CONSUMER] Event data request consumer started successfully`
+      );
+    } catch (error) {
+      console.error(
+        `[❌] [CORE-RABBITMQ-CONSUMER] Failed to start event data request consumer:`,
+        error
+      );
+      throw error;
+    }
+  }
+
   async startAllConsumers() {
     const success = await this.connect();
     if (!success) {
@@ -705,6 +893,8 @@ class CoreServiceRabbitMQConsumer {
       this.config.queues.userDataRequests,
       this.handleUserDataRequest.bind(this)
     );
+
+    await this.startEventDataRequestConsumer();
 
     console.log(
       "[✅] [CORE-RABBITMQ-CONSUMER] All consumers started successfully"

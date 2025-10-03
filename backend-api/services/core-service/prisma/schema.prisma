@@ -53,24 +53,27 @@ model Organization {
 }
 
 model Event {
-  event_id         Int      @id @default(autoincrement())
-  organization_id  Int
-  title            String
-  description      String?
-  location         String
-  datetime         DateTime
-  end_datetime     DateTime?
-  category         String?
-  image_url        String?
-  capacity         Int?
-  is_active        Boolean  @default(true)
-  ticket_price     Decimal  @db.Decimal(10, 2)
-  seat_map_json    Json?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @default(now()) @updatedAt
+  event_id            Int      @id @default(autoincrement())
+  organization_id     Int?
+  title               String
+  description         String?
+  category            String?
+  venue               String?
+  location            String?
+  start_time          DateTime
+  end_time            DateTime
+  capacity            Int?
+  cover_image_url     String?
+  other_images_url    String?
+  created_at          DateTime @default(now())
+  status              String   @default("ACTIVE")
+  updated_at          DateTime @default(now()) @updatedAt
+  video_url           String?  @default("")
+  seat_map            Json?
+  ticket_types        Json?
 
   // Relations
-  organization Organization @relation(fields: [organization_id], references: [organization_id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organization_id], references: [organization_id], onDelete: SetNull)
   search_logs  Search_Log[]
   payments     Payment[]
   ticket_purchases TicketPurchase[]

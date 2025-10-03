@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
+import '../widgets/smart_comments_bottom_sheet.dart';
+import '../../events/screens/event_details_screen.dart';
 
 class IGTVFeedScreen extends StatefulWidget {
   final String postId;
@@ -38,6 +40,16 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   // Track user interaction states
   final Map<String, bool> _userHasCommented = {};
 
+  // Swipe gesture tracking
+  double _swipeOffset = 0.0;
+  bool _isSwipeActive = false;
+
+  // Bookmark animation controllers
+  AnimationController? _bookmarkPulseController;
+  AnimationController? _bookmarkShimmerController;
+  Animation<double>? _bookmarkPulseAnimation;
+  Animation<double>? _bookmarkShimmerAnimation;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +68,37 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       parent: _likeAnimationController,
       curve: Curves.elasticOut,
     ));
+
+    // Initialize bookmark animations
+    _bookmarkPulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _bookmarkShimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _bookmarkPulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _bookmarkPulseController!,
+      curve: Curves.easeInOut,
+    ));
+
+    _bookmarkShimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _bookmarkShimmerController!,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start bookmark animations
+    _bookmarkPulseController?.repeat(reverse: true);
+    _bookmarkShimmerController?.repeat();
 
     // Check backend connectivity first
     _checkBackendConnectivity();
@@ -104,43 +147,14 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     }
   }
 
-  void _showBackendError(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('❌ Backend Connection Issue',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(message),
-              const SizedBox(height: 8),
-              const Text('• Comments and likes may not persist to database',
-                  style: TextStyle(fontSize: 12)),
-              const Text('• To fix: Start backend services from terminal',
-                  style: TextStyle(fontSize: 12)),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: 'Retry',
-            textColor: Colors.white,
-            onPressed: _checkBackendConnectivity,
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
     _commentController.dispose();
     _animationController.dispose();
     _likeAnimationController.dispose();
+    _bookmarkPulseController?.dispose();
+    _bookmarkShimmerController?.dispose();
     // Restore status bar
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -519,14 +533,18 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     if (_currentIndex >= _posts.length) return;
 
     final currentPost = _posts[_currentIndex];
-    _loadComments(currentPost.id);
     _animationController.forward();
 
-    showModalBottomSheet(
+    // Use smart comments that preload automatically
+    SmartCommentsBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildCommentsSheet(),
+      postId: currentPost.id,
+      onCommentAdded: () {
+        // Refresh post data if needed
+        setState(() {
+          // Update any local state if necessary
+        });
+      },
     ).then((_) {
       _animationController.reverse();
     });
@@ -567,15 +585,52 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Main PageView for posts
-          PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            onPageChanged: _onPageChanged,
-            itemCount: _posts.length,
-            itemBuilder: (context, index) {
-              return _buildPostPage(_posts[index]);
+          // Main PageView for posts with swipe gesture
+          GestureDetector(
+            onPanStart: (details) {
+              _isSwipeActive = true;
+              _swipeOffset = 0.0;
             },
+            onPanUpdate: (details) {
+              if (!_isSwipeActive) return;
+
+              // Only track horizontal left swipes for event navigation
+              if (details.delta.dx < 0) {
+                setState(() {
+                  _swipeOffset += details.delta.dx;
+                  // Limit the swipe offset to prevent over-swiping
+                  _swipeOffset = _swipeOffset.clamp(-150.0, 0.0);
+                });
+              }
+            },
+            onPanEnd: (details) {
+              if (!_isSwipeActive) return;
+
+              // If swiped left more than 80 pixels and current post has event, navigate to event
+              if (_swipeOffset < -80 &&
+                  _currentIndex < _posts.length &&
+                  _hasCurrentEvent()) {
+                _onGoToEventWithAnimation(_getCurrentEventId());
+              }
+
+              // Reset swipe state
+              setState(() {
+                _swipeOffset = 0.0;
+                _isSwipeActive = false;
+              });
+            },
+            child: Transform.translate(
+              offset: Offset(_swipeOffset, 0),
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: _onPageChanged,
+                itemCount: _posts.length,
+                itemBuilder: (context, index) {
+                  return _buildPostPage(_posts[index]);
+                },
+              ),
+            ),
           ),
 
           // Top app bar
@@ -585,6 +640,14 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             right: 0,
             child: _buildTopBar(),
           ),
+
+          // Event bookmark for current post
+          if (_posts.isNotEmpty && _currentIndex < _posts.length) ...[
+            if (_posts[_currentIndex].relatedEventId != null)
+              _buildIGTVEventBookmark(_posts[_currentIndex])
+            else if (_posts[_currentIndex].id == "1")
+              _buildDemoIGTVEventBookmark(),
+          ],
 
           // Right side actions
           Positioned(
@@ -1300,5 +1363,353 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     final regex = RegExp(r'#\w+');
     final matches = regex.allMatches(content);
     return matches.map((match) => match.group(0)!).toList();
+  }
+
+  Widget _buildIGTVEventBookmark(ExplorePost post) {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _bookmarkPulseAnimation ?? const AlwaysStoppedAnimation(1.0),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _bookmarkPulseAnimation?.value ?? 1.0,
+            child: GestureDetector(
+              onTap: () => _onGoToEventWithAnimation(post.relatedEventId ?? ''),
+              child: Container(
+                width: 95,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF84cc16), // lime-500
+                      Color(0xFF65a30d), // lime-600
+                      Color(0xFF4d7c0f), // lime-700
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF84cc16).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(-4, 3),
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(-2, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Shimmer effect overlay
+                    AnimatedBuilder(
+                      animation: _bookmarkShimmerAnimation ??
+                          const AlwaysStoppedAnimation(0.0),
+                      builder: (context, child) {
+                        return Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              bottomLeft: Radius.circular(28),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                  begin: Alignment(
+                                      -1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      -0.5),
+                                  end: Alignment(
+                                      1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.event,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Flexible(
+                            child: Text(
+                              post.relatedEventName
+                                      ?.split(' ')
+                                      .take(2)
+                                      .join('\n') ??
+                                  'Event',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDemoIGTVEventBookmark() {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _bookmarkPulseAnimation ?? const AlwaysStoppedAnimation(1.0),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _bookmarkPulseAnimation?.value ?? 1.0,
+            child: GestureDetector(
+              onTap: () => _onGoToEventWithAnimation("demo-event"),
+              child: Container(
+                width: 95,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFfbbf24), // amber-400
+                      Color(0xFFf59e0b), // amber-500
+                      Color(0xFFd97706), // amber-600
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFfbbf24).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(-4, 3),
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(-2, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Shimmer effect overlay
+                    AnimatedBuilder(
+                      animation: _bookmarkShimmerAnimation ??
+                          const AlwaysStoppedAnimation(0.0),
+                      builder: (context, child) {
+                        return Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              bottomLeft: Radius.circular(28),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                  begin: Alignment(
+                                      -1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      -0.5),
+                                  end: Alignment(
+                                      1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          const Flexible(
+                            child: Text(
+                              'Demo\nEvent',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  bool _hasCurrentEvent() {
+    if (_currentIndex >= _posts.length) return false;
+    final currentPost = _posts[_currentIndex];
+    return currentPost.relatedEventId != null || currentPost.id == "1";
+  }
+
+  String _getCurrentEventId() {
+    if (_currentIndex >= _posts.length) return "";
+    final currentPost = _posts[_currentIndex];
+
+    if (currentPost.relatedEventId != null) {
+      return currentPost.relatedEventId!;
+    } else if (currentPost.id == "1") {
+      return "demo-event";
+    }
+    return "";
+  }
+
+  void _onGoToEventWithAnimation(String eventId) {
+    HapticFeedback.lightImpact();
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            EventDetailsScreen(eventId: eventId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 }
