@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../models/post_model.dart';
+import 'feed_video_player.dart'; // Import our custom video player
 
 class ExplorePostCard extends StatefulWidget {
   final ExplorePost post;
@@ -174,11 +175,17 @@ class _ExplorePostCardState extends State<ExplorePostCard>
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.post.userDisplayName,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                    GestureDetector(
+                      onTap: () {
+                        print('👤 Navigating to user profile: ${widget.post.userId}');
+                        context.push('/user/${widget.post.userId}');
+                      },
+                      child: Text(
+                        widget.post.userDisplayName,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
                     if (widget.post.isUserVerified) ...[
@@ -232,6 +239,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       children: [
         if (widget.post.content.isNotEmpty) _buildTextContent(),
         if (widget.post.imageUrls.isNotEmpty) _buildImages(),
+        if (widget.post.videoUrls.isNotEmpty) _buildVideos(), // Added video support
         _buildPostType(),
       ],
     );
@@ -385,6 +393,179 @@ class _ExplorePostCardState extends State<ExplorePostCard>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildVideos() {
+    if (widget.post.videoUrls.isEmpty) return const SizedBox.shrink();
+
+    print('🎬 [PostCard] Building videos section. Video count: ${widget.post.videoUrls.length}');
+    print('🎬 [PostCard] Video URLs: ${widget.post.videoUrls}');
+    print('🎬 [PostCard] Video thumbnails: ${widget.post.videoThumbnails}');
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: widget.post.videoUrls.length == 1
+          ? _buildSingleVideo(widget.post.videoUrls.first)
+          : _buildMultipleVideos(),
+    );
+  }
+
+  Widget _buildSingleVideo(String videoUrl) {
+    print('🎬 [PostCard] Building single video for URL: $videoUrl');
+    return FeedVideoPlayer(
+      videoUrl: videoUrl,
+      autoPlay: false, // Don't autoplay in feed to save bandwidth
+      showControls: true, // Show controls so users can play
+      aspectRatio: 16/9, // Set consistent aspect ratio
+    );
+  }
+
+  Widget _buildMultipleVideos() {
+    return Container(
+      height: 200,
+      child: Row(
+        children: [
+          // First video (larger)
+          Expanded(
+            flex: 2,
+            child: _buildVideoThumbnail(widget.post.videoUrls.first),
+          ),
+          const SizedBox(width: 4),
+          // Other videos (smaller)
+          Expanded(
+            child: Column(
+              children: [
+                if (widget.post.videoUrls.length > 1)
+                  Expanded(
+                    child: _buildVideoThumbnail(widget.post.videoUrls[1]),
+                  ),
+                if (widget.post.videoUrls.length > 2) ...[
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        _buildVideoThumbnail(widget.post.videoUrls[2]),
+                        if (widget.post.videoUrls.length > 3)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '+${widget.post.videoUrls.length - 3}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoThumbnail(String videoUrl) {
+    // Try to get thumbnail from videoThumbnails array if available
+    String? thumbnailUrl;
+    if (widget.post.videoThumbnails.isNotEmpty) {
+      // Find corresponding thumbnail for this video URL
+      final videoIndex = widget.post.videoUrls.indexOf(videoUrl);
+      if (videoIndex >= 0 && videoIndex < widget.post.videoThumbnails.length) {
+        thumbnailUrl = widget.post.videoThumbnails[videoIndex];
+      }
+    }
+    
+    return GestureDetector(
+      onTap: () => _openVideoPlayer(videoUrl),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.black87,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Show thumbnail if available, otherwise show placeholder
+              if (thumbnailUrl != null)
+                Image.network(
+                  thumbnailUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.black87,
+                      child: const Icon(
+                        Icons.video_library_outlined,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
+                    );
+                  },
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.black87,
+                  child: const Icon(
+                    Icons.video_library_outlined,
+                    color: Colors.white70,
+                    size: 24,
+                  ),
+                ),
+              // Play button overlay
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openVideoPlayer(String videoUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          child: Container(
+            width: double.infinity,
+            height: 300,
+            child: FeedVideoPlayer(
+              videoUrl: videoUrl,
+              autoPlay: true,
+              showControls: true,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1070,16 +1251,54 @@ class _ExplorePostCardState extends State<ExplorePostCard>
             onTap: widget.onShare,
           ),
           const Spacer(),
-          IconButton(
-            icon: Icon(
-              widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: widget.post.isBookmarked
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            iconSize: 18,
-            onPressed: widget.onBookmark,
-          ),
+          // Optimized "Go to Event" button for better space efficiency
+          widget.post.relatedEventId != null
+              ? GestureDetector(
+                  onTap: _onGoToEventWithAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6, // Reduced from 8
+                      vertical: 3,   // Reduced from 4
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10), // Reduced from 12
+                      border: Border.all(
+                        color: colorScheme.primary,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.event,
+                          size: 14, // Reduced from 16
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 3), // Reduced from 4
+                        Text(
+                          'Event', // Shortened from 'Go to Event'
+                          style: TextStyle(
+                            fontSize: 11, // Reduced from 12
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    color: widget.post.isBookmarked
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  iconSize: 18,
+                  onPressed: widget.onBookmark,
+                ),
         ],
       ),
     );
@@ -1145,14 +1364,24 @@ class _ExplorePostCardState extends State<ExplorePostCard>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.bookmark_border),
-                title: const Text('Save Post'),
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onBookmark?.call();
-                },
-              ),
+              // Show "Go to Event" option if post has related event, otherwise show bookmark
+              widget.post.relatedEventId != null
+                  ? ListTile(
+                      leading: const Icon(Icons.event),
+                      title: const Text('Go to Event'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _onGoToEventWithAnimation();
+                      },
+                    )
+                  : ListTile(
+                      leading: const Icon(Icons.bookmark_border),
+                      title: const Text('Save Post'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onBookmark?.call();
+                      },
+                    ),
               ListTile(
                 leading: const Icon(Icons.share),
                 title: const Text('Share'),

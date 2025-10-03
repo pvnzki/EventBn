@@ -61,9 +61,21 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
   try {
+    // Return user data in the expected format for the frontend
+    const userData = {
+      user_id: req.user.user_id,
+      id: req.user.user_id,
+      name: req.user.name,
+      email: req.user.email,
+      phone_number: req.user.phone_number,
+      profile_picture: req.user.profile_picture,
+      is_email_verified: req.user.is_email_verified,
+      role: req.user.role,
+    };
+
     res.json({
       success: true,
-      data: req.user
+      user: userData // Make sure it's wrapped in 'user' key for frontend compatibility
     });
   } catch (error) {
     res.status(500).json({

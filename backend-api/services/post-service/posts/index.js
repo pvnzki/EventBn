@@ -65,6 +65,7 @@ class PostService {
       const {
         content,
         images,
+        videos,  // Added video support
         eventId,
         location,
         isPublic,
@@ -76,6 +77,7 @@ class PostService {
         data: {
           content,
           images: images || [],
+          videos: videos || [],  // Added video support
           eventId,
           location,
           isPublic: isPublic !== false, // Default to true

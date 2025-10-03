@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart'; // Added for video support
 import 'dart:io';
 import '../services/explore_post_service.dart';
 import '../widgets/smart_event_picker.dart';
@@ -19,7 +20,10 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
   final List<File> _selectedImages = [];
+  final List<File> _selectedVideos = []; // Added for video support
   bool _isLoading = false;
+  double _uploadProgress = 0.0; // Added for progress tracking
+  String _uploadStatus = ''; // Added for status messages
   final ImagePicker _picker = ImagePicker();
 
   // Event selection state
@@ -40,12 +44,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _loadCurrentUser() async {
     try {
+      print('🔍 [CreatePost] Loading current user...');
       final user = await _authService.getCurrentUser();
+      print('🔍 [CreatePost] User loaded: ${user?.firstName} ${user?.lastName}');
       setState(() {
         _currentUser = user;
       });
+      
+      if (user == null) {
+        print('⚠️ [CreatePost] User is null - backend might not be running');
+      }
     } catch (e) {
-      print('Error loading current user: $e');
+      print('❌ [CreatePost] Error loading current user: $e');
+      // Set a fallback user for UI testing
+      setState(() {
+        _currentUser = null;
+      });
     }
   }
 
@@ -141,9 +155,77 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
+  // Video picking methods
+  Future<void> _pickVideo() async {
+    const maxVideos = 5; // Limit videos for performance
+    if (_selectedVideos.length >= maxVideos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum 5 videos allowed'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final XFile? video = await _picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5), // 5 minute limit
+      );
+
+      if (video != null) {
+        setState(() {
+          _selectedVideos.add(File(video.path));
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking video: $e')),
+      );
+    }
+  }
+
+  Future<void> _recordVideo() async {
+    const maxVideos = 5;
+    if (_selectedVideos.length >= maxVideos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum 5 videos allowed'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final XFile? video = await _picker.pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(minutes: 5),
+      );
+
+      if (video != null) {
+        setState(() {
+          _selectedVideos.add(File(video.path));
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error recording video: $e')),
+      );
+    }
+  }
+
+  void _removeVideo(int index) {
+    setState(() {
+      _selectedVideos.removeAt(index);
+    });
+  }
+
   bool _canPost() {
     return _contentController.text.trim().isNotEmpty ||
-        _selectedImages.isNotEmpty;
+        _selectedImages.isNotEmpty ||
+        _selectedVideos.isNotEmpty; // Updated to include videos
   }
 
   Future<void> _loadEvents() async {
@@ -350,11 +432,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _createPost() async {
     final content = _contentController.text.trim();
 
-    // Validation
-    if (content.isEmpty && _selectedImages.isEmpty) {
+    // Validation - updated to include videos
+    if (content.isEmpty && _selectedImages.isEmpty && _selectedVideos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please add some content or images'),
+          content: Text('Please add some content, images, or videos'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -374,6 +456,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     setState(() {
       _isLoading = true;
+      _uploadProgress = 0.0;
+      _uploadStatus = 'Preparing upload...';
     });
 
     try {
@@ -383,21 +467,47 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       List<String>? imagePaths;
       if (_selectedImages.isNotEmpty) {
         imagePaths = _selectedImages.map((file) => file.path).toList();
+        setState(() {
+          _uploadStatus = 'Processing ${imagePaths!.length} image(s)...';
+          _uploadProgress = 0.2;
+        });
       }
 
-      print('🚀 Creating post with ${imagePaths?.length ?? 0} images');
+      // Convert selected videos to paths
+      List<String>? videoPaths;
+      if (_selectedVideos.isNotEmpty) {
+        videoPaths = _selectedVideos.map((file) => file.path).toList();
+        setState(() {
+          _uploadStatus = 'Processing ${videoPaths!.length} video(s)... This may take a moment.';
+          _uploadProgress = 0.4;
+        });
+      }
+
+      print('🚀 Creating post with ${imagePaths?.length ?? 0} images and ${videoPaths?.length ?? 0} videos');
+
+      setState(() {
+        _uploadStatus = 'Uploading to server...';
+        _uploadProgress = 0.7;
+      });
 
       final success = await postService.createPost(
         content: content,
         imagePaths: imagePaths,
+        videoPaths: videoPaths, // Added video paths
         eventId: _selectedEventId, // Pass the selected event ID
       );
 
+      setState(() {
+        _uploadProgress = 1.0;
+        _uploadStatus = 'Finalizing...';
+      });
+
       if (mounted) {
         if (success) {
-          // Clear form
+          // Clear form - updated to include videos
           _contentController.clear();
           _selectedImages.clear();
+          _selectedVideos.clear(); // Clear videos too
           _selectedEventId = null;
           _selectedEventName = null;
 
@@ -432,6 +542,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _uploadProgress = 0.0;
+          _uploadStatus = '';
         });
       }
     }
@@ -525,6 +637,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       child: _buildImagePreview(),
                     ),
 
+                  // Progress Bar for Upload
+                  if (_isLoading)
+                    _buildUploadProgress(),
+
                   const SizedBox(height: 80), // Bottom padding
                 ],
               ),
@@ -565,37 +681,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
           const SizedBox(width: 12),
 
-          // Username and Location
+          // Username only (removed location section)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _currentUser != null
-                      ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
-                      : 'Loading...',
+                      ? (_currentUser!.firstName.isNotEmpty && _currentUser!.lastName.isNotEmpty
+                          ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
+                          : _currentUser!.firstName.isNotEmpty 
+                              ? _currentUser!.firstName
+                              : 'User')
+                      : 'Guest User', // Better fallback when user data isn't available
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Add location',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -726,12 +828,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildMediaSection() {
     return Column(
       children: [
+        // First row - Photos
         Row(
           children: [
             Expanded(
               child: _buildMediaButton(
                 icon: Icons.photo_library_outlined,
-                label: 'Photo/Video',
+                label: 'Photos',
                 color: Colors.blue,
                 onTap: _pickImages,
               ),
@@ -747,22 +850,47 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        // Second row - Videos
+        Row(
+          children: [
+            Expanded(
+              child: _buildMediaButton(
+                icon: Icons.videocam_outlined,
+                label: 'Video Gallery',
+                color: Colors.purple,
+                onTap: _pickVideo,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildMediaButton(
+                icon: Icons.video_call_outlined,
+                label: 'Record Video',
+                color: Colors.orange,
+                onTap: _recordVideo,
+              ),
+            ),
+          ],
+        ),
+        // Image selection status
         if (_selectedImages.isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Colors.blue[50],
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
             ),
             child: Row(
               children: [
-                Icon(Icons.photo_library, color: Colors.grey[600], size: 16),
+                Icon(Icons.photo_library, color: Colors.blue[600], size: 16),
                 const SizedBox(width: 8),
                 Text(
                   '${_selectedImages.length} photo${_selectedImages.length == 1 ? '' : 's'} selected',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Colors.blue[600],
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -773,7 +901,44 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   style: TextStyle(
                     color: _selectedImages.length >= 10
                         ? Colors.red
-                        : Colors.grey[600],
+                        : Colors.blue[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        // Video selection status
+        if (_selectedVideos.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.purple[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.purple[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.videocam, color: Colors.purple[600], size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  '${_selectedVideos.length} video${_selectedVideos.length == 1 ? '' : 's'} selected',
+                  style: TextStyle(
+                    color: Colors.purple[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${_selectedVideos.length}/5',
+                  style: TextStyle(
+                    color: _selectedVideos.length >= 5
+                        ? Colors.red
+                        : Colors.purple[600],
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -899,6 +1064,61 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildUploadProgress() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _uploadStatus,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: _uploadProgress,
+            backgroundColor: Colors.blue[100],
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            minHeight: 6,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${(_uploadProgress * 100).toInt()}% complete',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.blue[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

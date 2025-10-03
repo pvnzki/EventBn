@@ -82,8 +82,12 @@ class AuthService {
   Future<User?> getCurrentUser() async {
     try {
       final token = await getStoredToken();
-      if (token == null) return null;
+      if (token == null) {
+        print('❌ [AUTH_SERVICE] No token found');
+        return null;
+      }
 
+      print('🔍 [AUTH_SERVICE] Token found, calling /me endpoint');
       final response = await http.get(
         Uri.parse('$baseUrl${Constants.authEndpoint}/me'),
         headers: {
@@ -92,12 +96,20 @@ class AuthService {
         },
       );
 
+      print('🔍 [AUTH_SERVICE] Response status: ${response.statusCode}');
+      print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return User.fromJson(data['user']);
+        print('🔍 [AUTH_SERVICE] Parsed data: $data');
+        final user = User.fromJson(data['user']);
+        print('🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
+        return user;
       }
+      print('❌ [AUTH_SERVICE] Failed to get user: ${response.statusCode}');
       return null;
     } catch (e) {
+      print('❌ [AUTH_SERVICE] Error getting current user: $e');
       return null;
     }
   }

@@ -159,8 +159,36 @@ class ExplorePostService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         final List<dynamic> postsJson = data['posts'] ?? [];
+        
+        // Debug: Log video-related data from backend
+        print('🎬 [DEBUG] Backend response contains ${postsJson.length} posts');
+        for (int i = 0; i < postsJson.length && i < 5; i++) {
+          final post = postsJson[i];
+          print('🎬 [DEBUG] Post ${i + 1} (ID: ${post['id']}) video data:');
+          print('  - videoUrls: ${post['videoUrls']}');
+          print('  - videoThumbnails: ${post['videoThumbnails']}');
+          print('  - videos: ${post['videos']}');
+          print('  - imageUrls: ${post['imageUrls']}');
+          print('  - all keys: ${post.keys.toList()}');
+        }
+        
         final newPosts =
             postsJson.map((json) => ExplorePost.fromJson(json)).toList();
+            
+        // Debug: Log parsed video data
+        print('🎬 [DEBUG] Parsed posts video data:');
+        for (int i = 0; i < newPosts.length && i < 5; i++) {
+          final post = newPosts[i];
+          print('🎬 [DEBUG] Parsed post ${i + 1} (ID: ${post.id}):');
+          print('  - videoUrls: ${post.videoUrls}');
+          print('  - videoThumbnails: ${post.videoThumbnails}');
+          if (post.videoUrls.isNotEmpty) {
+            print('  🎥 This post has ${post.videoUrls.length} videos');
+          }
+          if (post.imageUrls.isNotEmpty) {
+            print('  🖼️ This post has ${post.imageUrls.length} images');
+          }
+        }
 
         if (refresh) {
           _posts.clear();
@@ -308,13 +336,17 @@ class ExplorePostService {
 
   // Add comment to a post
   Future<Map<String, dynamic>?> addComment(
-      String postId, String content) async {
+      String postId, String content, {int? parentCommentId}) async {
     try {
       print('💬 [DEBUG] Adding comment to post: $postId');
       print('💬 [DEBUG] Comment content: $content');
+      print('💬 [DEBUG] Parent comment ID: $parentCommentId');
       final headers = await _getHeaders();
       final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments');
-      final body = jsonEncode({'content': content});
+      final body = jsonEncode({
+        'content': content,
+        if (parentCommentId != null) 'parent_comment_id': parentCommentId,
+      });
       print('💬 [DEBUG] Comment URL: $uri');
       print('💬 [DEBUG] Comment headers: $headers');
       print('💬 [DEBUG] Comment body: $body');
@@ -505,6 +537,7 @@ class ExplorePostService {
   Future<bool> createPost({
     required String content,
     List<String>? imagePaths,
+    List<String>? videoPaths, // Added video support
     String? eventId,
   }) async {
     try {
@@ -517,6 +550,7 @@ class ExplorePostService {
       print('🚀 Creating post with URL: $_postServiceUrl/api/posts');
       print('📝 Content: $content');
       print('🖼️ Images: ${imagePaths?.length ?? 0}');
+      print('🎥 Videos: ${videoPaths?.length ?? 0}'); // Added video logging
       print('🎫 Event ID: $eventId');
 
       var request = http.MultipartRequest(
@@ -575,6 +609,55 @@ class ExplorePostService {
             );
             request.files.add(multipartFile);
             print('📎 Added image ${i + 1}: ${file.path} ($contentType)');
+          }
+        }
+      }
+
+      // Add video files if provided
+      if (videoPaths != null && videoPaths.isNotEmpty) {
+        for (int i = 0; i < videoPaths.length; i++) {
+          final file = File(videoPaths[i]);
+          if (await file.exists()) {
+            // Determine the file extension and content type for videos
+            final extension = file.path.split('.').last.toLowerCase();
+            String contentType = 'video/mp4'; // Default
+            String filename = 'video_$i.mp4'; // Default
+
+            switch (extension) {
+              case 'mp4':
+                contentType = 'video/mp4';
+                filename = 'video_$i.mp4';
+                break;
+              case 'mov':
+                contentType = 'video/quicktime';
+                filename = 'video_$i.mov';
+                break;
+              case 'avi':
+                contentType = 'video/x-msvideo';
+                filename = 'video_$i.avi';
+                break;
+              case 'webm':
+                contentType = 'video/webm';
+                filename = 'video_$i.webm';
+                break;
+              case 'mkv':
+                contentType = 'video/x-matroska';
+                filename = 'video_$i.mkv';
+                break;
+              default:
+                // Default to mp4
+                contentType = 'video/mp4';
+                filename = 'video_$i.mp4';
+            }
+
+            final multipartFile = await http.MultipartFile.fromPath(
+              'videos', // Backend expects 'videos' field name
+              file.path,
+              filename: filename,
+              contentType: MediaType.parse(contentType),
+            );
+            request.files.add(multipartFile);
+            print('📎 Added video ${i + 1}: ${file.path} ($contentType)');
           }
         }
       }

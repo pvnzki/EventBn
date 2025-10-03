@@ -13,9 +13,11 @@ const {
 const { getUserData, getUsersBatch } = require("../services/user-data-service");
 const {
   getUploadMiddleware,
-  uploadMultipleImages,
+  getFieldsUploadMiddleware,  // Add the new method
+  uploadMultipleMedia,  // Updated to use the new media upload method
   uploadImage,
   getSingleUploadMiddleware,
+  generateVideoThumbnail, // Add video thumbnail generation
 } = require("../services/image-upload-service");
 
 const router = express.Router();
@@ -148,9 +150,15 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
     );
   }
 
-  // Handle image URLs from image_url field
+  // Handle media URLs from the new images and videos columns
   let imageUrls = [];
-  if (post.image_url) {
+  let videoUrls = [];
+  
+  // Use new images column if available
+  if (post.images && Array.isArray(post.images)) {
+    imageUrls = post.images;
+  } else if (post.image_url) {
+    // Fallback to legacy image_url field for backward compatibility
     try {
       // Try to parse as JSON array (multiple images)
       if (post.image_url.startsWith("[")) {
@@ -164,6 +172,39 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
       imageUrls = [post.image_url];
     }
   }
+  
+  // Handle videos from the new videos column
+  if (post.videos && Array.isArray(post.videos)) {
+    videoUrls = post.videos;
+  }
+
+  // Generate video thumbnails for better display performance
+  const videoThumbnails = videoUrls.map(videoUrl => {
+    try {
+      console.log('🎬 [TRANSFORM] Processing video URL for thumbnail:', videoUrl);
+      
+      // More robust publicId extraction for Cloudinary URLs
+      // Handle URLs like: https://res.cloudinary.com/cloudname/video/upload/v123456/folder/filename.mp4
+      const cloudinaryUrlRegex = /cloudinary\.com\/[^\/]+\/video\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/;
+      const match = videoUrl.match(cloudinaryUrlRegex);
+      
+      if (match && match[1]) {
+        const publicId = match[1];
+        console.log('✅ [TRANSFORM] Extracted publicId for thumbnail:', publicId);
+        const thumbnailUrl = generateVideoThumbnail(publicId, 300, 200);
+        console.log('🖼️ [TRANSFORM] Generated thumbnail URL:', thumbnailUrl);
+        return thumbnailUrl;
+      } else {
+        console.warn('⚠️ [TRANSFORM] Could not extract publicId from video URL:', videoUrl);
+        return null;
+      }
+    } catch (error) {
+      console.warn('⚠️ [TRANSFORM] Failed to generate video thumbnail:', error.message);
+      return null;
+    }
+  }).filter(Boolean); // Remove null entries
+  
+  console.log(`🎬 [TRANSFORM] Generated ${videoThumbnails.length} video thumbnails from ${videoUrls.length} videos`);
 
   // Fetch event data if event_id exists
   let eventData = null;
@@ -196,6 +237,8 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
     userAvatarUrl: userData?.profilePicture || "",
     content: post.caption || "",
     imageUrls: imageUrls,
+    videoUrls: videoUrls, // Add video URLs for Flutter
+    videoThumbnails: videoThumbnails, // Add video thumbnails for better UX
     eventId: post.event_id || null,
     relatedEventName: eventData?.title || null,
     relatedEventImage:
@@ -254,6 +297,8 @@ async function fetchExplorePosts({ where, limit, skip }) {
         event_id: true,
         caption: true,
         image_url: true,
+        images: true,    // Add new images column
+        videos: true,    // Add new videos column
         engagement_count: true,
         comment_count: true,
         allow_comments: true,
@@ -665,11 +710,14 @@ router.get("/posts/:postId", verifyJWT, async (req, res) => {
   }
 });
 
-// POST /api/posts - Create new post with optional image upload
+// POST /api/posts - Create new post with optional media upload (images and videos)
 router.post(
   "/posts",
   verifyJWT,
-  getUploadMiddleware("images", 5),
+  getFieldsUploadMiddleware([
+    { name: 'images', maxCount: 5 },
+    { name: 'videos', maxCount: 5 }
+  ]),
   async (req, res) => {
     try {
       const reqId =
@@ -677,7 +725,7 @@ router.post(
       console.log(
         `📝 [POST CREATION][${reqId}] Start ip=${req.ip} contentType='${
           req.headers["content-type"]
-        }' files=${req.files?.length || 0}`
+        }' imageFiles=${req.files?.images?.length || 0} videoFiles=${req.files?.videos?.length || 0}`
       );
       console.log(`📝 [POST CREATION][${reqId}] User payload:`, {
         user: req.user,
@@ -693,39 +741,51 @@ router.post(
       console.log("Extracted userId:", userId);
       console.log("Content:", content);
 
-      if (!content && !req.files?.length) {
+      const hasFiles = (req.files?.images?.length > 0) || (req.files?.videos?.length > 0);
+      
+      if (!content && !hasFiles) {
         console.log(
-          "❌ [POST CREATION] Validation failed: No content or images"
+          "❌ [POST CREATION] Validation failed: No content or media files"
         );
         return res.status(400).json({
           success: false,
-          error: "Post must have content or images",
+          error: "Post must have content or media files",
         });
       }
 
-      let mediaUrl = null;
-      let uploadedImageCount = 0;
+      let images = [];
+      let videos = [];
+      let uploadedFileCount = 0;
 
-      // Upload images to Cloudinary if provided
-      if (req.files && req.files.length > 0) {
-        console.log(`Uploading ${req.files.length} images to Cloudinary...`);
+      // Combine all files from both images and videos fields
+      const allFiles = [];
+      if (req.files?.images) allFiles.push(...req.files.images);
+      if (req.files?.videos) allFiles.push(...req.files.videos);
 
-        const uploadResult = await uploadMultipleImages(req.files, {
+      // Upload media files to Cloudinary if provided
+      if (allFiles.length > 0) {
+        console.log(`Uploading ${allFiles.length} media files to Cloudinary...`);
+
+        const uploadResult = await uploadMultipleMedia(allFiles, {
           folder: "eventbn/posts",
-          transformation: [{ quality: "auto:good" }, { fetch_format: "auto" }],
+          // Remove heavy transformations to speed up upload
+          // Apply minimal processing during upload for faster response
+          quality: "auto:eco", // Use eco instead of good for faster upload
+          // Remove fetch_format auto to avoid conversion during upload
         });
 
         if (!uploadResult.success) {
           return res.status(500).json({
             success: false,
-            error: "Failed to upload images",
+            error: "Failed to upload media files",
             details: uploadResult.error,
           });
         }
 
-        mediaUrl = uploadResult.mediaUrl; // This is already formatted for single/multiple images
-        uploadedImageCount = uploadResult.totalUploaded;
-        console.log(`Successfully uploaded ${uploadedImageCount} images`);
+        images = uploadResult.images || [];
+        videos = uploadResult.videos || [];
+        uploadedFileCount = uploadResult.totalUploaded;
+        console.log(`Successfully uploaded ${images.length} images and ${videos.length} videos`);
       }
 
       // Fetch user data via RabbitMQ (optional - don't fail if this fails)
@@ -752,7 +812,9 @@ router.post(
       const post = await prisma.post.create({
         data: {
           caption: content || "",
-          image_url: mediaUrl, // Store single image URL
+          image_url: images.length > 0 ? images[0] : null, // For backward compatibility
+          images: images,   // New images array column
+          videos: videos,   // New videos array column
           user_id: parseInt(userId),
           event_id: eventId ? parseInt(eventId) : null,
         },
@@ -766,8 +828,10 @@ router.post(
           postId: post.post_id,
           authorId: post.user_id,
           eventId: post.event_id,
-          hasImages: uploadedImageCount > 0,
-          imageCount: uploadedImageCount,
+          hasImages: images.length > 0,
+          hasVideos: videos.length > 0,
+          imageCount: images.length,
+          videoCount: videos.length,
           timestamp: new Date().toISOString(),
         });
       } catch (rabbitError) {
@@ -783,7 +847,9 @@ router.post(
         success: true,
         message: "Post created successfully",
         post: transformedPost,
-        uploadedImages: uploadedImageCount,
+        uploadedImages: images.length,
+        uploadedVideos: videos.length,
+        totalMediaFiles: uploadedFileCount,
       });
     } catch (error) {
       const reqId = req._reqId || "no-id";
@@ -1043,8 +1109,7 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
       });
     }
 
-    // Optimized: Only get top-level comments without replies initially
-    // Replies can be loaded on-demand when user expands a comment
+    // Fetch top-level comments with their replies
     const comments = await prisma.comment.findMany({
       where: {
         post_id: numericPostId,
@@ -1066,6 +1131,24 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
             user_id: true,
           },
         },
+        replies: {
+          select: {
+            comment_id: true,
+            post_id: true,
+            user_id: true,
+            comment_text: true,
+            created_at: true,
+            updated_at: true,
+            like_count: true,
+            parent_comment_id: true,
+            likes: {
+              select: {
+                user_id: true,
+              },
+            },
+          },
+          orderBy: { created_at: "asc" },
+        },
       },
       orderBy: { created_at: "desc" },
       skip: offset,
@@ -1076,14 +1159,17 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
       `📖 [GET_COMMENTS] Found ${comments.length} comments for post ${postId}`
     );
 
-    // Optimized: Only fetch user data for top-level comments
-    const userIds = [...new Set(comments.map((c) => c.user_id))];
+    // Get all user IDs (including from replies)
+    const userIds = [...new Set([
+      ...comments.map((c) => c.user_id),
+      ...comments.flatMap(c => c.replies?.map(r => r.user_id) || [])
+    ])];
 
     let usersData = [];
     if (userIds.length > 0) {
       try {
         console.log(
-          `📖 [GET_COMMENTS] Fetching user data for ${userIds.length} users`
+          `📖 [GET_COMMENTS] Fetching user data for ${userIds.length} users (including reply authors)`
         );
         const userResponse = await getUsersBatch(userIds);
         usersData = userResponse?.users || [];
@@ -1099,7 +1185,7 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
       }
     }
 
-    // Optimized: Simplified comment formatting without replies
+    // Format comments with replies and user data
     const commentsWithUsers = comments.map((comment) => {
       const userData = usersData.find((u) => u.id == comment.user_id) || {
         id: comment.user_id,
@@ -1113,12 +1199,43 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
           ? comment.likes.some((like) => like.user_id === requestingUserId)
           : false;
 
+      // Format replies with user data
+      const formattedReplies = comment.replies?.map(reply => {
+        const replyUserData = usersData.find((u) => u.id == reply.user_id) || {
+          id: reply.user_id,
+          full_name: `User ${reply.user_id}`,
+          avatar_url: null,
+        };
+
+        const isReplyLikedByUser =
+          requestingUserId && reply.likes
+            ? reply.likes.some((like) => like.user_id === requestingUserId)
+            : false;
+
+        return {
+          comment_id: reply.comment_id,
+          post_id: reply.post_id,
+          user_id: reply.user_id,
+          comment_text: reply.comment_text,
+          created_at: reply.created_at,
+          updated_at: reply.updated_at,
+          like_count: reply.like_count || 0,
+          is_liked: isReplyLikedByUser,
+          parent_comment_id: reply.parent_comment_id,
+          user_display_name:
+            replyUserData.full_name || replyUserData.name || `User ${reply.user_id}`,
+          user_name:
+            replyUserData.full_name || replyUserData.name || `User ${reply.user_id}`,
+          user: replyUserData,
+        };
+      }) || [];
+
       console.log(
         `💖 [COMMENT_LIKE] Comment ${
           comment.comment_id
         }: userId=${requestingUserId}, hasLikes=${
           comment.likes?.length || 0
-        }, isLiked=${isLikedByUser}`
+        }, isLiked=${isLikedByUser}, replies=${formattedReplies.length}`
       );
 
       return {
@@ -1136,7 +1253,7 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
           userData.full_name || userData.name || `User ${comment.user_id}`,
         user: userData,
         replies_count: comment._count?.replies || 0,
-        // Replies removed for initial load - can be loaded on-demand
+        replies: formattedReplies,
       };
     });
 

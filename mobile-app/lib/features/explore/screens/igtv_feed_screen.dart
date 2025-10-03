@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
 import '../widgets/smart_comments_bottom_sheet.dart';
+import '../widgets/feed_video_player.dart'; // Add video player import
 import '../../events/screens/event_details_screen.dart';
 
 class IGTVFeedScreen extends StatefulWidget {
@@ -199,6 +200,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   void _onPageChanged(int index) {
+    print('🎬 [IGTV] Page changed to index: $index (post: ${_posts.isNotEmpty && index < _posts.length ? _posts[index].id : 'none'})');
+    
     setState(() {
       _currentIndex = index;
     });
@@ -587,6 +590,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
         children: [
           // Main PageView for posts with swipe gesture
           GestureDetector(
+            behavior: HitTestBehavior.deferToChild, // Allow child widgets to handle taps
             onPanStart: (details) {
               _isSwipeActive = true;
               _swipeOffset = 0.0;
@@ -720,55 +724,82 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image/video
-          if (post.imageUrls.isNotEmpty)
-            Image.network(
-              post.imageUrls.first,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: Colors.grey[900],
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey[900],
-                child: const Center(
-                  child:
-                      Icon(Icons.broken_image, color: Colors.white, size: 64),
-                ),
-              ),
-            )
-          else
-            Container(
-              color: Colors.grey[900],
-              child: const Center(
-                child: Icon(Icons.image, color: Colors.white, size: 64),
-              ),
-            ),
+          // Background video/image with autoplay support
+          _buildMediaContent(post),
 
-          // Gradient overlays for better text visibility
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
+          // Gradient overlays for better text visibility (ignoring pointer events)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMediaContent(ExplorePost post) {
+    // Prioritize videos with autoplay, fallback to images
+    if (post.videoUrls.isNotEmpty) {
+      print('🎬 [IGTV] Building autoplay video for post ${post.id}: ${post.videoUrls.first}');
+      return FeedVideoPlayer(
+        videoUrl: post.videoUrls.first.replaceFirst('http://', 'https://'), // Fix HTTP to HTTPS
+        autoPlay: true, // Enable autoplay for IGTV feed
+        showControls: true, // Allow users to pause/play if needed
+        aspectRatio: null, // Let video maintain its aspect ratio
+      );
+    } else if (post.imageUrls.isNotEmpty) {
+      print('🖼️ [IGTV] Building image for post ${post.id}: ${post.imageUrls.first}');
+      return Image.network(
+        post.imageUrls.first,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey[900],
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.grey[900],
+          child: const Center(
+            child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+          ),
+        ),
+      );
+    } else {
+      // No media content
+      return Container(
+        color: Colors.grey[900],
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.image, color: Colors.white, size: 64),
+              SizedBox(height: 16),
+              Text(
+                'No media content',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildActionButtons() {
@@ -908,21 +939,62 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
         const SizedBox(height: 24),
 
-        // Bookmark button
-        GestureDetector(
-          onTap: () {
-            // Handle bookmark
-          },
-          child: const Column(
-            children: [
-              Icon(
-                Icons.bookmark_border,
-                color: Colors.white,
-                size: 32,
+        // Go to Event / Bookmark button
+        currentPost.relatedEventId != null
+            ? GestureDetector(
+                onTap: () {
+                  print('🎫 Navigating to event: ${currentPost.relatedEventId}');
+                  context.push('/events/${currentPost.relatedEventId}');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Event',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : GestureDetector(
+                onTap: () {
+                  // Handle bookmark
+                  print('📌 Bookmark toggled for post: ${currentPost.id}');
+                },
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.bookmark_border,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -960,25 +1032,31 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentPost.userDisplayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              child: GestureDetector(
+                onTap: () {
+                  print('👤 Navigating to user profile: ${currentPost.userId}');
+                  context.push('/user/${currentPost.userId}');
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentPost.userDisplayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '2 hours ago', // In real app, format the actual timestamp
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
+                    Text(
+                      '2 hours ago', // In real app, format the actual timestamp
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             // Follow button

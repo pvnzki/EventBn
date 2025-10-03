@@ -345,14 +345,19 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     final posts = _postService.posts.toList();
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
+        // More aggressive preloading - load when 800px from bottom
         if (scrollInfo is ScrollEndNotification && 
-            scrollInfo.metrics.extentAfter < 500) {
+            scrollInfo.metrics.extentAfter < 800 && 
+            _postService.hasMoreData && 
+            !_postService.isLoading) {
           _loadMorePosts();
         }
         return false;
       },
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
+        // Add scroll caching for better performance
+        cacheExtent: 1000,
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
@@ -360,7 +365,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   if (index < posts.length) {
-                    return _buildInstagramTile(posts[index]);
+                    return _buildOptimizedInstagramTile(posts[index]);
                   } else if (_postService.isLoading && index < posts.length + 6) {
                     return _buildLoadingTile();
                   }
@@ -376,12 +381,60 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               ),
             ),
           ),
+          // Show loading indicator at bottom when loading more
+          if (_postService.isLoading && posts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          // Show "no more posts" indicator when reached end
+          if (!_postService.hasMoreData && posts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    '🎉 You\'ve seen all posts!',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildInstagramTile(ExplorePost post) {
+  Widget _buildOptimizedInstagramTile(ExplorePost post) {
+    // Debug video content
+    if (post.videoUrls.isNotEmpty) {
+      print('🎬 [Tile] Post ${post.id} has videos:');
+      print('  - videoUrls: ${post.videoUrls}');
+      print('  - videoThumbnails: ${post.videoThumbnails}');
+      print('  - imageUrls: ${post.imageUrls}');
+      
+      // Check and fix HTTP URLs
+      if (post.videoThumbnails.isNotEmpty) {
+        final originalUrl = post.videoThumbnails.first;
+        final fixedUrl = originalUrl.replaceFirst('http://', 'https://');
+        if (originalUrl != fixedUrl) {
+          print('🔧 [Tile] Fixed HTTP to HTTPS: $originalUrl -> $fixedUrl');
+        }
+      }
+    } else if (post.imageUrls.isEmpty) {
+      print('⚠️ [Tile] Post ${post.id} has no media:');
+      print('  - videoUrls: ${post.videoUrls}');
+      print('  - imageUrls: ${post.imageUrls}');
+    }
+    
     return GestureDetector(
       onTap: () {
         print('🔍 Explore: Tapping post ${post.id}');
@@ -394,34 +447,137 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Main image
-            post.imageUrls.isNotEmpty
+            // Optimized image loading with better caching - prioritize video thumbnails for video posts
+            (post.videoUrls.isNotEmpty && post.videoThumbnails.isNotEmpty)
                 ? Image.network(
-                    post.imageUrls.first,
+                    // Fix HTTP to HTTPS for Cloudinary URLs
+                    post.videoThumbnails.first.replaceFirst('http://', 'https://'),
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      print('❌ Video thumbnail failed to load: ${post.videoThumbnails.first}');
+                      print('❌ Error details: $error');
+                      print('❌ Stack trace: $stackTrace');
+                      
+                      // Check if URL is HTTP vs HTTPS
+                      if (post.videoThumbnails.first.startsWith('http://')) {
+                        print('⚠️ POTENTIAL ISSUE: Thumbnail URL uses HTTP instead of HTTPS');
+                      }
+                      
+                      // For video posts, show video thumbnail placeholder instead of trying images
+                      return Container(
+                        color: Colors.black87,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white,
+                                size: 50,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'VIDEO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : post.imageUrls.isNotEmpty
+                ? Image.network(
+                    post.imageUrls.first,
+                    fit: BoxFit.cover,
+                    // Add better caching and loading
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
                         ),
                       );
                     },
                     errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      color: Colors.grey[400],
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white,
+                        size: 30,
                       ),
                     ),
                   )
                 : Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(Icons.image, color: Colors.grey),
+                    color: Colors.grey[900],
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        const Center(
+                          child: Icon(
+                            Icons.play_circle_filled,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.7),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'VIDEO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-            
             // Overlay for video posts or multiple images
             if (post.imageUrls.length > 1)
               Positioned(
@@ -438,6 +594,18 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                     color: Colors.white,
                     size: 14,
                   ),
+                ),
+              ),
+            
+            // Video indicator for video posts
+            if (post.videoUrls.isNotEmpty)
+              const Positioned(
+                top: 8,
+                left: 8,
+                child: Icon(
+                  Icons.play_circle_filled,
+                  color: Colors.white,
+                  size: 20,
                 ),
               ),
             

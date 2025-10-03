@@ -10,40 +10,77 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-class ImageUploadService {
+class MediaUploadService {
   constructor() {
     this.upload = multer({
       storage: multer.memoryStorage(),
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
+        fileSize: 100 * 1024 * 1024, // Increased to 100MB for larger videos
       },
       fileFilter: (req, file, cb) => {
         console.log("📎 File upload - MIME type:", file.mimetype);
         console.log("📎 File upload - Original name:", file.originalname);
         console.log("📎 File upload - Field name:", file.fieldname);
 
-        if (file.mimetype.startsWith("image/")) {
-          console.log("✅ File accepted as image");
-          cb(null, true);
+        const isImage = file.mimetype.startsWith("image/");
+        const isVideo = file.mimetype.startsWith("video/");
+        
+        if (isImage || isVideo) {
+          // Check file size limits based on type
+          if (isVideo && file.size > 100 * 1024 * 1024) {
+            console.log("❌ Video file too large:", file.size);
+            cb(new Error("Video files must be under 100MB"), false);
+          } else if (isImage && file.size > 10 * 1024 * 1024) { // Increased image limit too
+            console.log("❌ Image file too large:", file.size);
+            cb(new Error("Image files must be under 10MB"), false);
+          } else {
+            console.log(`✅ File accepted as ${isImage ? 'image' : 'video'}`);
+            cb(null, true);
+          }
         } else {
-          console.log("❌ File rejected - not an image:", file.mimetype);
-          cb(new Error("Only image files are allowed"), false);
+          console.log("❌ File rejected - not an image or video:", file.mimetype);
+          cb(new Error("Only image and video files are allowed"), false);
         }
       },
     });
   }
 
-  // Upload single image to Cloudinary
-  async uploadImage(buffer, options = {}) {
+  // Upload single media file (image or video) to Cloudinary
+  async uploadMedia(buffer, mimetype, options = {}) {
     try {
+      const isVideo = mimetype.startsWith("video/");
+      const resourceType = isVideo ? "video" : "image";
+      
       const result = await new Promise((resolve, reject) => {
         const uploadOptions = {
-          resource_type: "image",
-          folder: "eventbn/posts", // Organize images in folders
-          quality: "auto:good", // Optimize image quality
-          fetch_format: "auto", // Auto-select best format
+          resource_type: resourceType,
+          folder: `eventbn/posts/${resourceType}s`, // Organize by type
+          quality: "auto:good",
+          fetch_format: "auto",
           ...options,
         };
+
+        // For videos, optimize upload settings
+        if (isVideo) {
+          // Only apply minimal transformations to speed up upload
+          uploadOptions.resource_type = "video";
+          // Remove format conversion for faster upload - let Cloudinary handle it naturally
+          // uploadOptions.format = "mp4"; // This causes slow conversion
+          // uploadOptions.video_codec = "h264"; // This causes slow conversion
+          
+          // Instead, use eager transformations that happen asynchronously after upload
+          uploadOptions.eager = [
+            { 
+              format: "mp4", 
+              video_codec: "h264",
+              quality: "auto:good",
+              width: 1280, // Limit size for web playback
+              height: 720,
+              crop: "limit" // Don't upscale, only downscale if needed
+            }
+          ];
+          uploadOptions.eager_async = true; // Process transformations in background
+        }
 
         const uploadStream = cloudinary.uploader.upload_stream(
           uploadOptions,
@@ -69,21 +106,23 @@ class ImageUploadService {
         height: result.height,
         format: result.format,
         bytes: result.bytes,
+        duration: result.duration, // For videos
+        resourceType: result.resource_type,
       };
     } catch (error) {
-      console.error("Error uploading image to Cloudinary:", error);
+      console.error(`Error uploading ${mimetype.startsWith("video/") ? "video" : "image"} to Cloudinary:`, error);
       return {
         success: false,
-        error: error.message || "Failed to upload image",
+        error: error.message || "Failed to upload media",
       };
     }
   }
 
-  // Upload multiple images
-  async uploadMultipleImages(files, options = {}) {
+  // Upload multiple media files (images and videos)
+  async uploadMultipleMedia(files, options = {}) {
     try {
       const uploadPromises = files.map((file) =>
-        this.uploadImage(file.buffer, {
+        this.uploadMedia(file.buffer, file.mimetype, {
           ...options,
           public_id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         })
@@ -93,10 +132,20 @@ class ImageUploadService {
 
       const successful = [];
       const failed = [];
+      const images = [];
+      const videos = [];
 
       results.forEach((result, index) => {
         if (result.status === "fulfilled" && result.value.success) {
-          successful.push(result.value);
+          const mediaResult = result.value;
+          successful.push(mediaResult);
+          
+          // Separate images and videos
+          if (mediaResult.resourceType === "video") {
+            videos.push(mediaResult.url);
+          } else {
+            images.push(mediaResult.url);
+          }
         } else {
           failed.push({
             index,
@@ -105,37 +154,25 @@ class ImageUploadService {
         }
       });
 
-      // Format mediaUrl for database storage
-      let mediaUrl = null;
-      if (successful.length > 0) {
-        if (successful.length === 1) {
-          // Single image: store as simple string
-          mediaUrl = successful[0].url;
-        } else {
-          // Multiple images: store as JSON array
-          mediaUrl = JSON.stringify(successful.map((img) => img.url));
-        }
-      }
-
       return {
         success: failed.length === 0,
-        mediaUrl, // This will be stored in the mediaUrl field
         successful,
         failed,
-        urls: successful.map((img) => img.url),
+        images, // Array of image URLs for database
+        videos, // Array of video URLs for database
         totalUploaded: successful.length,
         totalFailed: failed.length,
       };
     } catch (error) {
-      console.error("Error uploading multiple images:", error);
+      console.error("Error uploading multiple media files:", error);
       return {
         success: false,
-        error: error.message || "Failed to upload images",
+        error: error.message || "Failed to upload media files",
       };
     }
   }
 
-  // Delete image from Cloudinary
+  // Delete media from Cloudinary
   async deleteImage(publicId) {
     try {
       const result = await cloudinary.uploader.destroy(publicId);
@@ -144,12 +181,31 @@ class ImageUploadService {
         result: result.result,
       };
     } catch (error) {
-      console.error("Error deleting image from Cloudinary:", error);
+      console.error("Error deleting media from Cloudinary:", error);
       return {
         success: false,
-        error: error.message || "Failed to delete image",
+        error: error.message || "Failed to delete media",
       };
     }
+  }
+
+  // Generate thumbnail URL for videos
+  generateVideoThumbnail(publicId, width = 300, height = 300) {
+    const thumbnailUrl = cloudinary.url(publicId, {
+      resource_type: "video",
+      format: "jpg", // Extract frame as JPEG
+      width,
+      height,
+      crop: "fill",
+      gravity: "auto",
+      start_offset: "1", // Take thumbnail at 1 second
+      quality: "auto:good",
+      secure: true, // Force HTTPS URLs
+    });
+    
+    console.log(`🔍 [THUMBNAIL] Generated URL for publicId '${publicId}': ${thumbnailUrl}`);
+    
+    return thumbnailUrl;
   }
 
   // Generate optimized image URLs
@@ -173,6 +229,11 @@ class ImageUploadService {
       crop: "thumb",
       gravity: "face",
     });
+  }
+
+  // Get upload middleware for Express with multiple fields
+  getFieldsUploadMiddleware(fields) {
+    return this.upload.fields(fields);
   }
 
   // Get upload middleware for Express
@@ -204,22 +265,38 @@ class ImageUploadService {
 }
 
 // Create singleton instance
-const imageUploadService = new ImageUploadService();
+const mediaUploadService = new MediaUploadService();
 
 module.exports = {
-  imageUploadService,
+  mediaUploadService,
+  // Backward compatibility
+  imageUploadService: mediaUploadService,
+  
+  // New media upload methods
+  uploadMedia: (buffer, mimetype, options) =>
+    mediaUploadService.uploadMedia(buffer, mimetype, options),
+  uploadMultipleMedia: (files, options) =>
+    mediaUploadService.uploadMultipleMedia(files, options),
+    
+  // Legacy image methods for backward compatibility
   uploadImage: (buffer, options) =>
-    imageUploadService.uploadImage(buffer, options),
+    mediaUploadService.uploadMedia(buffer, "image/jpeg", options),
   uploadMultipleImages: (files, options) =>
-    imageUploadService.uploadMultipleImages(files, options),
-  deleteImage: (publicId) => imageUploadService.deleteImage(publicId),
+    mediaUploadService.uploadMultipleMedia(files, options),
+    
+  // Shared methods
+  deleteImage: (publicId) => mediaUploadService.deleteImage(publicId),
   generateOptimizedUrl: (publicId, options) =>
-    imageUploadService.generateOptimizedUrl(publicId, options),
+    mediaUploadService.generateOptimizedUrl(publicId, options),
   generateThumbnail: (publicId, width, height) =>
-    imageUploadService.generateThumbnail(publicId, width, height),
+    mediaUploadService.generateThumbnail(publicId, width, height),
+  generateVideoThumbnail: (publicId, width, height) =>
+    mediaUploadService.generateVideoThumbnail(publicId, width, height),
   getUploadMiddleware: (fieldName, maxCount) =>
-    imageUploadService.getUploadMiddleware(fieldName, maxCount),
+    mediaUploadService.getUploadMiddleware(fieldName, maxCount),
+  getFieldsUploadMiddleware: (fields) =>
+    mediaUploadService.getFieldsUploadMiddleware(fields),
   getSingleUploadMiddleware: (fieldName) =>
-    imageUploadService.getSingleUploadMiddleware(fieldName),
-  getImageUploadHealth: () => imageUploadService.healthCheck(),
+    mediaUploadService.getSingleUploadMiddleware(fieldName),
+  getImageUploadHealth: () => mediaUploadService.healthCheck(),
 };
