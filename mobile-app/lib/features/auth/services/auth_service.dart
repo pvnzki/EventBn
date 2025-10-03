@@ -20,7 +20,10 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true && data['token'] != null && data['data'] != null) {
+      if (response.statusCode == 200 &&
+          data['success'] == true &&
+          data['token'] != null &&
+          data['data'] != null) {
         // Store token
         await _storeToken(data['token']);
         // Store user data
@@ -103,7 +106,8 @@ class AuthService {
         final data = jsonDecode(response.body);
         print('🔍 [AUTH_SERVICE] Parsed data: $data');
         final user = User.fromJson(data['user']);
-        print('🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
+        print(
+            '🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
         return user;
       }
       print('❌ [AUTH_SERVICE] Failed to get user: ${response.statusCode}');

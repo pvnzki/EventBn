@@ -46,11 +46,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       print('🔍 [CreatePost] Loading current user...');
       final user = await _authService.getCurrentUser();
-      print('🔍 [CreatePost] User loaded: ${user?.firstName} ${user?.lastName}');
+      print(
+          '🔍 [CreatePost] User loaded: ${user?.firstName} ${user?.lastName}');
       setState(() {
         _currentUser = user;
       });
-      
+
       if (user == null) {
         print('⚠️ [CreatePost] User is null - backend might not be running');
       }
@@ -478,12 +479,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (_selectedVideos.isNotEmpty) {
         videoPaths = _selectedVideos.map((file) => file.path).toList();
         setState(() {
-          _uploadStatus = 'Processing ${videoPaths!.length} video(s)... This may take a moment.';
+          _uploadStatus =
+              'Processing ${videoPaths!.length} video(s)... This may take a moment.';
           _uploadProgress = 0.4;
         });
       }
 
-      print('🚀 Creating post with ${imagePaths?.length ?? 0} images and ${videoPaths?.length ?? 0} videos');
+      print(
+          '🚀 Creating post with ${imagePaths?.length ?? 0} images and ${videoPaths?.length ?? 0} videos');
 
       setState(() {
         _uploadStatus = 'Uploading to server...';
@@ -638,8 +641,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
 
                   // Progress Bar for Upload
-                  if (_isLoading)
-                    _buildUploadProgress(),
+                  if (_isLoading) _buildUploadProgress(),
 
                   const SizedBox(height: 80), // Bottom padding
                 ],
@@ -688,9 +690,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               children: [
                 Text(
                   _currentUser != null
-                      ? (_currentUser!.firstName.isNotEmpty && _currentUser!.lastName.isNotEmpty
+                      ? (_currentUser!.firstName.isNotEmpty &&
+                              _currentUser!.lastName.isNotEmpty
                           ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
-                          : _currentUser!.firstName.isNotEmpty 
+                          : _currentUser!.firstName.isNotEmpty
                               ? _currentUser!.firstName
                               : 'User')
                       : 'Guest User', // Better fallback when user data isn't available

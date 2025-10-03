@@ -111,7 +111,7 @@ class _CommentsContentState extends State<_CommentsContent> {
   final FocusNode _focusNode = FocusNode();
   List<Map<String, dynamic>> _comments = [];
   bool _isSubmitting = false;
-  
+
   // Reply state
   Map<String, dynamic>? _replyingToComment;
   String _placeholderText = "Write a comment...";
@@ -135,20 +135,23 @@ class _CommentsContentState extends State<_CommentsContent> {
 
   void _updateComments() {
     if (widget.data != null && widget.data['comments'] != null) {
-      final newComments = List<Map<String, dynamic>>.from(widget.data['comments']);
-      
+      final newComments =
+          List<Map<String, dynamic>>.from(widget.data['comments']);
+
       // Debug: Print loaded comments structure
       print('🔍 [UPDATE_COMMENTS] Loading ${newComments.length} comments');
       for (int i = 0; i < newComments.length && i < 2; i++) {
         final comment = newComments[i];
         final replies = comment['replies'] as List<dynamic>? ?? [];
-        print('🔍 [UPDATE_COMMENTS] Comment $i: user_name="${comment['user_name']}", replies=${replies.length}');
+        print(
+            '🔍 [UPDATE_COMMENTS] Comment $i: user_name="${comment['user_name']}", replies=${replies.length}');
         if (replies.isNotEmpty) {
           final firstReply = replies[0] as Map<String, dynamic>;
-          print('🔍 [UPDATE_COMMENTS] First reply: user_name="${firstReply['user_name']}"');
+          print(
+              '🔍 [UPDATE_COMMENTS] First reply: user_name="${firstReply['user_name']}"');
         }
       }
-      
+
       setState(() {
         _comments = newComments;
       });
@@ -171,20 +174,24 @@ class _CommentsContentState extends State<_CommentsContent> {
 
     try {
       final content = _commentController.text.trim();
-      final parentCommentId = _replyingToComment?['comment_id'] ?? _replyingToComment?['id'];
+      final parentCommentId =
+          _replyingToComment?['comment_id'] ?? _replyingToComment?['id'];
 
       // Get current user data from AuthProvider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.user;
-      
+
       // Use current user data with better fallback names that won't be "Anonymous"
       String userName, userDisplayName, username;
       Map<String, dynamic> userObject;
-      
+
       if (currentUser != null && authProvider.isAuthenticated) {
-        userName = currentUser.fullName.isNotEmpty ? currentUser.fullName : '${currentUser.firstName} ${currentUser.lastName}'.trim();
+        userName = currentUser.fullName.isNotEmpty
+            ? currentUser.fullName
+            : '${currentUser.firstName} ${currentUser.lastName}'.trim();
         userDisplayName = userName;
-        username = currentUser.firstName.isNotEmpty ? currentUser.firstName : userName;
+        username =
+            currentUser.firstName.isNotEmpty ? currentUser.firstName : userName;
         userObject = {
           'id': currentUser.id,
           'full_name': userName,
@@ -228,16 +235,17 @@ class _CommentsContentState extends State<_CommentsContent> {
       setState(() {
         if (parentCommentId != null) {
           // Add as reply to existing comment
-          final parentIndex = _comments.indexWhere((c) => 
-            (c['comment_id'] ?? c['id']).toString() == parentCommentId.toString());
-          
+          final parentIndex = _comments.indexWhere((c) =>
+              (c['comment_id'] ?? c['id']).toString() ==
+              parentCommentId.toString());
+
           if (parentIndex != -1) {
             if (_comments[parentIndex]['replies'] == null) {
               _comments[parentIndex]['replies'] = [];
             }
             _comments[parentIndex]['replies'].add(optimisticItem);
-            _comments[parentIndex]['replies_count'] = 
-              (_comments[parentIndex]['replies_count'] ?? 0) + 1;
+            _comments[parentIndex]['replies_count'] =
+                (_comments[parentIndex]['replies_count'] ?? 0) + 1;
           }
         } else {
           // Add as new top-level comment
@@ -254,18 +262,19 @@ class _CommentsContentState extends State<_CommentsContent> {
 
       if (result != null) {
         print('✅ [SMART_COMMENTS] Comment/reply posted successfully');
-        
+
         // Update optimistic comment with real server data
         setState(() {
           if (parentCommentId != null) {
             // Update reply with real data
-            final parentIndex = _comments.indexWhere((c) => 
-              (c['comment_id'] ?? c['id']).toString() == parentCommentId.toString());
-            
-            if (parentIndex != -1 && _comments[parentIndex]['replies'] != null) {
-              final replyIndex = _comments[parentIndex]['replies'].indexWhere(
-                (reply) => reply['is_optimistic'] == true
-              );
+            final parentIndex = _comments.indexWhere((c) =>
+                (c['comment_id'] ?? c['id']).toString() ==
+                parentCommentId.toString());
+
+            if (parentIndex != -1 &&
+                _comments[parentIndex]['replies'] != null) {
+              final replyIndex = _comments[parentIndex]['replies']
+                  .indexWhere((reply) => reply['is_optimistic'] == true);
               if (replyIndex != -1) {
                 // Replace optimistic reply with real data
                 _comments[parentIndex]['replies'][replyIndex] = {
@@ -278,7 +287,8 @@ class _CommentsContentState extends State<_CommentsContent> {
             }
           } else {
             // Update top-level comment with real data
-            final optimisticIndex = _comments.indexWhere((c) => c['is_optimistic'] == true);
+            final optimisticIndex =
+                _comments.indexWhere((c) => c['is_optimistic'] == true);
             if (optimisticIndex != -1) {
               _comments[optimisticIndex] = {
                 ...result,
@@ -288,25 +298,26 @@ class _CommentsContentState extends State<_CommentsContent> {
             }
           }
         });
-        
+
         // Don't clear cache immediately - keep the updated comments in memory
         widget.onCommentAdded?.call();
       } else {
         // Remove optimistic item on failure
         setState(() {
           if (parentCommentId != null) {
-            final parentIndex = _comments.indexWhere((c) => 
-              (c['comment_id'] ?? c['id']).toString() == parentCommentId.toString());
+            final parentIndex = _comments.indexWhere((c) =>
+                (c['comment_id'] ?? c['id']).toString() ==
+                parentCommentId.toString());
             if (parentIndex != -1) {
               _comments[parentIndex]['replies']?.removeLast();
-              _comments[parentIndex]['replies_count'] = 
-                (_comments[parentIndex]['replies_count'] ?? 1) - 1;
+              _comments[parentIndex]['replies_count'] =
+                  (_comments[parentIndex]['replies_count'] ?? 1) - 1;
             }
           } else {
             _comments.removeAt(0);
           }
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('❌ Failed to post. Please try again.'),
@@ -351,28 +362,31 @@ class _CommentsContentState extends State<_CommentsContent> {
   /// Build comment with its replies displayed inline (Facebook style)
   Widget _buildCommentWithReplies(Map<String, dynamic> comment) {
     final replies = comment['replies'] as List<dynamic>? ?? [];
-    
+
     // Debug: Check if this comment has replies and what the structure is
     if (replies.isNotEmpty) {
-      print('🔍 [COMMENTS] Comment ${comment['comment_id']} has ${replies.length} replies');
+      print(
+          '🔍 [COMMENTS] Comment ${comment['comment_id']} has ${replies.length} replies');
       for (int i = 0; i < replies.length; i++) {
         final reply = replies[i] as Map<String, dynamic>;
-        print('🔍 [REPLIES] Reply $i: user_name="${reply['user_name']}", parent_id="${reply['parent_comment_id']}"');
+        print(
+            '🔍 [REPLIES] Reply $i: user_name="${reply['user_name']}", parent_id="${reply['parent_comment_id']}"');
       }
     }
-    
+
     return Column(
       children: [
         // Main comment
         _buildCommentItem(comment, isParent: true),
-        
+
         // Replies displayed inline
         if (replies.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 48.0),
             child: Column(
               children: replies.map<Widget>((reply) {
-                return _buildCommentItem(reply as Map<String, dynamic>, isReply: true);
+                return _buildCommentItem(reply as Map<String, dynamic>,
+                    isReply: true);
               }).toList(),
             ),
           ),
@@ -680,8 +694,9 @@ class _CommentsContentState extends State<_CommentsContent> {
   String _getUserName(Map<String, dynamic> comment) {
     // Debug: Print comment structure for troubleshooting
     final commentId = comment['comment_id'] ?? comment['id'];
-    print('🔍 [USERNAME] Processing comment $commentId: ${comment.keys.toList()}');
-    
+    print(
+        '🔍 [USERNAME] Processing comment $commentId: ${comment.keys.toList()}');
+
     // Backend uses 'user_display_name' or 'user_name'
     final possibleFields = [
       'user_display_name',
@@ -821,12 +836,12 @@ class _CommentsContentState extends State<_CommentsContent> {
   /// Show reply dialog
   void _showReplyDialog(Map<String, dynamic> comment) {
     final userName = _getUserName(comment);
-    
+
     setState(() {
       _replyingToComment = comment;
       _placeholderText = "Reply to $userName...";
     });
-    
+
     // Focus the input field
     FocusScope.of(context).requestFocus(_focusNode);
   }
@@ -874,8 +889,8 @@ class _CommentsContentState extends State<_CommentsContent> {
                     Text(
                       '${replies.length} ${replies.length == 1 ? 'reply' : 'replies'}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                   ],
                 ),
@@ -938,7 +953,8 @@ class _CommentsContentState extends State<_CommentsContent> {
     );
   }
 
-  Widget _buildCommentItem(Map<String, dynamic> comment, {bool isParent = false, bool isReply = false}) {
+  Widget _buildCommentItem(Map<String, dynamic> comment,
+      {bool isParent = false, bool isReply = false}) {
     final isOptimistic = comment['is_optimistic'] == true;
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
@@ -1111,7 +1127,8 @@ class _CommentsContentState extends State<_CommentsContent> {
                                         'Reply',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: theme.textTheme.bodyMedium?.color
+                                          color: theme
+                                              .textTheme.bodyMedium?.color
                                               ?.withOpacity(0.6),
                                           fontWeight: FontWeight.w600,
                                         ),

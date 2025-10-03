@@ -61,7 +61,8 @@ class ExplorePost {
     required this.content,
     required this.imageUrls,
     this.videoUrls = const [], // Added videoUrls with default empty list
-    this.videoThumbnails = const [], // Added videoThumbnails with default empty list
+    this.videoThumbnails =
+        const [], // Added videoThumbnails with default empty list
     required this.postType,
     required this.category,
     required this.createdAt,
@@ -118,7 +119,8 @@ class ExplorePost {
       content: content ?? this.content,
       imageUrls: imageUrls ?? this.imageUrls,
       videoUrls: videoUrls ?? this.videoUrls, // Added videoUrls to copyWith
-      videoThumbnails: videoThumbnails ?? this.videoThumbnails, // Added videoThumbnails to copyWith
+      videoThumbnails: videoThumbnails ??
+          this.videoThumbnails, // Added videoThumbnails to copyWith
       postType: postType ?? this.postType,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
@@ -148,8 +150,10 @@ class ExplorePost {
       isUserVerified: json['isUserVerified'] as bool? ?? false,
       content: json['content'] as String,
       imageUrls: List<String>.from(json['imageUrls'] as List),
-      videoUrls: List<String>.from(json['videoUrls'] as List? ?? []), // Added videoUrls parsing
-      videoThumbnails: List<String>.from(json['videoThumbnails'] as List? ?? []), // Added videoThumbnails parsing
+      videoUrls: List<String>.from(
+          json['videoUrls'] as List? ?? []), // Added videoUrls parsing
+      videoThumbnails: List<String>.from(json['videoThumbnails'] as List? ??
+          []), // Added videoThumbnails parsing
       postType: PostType.values.firstWhere(
         (e) => e.toString() == 'PostType.${json['postType']}',
         orElse: () => PostType.eventInterest,

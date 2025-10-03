@@ -12,7 +12,7 @@ class UserService {
   Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       print('👤 [UserService] Fetching user data for ID: $userId');
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/api/users/$userId'),
         headers: {
@@ -36,7 +36,8 @@ class UserService {
         print('❌ [UserService] User not found');
         return null;
       } else {
-        print('❌ [UserService] Error: ${response.statusCode} - ${response.body}');
+        print(
+            '❌ [UserService] Error: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
@@ -55,15 +56,16 @@ class UserService {
         'page': page.toString(),
         'limit': limit.toString(),
       };
-      
+
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
       }
 
-      final uri = Uri.parse('$baseUrl/api/users').replace(queryParameters: queryParams);
-      
+      final uri =
+          Uri.parse('$baseUrl/api/users').replace(queryParameters: queryParams);
+
       print('👥 [UserService] Fetching users: $uri');
-      
+
       final response = await http.get(
         uri,
         headers: {
@@ -78,7 +80,7 @@ class UserService {
           return usersData.cast<Map<String, dynamic>>();
         }
       }
-      
+
       print('❌ [UserService] Failed to fetch users: ${response.statusCode}');
       return [];
     } catch (e) {

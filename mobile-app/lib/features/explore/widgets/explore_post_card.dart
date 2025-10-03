@@ -177,7 +177,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                   children: [
                     GestureDetector(
                       onTap: () {
-                        print('👤 Navigating to user profile: ${widget.post.userId}');
+                        print(
+                            '👤 Navigating to user profile: ${widget.post.userId}');
                         context.push('/user/${widget.post.userId}');
                       },
                       child: Text(
@@ -239,7 +240,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       children: [
         if (widget.post.content.isNotEmpty) _buildTextContent(),
         if (widget.post.imageUrls.isNotEmpty) _buildImages(),
-        if (widget.post.videoUrls.isNotEmpty) _buildVideos(), // Added video support
+        if (widget.post.videoUrls.isNotEmpty)
+          _buildVideos(), // Added video support
         _buildPostType(),
       ],
     );
@@ -399,7 +401,8 @@ class _ExplorePostCardState extends State<ExplorePostCard>
   Widget _buildVideos() {
     if (widget.post.videoUrls.isEmpty) return const SizedBox.shrink();
 
-    print('🎬 [PostCard] Building videos section. Video count: ${widget.post.videoUrls.length}');
+    print(
+        '🎬 [PostCard] Building videos section. Video count: ${widget.post.videoUrls.length}');
     print('🎬 [PostCard] Video URLs: ${widget.post.videoUrls}');
     print('🎬 [PostCard] Video thumbnails: ${widget.post.videoThumbnails}');
 
@@ -417,7 +420,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       videoUrl: videoUrl,
       autoPlay: false, // Don't autoplay in feed to save bandwidth
       showControls: true, // Show controls so users can play
-      aspectRatio: 16/9, // Set consistent aspect ratio
+      aspectRatio: 16 / 9, // Set consistent aspect ratio
     );
   }
 
@@ -485,7 +488,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
         thumbnailUrl = widget.post.videoThumbnails[videoIndex];
       }
     }
-    
+
     return GestureDetector(
       onTap: () => _openVideoPlayer(videoUrl),
       child: Container(
@@ -1258,11 +1261,12 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6, // Reduced from 8
-                      vertical: 3,   // Reduced from 4
+                      vertical: 3, // Reduced from 4
                     ),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10), // Reduced from 12
+                      borderRadius:
+                          BorderRadius.circular(10), // Reduced from 12
                       border: Border.all(
                         color: colorScheme.primary,
                         width: 1,
@@ -1291,7 +1295,9 @@ class _ExplorePostCardState extends State<ExplorePostCard>
                 )
               : IconButton(
                   icon: Icon(
-                    widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    widget.post.isBookmarked
+                        ? Icons.bookmark
+                        : Icons.bookmark_border,
                     color: widget.post.isBookmarked
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,

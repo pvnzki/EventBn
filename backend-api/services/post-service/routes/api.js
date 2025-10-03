@@ -13,8 +13,8 @@ const {
 const { getUserData, getUsersBatch } = require("../services/user-data-service");
 const {
   getUploadMiddleware,
-  getFieldsUploadMiddleware,  // Add the new method
-  uploadMultipleMedia,  // Updated to use the new media upload method
+  getFieldsUploadMiddleware, // Add the new method
+  uploadMultipleMedia, // Updated to use the new media upload method
   uploadImage,
   getSingleUploadMiddleware,
   generateVideoThumbnail, // Add video thumbnail generation
@@ -153,7 +153,7 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
   // Handle media URLs from the new images and videos columns
   let imageUrls = [];
   let videoUrls = [];
-  
+
   // Use new images column if available
   if (post.images && Array.isArray(post.images)) {
     imageUrls = post.images;
@@ -172,39 +172,56 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
       imageUrls = [post.image_url];
     }
   }
-  
+
   // Handle videos from the new videos column
   if (post.videos && Array.isArray(post.videos)) {
     videoUrls = post.videos;
   }
 
   // Generate video thumbnails for better display performance
-  const videoThumbnails = videoUrls.map(videoUrl => {
-    try {
-      console.log('🎬 [TRANSFORM] Processing video URL for thumbnail:', videoUrl);
-      
-      // More robust publicId extraction for Cloudinary URLs
-      // Handle URLs like: https://res.cloudinary.com/cloudname/video/upload/v123456/folder/filename.mp4
-      const cloudinaryUrlRegex = /cloudinary\.com\/[^\/]+\/video\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/;
-      const match = videoUrl.match(cloudinaryUrlRegex);
-      
-      if (match && match[1]) {
-        const publicId = match[1];
-        console.log('✅ [TRANSFORM] Extracted publicId for thumbnail:', publicId);
-        const thumbnailUrl = generateVideoThumbnail(publicId, 300, 200);
-        console.log('🖼️ [TRANSFORM] Generated thumbnail URL:', thumbnailUrl);
-        return thumbnailUrl;
-      } else {
-        console.warn('⚠️ [TRANSFORM] Could not extract publicId from video URL:', videoUrl);
+  const videoThumbnails = videoUrls
+    .map((videoUrl) => {
+      try {
+        console.log(
+          "🎬 [TRANSFORM] Processing video URL for thumbnail:",
+          videoUrl
+        );
+
+        // More robust publicId extraction for Cloudinary URLs
+        // Handle URLs like: https://res.cloudinary.com/cloudname/video/upload/v123456/folder/filename.mp4
+        const cloudinaryUrlRegex =
+          /cloudinary\.com\/[^\/]+\/video\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/;
+        const match = videoUrl.match(cloudinaryUrlRegex);
+
+        if (match && match[1]) {
+          const publicId = match[1];
+          console.log(
+            "✅ [TRANSFORM] Extracted publicId for thumbnail:",
+            publicId
+          );
+          const thumbnailUrl = generateVideoThumbnail(publicId, 300, 200);
+          console.log("🖼️ [TRANSFORM] Generated thumbnail URL:", thumbnailUrl);
+          return thumbnailUrl;
+        } else {
+          console.warn(
+            "⚠️ [TRANSFORM] Could not extract publicId from video URL:",
+            videoUrl
+          );
+          return null;
+        }
+      } catch (error) {
+        console.warn(
+          "⚠️ [TRANSFORM] Failed to generate video thumbnail:",
+          error.message
+        );
         return null;
       }
-    } catch (error) {
-      console.warn('⚠️ [TRANSFORM] Failed to generate video thumbnail:', error.message);
-      return null;
-    }
-  }).filter(Boolean); // Remove null entries
-  
-  console.log(`🎬 [TRANSFORM] Generated ${videoThumbnails.length} video thumbnails from ${videoUrls.length} videos`);
+    })
+    .filter(Boolean); // Remove null entries
+
+  console.log(
+    `🎬 [TRANSFORM] Generated ${videoThumbnails.length} video thumbnails from ${videoUrls.length} videos`
+  );
 
   // Fetch event data if event_id exists
   let eventData = null;
@@ -297,8 +314,8 @@ async function fetchExplorePosts({ where, limit, skip }) {
         event_id: true,
         caption: true,
         image_url: true,
-        images: true,    // Add new images column
-        videos: true,    // Add new videos column
+        images: true, // Add new images column
+        videos: true, // Add new videos column
         engagement_count: true,
         comment_count: true,
         allow_comments: true,
@@ -715,8 +732,8 @@ router.post(
   "/posts",
   verifyJWT,
   getFieldsUploadMiddleware([
-    { name: 'images', maxCount: 5 },
-    { name: 'videos', maxCount: 5 }
+    { name: "images", maxCount: 5 },
+    { name: "videos", maxCount: 5 },
   ]),
   async (req, res) => {
     try {
@@ -725,7 +742,9 @@ router.post(
       console.log(
         `📝 [POST CREATION][${reqId}] Start ip=${req.ip} contentType='${
           req.headers["content-type"]
-        }' imageFiles=${req.files?.images?.length || 0} videoFiles=${req.files?.videos?.length || 0}`
+        }' imageFiles=${req.files?.images?.length || 0} videoFiles=${
+          req.files?.videos?.length || 0
+        }`
       );
       console.log(`📝 [POST CREATION][${reqId}] User payload:`, {
         user: req.user,
@@ -741,8 +760,9 @@ router.post(
       console.log("Extracted userId:", userId);
       console.log("Content:", content);
 
-      const hasFiles = (req.files?.images?.length > 0) || (req.files?.videos?.length > 0);
-      
+      const hasFiles =
+        req.files?.images?.length > 0 || req.files?.videos?.length > 0;
+
       if (!content && !hasFiles) {
         console.log(
           "❌ [POST CREATION] Validation failed: No content or media files"
@@ -764,7 +784,9 @@ router.post(
 
       // Upload media files to Cloudinary if provided
       if (allFiles.length > 0) {
-        console.log(`Uploading ${allFiles.length} media files to Cloudinary...`);
+        console.log(
+          `Uploading ${allFiles.length} media files to Cloudinary...`
+        );
 
         const uploadResult = await uploadMultipleMedia(allFiles, {
           folder: "eventbn/posts",
@@ -785,7 +807,9 @@ router.post(
         images = uploadResult.images || [];
         videos = uploadResult.videos || [];
         uploadedFileCount = uploadResult.totalUploaded;
-        console.log(`Successfully uploaded ${images.length} images and ${videos.length} videos`);
+        console.log(
+          `Successfully uploaded ${images.length} images and ${videos.length} videos`
+        );
       }
 
       // Fetch user data via RabbitMQ (optional - don't fail if this fails)
@@ -813,8 +837,8 @@ router.post(
         data: {
           caption: content || "",
           image_url: images.length > 0 ? images[0] : null, // For backward compatibility
-          images: images,   // New images array column
-          videos: videos,   // New videos array column
+          images: images, // New images array column
+          videos: videos, // New videos array column
           user_id: parseInt(userId),
           event_id: eventId ? parseInt(eventId) : null,
         },
@@ -1160,10 +1184,12 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
     );
 
     // Get all user IDs (including from replies)
-    const userIds = [...new Set([
-      ...comments.map((c) => c.user_id),
-      ...comments.flatMap(c => c.replies?.map(r => r.user_id) || [])
-    ])];
+    const userIds = [
+      ...new Set([
+        ...comments.map((c) => c.user_id),
+        ...comments.flatMap((c) => c.replies?.map((r) => r.user_id) || []),
+      ]),
+    ];
 
     let usersData = [];
     if (userIds.length > 0) {
@@ -1200,35 +1226,42 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
           : false;
 
       // Format replies with user data
-      const formattedReplies = comment.replies?.map(reply => {
-        const replyUserData = usersData.find((u) => u.id == reply.user_id) || {
-          id: reply.user_id,
-          full_name: `User ${reply.user_id}`,
-          avatar_url: null,
-        };
+      const formattedReplies =
+        comment.replies?.map((reply) => {
+          const replyUserData = usersData.find(
+            (u) => u.id == reply.user_id
+          ) || {
+            id: reply.user_id,
+            full_name: `User ${reply.user_id}`,
+            avatar_url: null,
+          };
 
-        const isReplyLikedByUser =
-          requestingUserId && reply.likes
-            ? reply.likes.some((like) => like.user_id === requestingUserId)
-            : false;
+          const isReplyLikedByUser =
+            requestingUserId && reply.likes
+              ? reply.likes.some((like) => like.user_id === requestingUserId)
+              : false;
 
-        return {
-          comment_id: reply.comment_id,
-          post_id: reply.post_id,
-          user_id: reply.user_id,
-          comment_text: reply.comment_text,
-          created_at: reply.created_at,
-          updated_at: reply.updated_at,
-          like_count: reply.like_count || 0,
-          is_liked: isReplyLikedByUser,
-          parent_comment_id: reply.parent_comment_id,
-          user_display_name:
-            replyUserData.full_name || replyUserData.name || `User ${reply.user_id}`,
-          user_name:
-            replyUserData.full_name || replyUserData.name || `User ${reply.user_id}`,
-          user: replyUserData,
-        };
-      }) || [];
+          return {
+            comment_id: reply.comment_id,
+            post_id: reply.post_id,
+            user_id: reply.user_id,
+            comment_text: reply.comment_text,
+            created_at: reply.created_at,
+            updated_at: reply.updated_at,
+            like_count: reply.like_count || 0,
+            is_liked: isReplyLikedByUser,
+            parent_comment_id: reply.parent_comment_id,
+            user_display_name:
+              replyUserData.full_name ||
+              replyUserData.name ||
+              `User ${reply.user_id}`,
+            user_name:
+              replyUserData.full_name ||
+              replyUserData.name ||
+              `User ${reply.user_id}`,
+            user: replyUserData,
+          };
+        }) || [];
 
       console.log(
         `💖 [COMMENT_LIKE] Comment ${

@@ -200,8 +200,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   void _onPageChanged(int index) {
-    print('🎬 [IGTV] Page changed to index: $index (post: ${_posts.isNotEmpty && index < _posts.length ? _posts[index].id : 'none'})');
-    
+    print(
+        '🎬 [IGTV] Page changed to index: $index (post: ${_posts.isNotEmpty && index < _posts.length ? _posts[index].id : 'none'})');
+
     setState(() {
       _currentIndex = index;
     });
@@ -590,7 +591,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
         children: [
           // Main PageView for posts with swipe gesture
           GestureDetector(
-            behavior: HitTestBehavior.deferToChild, // Allow child widgets to handle taps
+            behavior: HitTestBehavior
+                .deferToChild, // Allow child widgets to handle taps
             onPanStart: (details) {
               _isSwipeActive = true;
               _swipeOffset = 0.0;
@@ -753,15 +755,18 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   Widget _buildMediaContent(ExplorePost post) {
     // Prioritize videos with autoplay, fallback to images
     if (post.videoUrls.isNotEmpty) {
-      print('🎬 [IGTV] Building autoplay video for post ${post.id}: ${post.videoUrls.first}');
+      print(
+          '🎬 [IGTV] Building autoplay video for post ${post.id}: ${post.videoUrls.first}');
       return FeedVideoPlayer(
-        videoUrl: post.videoUrls.first.replaceFirst('http://', 'https://'), // Fix HTTP to HTTPS
+        videoUrl: post.videoUrls.first
+            .replaceFirst('http://', 'https://'), // Fix HTTP to HTTPS
         autoPlay: true, // Enable autoplay for IGTV feed
         showControls: true, // Allow users to pause/play if needed
         aspectRatio: null, // Let video maintain its aspect ratio
       );
     } else if (post.imageUrls.isNotEmpty) {
-      print('🖼️ [IGTV] Building image for post ${post.id}: ${post.imageUrls.first}');
+      print(
+          '🖼️ [IGTV] Building image for post ${post.id}: ${post.imageUrls.first}');
       return Image.network(
         post.imageUrls.first,
         fit: BoxFit.cover,
@@ -943,7 +948,8 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
         currentPost.relatedEventId != null
             ? GestureDetector(
                 onTap: () {
-                  print('🎫 Navigating to event: ${currentPost.relatedEventId}');
+                  print(
+                      '🎫 Navigating to event: ${currentPost.relatedEventId}');
                   context.push('/events/${currentPost.relatedEventId}');
                 },
                 child: Container(

@@ -30,8 +30,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   // Helper getters for safe access to userData
   String get userName => userData?['name'] ?? 'Unknown User';
   String get userUsername => userData?['username'] ?? '@user';
-  String get userAvatar => userData?['avatar'] ?? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200';
-  String get userCoverImage => userData?['coverImage'] ?? 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
+  String get userAvatar =>
+      userData?['avatar'] ??
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200';
+  String get userCoverImage =>
+      userData?['coverImage'] ??
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800';
   String? get userBio => userData?['bio'];
   String? get userLocation => userData?['location'];
   String? get userWebsite => userData?['website'];
@@ -40,7 +44,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   String get userPostsCount => userData?['posts']?.toString() ?? '0';
   String get userFollowersCount => userData?['followers']?.toString() ?? '0';
   String get userFollowingCount => userData?['following']?.toString() ?? '0';
-  List<String> get userInterests => List<String>.from(userData?['interests'] ?? ['Events']);
+  List<String> get userInterests =>
+      List<String>.from(userData?['interests'] ?? ['Events']);
 
   @override
   void initState() {
@@ -52,20 +57,26 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
   void _loadUserData() async {
     setState(() => _isLoadingUser = true);
-    
+
     try {
       print('👤 [UserProfile] Loading user data for ID: ${widget.userId}');
       final fetchedUserData = await _userService.getUserById(widget.userId);
-      
+
       if (fetchedUserData != null) {
         setState(() {
           userData = {
             'id': fetchedUserData['id'] ?? widget.userId,
-            'name': fetchedUserData['fullName'] ?? fetchedUserData['name'] ?? 'Unknown User',
-            'username': '@${fetchedUserData['username'] ?? fetchedUserData['email']?.split('@')[0] ?? 'user'}',
-            'avatar': fetchedUserData['profileImageUrl'] ?? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-            'coverImage': fetchedUserData['coverImageUrl'] ?? 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-            'bio': fetchedUserData['bio'] ?? 'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
+            'name': fetchedUserData['fullName'] ??
+                fetchedUserData['name'] ??
+                'Unknown User',
+            'username':
+                '@${fetchedUserData['username'] ?? fetchedUserData['email']?.split('@')[0] ?? 'user'}',
+            'avatar': fetchedUserData['profileImageUrl'] ??
+                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+            'coverImage': fetchedUserData['coverImageUrl'] ??
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+            'bio': fetchedUserData['bio'] ??
+                'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
             'posts': 0, // Will be updated when posts are loaded
             'followers': fetchedUserData['followersCount']?.toString() ?? '0',
             'following': fetchedUserData['followingCount'] ?? 0,
@@ -73,13 +84,15 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             'website': fetchedUserData['website'] ?? null,
             'joinedDate': _formatJoinDate(fetchedUserData['createdAt']),
             'isVerified': fetchedUserData['isVerified'] ?? false,
-            'interests': fetchedUserData['interests'] ?? ['Events', 'Networking'],
+            'interests':
+                fetchedUserData['interests'] ?? ['Events', 'Networking'],
           };
         });
         print('✅ [UserProfile] User data loaded successfully');
       } else {
         // Fallback to enhanced mock data based on userId
-        print('⚠️ [UserProfile] User not found, using enhanced fallback data for userId: ${widget.userId}');
+        print(
+            '⚠️ [UserProfile] User not found, using enhanced fallback data for userId: ${widget.userId}');
         setState(() {
           userData = _getEnhancedFallbackUserData(widget.userId);
         });
@@ -101,9 +114,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         'id': '1',
         'name': 'John Smith',
         'username': '@johnsmith',
-        'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-        'coverImage': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-        'bio': 'Event enthusiast and photographer. Love exploring new places and meeting new people through amazing events.',
+        'avatar':
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+        'coverImage':
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        'bio':
+            'Event enthusiast and photographer. Love exploring new places and meeting new people through amazing events.',
         'followers': '2.1K',
         'following': 156,
         'location': 'New York, NY',
@@ -115,9 +131,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         'id': '2',
         'name': 'Sarah Johnson',
         'username': '@sarahj',
-        'avatar': 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200',
-        'coverImage': 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800',
-        'bio': 'Event organizer and community builder. Creating memorable experiences one event at a time.',
+        'avatar':
+            'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200',
+        'coverImage':
+            'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800',
+        'bio':
+            'Event organizer and community builder. Creating memorable experiences one event at a time.',
         'followers': '5.3K',
         'following': 289,
         'location': 'Los Angeles, CA',
@@ -129,9 +148,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         'id': '3',
         'name': 'Mike Chen',
         'username': '@mikechen',
-        'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        'coverImage': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
-        'bio': 'Tech enthusiast and startup founder. Building the future of events.',
+        'avatar':
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        'coverImage':
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        'bio':
+            'Tech enthusiast and startup founder. Building the future of events.',
         'followers': '8.7K',
         'following': 523,
         'location': 'San Francisco, CA',
@@ -148,8 +170,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         'id': userId,
         'name': 'EventBn User',
         'username': '@user$userId',
-        'avatar': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-        'coverImage': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+        'avatar':
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+        'coverImage':
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
         'bio': 'Event enthusiast and community member.',
         'followers': '${(int.tryParse(userId) ?? 1) * 100}',
         'following': (int.tryParse(userId) ?? 1) * 50,
@@ -180,12 +204,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
   String _formatJoinDate(String? createdAt) {
     if (createdAt == null) return 'Recently';
-    
+
     try {
       final date = DateTime.parse(createdAt);
       final now = DateTime.now();
       final difference = now.difference(date);
-      
+
       if (difference.inDays < 30) {
         return 'Recently';
       } else if (difference.inDays < 365) {
@@ -202,23 +226,23 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
   Future<void> _loadUserPosts() async {
     setState(() => _isLoadingPosts = true);
-    
+
     try {
       // Load all posts if not already loaded
       if (_postService.posts.isEmpty) {
         await _postService.loadPosts(refresh: true);
       }
-      
+
       // Filter posts by user ID
       _userPosts = _postService.posts
           .where((post) => post.userId == widget.userId)
           .toList();
-      
+
       // Update post count in userData if available
       if (userData != null) {
         userData!['posts'] = _userPosts.length;
       }
-      
+
       print('📱 Loaded ${_userPosts.length} posts for user ${widget.userId}');
     } catch (e) {
       print('❌ Error loading user posts: $e');
@@ -308,8 +332,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                   ),
                                   child: CircleAvatar(
                                     radius: 40,
-                                    backgroundImage:
-                                        NetworkImage(userAvatar),
+                                    backgroundImage: NetworkImage(userAvatar),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -319,12 +342,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
-                                      _buildStatColumn('Posts',
-                                          userPostsCount),
+                                      _buildStatColumn('Posts', userPostsCount),
                                       _buildStatColumn(
                                           'Followers', userFollowersCount),
-                                      _buildStatColumn('Following',
-                                          userFollowingCount),
+                                      _buildStatColumn(
+                                          'Following', userFollowingCount),
                                     ],
                                   ),
                                 ),
@@ -500,18 +522,19 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                     // TODO: Implement actual follow/unfollow logic
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isFollowing 
-                        ? colorScheme.surfaceContainerHighest 
+                    backgroundColor: isFollowing
+                        ? colorScheme.surfaceContainerHighest
                         : colorScheme.primary,
-                    foregroundColor: isFollowing 
-                        ? colorScheme.onSurface 
+                    foregroundColor: isFollowing
+                        ? colorScheme.onSurface
                         : colorScheme.onPrimary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      side: isFollowing 
-                          ? BorderSide(color: colorScheme.outline.withValues(alpha: 0.3))
+                      side: isFollowing
+                          ? BorderSide(
+                              color: colorScheme.outline.withValues(alpha: 0.3))
                           : BorderSide.none,
                     ),
                   ),
@@ -531,7 +554,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   onPressed: () => _sendMessage(),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.onSurface,
-                    side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                    side: BorderSide(
+                        color: colorScheme.outline.withValues(alpha: 0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -552,7 +576,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 width: 44,
                 height: 36,
                 decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
@@ -648,7 +673,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
                 foregroundColor: colorScheme.onSurface,
-                side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                side: BorderSide(
+                    color: colorScheme.outline.withValues(alpha: 0.3)),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
@@ -686,16 +712,16 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             Text(
               'No posts yet',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
               'When this user shares photos and videos, they\'ll appear here.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ],
         ),
@@ -735,10 +761,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: Icon(
                             Icons.image,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         );
                       },
@@ -752,10 +781,14 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                               child: Icon(
                                 Icons.video_library,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             );
                           },
@@ -775,22 +808,30 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   else
                     // Fallback for posts without media
                     Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.text_fields,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               size: 24,
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Text Post',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
                             ),
                           ],
                         ),

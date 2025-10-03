@@ -1,65 +1,64 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const authService = require('../services/core-service/auth');
-const { ValidationError } = require('../lib/validation');
+const authService = require("../services/core-service/auth");
+const { ValidationError } = require("../lib/validation");
 
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require("../middleware/auth");
 
 // Register user
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const result = await authService.register(req.body);
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       data: result.user,
-      token: result.token
+      token: result.token,
     });
   } catch (error) {
     if (error instanceof ValidationError) {
       return res.status(400).json({
         success: false,
         message: error.message,
-        code: 'VALIDATION_ERROR',
-        errors: error.errors
+        code: "VALIDATION_ERROR",
+        errors: error.errors,
       });
     }
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 
 // Login user
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const result = await authService.login(req.body);
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: result.user,
-      token: result.token
+      token: result.token,
     });
   } catch (error) {
     if (error instanceof ValidationError) {
       return res.status(400).json({
         success: false,
         message: error.message,
-        code: 'VALIDATION_ERROR',
-        errors: error.errors
+        code: "VALIDATION_ERROR",
+        errors: error.errors,
       });
     }
     res.status(401).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
 
-
 // Get current user
-router.get('/me', authenticateToken, async (req, res) => {
+router.get("/me", authenticateToken, async (req, res) => {
   try {
     // Return user data in the expected format for the frontend
     const userData = {
@@ -75,12 +74,12 @@ router.get('/me', authenticateToken, async (req, res) => {
 
     res.json({
       success: true,
-      user: userData // Make sure it's wrapped in 'user' key for frontend compatibility
+      user: userData, // Make sure it's wrapped in 'user' key for frontend compatibility
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });

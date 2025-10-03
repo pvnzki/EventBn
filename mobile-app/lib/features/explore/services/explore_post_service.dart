@@ -159,7 +159,7 @@ class ExplorePostService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         final List<dynamic> postsJson = data['posts'] ?? [];
-        
+
         // Debug: Log video-related data from backend
         print('🎬 [DEBUG] Backend response contains ${postsJson.length} posts');
         for (int i = 0; i < postsJson.length && i < 5; i++) {
@@ -171,10 +171,10 @@ class ExplorePostService {
           print('  - imageUrls: ${post['imageUrls']}');
           print('  - all keys: ${post.keys.toList()}');
         }
-        
+
         final newPosts =
             postsJson.map((json) => ExplorePost.fromJson(json)).toList();
-            
+
         // Debug: Log parsed video data
         print('🎬 [DEBUG] Parsed posts video data:');
         for (int i = 0; i < newPosts.length && i < 5; i++) {
@@ -335,8 +335,8 @@ class ExplorePostService {
   }
 
   // Add comment to a post
-  Future<Map<String, dynamic>?> addComment(
-      String postId, String content, {int? parentCommentId}) async {
+  Future<Map<String, dynamic>?> addComment(String postId, String content,
+      {int? parentCommentId}) async {
     try {
       print('💬 [DEBUG] Adding comment to post: $postId');
       print('💬 [DEBUG] Comment content: $content');

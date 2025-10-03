@@ -26,7 +26,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   bool _hasError = false;
   bool _showControls = false; // Start with controls hidden
   String? _errorMessage;
-  
+
   // Timer to auto-hide controls
   Timer? _controlsTimer;
 
@@ -39,33 +39,36 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   void _initializeVideo() async {
     try {
       print('🎥 Initializing video player for: ${widget.videoUrl}');
-      
+
       // Validate URL format
       if (widget.videoUrl.isEmpty) {
         throw Exception('Video URL is empty');
       }
-      
+
       if (!widget.videoUrl.startsWith('http')) {
         throw Exception('Invalid video URL format: ${widget.videoUrl}');
       }
-      
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-      
+
+      _controller =
+          VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+
       await _controller.initialize();
-      
+
       if (mounted) {
         setState(() {
           _isInitialized = true;
           _hasError = false;
         });
-        
+
         if (widget.autoPlay) {
-          _controller.setVolume(0.0); // Start muted for autoplay (common UX pattern)
+          _controller
+              .setVolume(0.0); // Start muted for autoplay (common UX pattern)
           _controller.play();
           print('🎥 Video started autoplaying (muted)');
         }
-        
-        print('✅ Video player initialized successfully for: ${widget.videoUrl}');
+
+        print(
+            '✅ Video player initialized successfully for: ${widget.videoUrl}');
       }
     } catch (e) {
       print('❌ Error initializing video player for ${widget.videoUrl}: $e');
@@ -86,7 +89,8 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   }
 
   void _togglePlayPause() {
-    print('🎬 [VideoPlayer] Toggle play/pause - Current state: isPlaying=${_controller.value.isPlaying}');
+    print(
+        '🎬 [VideoPlayer] Toggle play/pause - Current state: isPlaying=${_controller.value.isPlaying}');
     if (_controller.value.isPlaying) {
       _controller.pause();
       print('🎬 [VideoPlayer] Video paused');
@@ -99,7 +103,8 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   }
 
   void _toggleVolume() {
-    print('🎬 [VideoPlayer] Toggle volume - Current volume: ${_controller.value.volume}');
+    print(
+        '🎬 [VideoPlayer] Toggle volume - Current volume: ${_controller.value.volume}');
     if (_controller.value.volume > 0) {
       _controller.setVolume(0.0);
       print('🎬 [VideoPlayer] Video muted');
@@ -112,11 +117,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   }
 
   void _toggleControls() {
-    print('🎬 [VideoPlayer] Toggling controls visibility: $_showControls -> ${!_showControls}');
+    print(
+        '🎬 [VideoPlayer] Toggling controls visibility: $_showControls -> ${!_showControls}');
     setState(() {
       _showControls = !_showControls;
     });
-    
+
     // Auto-hide controls after 3 seconds if they're showing
     if (_showControls) {
       _resetControlsTimer();
@@ -124,7 +130,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       _controlsTimer?.cancel();
     }
   }
-  
+
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
     _controlsTimer = Timer(const Duration(seconds: 3), () {
@@ -136,7 +142,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       }
     });
   }
-  
+
   void _onControlTap() {
     // When user interacts with controls, reset the timer
     if (_showControls) {
@@ -221,9 +227,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       onTap: widget.showControls ? _toggleControls : null,
       child: Container(
         width: double.infinity,
-        height: widget.aspectRatio != null 
-            ? null 
-            : 200,
+        height: widget.aspectRatio != null ? null : 200,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: Colors.black,
@@ -236,7 +240,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
               alignment: Alignment.center,
               children: [
                 VideoPlayer(_controller),
-                
+
                 // Controls overlay
                 if (_showControls && widget.showControls)
                   Container(
@@ -256,7 +260,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                       children: [
                         // Top controls area (can be used for other controls if needed)
                         Container(),
-                        
+
                         // Center control buttons (Instagram style)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -268,21 +272,23 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.7),
                                   borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 2),
                                 ),
                                 padding: const EdgeInsets.all(16),
                                 child: Icon(
-                                  _controller.value.volume > 0 
-                                      ? Icons.volume_up 
+                                  _controller.value.volume > 0
+                                      ? Icons.volume_up
                                       : Icons.volume_off,
                                   color: Colors.white,
                                   size: 32,
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(width: 20),
-                            
+
                             // Play/Pause button
                             GestureDetector(
                               onTap: _togglePlayPause,
@@ -290,7 +296,9 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.7),
                                   borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 2),
                                 ),
                                 padding: const EdgeInsets.all(16),
                                 child: Icon(
@@ -303,7 +311,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                               ),
                             ),
                           ],
-                        ),                        // Bottom controls
+                        ), // Bottom controls
                         Container(
                           padding: const EdgeInsets.all(12),
                           child: Row(
@@ -319,7 +327,8 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                                 child: VideoProgressIndicator(
                                   _controller,
                                   allowScrubbing: true,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                   colors: const VideoProgressColors(
                                     playedColor: Colors.blue,
                                     bufferedColor: Colors.grey,
@@ -340,7 +349,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
                       ],
                     ),
                   ),
-                
+
                 // Loading indicator during buffering
                 if (_controller.value.isBuffering)
                   const Center(

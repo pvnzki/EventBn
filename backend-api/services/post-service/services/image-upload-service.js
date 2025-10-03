@@ -24,21 +24,25 @@ class MediaUploadService {
 
         const isImage = file.mimetype.startsWith("image/");
         const isVideo = file.mimetype.startsWith("video/");
-        
+
         if (isImage || isVideo) {
           // Check file size limits based on type
           if (isVideo && file.size > 100 * 1024 * 1024) {
             console.log("❌ Video file too large:", file.size);
             cb(new Error("Video files must be under 100MB"), false);
-          } else if (isImage && file.size > 10 * 1024 * 1024) { // Increased image limit too
+          } else if (isImage && file.size > 10 * 1024 * 1024) {
+            // Increased image limit too
             console.log("❌ Image file too large:", file.size);
             cb(new Error("Image files must be under 10MB"), false);
           } else {
-            console.log(`✅ File accepted as ${isImage ? 'image' : 'video'}`);
+            console.log(`✅ File accepted as ${isImage ? "image" : "video"}`);
             cb(null, true);
           }
         } else {
-          console.log("❌ File rejected - not an image or video:", file.mimetype);
+          console.log(
+            "❌ File rejected - not an image or video:",
+            file.mimetype
+          );
           cb(new Error("Only image and video files are allowed"), false);
         }
       },
@@ -50,7 +54,7 @@ class MediaUploadService {
     try {
       const isVideo = mimetype.startsWith("video/");
       const resourceType = isVideo ? "video" : "image";
-      
+
       const result = await new Promise((resolve, reject) => {
         const uploadOptions = {
           resource_type: resourceType,
@@ -67,17 +71,17 @@ class MediaUploadService {
           // Remove format conversion for faster upload - let Cloudinary handle it naturally
           // uploadOptions.format = "mp4"; // This causes slow conversion
           // uploadOptions.video_codec = "h264"; // This causes slow conversion
-          
+
           // Instead, use eager transformations that happen asynchronously after upload
           uploadOptions.eager = [
-            { 
-              format: "mp4", 
+            {
+              format: "mp4",
               video_codec: "h264",
               quality: "auto:good",
               width: 1280, // Limit size for web playback
               height: 720,
-              crop: "limit" // Don't upscale, only downscale if needed
-            }
+              crop: "limit", // Don't upscale, only downscale if needed
+            },
           ];
           uploadOptions.eager_async = true; // Process transformations in background
         }
@@ -110,7 +114,12 @@ class MediaUploadService {
         resourceType: result.resource_type,
       };
     } catch (error) {
-      console.error(`Error uploading ${mimetype.startsWith("video/") ? "video" : "image"} to Cloudinary:`, error);
+      console.error(
+        `Error uploading ${
+          mimetype.startsWith("video/") ? "video" : "image"
+        } to Cloudinary:`,
+        error
+      );
       return {
         success: false,
         error: error.message || "Failed to upload media",
@@ -139,7 +148,7 @@ class MediaUploadService {
         if (result.status === "fulfilled" && result.value.success) {
           const mediaResult = result.value;
           successful.push(mediaResult);
-          
+
           // Separate images and videos
           if (mediaResult.resourceType === "video") {
             videos.push(mediaResult.url);
@@ -202,9 +211,11 @@ class MediaUploadService {
       quality: "auto:good",
       secure: true, // Force HTTPS URLs
     });
-    
-    console.log(`🔍 [THUMBNAIL] Generated URL for publicId '${publicId}': ${thumbnailUrl}`);
-    
+
+    console.log(
+      `🔍 [THUMBNAIL] Generated URL for publicId '${publicId}': ${thumbnailUrl}`
+    );
+
     return thumbnailUrl;
   }
 
@@ -271,19 +282,19 @@ module.exports = {
   mediaUploadService,
   // Backward compatibility
   imageUploadService: mediaUploadService,
-  
+
   // New media upload methods
   uploadMedia: (buffer, mimetype, options) =>
     mediaUploadService.uploadMedia(buffer, mimetype, options),
   uploadMultipleMedia: (files, options) =>
     mediaUploadService.uploadMultipleMedia(files, options),
-    
+
   // Legacy image methods for backward compatibility
   uploadImage: (buffer, options) =>
     mediaUploadService.uploadMedia(buffer, "image/jpeg", options),
   uploadMultipleImages: (files, options) =>
     mediaUploadService.uploadMultipleMedia(files, options),
-    
+
   // Shared methods
   deleteImage: (publicId) => mediaUploadService.deleteImage(publicId),
   generateOptimizedUrl: (publicId, options) =>
