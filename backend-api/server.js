@@ -24,9 +24,14 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 // CORS Configuration
 let corsOptions = {};
 
-if (process.env.NODE_ENV === "development") {
-  // Development → allow all origins
-  corsOptions = { origin: true, credentials: true };
+if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+  // Development & Test → allow all origins
+  corsOptions = { 
+    origin: true, 
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  };
 } else {
   // Production → only allow origins from .env
   const allowedOrigins = process.env.CORS_ORIGIN
@@ -56,6 +61,19 @@ if (process.env.NODE_ENV === "development") {
 }
 
 app.use(cors(corsOptions));
+
+// Explicit preflight handling (some environments need this when custom headers appear later)
+app.options('*', (req, res) => {
+  // Mirror the request origin in dev/test when origin: true was used
+  if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && req.headers.origin) {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return res.sendStatus(204);
+});
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -152,10 +170,20 @@ app.get("/api/services/post/health", async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // Handle JSON parsing errors
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format',
+      code: 'INVALID_JSON'
+    });
+  }
+  
   res.status(500).json({
-    error: "Something went wrong!",
-    message:
-      process.env.NODE_ENV === "Dev" ? err.message : "Internal Server Error",
+    success: false,
+    message: process.env.NODE_ENV === "development" ? err.message : "Internal Server Error",
+    code: 'SERVER_ERROR'
   });
 });
 

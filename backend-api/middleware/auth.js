@@ -9,9 +9,11 @@ const authenticateToken = async (req, res, next) => {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
-      return res.status(401).json({
-        error: "Access token required",
-        code: "NO_TOKEN",
+      return res.status(401).json({ 
+        success: false,
+        message: 'Access token required',
+        code: 'NO_TOKEN'
+
       });
     }
 
@@ -95,9 +97,10 @@ const authenticateToken = async (req, res, next) => {
         requestedUserId: decoded.userId,
         decodedPayload: decoded,
       });
-      return res.status(401).json({
-        error: "User not found",
-        code: "USER_NOT_FOUND",
+      return res.status(401).json({ 
+        success: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
       });
     }
 
@@ -115,24 +118,25 @@ const authenticateToken = async (req, res, next) => {
       errorMessage: error.message,
       stack: error.stack,
     });
-
-    if (error.name === "JsonWebTokenError") {
-      return res.status(403).json({
-        error: "Invalid token",
-        code: "INVALID_TOKEN",
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid token',
+        code: 'INVALID_TOKEN'
+      });
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Token expired',
+        code: 'TOKEN_EXPIRED'
       });
     }
-    if (error.name === "TokenExpiredError") {
-      return res.status(403).json({
-        error: "Token expired",
-        code: "TOKEN_EXPIRED",
-      });
-    }
-
-    console.error("Authentication error:", error);
-    return res.status(500).json({
-      error: "Internal server error",
-      code: "SERVER_ERROR",
+    
+    return res.status(500).json({ 
+      success: false,
+      message: 'Authentication error',
+      code: 'AUTH_ERROR'
     });
   }
 };
@@ -159,7 +163,7 @@ const optionalAuth = async (req, res, next) => {
         profile_picture: true,
         is_email_verified: true,
         role: true,
-      },
+      }
     });
 
     req.user = user ? user : null;
@@ -174,16 +178,39 @@ const optionalAuth = async (req, res, next) => {
 // Check if user is verified
 const requireVerified = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({
-      error: "Authentication required",
-      code: "AUTH_REQUIRED",
+    return res.status(401).json({ 
+      success: false,
+      message: 'Authentication required',
+      code: 'AUTH_REQUIRED'
     });
   }
 
-  if (!req.user.isVerified && !req.user.is_email_verified) {
-    return res.status(403).json({
-      error: "Email verification required",
-      code: "EMAIL_NOT_VERIFIED",
+  if (!req.user.is_email_verified) {
+    return res.status(403).json({ 
+      success: false,
+      message: 'Email verification required',
+      code: 'EMAIL_NOT_VERIFIED'
+    });
+  }
+
+  next();
+};
+
+// Check if user has organizer role
+const requireOrganizer = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      success: false,
+      message: 'Authentication required',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  if (req.user.role !== 'ORGANIZER') {
+    return res.status(403).json({ 
+      success: false,
+      message: 'Organizer access required',
+      code: 'ORGANIZER_REQUIRED'
     });
   }
 
@@ -191,16 +218,23 @@ const requireVerified = (req, res, next) => {
 };
 
 // Check if user owns resource
-const requireOwnership = (userIdField = "userId") => {
+const requireOwnership = (userIdField = 'user_id') => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({
-        error: "Authentication required",
-        code: "AUTH_REQUIRED",
+      return res.status(401).json({ 
+        success: false,
+        message: 'Authentication required',
+        code: 'AUTH_REQUIRED'
       });
     }
 
     const resourceUserId = req.params[userIdField] || req.body[userIdField];
+    
+    if (req.user.user_id !== parseInt(resourceUserId)) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Access denied',
+        code: 'ACCESS_DENIED'
 
     const currentUserId = req.user.user_id || req.user.id;
     if (currentUserId !== resourceUserId) {
@@ -218,5 +252,6 @@ module.exports = {
   authenticateToken,
   optionalAuth,
   requireVerified,
+  requireOrganizer,
   requireOwnership,
 };

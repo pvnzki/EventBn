@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authService = require('../services/core-service/auth');
+const { ValidationError } = require('../lib/validation');
 
 const { authenticateToken } = require('../middleware/auth');
 
@@ -15,6 +16,14 @@ router.post('/register', async (req, res) => {
       token: result.token
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message
@@ -33,6 +42,14 @@ router.post('/login', async (req, res) => {
       token: result.token
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        code: 'VALIDATION_ERROR',
+        errors: error.errors
+      });
+    }
     res.status(401).json({
       success: false,
       message: error.message
@@ -46,7 +63,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     res.json({
       success: true,
-      user: req.user
+      data: req.user
     });
   } catch (error) {
     res.status(500).json({
