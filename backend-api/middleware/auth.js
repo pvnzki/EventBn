@@ -1,38 +1,40 @@
 // Authentication middleware
-const jwt = require('jsonwebtoken');
-const prisma = require('../lib/database');
+const jwt = require("jsonwebtoken");
+const prisma = require("../lib/database");
 
 // Verify JWT token
 const authenticateToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
       return res.status(401).json({ 
         success: false,
         message: 'Access token required',
         code: 'NO_TOKEN'
+
       });
     }
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    console.log('🔍 JWT decoded payload:', {
+
+    console.log("🔍 JWT decoded payload:", {
       userId: decoded.userId,
       email: decoded.email,
       name: decoded.name,
       iat: decoded.iat,
-      exp: decoded.exp
+      exp: decoded.exp,
     });
-    
+
     // Check if this is a test environment (TEST_MODE or test email)
-    const isTestMode = process.env.TEST_MODE === 'true' || decoded.email?.includes('@test.com');
-    
+    const isTestMode =
+      process.env.TEST_MODE === "true" || decoded.email?.includes("@test.com");
+
     if (isTestMode) {
       // For testing: create mock user object from JWT payload without database lookup
-      console.log('🧪 Test mode: Using mock user from JWT payload');
+      console.log("🧪 Test mode: Using mock user from JWT payload");
       req.user = {
         user_id: decoded.userId,
         name: decoded.name || `Test User ${decoded.userId}`,
@@ -40,37 +42,60 @@ const authenticateToken = async (req, res, next) => {
         phone_number: null,
         profile_picture: null,
         is_email_verified: true,
-        role: 'GUEST'
+        role: "GUEST",
       };
-      
-      console.log('✅ Mock user created for testing:', {
+
+      console.log("✅ Mock user created for testing:", {
         user_id: req.user.user_id,
         name: req.user.name,
-        email: req.user.email
+        email: req.user.email,
       });
-      
+
       next();
       return;
     }
-    
-    // Production mode: Get user from database
-    const user = await prisma.user.findUnique({
-      where: { user_id: decoded.userId },
-      select: {
-        user_id: true,
-        name: true,
-        email: true,
-        phone_number: true,
-        profile_picture: true,
-        is_email_verified: true,
-        role: true,
+
+    let user;
+    try {
+      // Production mode: Get user from database
+      user = await prisma.user.findUnique({
+        where: { user_id: decoded.userId },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          profile_picture: true,
+          is_email_verified: true,
+          role: true,
+        },
+      });
+    } catch (dbErr) {
+      // Handle database connectivity issues gracefully if feature flag enabled
+      const allowFallback = process.env.ALLOW_JWT_FALLBACK === "true";
+      if (allowFallback) {
+        console.warn(
+          "⚠️ DB unreachable, falling back to JWT payload user (ALLOW_JWT_FALLBACK=true). Error:",
+          dbErr.message
+        );
+        req.user = {
+          user_id: decoded.userId,
+          name: decoded.name || `User ${decoded.userId}`,
+          email: decoded.email,
+          phone_number: null,
+          profile_picture: null,
+          is_email_verified: true,
+          role: "USER",
+        };
+        return next();
       }
-    });
+      throw dbErr;
+    }
 
     if (!user) {
-      console.error('🚨 User not found in database:', {
+      console.error("🚨 User not found in database:", {
         requestedUserId: decoded.userId,
-        decodedPayload: decoded
+        decodedPayload: decoded,
       });
       return res.status(401).json({ 
         success: false,
@@ -79,20 +104,19 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    console.log('✅ User authenticated successfully:', {
+    console.log("✅ User authenticated successfully:", {
       user_id: user.user_id,
       name: user.name,
-      email: user.email
+      email: user.email,
     });
 
-    // Add user to request object
     req.user = user;
     next();
   } catch (error) {
-    console.error('🚨 JWT Authentication error:', {
+    console.error("🚨 JWT Authentication error:", {
       errorName: error.name,
       errorMessage: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
     
     if (error.name === 'JsonWebTokenError') {
@@ -120,8 +144,8 @@ const authenticateToken = async (req, res, next) => {
 // Optional authentication (won't fail if no token)
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       req.user = null;
@@ -142,7 +166,7 @@ const optionalAuth = async (req, res, next) => {
       }
     });
 
-    req.user = user;
+    req.user = user ? user : null;
     next();
   } catch (error) {
     // Don't fail on optional auth
@@ -211,6 +235,12 @@ const requireOwnership = (userIdField = 'user_id') => {
         success: false,
         message: 'Access denied',
         code: 'ACCESS_DENIED'
+
+    const currentUserId = req.user.user_id || req.user.id;
+    if (currentUserId !== resourceUserId) {
+      return res.status(403).json({
+        error: "Access denied",
+        code: "ACCESS_DENIED",
       });
     }
 

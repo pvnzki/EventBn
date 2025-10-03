@@ -353,7 +353,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadEventData,
-                        child: Text('Retry'),
+                        child: const Text('Retry'),
                       ),
                     ],
                   ),
@@ -739,8 +739,8 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                             theme.colorScheme.onPrimary),
                       ),
                     ),
-                    SizedBox(width: 12),
-                    Text(
+                    const SizedBox(width: 12),
+                    const Text(
                       'Processing...',
                       style: TextStyle(
                         fontSize: 16,
@@ -752,11 +752,11 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.payment, size: 20),
-                    SizedBox(width: 8),
+                    const Icon(Icons.payment, size: 20),
+                    const SizedBox(width: 8),
                     Text(
                       'Pay Now - LKR ${_total.toStringAsFixed(2)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),

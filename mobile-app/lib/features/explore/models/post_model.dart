@@ -133,8 +133,8 @@ class ExplorePost {
 
   factory ExplorePost.fromJson(Map<String, dynamic> json) {
     return ExplorePost(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
+      id: json['id'].toString(),
+      userId: json['userId'].toString(),
       userDisplayName: json['userDisplayName'] as String,
       userAvatarUrl: json['userAvatarUrl'] as String,
       isUserVerified: json['isUserVerified'] as bool? ?? false,
@@ -154,7 +154,7 @@ class ExplorePost {
       sharesCount: json['sharesCount'] as int? ?? 0,
       isLiked: json['isLiked'] as bool? ?? false,
       isBookmarked: json['isBookmarked'] as bool? ?? false,
-      relatedEventId: json['relatedEventId'] as String?,
+      relatedEventId: json['eventId']?.toString(),
       relatedEventName: json['relatedEventName'] as String?,
       relatedEventImage: json['relatedEventImage'] as String?,
       relatedEventDate: json['relatedEventDate'] != null

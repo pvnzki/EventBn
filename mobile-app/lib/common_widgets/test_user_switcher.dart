@@ -8,10 +8,10 @@ class TestUserSwitcher extends StatefulWidget {
   final TestUser currentUser;
 
   const TestUserSwitcher({
-    Key? key,
+    super.key,
     required this.onUserChanged,
     required this.currentUser,
-  }) : super(key: key);
+  });
 
   @override
   State<TestUserSwitcher> createState() => _TestUserSwitcherState();
@@ -33,7 +33,7 @@ class _TestUserSwitcherState extends State<TestUserSwitcher> {
         children: [
           Row(
             children: [
-              Icon(Icons.bug_report, color: Colors.orange),
+              const Icon(Icons.bug_report, color: Colors.orange),
               const SizedBox(width: 8),
               Text(
                 'TEST MODE - User Switcher',

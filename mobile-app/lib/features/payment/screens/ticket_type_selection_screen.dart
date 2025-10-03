@@ -72,11 +72,7 @@ class _TicketTypeSelectionScreenState extends State<TicketTypeSelectionScreen> {
 
             setState(() {
               ticketTypes = convertedTicketTypes;
-              selectedQuantities = Map.fromIterable(
-                convertedTicketTypes.keys,
-                key: (type) => type,
-                value: (type) => 0,
-              );
+              selectedQuantities = { for (var type in convertedTicketTypes.keys) type : 0 };
               isLoading = false;
             });
           } else {

@@ -710,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8), // Slightly inset
                   child: Transform.translate(
                     offset: const Offset(0, -10), // Extend upward
-                    child: Container(
+                    child: SizedBox(
                       height: 180, // Increased height to extend on all sides
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(5), // Slightly less rounded for broader effect
@@ -798,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: Container(
+                          child: SizedBox(
                             width: double.infinity,
                             height: double.infinity,
                             child: _imagesPreloaded
@@ -1119,18 +1119,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Colors.orange,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Row(
+                              child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.star,
                                     size: 10,
                                     color: Colors.white,
                                   ),
-                                  const SizedBox(width: 2),
+                                  SizedBox(width: 2),
                                   Text(
                                     '4.8',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,

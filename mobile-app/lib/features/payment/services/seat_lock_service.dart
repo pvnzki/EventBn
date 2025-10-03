@@ -42,7 +42,7 @@ class SeatLockService {
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          throw TimeoutException('Request timeout', const Duration(seconds: 10));
+          throw const TimeoutException('Request timeout', Duration(seconds: 10));
         },
       );
 
