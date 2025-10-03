@@ -92,6 +92,27 @@ const fetchUserInfo = async (userId) => {
   }
 };
 
+// Helper function to fetch event info via RabbitMQ
+const { getEventData } = require("../services/event-data-service");
+
+const fetchEventInfo = async (eventId) => {
+  try {
+    console.log(`🎫 [EVENT-FETCH] Fetching event data via RabbitMQ for ID: ${eventId}`);
+    const response = await getEventData(eventId);
+    
+    if (response.success && response.event) {
+      console.log(`✅ [EVENT-FETCH] Successfully fetched event via RabbitMQ: ${response.event.title}`);
+      return response.event;
+    } else {
+      console.warn(`❌ [EVENT-FETCH] Event not found for ID ${eventId}:`, response.message);
+      return null;
+    }
+  } catch (error) {
+    console.warn(`❌ [EVENT-FETCH] Failed to fetch event info via RabbitMQ for ID ${eventId}:`, error.message);
+    return null;
+  }
+};
+
 // Helper function to transform post data to match Flutter ExplorePost model
 const transformPostForFlutter = async (post, currentUserId = null) => {
   console.log(
@@ -134,6 +155,23 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
     }
   }
 
+  // Fetch event data if event_id exists
+  let eventData = null;
+  if (post.event_id) {
+    try {
+      console.log("🎫 [TRANSFORM] Fetching event data for event_id:", post.event_id);
+      eventData = await fetchEventInfo(post.event_id);
+      if (eventData) {
+        console.log("✅ [TRANSFORM] Event data fetched successfully:", eventData.title);
+      }
+    } catch (error) {
+      console.warn(
+        "⚠️ [TRANSFORM] Failed to fetch event info:",
+        error.message
+      );
+    }
+  }
+
   const transformedPost = {
     id: post.post_id,
     userId: post.user_id,
@@ -146,9 +184,10 @@ const transformPostForFlutter = async (post, currentUserId = null) => {
     content: post.caption || "",
     imageUrls: imageUrls,
     eventId: post.event_id || null,
-    relatedEventName: null, // Would need event service integration
-    relatedEventDate: null,
-    relatedEventLocation: null,
+    relatedEventName: eventData?.title || null,
+    relatedEventImage: eventData?.imageUrl || eventData?.cover_image_url || null,
+    relatedEventDate: eventData?.startDateTime || eventData?.start_date_time || null,
+    relatedEventLocation: eventData?.venue || eventData?.location || null,
     likesCount: post.engagement_count || 0,
     commentsCount: post.comment_count || 0,
     sharesCount: post.sharesCount || 0,

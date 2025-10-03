@@ -3,6 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/explore_post_service.dart';
+import '../widgets/smart_event_picker.dart';
+import '../../events/services/event_service.dart';
+import '../../events/models/event_model.dart';
+import '../../auth/services/auth_service.dart';
+import '../../auth/models/user_model.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -16,6 +21,33 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<File> _selectedImages = [];
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
+  
+  // Event selection state
+  String? _selectedEventId;
+  String? _selectedEventName;
+  List<Event> _availableEvents = [];
+  final EventService _eventService = EventService();
+  
+  // User data state
+  User? _currentUser;
+  final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      setState(() {
+        _currentUser = user;
+      });
+    } catch (e) {
+      print('Error loading current user: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -25,7 +57,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _pickImages() async {
     // Check if we've reached the maximum number of images
-    const maxImages = 5;
+    const maxImages = 10;
     if (_selectedImages.length >= maxImages) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -72,7 +104,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _takePhoto() async {
     // Check if we've reached the maximum number of images
-    const maxImages = 5;
+    const maxImages = 10;
     if (_selectedImages.length >= maxImages) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -107,6 +139,193 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _selectedImages.removeAt(index);
     });
+  }
+
+  bool _canPost() {
+    return _contentController.text.trim().isNotEmpty || _selectedImages.isNotEmpty;
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final events = await _eventService.getAllEvents();
+      setState(() {
+        _availableEvents = events;
+      });
+    } catch (e) {
+      print('Error loading events: $e');
+      // Don't show error to user, just continue without events
+    }
+  }
+
+  void _showEventPicker() async {
+    // Preload events in background before showing picker
+    SmartEventPicker.preloadEvents(() => _loadEventsForPicker());
+    
+    final result = await SmartEventPicker.show(
+      context: context,
+      eventLoader: () => _loadEventsForPicker(),
+      selectedEventId: _selectedEventId,
+    );
+
+    if (result != null) {
+      if (result['action'] == 'clear') {
+        _clearSelectedEvent();
+      } else if (result['action'] == 'select') {
+        setState(() {
+          _selectedEventId = result['id'];
+          _selectedEventName = result['name'];
+        });
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadEventsForPicker() async {
+    try {
+      await _loadEvents(); // Load events using existing method
+      return _availableEvents.map((event) => {
+        'id': event.id,
+        'name': event.title, // Use title instead of name
+        'description': event.description,
+        'date': event.startDateTime.toString(), // Use startDateTime instead of startDate
+      }).toList();
+    } catch (e) {
+      print('❌ [CREATE_POST] Failed to load events for picker: $e');
+      return [];
+    }
+  }
+
+  void _clearSelectedEvent() {
+    setState(() {
+      _selectedEventId = null;
+      _selectedEventName = null;
+    });
+  }
+
+  Widget _buildEventPickerModal() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                const Text(
+                  'Link to Event',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const Divider(height: 1),
+          
+          // Events list
+          Expanded(
+            child: _availableEvents.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading events...'),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _availableEvents.length,
+                    itemBuilder: (context, index) {
+                      final event = _availableEvents[index];
+                      final isSelected = _selectedEventId == event.id;
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          onTap: () {
+                            setState(() {
+                              _selectedEventId = event.id;
+                              _selectedEventName = event.title;
+                            });
+                            Navigator.pop(context);
+                          },
+                          leading: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: event.imageUrl.isNotEmpty
+                                  ? DecorationImage(
+                                      image: NetworkImage(event.imageUrl),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                              color: event.imageUrl.isEmpty ? Colors.grey[300] : null,
+                            ),
+                            child: event.imageUrl.isEmpty
+                                ? Icon(Icons.event, color: Colors.grey[600])
+                                : null,
+                          ),
+                          title: Text(
+                            event.title,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${event.venue} • ${_formatEventDate(event.startDateTime)}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(Icons.check_circle, color: Color(0xFF32CD32))
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatEventDate(DateTime dateTime) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[dateTime.month - 1]} ${dateTime.day}';
   }
 
   Future<void> _createPost() async {
@@ -152,8 +371,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final success = await postService.createPost(
         content: content,
         imagePaths: imagePaths,
-        // TODO: Add event selection functionality
-        eventId: null,
+        eventId: _selectedEventId, // Pass the selected event ID
       );
 
       if (mounted) {
@@ -161,6 +379,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           // Clear form
           _contentController.clear();
           _selectedImages.clear();
+          _selectedEventId = null;
+          _selectedEventName = null;
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -200,198 +420,365 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.close,
-            color: theme.iconTheme.color,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => context.pop(),
         ),
-        title: Text(
-          'Create Post',
+        title: const Text(
+          'New Post',
           style: TextStyle(
-            color: theme.textTheme.titleLarge?.color,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
+        centerTitle: true,
         actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _createPost,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'Post',
-                    style: TextStyle(
-                      color: Color(0xFF32CD32), // Lime Green
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            child: TextButton(
+              onPressed: _isLoading ? null : _createPost,
+              style: TextButton.styleFrom(
+                backgroundColor: _canPost() && !_isLoading ? 
+                  const Color(0xFF32CD32) : Colors.grey[300],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      'Share',
+                      style: TextStyle(
+                        color: _canPost() && !_isLoading ? Colors.white : Colors.grey,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Profile Section
+                  _buildProfileSection(),
+                  
+                  // Content Input
+                  _buildContentInput(),
+                  
+                  // Event Selection
+                  _buildEventSection(),
+                  
+                  // Media Section
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildMediaSection(),
                   ),
+                  
+                  // Image Preview
+                  if (_selectedImages.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildImagePreview(),
+                    ),
+                  
+                  const SizedBox(height: 80), // Bottom padding
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Content Input
-            _buildContentInput(),
-            const SizedBox(height: 20),
+    );
+  }
 
-            // Image Selection
-            _buildImageSection(),
-            const SizedBox(height: 20),
-
-            // Image Preview
-            if (_selectedImages.isNotEmpty) _buildImagePreview(),
-          ],
-        ),
+  Widget _buildProfileSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          // Profile Avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey[300],
+              border: Border.all(color: Colors.grey[400]!, width: 1),
+              image: _currentUser?.profileImageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(_currentUser!.profileImageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: _currentUser?.profileImageUrl == null
+                ? Icon(
+                    Icons.person,
+                    color: Colors.grey[600],
+                    size: 24,
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          
+          // Username and Location
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _currentUser != null 
+                      ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
+                      : 'Loading...',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 14,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Add location',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Privacy Settings
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.public,
+                  size: 16,
+                  color: Colors.grey[700],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Public',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildContentInput() {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'What\'s on your mind?',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: theme.textTheme.titleMedium?.color,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _contentController,
+        maxLines: null,
+        maxLength: 2000,
+        onChanged: (value) => setState(() {}),
+        decoration: InputDecoration(
+          hintText: 'What\'s happening?',
+          hintStyle: TextStyle(
+            color: Colors.grey[500],
+            fontSize: 18,
           ),
+          border: InputBorder.none,
+          counterText: '', // Hide character counter
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _contentController,
-          maxLines: 5,
-          maxLength: 2000,
-          onChanged: (value) {
-            // Trigger rebuild to update character counter color
-            setState(() {});
-          },
-          decoration: InputDecoration(
-            hintText: 'Share your thoughts, experiences, or memories...',
-            hintStyle: TextStyle(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: theme.dividerColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF32CD32), width: 2),
-            ),
-            contentPadding: const EdgeInsets.all(16),
-            counterStyle: TextStyle(
-              color: _contentController.text.length > 1800
-                  ? Colors.orange
-                  : _contentController.text.length > 1950
-                      ? Colors.red
-                      : theme.textTheme.bodySmall?.color,
-            ),
-          ),
+        style: const TextStyle(
+          fontSize: 18,
+          height: 1.4,
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildImageSection() {
-    final theme = Theme.of(context);
+  Widget _buildEventSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: _showEventPicker,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event,
+                    color: _selectedEventId != null ? const Color(0xFF32CD32) : Colors.grey[600],
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedEventId != null && _selectedEventName != null
+                          ? 'Event: $_selectedEventName'
+                          : 'Link to an event (optional)',
+                      style: TextStyle(
+                        color: _selectedEventId != null ? Colors.black : Colors.grey[600],
+                        fontSize: 14,
+                        fontWeight: _selectedEventId != null ? FontWeight.w500 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (_selectedEventId != null)
+                    GestureDetector(
+                      onTap: _clearSelectedEvent,
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.grey[600],
+                        size: 18,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.grey[400],
+                      size: 16,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildMediaSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Add Photos',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: theme.textTheme.titleMedium?.color,
-              ),
-            ),
-            Text(
-              '${_selectedImages.length}/5',
-              style: TextStyle(
-                fontSize: 14,
-                color: _selectedImages.length >= 5
-                    ? Colors.red
-                    : theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: _buildImageButton(
-                icon: Icons.photo_library,
-                label: 'Gallery',
+              child: _buildMediaButton(
+                icon: Icons.photo_library_outlined,
+                label: 'Photo/Video',
+                color: Colors.blue,
                 onTap: _pickImages,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildImageButton(
-                icon: Icons.camera_alt,
+              child: _buildMediaButton(
+                icon: Icons.camera_alt_outlined,
                 label: 'Camera',
+                color: Colors.green,
                 onTap: _takePhoto,
               ),
             ),
           ],
         ),
+        if (_selectedImages.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.photo_library, color: Colors.grey[600], size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  '${_selectedImages.length} photo${_selectedImages.length == 1 ? '' : 's'} selected',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${_selectedImages.length}/10',
+                  style: TextStyle(
+                    color: _selectedImages.length >= 10 ? Colors.red : Colors.grey[600],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildImageButton({
+  Widget _buildMediaButton({
     required IconData icon,
     required String label,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: const Color(0xFF32CD32), // Lime Green
-            ),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color,
+              style: const TextStyle(
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -402,63 +789,83 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildImagePreview() {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Selected Images (${_selectedImages.length})',
+        const Text(
+          'Photos',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: theme.textTheme.titleMedium?.color,
           ),
         ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: _selectedImages.length,
-          itemBuilder: (context, index) {
-            return Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    _selectedImages[index],
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: GestureDetector(
-                    onTap: () => _removeImage(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
+        const SizedBox(height: 12),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _selectedImages.length,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        _selectedImages[index],
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _removeImage(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (index == 0 && _selectedImages.length > 1)
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '1',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-            );
-          },
+              );
+            },
+          ),
         ),
       ],
     );

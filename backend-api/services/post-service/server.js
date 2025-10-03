@@ -21,6 +21,7 @@ const {
   closeRabbitMQ: closeRabbitMQConsumer,
 } = require("./utils/rabbitmq-consumer");
 const UserDataService = require("./services/user-data-service");
+const { eventDataService } = require("./services/event-data-service");
 
 // Handle BigInt serialization
 BigInt.prototype.toJSON = function () {
@@ -247,6 +248,10 @@ const initializeRabbitMQ = async () => {
     await UserDataService.initialize();
     console.log("[POST-SERVICE] ✅ User Data Service initialized");
 
+    // Initialize event data service for fetching event information
+    await eventDataService.connect();
+    console.log("[POST-SERVICE] ✅ Event Data Service initialized");
+
     return true;
   } catch (error) {
     console.error("[POST-SERVICE] ❌ RabbitMQ initialization failed:", error);
@@ -263,6 +268,7 @@ const gracefulShutdown = async () => {
     const isRabbitMQEnabled = process.env.RABBITMQ_ENABLED === "true";
     if (isRabbitMQEnabled) {
       await UserDataService.cleanup();
+      await eventDataService.disconnect();
       await closeRabbitMQ();
       await closeRabbitMQConsumer();
     }
