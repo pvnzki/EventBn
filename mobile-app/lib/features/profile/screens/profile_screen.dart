@@ -331,7 +331,6 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (context) => Theme(
         data: Theme.of(context).copyWith(
-          dialogBackgroundColor: colorScheme.surface,
           dialogTheme: DialogThemeData(
             backgroundColor: colorScheme.surface,
             surfaceTintColor: Colors.transparent,
@@ -403,7 +402,6 @@ class ProfileScreen extends StatelessWidget {
       builder: (BuildContext context) {
         return Theme(
           data: Theme.of(context).copyWith(
-            dialogBackgroundColor: colorScheme.surface,
             dialogTheme: DialogThemeData(
               backgroundColor: colorScheme.surface,
               surfaceTintColor: Colors.transparent,

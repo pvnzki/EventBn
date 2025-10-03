@@ -43,8 +43,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   
   // Global selection timer
   Timer? _selectionTimer;
-  int _timeRemaining = 0; // seconds
-  bool _hasSelectedSeats = false;
+  final int _timeRemaining = 0; // seconds
+  final bool _hasSelectedSeats = false;
   
   // Zoom and pan controllers
   final TransformationController _transformationController = TransformationController();
@@ -93,7 +93,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     _sessionActive = true;
     _sessionTimeLeft = 5 * 60; // 5 minutes in seconds
     
-    _sessionTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           _sessionTimeLeft--;
@@ -127,7 +127,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     
     // Show expiration message
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+      const SnackBar(
         content: Text('Selection time expired. Please select your seats again.'),
         backgroundColor: Colors.orange,
         duration: Duration(seconds: 3),
@@ -742,7 +742,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: theme.brightness == Brightness.dark 
-              ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+              ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)
               : theme.primaryColor.withOpacity(0.05),
           child: Row(
             children: [
@@ -870,7 +870,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         height: 28,
         decoration: BoxDecoration(
           color: theme.brightness == Brightness.dark 
-              ? theme.colorScheme.surfaceVariant.withOpacity(0.8)
+              ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.8)
               : theme.primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
@@ -915,7 +915,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         children: [
           _buildCompactLegendItem(
             color: theme.brightness == Brightness.dark 
-                ? theme.colorScheme.surfaceVariant
+                ? theme.colorScheme.surfaceContainerHighest
                 : theme.colorScheme.surface,
             label: 'Available',
             theme: theme,
@@ -1337,7 +1337,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -1370,9 +1370,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       // Add aisle spacing every 4 seats (configurable)
       int aisleSpacing = layoutConfig['aisleSpacing'] ?? 4;
       if ((i + 1) % aisleSpacing == 0 && i < rowSeats.length - 1) {
-        widgets.add(SizedBox(width: 6)); // Further reduced aisle gap
+        widgets.add(const SizedBox(width: 6)); // Further reduced aisle gap
       } else if (i < rowSeats.length - 1) {
-        widgets.add(SizedBox(width: 0.5)); // Extremely minimal regular spacing
+        widgets.add(const SizedBox(width: 0.5)); // Extremely minimal regular spacing
       }
     }
     
@@ -1416,7 +1416,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       // For available seats, use a more visible color in dark mode
       final isDarkMode = theme.brightness == Brightness.dark;
       seatColor = isDarkMode 
-          ? theme.colorScheme.surfaceVariant
+          ? theme.colorScheme.surfaceContainerHighest
           : theme.colorScheme.surface;
       textColor = isDarkMode 
           ? theme.colorScheme.onSurfaceVariant
@@ -1700,7 +1700,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                         ? theme.primaryColor
                         : isAvailable
                             ? (theme.brightness == Brightness.dark 
-                                ? theme.colorScheme.surfaceVariant
+                                ? theme.colorScheme.surfaceContainerHighest
                                 : theme.colorScheme.onSurface.withOpacity(0.3))
                             : theme.colorScheme.error.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(1),

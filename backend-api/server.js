@@ -1,17 +1,21 @@
 require("dotenv").config();
 
 const express = require("express");
-const path = require("path")
+const path = require("path");
 const cors = require("cors");
 const prisma = require("./lib/database");
 const { connectRedis } = require("./lib/redis");
 
 // Handle BigInt serialization for JSON responses
-BigInt.prototype.toJSON = function() {
+BigInt.prototype.toJSON = function () {
   return Number(this);
 };
 
 const app = express();
+
+// NOTE: Currently running as a monolith with service modules.
+// Services are organized for future microservice separation but share the same process/database.
+// To convert to true microservices: split into separate Node.js applications with their own ports.
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
@@ -26,7 +30,7 @@ if (process.env.NODE_ENV === "development") {
 } else {
   // Production → only allow origins from .env
   const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map(o => o.trim())
+    ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
     : [
         "http://localhost:3000",
         "http://localhost:8080", // Flutter web default
@@ -64,7 +68,6 @@ const seatLockRoutes = require("./routes/seatLocks");
 const queueRoutes = require("./routes/queueRoutes");
 
 const analyticsRoutes = require("./routes/analytics");
-
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -115,9 +118,36 @@ app.use("/api/queue", queueRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 
+// Service health endpoints (prepare for microservice separation)
+app.get("/api/services/core/health", async (req, res) => {
+  try {
+    const coreService = require("./services/core-service");
+    const health = await coreService.health();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      service: "core-service",
+      status: "error",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
-
-
+app.get("/api/services/post/health", async (req, res) => {
+  try {
+    const postService = require("./services/post-service");
+    const health = await postService.healthCheck();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({
+      service: "post-service",
+      status: "error",
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -139,7 +169,7 @@ app.use("*", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
+const HOST = process.env.HOST || "0.0.0.0"; // Listen on all network interfaces
 
 // Initialize Redis connection
 const startServer = async () => {

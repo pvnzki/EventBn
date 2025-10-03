@@ -27,17 +27,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   // Comments management
   List<Map<String, dynamic>> _comments = [];
-  final String _currentUserId =
-      'current_user_001'; // In real app, get from auth service
-  final String _currentUserName = 'You'; // In real app, get from user profile
-  final String _currentUserAvatar = ''; // In real app, get from user profile
+  bool _commentsLoading = false;
 
   @override
   void initState() {
     super.initState();
     print('🎬 PostDetailScreen initState called for postId: ${widget.postId}');
     _loadPost();
-    _initializeComments();
   }
 
   @override
@@ -67,6 +63,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _post = post;
         _isLoading = false;
       });
+
+      // Load comments after post is loaded
+      print('📝 [DEBUG] About to load comments for post: ${_post!.id}');
+      await _loadComments();
+      print('📝 [DEBUG] Finished loading comments, count: ${_comments.length}');
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -79,34 +80,96 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  void _initializeComments() {
-    // Initialize with mock comments - in real app, these would come from the API
-    _comments = [
-      {
-        'id': 'comment_001',
-        'user': 'Alice Johnson',
-        'userId': 'alice_001',
-        'comment': 'This looks amazing! Can\'t wait to attend.',
-        'time': '2h',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-      },
-      {
-        'id': 'comment_002',
-        'user': 'Bob Smith',
-        'userId': 'bob_002',
-        'comment': 'Thanks for sharing! This event is going to be epic.',
-        'time': '4h',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 4)),
-      },
-      {
-        'id': 'comment_003',
-        'user': 'Carol Davis',
-        'userId': 'carol_003',
-        'comment': 'Love the energy in this post! 🔥',
-        'time': '6h',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 6)),
-      },
-    ];
+  Future<void> _loadComments() async {
+    if (_post == null) return;
+
+    setState(() {
+      _commentsLoading = true;
+    });
+
+    try {
+      print('📝 Loading comments for post: ${_post!.id}');
+      final comments = await _postService.getComments(_post!.id);
+
+      setState(() {
+        _comments = comments.map((comment) {
+          print('📝 [DEBUG] Processing comment: $comment');
+          try {
+            return {
+              'id': (comment['comment_id'] ?? comment['id'] ?? '0').toString(),
+              'user': comment['user']?['full_name'] ??
+                  comment['user'] ??
+                  'Unknown User',
+              'userId':
+                  (comment['user_id'] ?? comment['userId'] ?? '0').toString(),
+              'comment': comment['comment_text'] ??
+                  comment['content'] ??
+                  comment['comment'] ??
+                  '',
+              'time': _formatCommentTime(
+                  comment['created_at'] ?? comment['createdAt']),
+              'timestamp': DateTime.tryParse(
+                      comment['created_at'] ?? comment['createdAt'] ?? '') ??
+                  DateTime.now(),
+              'likes': comment['like_count'] ?? comment['likes'] ?? 0,
+              'isLiked': comment['is_liked'] ?? false,
+            };
+          } catch (e) {
+            print('❌ [DEBUG] Error processing comment: $e');
+            return {
+              'id': '0',
+              'user': 'Error User',
+              'userId': '0',
+              'comment': 'Error loading comment',
+              'time': 'now',
+              'timestamp': DateTime.now(),
+              'likes': 0,
+              'isLiked': false,
+            };
+          }
+        }).toList();
+        _commentsLoading = false;
+      });
+
+      print('📝 Loaded ${comments.length} comments');
+    } catch (e) {
+      print('❌ Error loading comments: $e');
+      setState(() {
+        _commentsLoading = false;
+      });
+
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load comments: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatCommentTime(String? createdAt) {
+    if (createdAt == null) return 'now';
+
+    try {
+      final timestamp = DateTime.parse(createdAt);
+      final now = DateTime.now();
+      final difference = now.difference(timestamp);
+
+      if (difference.inMinutes < 1) {
+        return 'now';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes}m';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours}h';
+      } else {
+        return '${difference.inDays}d';
+      }
+    } catch (e) {
+      return 'now';
+    }
   }
 
   @override
@@ -234,7 +297,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              backgroundColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
               child: _post!.userAvatarUrl.isNotEmpty
                   ? ClipOval(
                       child: Image.network(
@@ -550,7 +614,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
           const SizedBox(height: 16),
           // Dynamic comments list
-          if (_comments.isNotEmpty)
+          if (_commentsLoading)
+            Container(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Loading comments...',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_comments.isNotEmpty)
             ..._comments.map((comment) => _buildCommentItem(comment))
           else
             Container(
@@ -638,6 +722,43 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     comment['comment']!,
                     style: theme.textTheme.bodyMedium,
                   ),
+                  const SizedBox(height: 8),
+                  // Comment actions row
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: () => _toggleCommentLike(comment),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                (comment['is_liked'] ?? false)
+                                    ? Icons.favorite
+                                    : Icons.favorite_outline,
+                                size: 16,
+                                color: (comment['is_liked'] ?? false)
+                                    ? Colors.red
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              if ((comment['likes'] ?? 0) > 0) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${comment['likes']}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -648,6 +769,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Widget _buildCommentInput() {
+    print('💬 [DEBUG] Building comment input widget');
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -722,9 +844,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     // Navigate to the specific event page
     if (_post!.relatedEventId != null) {
       print('🎯 Navigating to event: ${_post!.relatedEventId}');
-  print('🚀 Route: /events/${_post!.relatedEventId}');
+      print('🚀 Route: /events/${_post!.relatedEventId}');
       try {
-  context.push('/events/${_post!.relatedEventId}');
+        context.push('/events/${_post!.relatedEventId}');
         print('✅ Event navigation successful');
       } catch (e) {
         print('❌ Event navigation failed: $e');
@@ -744,14 +866,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _handleLike() async {
-    await _postService.toggleLike(_post!.id);
-    setState(() {
-      _post = _post!.copyWith(
-        isLiked: !_post!.isLiked,
-        likesCount:
-            _post!.isLiked ? _post!.likesCount - 1 : _post!.likesCount + 1,
-      );
-    });
+    if (_post == null) return;
+
+    try {
+      print('❤️ [DEBUG] Attempting to like post: ${_post!.id}');
+      await _postService.toggleLike(_post!.id);
+
+      setState(() {
+        _post = _post!.copyWith(
+          isLiked: !_post!.isLiked,
+          likesCount:
+              _post!.isLiked ? _post!.likesCount - 1 : _post!.likesCount + 1,
+        );
+      });
+
+      print(
+          '❤️ [DEBUG] Post like updated locally: isLiked=${_post!.isLiked}, count=${_post!.likesCount}');
+    } catch (e) {
+      print('❌ [DEBUG] Error liking post: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to like post: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleShare() async {
@@ -767,35 +908,77 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
   }
 
-  void _postComment() {
-    if (_commentController.text.trim().isEmpty) return;
+  Future<void> _toggleCommentLike(Map<String, dynamic> comment) async {
+    final commentId = comment['id'];
+    if (commentId == null) return;
 
-    // Create new comment object
-    final newComment = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'user': _currentUserName,
-      'userId': _currentUserId,
-      'comment': _commentController.text.trim(),
-      'time': 'now',
-      'timestamp': DateTime.now().toIso8601String(),
-    };
+    try {
+      print('❤️ Toggling like for comment: $commentId');
+      await _postService.toggleCommentLike(commentId);
 
-    // Add comment to the beginning of the list
-    setState(() {
-      _comments.insert(0, newComment);
-    });
+      // Update local state optimistically
+      setState(() {
+        final isCurrentlyLiked = comment['is_liked'] ?? false;
+        comment['is_liked'] = !isCurrentlyLiked;
+        comment['likes'] =
+            (comment['likes'] ?? 0) + (isCurrentlyLiked ? -1 : 1);
+      });
 
-    // Show success feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Comment posted!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+      print('❤️ Comment like toggled successfully');
+    } catch (e) {
+      print('❌ Error toggling comment like: $e');
 
-    // Clear the input and unfocus
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to like comment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty || _post == null) return;
+
+    final commentContent = _commentController.text.trim();
+
+    // Clear the input immediately for better UX
     _commentController.clear();
     FocusScope.of(context).unfocus();
+
+    try {
+      print('📝 Posting comment: $commentContent');
+      await _postService.addComment(_post!.id, commentContent);
+
+      // Show success feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Comment posted!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Reload comments to get the latest from server
+      await _loadComments();
+    } catch (e) {
+      print('❌ Error posting comment: $e');
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to post comment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      // Restore the comment text on error
+      _commentController.text = commentContent;
+    }
   }
 
   Color _getPostTypeColor() {

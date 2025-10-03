@@ -1,15 +1,17 @@
-const { getRedisClient } = require('../../../lib/redis');
-const { v4: uuidv4 } = require('uuid');
-const EventEmitter = require('events');
+const { getRedisClient } = require("../../../lib/redis");
+// Switched from uuid (ESM-only in current version) to built-in crypto.randomUUID
+// to avoid ERR_REQUIRE_ESM when running monolith with CommonJS.
+const { randomUUID } = require("crypto");
+const EventEmitter = require("events");
 
 class QueueService extends EventEmitter {
   constructor() {
     super();
-    this.QUEUE_KEY_PREFIX = 'seat_lock_queue';
-    this.RESULT_KEY_PREFIX = 'queue_result';
+    this.QUEUE_KEY_PREFIX = "seat_lock_queue";
+    this.RESULT_KEY_PREFIX = "queue_result";
     this.RESULT_TTL = 60; // Results expire after 60 seconds
     this.PROCESSING_TIMEOUT = 30000; // 30 seconds timeout for processing
-    
+
     // Track active workers
     this.isWorkerRunning = false;
     this.workerPromise = null;
@@ -17,7 +19,7 @@ class QueueService extends EventEmitter {
 
   /**
    * Generate queue key for an event
-   * @param {string} eventId 
+   * @param {string} eventId
    * @returns {string}
    */
   getQueueKey(eventId) {
@@ -26,7 +28,7 @@ class QueueService extends EventEmitter {
 
   /**
    * Generate result key for a request
-   * @param {string} requestId 
+   * @param {string} requestId
    * @returns {string}
    */
   getResultKey(requestId) {
@@ -41,77 +43,79 @@ class QueueService extends EventEmitter {
   async enqueueRequest(request) {
     try {
       const redis = getRedisClient();
-      const requestId = uuidv4();
+      const requestId = randomUUID();
       const queueKey = this.getQueueKey(request.eventId);
-      
+
       const queueItem = {
         requestId,
         ...request,
         timestamp: Date.now(),
-        status: 'queued'
+        status: "queued",
       };
 
       // Add to queue (LPUSH for FIFO when using BRPOP)
       await redis.lPush(queueKey, JSON.stringify(queueItem));
-      
-      console.log(`📝 Queued request: ${request.action} seat ${request.seatId} for user ${request.userId} (ID: ${requestId})`);
-      
+
+      console.log(
+        `📝 Queued request: ${request.action} seat ${request.seatId} for user ${request.userId} (ID: ${requestId})`
+      );
+
       // Start worker if not running
       this.startWorker(request.eventId);
-      
+
       return requestId;
     } catch (error) {
-      console.error('Error enqueuing request:', error);
+      console.error("Error enqueuing request:", error);
       throw error;
     }
   }
 
   /**
    * Get the result of a processed request
-   * @param {string} requestId 
+   * @param {string} requestId
    * @returns {Promise<Object|null>}
    */
   async getRequestResult(requestId) {
     try {
       const redis = getRedisClient();
       const resultKey = this.getResultKey(requestId);
-      
+
       const result = await redis.get(resultKey);
       return result ? JSON.parse(result) : null;
     } catch (error) {
-      console.error('Error getting request result:', error);
+      console.error("Error getting request result:", error);
       throw error;
     }
   }
 
   /**
    * Store the result of a processed request
-   * @param {string} requestId 
-   * @param {Object} result 
+   * @param {string} requestId
+   * @param {Object} result
    * @returns {Promise<void>}
    */
   async storeRequestResult(requestId, result) {
     try {
       const redis = getRedisClient();
       const resultKey = this.getResultKey(requestId);
-      
+
       const resultData = {
         ...result,
         processedAt: Date.now(),
-        requestId
+        requestId,
       };
 
       // Store with TTL
       await redis.setEx(resultKey, this.RESULT_TTL, JSON.stringify(resultData));
     } catch (error) {
-      console.error('Error storing request result:', error);
+      console.error("Error storing request result:", error);
       throw error;
     }
   }
 
   /**
    * Get queue length for an event
-   * @param {string} eventId 
+   * @param {string} eventId
    * @returns {Promise<number>}
    */
   async getQueueLength(eventId) {
@@ -120,14 +124,14 @@ class QueueService extends EventEmitter {
       const queueKey = this.getQueueKey(eventId);
       return await redis.lLen(queueKey);
     } catch (error) {
-      console.error('Error getting queue length:', error);
+      console.error("Error getting queue length:", error);
       return 0;
     }
   }
 
   /**
    * Start the queue worker for processing requests
-   * @param {string} eventId 
+   * @param {string} eventId
    */
   startWorker(eventId) {
     if (this.isWorkerRunning) {
@@ -136,7 +140,7 @@ class QueueService extends EventEmitter {
 
     this.isWorkerRunning = true;
     this.workerPromise = this.processQueue(eventId);
-    
+
     return this.workerPromise;
   }
 
@@ -153,7 +157,7 @@ class QueueService extends EventEmitter {
 
   /**
    * Process queued requests
-   * @param {string} eventId 
+   * @param {string} eventId
    */
   async processQueue(eventId) {
     const redis = getRedisClient();
@@ -165,12 +169,14 @@ class QueueService extends EventEmitter {
       try {
         // Block until a request is available (5 second timeout)
         const result = await redis.brPop(queueKey, 5);
-        
+
         if (!result) {
           // Check if queue is empty, if so, stop worker
           const queueLength = await this.getQueueLength(eventId);
           if (queueLength === 0) {
-            console.log(`⏹️  Queue empty, stopping worker for event: ${eventId}`);
+            console.log(
+              `⏹️  Queue empty, stopping worker for event: ${eventId}`
+            );
             break;
           }
           continue;
@@ -180,13 +186,14 @@ class QueueService extends EventEmitter {
         const queueItemJson = result.element;
         const queueItem = JSON.parse(queueItemJson);
 
-        console.log(`⚡ Processing request: ${queueItem.requestId} - ${queueItem.action} seat ${queueItem.seatId}`);
+        console.log(
+          `⚡ Processing request: ${queueItem.requestId} - ${queueItem.action} seat ${queueItem.seatId}`
+        );
 
         // Process the request
         await this.processRequest(queueItem);
-
       } catch (error) {
-        console.error('Error in queue processing:', error);
+        console.error("Error in queue processing:", error);
         // Continue processing even if one request fails
       }
     }
@@ -197,49 +204,67 @@ class QueueService extends EventEmitter {
 
   /**
    * Process a single request
-   * @param {Object} queueItem 
+   * @param {Object} queueItem
    */
   async processRequest(queueItem) {
     const { requestId, eventId, seatId, userId, action } = queueItem;
-    const seatLockService = require('./seatLockService');
-    
+    const seatLockService = require("./seatLockService");
+
     try {
       let result;
-      
+
       switch (action) {
-        case 'lock':
-          const locked = await seatLockService.lockSeat(eventId, seatId, userId);
+        case "lock":
+          const locked = await seatLockService.lockSeat(
+            eventId,
+            seatId,
+            userId
+          );
           result = {
             success: locked,
-            message: locked ? 'Seat locked successfully' : 'Seat already locked by another user',
-            action: 'lock',
+            message: locked
+              ? "Seat locked successfully"
+              : "Seat already locked by another user",
+            action: "lock",
             eventId,
             seatId,
-            userId
+            userId,
           };
           break;
 
-        case 'extend':
-          const extended = await seatLockService.extendLock(eventId, seatId, userId);
+        case "extend":
+          const extended = await seatLockService.extendLock(
+            eventId,
+            seatId,
+            userId
+          );
           result = {
             success: extended,
-            message: extended ? 'Lock extended successfully' : 'Cannot extend lock',
-            action: 'extend',
+            message: extended
+              ? "Lock extended successfully"
+              : "Cannot extend lock",
+            action: "extend",
             eventId,
             seatId,
-            userId
+            userId,
           };
           break;
 
-        case 'release':
-          const released = await seatLockService.releaseLock(eventId, seatId, userId);
-          result = {
-            success: released,
-            message: released ? 'Lock released successfully' : 'Cannot release lock',
-            action: 'release',
+        case "release":
+          const released = await seatLockService.releaseLock(
             eventId,
             seatId,
             userId
+          );
+          result = {
+            success: released,
+            message: released
+              ? "Lock released successfully"
+              : "Cannot release lock",
+            action: "release",
+            eventId,
+            seatId,
+            userId,
           };
           break;
 
@@ -250,29 +275,32 @@ class QueueService extends EventEmitter {
             action,
             eventId,
             seatId,
-            userId
+            userId,
           };
       }
 
       // Store result for client to retrieve
       await this.storeRequestResult(requestId, result);
-      
-      console.log(`✅ Processed: ${requestId} - ${action} ${result.success ? 'SUCCESS' : 'FAILED'}`);
-      
-      // Emit event for real-time updates (if WebSockets implemented)
-      this.emit('requestProcessed', { requestId, result });
 
+      console.log(
+        `✅ Processed: ${requestId} - ${action} ${
+          result.success ? "SUCCESS" : "FAILED"
+        }`
+      );
+
+      // Emit event for real-time updates (if WebSockets implemented)
+      this.emit("requestProcessed", { requestId, result });
     } catch (error) {
       console.error(`❌ Error processing request ${requestId}:`, error);
-      
+
       const errorResult = {
         success: false,
-        message: 'Internal server error during processing',
+        message: "Internal server error during processing",
         error: error.message,
         action,
         eventId,
         seatId,
-        userId
+        userId,
       };
 
       await this.storeRequestResult(requestId, errorResult);
@@ -281,49 +309,49 @@ class QueueService extends EventEmitter {
 
   /**
    * Get queue statistics
-   * @param {string} eventId 
+   * @param {string} eventId
    * @returns {Promise<Object>}
    */
   async getQueueStats(eventId) {
     try {
       const queueLength = await this.getQueueLength(eventId);
-      
+
       return {
         eventId,
         queueLength,
         isWorkerRunning: this.isWorkerRunning,
         estimatedWaitTime: queueLength * 2, // Rough estimate: 2 seconds per request
-        status: queueLength > 0 ? 'active' : 'idle'
+        status: queueLength > 0 ? "active" : "idle",
       };
     } catch (error) {
-      console.error('Error getting queue stats:', error);
+      console.error("Error getting queue stats:", error);
       return {
         eventId,
         queueLength: 0,
         isWorkerRunning: false,
         estimatedWaitTime: 0,
-        status: 'error',
-        error: error.message
+        status: "error",
+        error: error.message,
       };
     }
   }
 
   /**
    * Clear all requests from a queue (use with caution)
-   * @param {string} eventId 
+   * @param {string} eventId
    * @returns {Promise<number>} number of requests cleared
    */
   async clearQueue(eventId) {
     try {
       const redis = getRedisClient();
       const queueKey = this.getQueueKey(eventId);
-      
+
       const cleared = await redis.del(queueKey);
       console.log(`🗑️  Cleared ${cleared} requests from queue: ${eventId}`);
-      
+
       return cleared;
     } catch (error) {
-      console.error('Error clearing queue:', error);
+      console.error("Error clearing queue:", error);
       throw error;
     }
   }
