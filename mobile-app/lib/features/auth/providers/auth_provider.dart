@@ -97,19 +97,17 @@ Future<bool> login(String email, String password) async {
 
   // Register
   Future<bool> register({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
     required String password,
-    String? phoneNumber,
+    required String phoneNumber,
   }) async {
     _setLoading(true);
     _setError(null);
 
     try {
       final result = await _authService.register(
-        firstName: firstName,
-        lastName: lastName,
+        name: name,
         email: email,
         password: password,
         phoneNumber: phoneNumber,
