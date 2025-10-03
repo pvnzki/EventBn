@@ -235,16 +235,17 @@ const requireOwnership = (userIdField = 'user_id') => {
         success: false,
         message: 'Access denied',
         code: 'ACCESS_DENIED'
-
-    const currentUserId = req.user.user_id || req.user.id;
-    if (currentUserId !== resourceUserId) {
-      return res.status(403).json({
-        error: "Access denied",
-        code: "ACCESS_DENIED",
       });
-    }
+    } 
+    // const currentUserId = req.user.user_id || req.user.id;
+    // if (currentUserId !== resourceUserId) {
+    //   return res.status(403).json({
+    //     error: "Access denied",
+    //     code: "ACCESS_DENIED",
+    //   });
+    // }
 
-    next();
+    // next();
   };
 };
 
