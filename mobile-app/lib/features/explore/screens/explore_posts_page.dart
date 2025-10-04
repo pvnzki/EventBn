@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
+import '../widgets/post_shimmer_loading.dart';
 
 class ExplorePostsPage extends StatefulWidget {
   final bool focusSearch;
@@ -97,7 +99,15 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     if (!_isInitialized) {
       return Scaffold(
         backgroundColor: colorScheme.surface,
-        body: _buildLoadingSkeleton(),
+        body: Column(
+          children: [
+            _buildAppBar(),
+            _buildSearchAndFilters(),
+            const Expanded(
+              child: GridPostShimmerLoading(itemCount: 12),
+            ),
+          ],
+        ),
       );
     }
 
@@ -160,10 +170,10 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
+        top: MediaQuery.of(context).padding.top + 4, // Reduced from 8
         left: 20,
         right: 20,
-        bottom: 16,
+        bottom: 8, // Reduced from 16
       ),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -192,15 +202,15 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
               letterSpacing: -0.5,
-              fontSize: 24,
+              fontSize: 22, // Reduced from 24
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10), // Reduced from 12
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14), // Reduced from 16
               boxShadow: [
                 BoxShadow(
                   color: isDark
@@ -219,7 +229,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             ),
             child: Icon(
               Icons.tune_rounded,
-              size: 22,
+              size: 20, // Reduced from 22
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -234,12 +244,12 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Reduced from 16
       child: Column(
         children: [
           // Search Bar
           Container(
-            height: 52,
+            height: 48, // Reduced from 52
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -290,6 +300,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               ),
             ),
           ),
+          const SizedBox(height: 12), // Add small gap between search and filters
           // Category Filter
           SizedBox(
             height: 32,
@@ -387,8 +398,27 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             SliverToBoxAdapter(
               child: Container(
                 padding: const EdgeInsets.all(20),
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Loading more posts...',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -654,10 +684,17 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   }
 
   Widget _buildLoadingTile() {
-    return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+      highlightColor: isDark ? Colors.grey[500]! : Colors.grey[100]!,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -669,34 +706,6 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
       return '${(count / 1000).toStringAsFixed(1)}K';
     }
     return count.toString();
-  }
-
-  Widget _buildLoadingSkeleton() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
-          sliver: SliverGrid(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => Container(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              childCount: 12,
-            ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
-              childAspectRatio: 1.0,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildEmptyState() {

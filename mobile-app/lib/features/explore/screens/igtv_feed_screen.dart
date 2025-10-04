@@ -325,7 +325,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
   Future<void> _postComment() async {
     if (_commentController.text.trim().isEmpty ||
-        _currentIndex >= _posts.length) return;
+        _currentIndex >= _posts.length) {
+      return;
+    }
 
     final commentContent = _commentController.text.trim();
     final currentPost = _posts[_currentIndex];
@@ -1461,147 +1463,176 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             child: GestureDetector(
               onTap: () => _onGoToEventWithAnimation(post.relatedEventId ?? ''),
               child: Container(
-                width: 95,
+                width: 90,
                 height: 75,
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(28),
-                    bottomLeft: Radius.circular(28),
+                  topLeft: Radius.circular(28),
+                  bottomLeft: Radius.circular(28),
                   ),
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF84cc16), // lime-500
-                      Color(0xFF65a30d), // lime-600
-                      Color(0xFF4d7c0f), // lime-700
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    stops: [0.0, 0.6, 1.0],
+                  colors: [
+                    Color(0xFF84cc16), // lime-500
+                    Color(0xFF65a30d), // lime-600
+                    Color(0xFF4d7c0f), // lime-700
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: [0.0, 0.6, 1.0],
                   ),
                   boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF84cc16).withOpacity(0.4),
-                      blurRadius: 15,
-                      offset: const Offset(-4, 3),
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 8,
-                      offset: const Offset(-2, 2),
-                    ),
+                  BoxShadow(
+                    color: const Color(0xFF84cc16).withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(-4, 3),
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(-2, 2),
+                  ),
                   ],
                 ),
                 child: Stack(
                   children: [
-                    // Shimmer effect overlay
-                    AnimatedBuilder(
-                      animation: _bookmarkShimmerAnimation ??
-                          const AlwaysStoppedAnimation(0.0),
-                      builder: (context, child) {
-                        return Positioned.fill(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(28),
-                              bottomLeft: Radius.circular(28),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.white.withOpacity(0.3),
-                                    Colors.transparent,
-                                  ],
-                                  stops: const [0.0, 0.5, 1.0],
-                                  begin: Alignment(
-                                      -1.0 +
-                                          (_bookmarkShimmerAnimation?.value ??
-                                              0.0),
-                                      -0.5),
-                                  end: Alignment(
-                                      1.0 +
-                                          (_bookmarkShimmerAnimation?.value ??
-                                              0.0),
-                                      0.5),
-                                ),
-                              ),
-                            ),
+                  // Shimmer effect overlay
+                  AnimatedBuilder(
+                    animation: _bookmarkShimmerAnimation ??
+                    const AlwaysStoppedAnimation(0.0),
+                    builder: (context, child) {
+                      return Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(28),
+                        bottomLeft: Radius.circular(28),
+                        ),
+                        child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                          begin: Alignment(
+                            -1.0 +
+                              (_bookmarkShimmerAnimation?.value ??
+                                0.0),
+                            -0.5),
+                          end: Alignment(
+                            1.0 +
+                              (_bookmarkShimmerAnimation?.value ??
+                                0.0),
+                            0.5),
                           ),
-                        );
-                      },
-                    ),
-                    // Main content
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 10),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.event,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Flexible(
-                            child: Text(
-                              post.relatedEventName
-                                      ?.split(' ')
-                                      .take(2)
-                                      .join('\n') ??
-                                  'Event',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black26,
-                                    offset: Offset(0, 1),
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          ),
-                        ],
+                        ),
+                        ),
                       ),
+                      );
+                    },
+                    ),
+                    // Main content - Stack layout for precise positioning
+                    Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Stack(
+                      children: [
+                      // Ticket icon - Top left
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.local_activity,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        ),
+                      ),
+                      // Arrow icon - Bottom left
+                      Positioned(
+                        bottom: 2,
+                        left: 2,
+                        child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        ),
+                      ),
+                      // Buy Tickets text - Right side
+                      Positioned(
+                        right: 8,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                        constraints: const BoxConstraints(maxWidth: 50),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                          Text(
+                            'Buy',
+                            style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            height: 1.2,
+                            shadows: [
+                              Shadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                              ),
+                            ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            'Tickets',
+                            style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                            shadows: [
+                              Shadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                              ),
+                            ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          ],
+                        ),
+                        ),
+                      ),
+                      ],
+                    ),
                     ),
                   ],
+                  ),
                 ),
-              ),
+                ),
+              );
+              },
             ),
-          );
-        },
-      ),
-    );
-  }
+            );
+          }
 
   Widget _buildDemoIGTVEventBookmark() {
     return Positioned(

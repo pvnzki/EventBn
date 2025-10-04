@@ -25,6 +25,44 @@ console.log(
   `[POST-SERVICE] Using shared Prisma client (pid=${process.pid}) for routes/api.js`
 );
 
+// Helper function to safely parse userId - handle both string and numeric formats
+function parseUserId(userId) {
+  if (!userId) {
+    console.warn('⚠️ parseUserId: userId is null or undefined');
+    return null;
+  }
+  
+  // If already a number, return it
+  if (typeof userId === 'number') {
+    return userId;
+  }
+  
+  // If string and starts with 'user_', extract the numeric part
+  if (typeof userId === 'string') {
+    if (userId.startsWith('user_') && userId.length > 5) {
+      const numericPart = parseInt(userId.substring(5));
+      if (!isNaN(numericPart)) {
+        return numericPart;
+      } else {
+        console.warn(`⚠️ parseUserId: Could not parse numeric part from '${userId}'`);
+        return null;
+      }
+    } else {
+      // Try to parse as direct number
+      const numericValue = parseInt(userId);
+      if (!isNaN(numericValue)) {
+        return numericValue;
+      } else {
+        console.warn(`⚠️ parseUserId: Could not parse '${userId}' as number`);
+        return null;
+      }
+    }
+  }
+  
+  console.warn(`⚠️ parseUserId: Unexpected userId type: ${typeof userId}, value: ${userId}`);
+  return null;
+}
+
 // JWT Authentication middleware (enhanced logging for debugging device POST failures)
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -611,12 +649,30 @@ router.get("/posts/explore", async (req, res) => {
 
   try {
     console.log(`📋 [EXPLORE][${reqId}] Request received params=%j`, req.query);
-    const { page = 1, limit = 20, eventId } = req.query;
+    const { page = 1, limit = 20, eventId, userId } = req.query;
     const parsedLimit = Math.min(parseInt(limit), 100);
     const parsedPage = Math.max(parseInt(page), 1);
     const skip = (parsedPage - 1) * parsedLimit;
     const where = {};
     if (eventId) where.event_id = parseInt(eventId);
+    if (userId) {
+      // Handle both numeric and string user IDs (e.g., "user_123" -> 123)
+      const numericUserId = parseUserId(userId);
+      if (numericUserId === null) {
+        console.warn(`⚠️ [EXPLORE][${reqId}] Invalid userId format: ${userId}`);
+        return res.status(400).json({
+          success: false,
+          error: "Invalid userId format",
+        });
+      }
+      
+      if (!isNaN(numericUserId)) {
+        where.user_id = numericUserId;
+        console.log(`📋 [EXPLORE][${reqId}] Filtering by user_id: ${numericUserId} (from: ${userId})`);
+      } else {
+        console.warn(`📋 [EXPLORE][${reqId}] Invalid userId format: ${userId}`);
+      }
+    }
 
     const { posts, retry, elapsedMs } = await fetchExplorePosts({
       where,
@@ -833,13 +889,24 @@ router.post(
       }
 
       console.log("💾 [POST CREATION] Creating post in database...");
+      
+      // Handle both numeric and string user IDs (e.g., "user_123" -> 123)
+      const numericUserId = parseUserId(userId);
+      if (numericUserId === null) {
+        console.error(`❌ [POST CREATION] Invalid userId format: ${userId}`);
+        return res.status(400).json({
+          success: false,
+          error: "Invalid user ID format",
+        });
+      }
+      
       const post = await prisma.post.create({
         data: {
           caption: content || "",
           image_url: images.length > 0 ? images[0] : null, // For backward compatibility
           images: images, // New images array column
           videos: videos, // New videos array column
-          user_id: parseInt(userId),
+          user_id: numericUserId,
           event_id: eventId ? parseInt(eventId) : null,
         },
       });
@@ -1006,6 +1073,16 @@ router.post("/posts/:postId/like", verifyJWT, async (req, res) => {
     const { postId } = req.params;
     const userId = req.user.userId || req.user.user_id || req.user.id;
 
+    // Handle both numeric and string user IDs (e.g., "user_123" -> 123)
+    const numericUserId = parseUserId(userId);
+    if (numericUserId === null) {
+      console.error(`❌ [LIKE] Invalid userId format: ${userId}`);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID format",
+      });
+    }
+
     // Check if post exists
     const post = await prisma.post.findUnique({
       where: { post_id: parseInt(postId) },
@@ -1022,7 +1099,7 @@ router.post("/posts/:postId/like", verifyJWT, async (req, res) => {
     const existingLike = await prisma.postLike.findFirst({
       where: {
         post_id: parseInt(postId),
-        user_id: parseInt(userId),
+        user_id: numericUserId,
       },
     });
 
@@ -1046,7 +1123,7 @@ router.post("/posts/:postId/like", verifyJWT, async (req, res) => {
       // Publish unlike event for real-time notifications
       try {
         await publishPostUnliked(post, {
-          userId: parseInt(userId),
+          userId: numericUserId,
           timestamp: new Date().toISOString(),
         });
         console.log(
@@ -1063,7 +1140,7 @@ router.post("/posts/:postId/like", verifyJWT, async (req, res) => {
       await prisma.postLike.create({
         data: {
           post_id: parseInt(postId),
-          user_id: parseInt(userId),
+          user_id: numericUserId,
         },
       });
 
@@ -1198,16 +1275,47 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
           `📖 [GET_COMMENTS] Fetching user data for ${userIds.length} users (including reply authors)`
         );
         const userResponse = await getUsersBatch(userIds);
-        usersData = userResponse?.users || [];
+        // Handle different response formats from user service
+        usersData = userResponse?.users || userResponse?.data?.users || [];
         console.log(
           `📖 [GET_COMMENTS] Received ${usersData.length} user records`
         );
+        console.log(
+          `📖 [GET_COMMENTS] User response structure:`, Object.keys(userResponse || {})
+        );
       } catch (userError) {
         console.warn(
-          "⚠️ [GET_COMMENTS] Failed to fetch users data, using fallback:",
+          "⚠️ [GET_COMMENTS] Failed to fetch users data from service, trying local database:",
           userError.message
         );
-        // Fallback to empty users data - comments will show with generic user names
+        
+        // Fallback: Try to get user data from local users table
+        try {
+          const localUsers = await prisma.users.findMany({
+            where: {
+              id: {
+                in: userIds.map(id => id.toString())
+              }
+            },
+            select: {
+              id: true,
+              full_name: true,
+              avatar_url: true
+            }
+          });
+          
+          usersData = localUsers.map(user => ({
+            id: parseInt(user.id),
+            full_name: user.full_name,
+            name: user.full_name,
+            avatar_url: user.avatar_url
+          }));
+          
+          console.log(`📖 [GET_COMMENTS] Found ${usersData.length} users in local database`);
+        } catch (localError) {
+          console.warn("⚠️ [GET_COMMENTS] Local user lookup also failed:", localError.message);
+          // Final fallback: use generic user names
+        }
       }
     }
 
@@ -1410,6 +1518,26 @@ router.post("/posts/:postId/comments", verifyJWT, async (req, res) => {
 
     console.log(`✅ [ADD_COMMENT] Comment created successfully:`, comment);
 
+    // Store/update user data in local users table for future reference
+    try {
+      await prisma.users.upsert({
+        where: { id: authorId.toString() },
+        update: {
+          full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
+          avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+          updated_at: new Date(),
+        },
+        create: {
+          id: authorId.toString(),
+          full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
+          avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+        },
+      });
+      console.log(`💾 [ADD_COMMENT] Updated local user data for user ${authorId}`);
+    } catch (userStoreError) {
+      console.warn(`⚠️ [ADD_COMMENT] Failed to store user data locally:`, userStoreError.message);
+    }
+
     // Update comment count on post
     await prisma.post.update({
       where: { post_id: parseInt(postId) },
@@ -1430,13 +1558,16 @@ router.post("/posts/:postId/comments", verifyJWT, async (req, res) => {
     }
     */
 
-    // Fetch user data for the comment
-    let userData = null;
-    try {
-      userData = await getUserData(authorId);
-    } catch (userError) {
-      console.warn("Failed to fetch user data for comment:", userError.message);
-    }
+    // Get user data from JWT token instead of making service call
+    const userData = {
+      id: authorId,
+      full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
+      name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
+      avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+      email: req.user.email || null,
+    };
+
+    console.log(`💬 [ADD_COMMENT] Using JWT user data:`, userData);
 
     const response = {
       success: true,
@@ -1444,11 +1575,9 @@ router.post("/posts/:postId/comments", verifyJWT, async (req, res) => {
       data: {
         comment: {
           ...comment,
-          user: userData || {
-            id: authorId,
-            full_name: `User ${authorId}`,
-            avatar_url: null,
-          },
+          user_display_name: userData.full_name,
+          user_name: userData.name,
+          user: userData,
         },
       },
     };
@@ -1498,7 +1627,16 @@ router.put("/comments/:commentId", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
     const { content } = req.body;
-    const authorId = parseInt(req.user.userId);
+    
+    // Parse userId - handle both string and numeric formats
+    const authorId = parseUserId(req.user.userId);
+    if (authorId === null) {
+      console.error(`❌ [COMMENT UPDATE] Invalid userId format: ${req.user.userId}`);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID format",
+      });
+    }
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
@@ -1555,7 +1693,16 @@ router.put("/comments/:commentId", verifyJWT, async (req, res) => {
 router.delete("/comments/:commentId", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
-    const authorId = parseInt(req.user.userId);
+    
+    // Parse userId - handle both string and numeric formats
+    const authorId = parseUserId(req.user.userId);
+    if (authorId === null) {
+      console.error(`❌ [COMMENT DELETE] Invalid userId format: ${req.user.userId}`);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID format",
+      });
+    }
 
     // Check if comment exists and get post_id for count update
     const comment = await prisma.comment.findUnique({
@@ -1607,7 +1754,16 @@ router.delete("/comments/:commentId", verifyJWT, async (req, res) => {
 router.post("/comments/:commentId/like", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
-    const userId = parseInt(req.user.userId);
+    
+    // Parse userId - handle both string and numeric formats
+    const userId = parseUserId(req.user.userId);
+    if (userId === null) {
+      console.error(`❌ [COMMENT LIKE] Invalid userId format: ${req.user.userId}`);
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID format",
+      });
+    }
 
     // Check if comment exists
     const comment = await prisma.comment.findUnique({

@@ -9,12 +9,12 @@ class FeedVideoPlayer extends StatefulWidget {
   final double? aspectRatio;
 
   const FeedVideoPlayer({
-    Key? key,
+    super.key,
     required this.videoUrl,
     this.autoPlay = false,
     this.showControls = true,
     this.aspectRatio,
-  }) : super(key: key);
+  });
 
   @override
   State<FeedVideoPlayer> createState() => _FeedVideoPlayerState();

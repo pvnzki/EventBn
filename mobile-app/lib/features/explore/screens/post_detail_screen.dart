@@ -97,8 +97,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           try {
             return {
               'id': (comment['comment_id'] ?? comment['id'] ?? '0').toString(),
-              'user': comment['user']?['full_name'] ??
-                  comment['user'] ??
+              'user': comment['user_display_name'] ??
+                  comment['user_name'] ??
+                  comment['user']?['name'] ??
                   'Unknown User',
               'userId':
                   (comment['user_id'] ?? comment['userId'] ?? '0').toString(),
@@ -107,7 +108,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   comment['comment'] ??
                   '',
               'time': _formatCommentTime(
-                  comment['created_at'] ?? comment['createdAt']),
+                  comment['created_at'] ?? comment['createdAt'] ?? ''),
               'timestamp': DateTime.tryParse(
                       comment['created_at'] ?? comment['createdAt'] ?? '') ??
                   DateTime.now(),

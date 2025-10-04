@@ -145,7 +145,7 @@ class ImageOptimizationService {
           errorWidget ?? _buildDefaultErrorWidget(width, height),
       fadeInDuration: const Duration(milliseconds: 200),
       fadeOutDuration: const Duration(milliseconds: 100),
-      httpHeaders: {
+      httpHeaders: const {
         'Cache-Control': 'max-age=86400', // 24 hours
         'Accept': 'image/webp,image/jpeg,image/png,*/*',
       },

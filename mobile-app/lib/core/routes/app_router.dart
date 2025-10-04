@@ -30,8 +30,9 @@ import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/all_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
-import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/my_profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
+import '../../features/profile/screens/profile_posts_feed_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/create_post_screen.dart';
 
@@ -185,6 +186,21 @@ class AppRouter {
           final userId = state.pathParameters['userId']!;
           print('🛣️ Router: Building UserProfileScreen for userId: $userId');
           return UserProfileScreen(userId: userId);
+        },
+      ),
+
+      // Profile Posts Feed Route
+      GoRoute(
+        path: '/profile/posts/:userId',
+        name: 'profile-posts-feed',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          print('🛣️ Router: Building ProfilePostsFeedScreen for userId: $userId');
+          return ProfilePostsFeedScreen(
+            userId: userId,
+            username: extra?['username'],
+          );
         },
       ),
 

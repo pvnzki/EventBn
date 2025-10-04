@@ -48,8 +48,8 @@ class OptimizedExplorePostService {
   DateTime? _tokenExpiry;
 
   // Performance metrics
-  int _networkFetchCount = 0;
-  int _cacheHitCount = 0;
+  final int _networkFetchCount = 0;
+  final int _cacheHitCount = 0;
 
   // Getters
   List<ExplorePost> get posts => _posts;

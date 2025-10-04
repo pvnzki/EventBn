@@ -345,7 +345,7 @@ class ExplorePostService {
       final uri = Uri.parse('$_postServiceUrl/api/posts/$postId/comments');
       final body = jsonEncode({
         'content': content,
-        if (parentCommentId != null) 'parent_comment_id': parentCommentId,
+        if (parentCommentId != null) 'parentCommentId': parentCommentId,
       });
       print('💬 [DEBUG] Comment URL: $uri');
       print('💬 [DEBUG] Comment headers: $headers');
@@ -682,6 +682,148 @@ class ExplorePostService {
       }
     } catch (e) {
       print('💥 Error creating post: $e');
+      return false;
+    }
+  }
+
+  // Get posts for a specific user
+  Future<List<ExplorePost>> getExplorePostsForUser({
+    required String userId,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final uri = Uri.parse('$_postServiceUrl/api/posts/explore').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'limit': limit.toString(),
+          'userId': userId,
+        },
+      );
+
+      print('🔍 [USER_POSTS] Fetching posts for user $userId (page: $page, limit: $limit)');
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['posts'] is List) {
+          final postsList = data['posts'] as List;
+          final posts = postsList.map((json) => ExplorePost.fromJson(json)).toList();
+          print('✅ [USER_POSTS] Fetched ${posts.length} posts for user $userId');
+          return posts;
+        }
+      }
+
+      print('❌ [USER_POSTS] Failed to fetch posts for user $userId: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('💥 [USER_POSTS] Error fetching posts for user $userId: $e');
+      return [];
+    }
+  }
+
+  // Get a single post by ID
+  Future<ExplorePost?> getPostById(String postId) async {
+    try {
+      final token = await _getAuthToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(
+        Uri.parse('$_postServiceUrl/api/posts/$postId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['post'] != null) {
+          print('✅ [GET_POST] Fetched post $postId');
+          return ExplorePost.fromJson(data['post']);
+        }
+      }
+
+      print('❌ [GET_POST] Failed to fetch post $postId: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('💥 [GET_POST] Error fetching post $postId: $e');
+      return null;
+    }
+  }
+
+  // Like a post
+  Future<bool> likePost(String postId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        print('❌ [LIKE_POST] No auth token available');
+        return false;
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.post(
+        Uri.parse('$_postServiceUrl/api/posts/$postId/like'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          print('✅ [LIKE_POST] Liked post $postId');
+          return true;
+        }
+      }
+
+      print('❌ [LIKE_POST] Failed to like post $postId: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('💥 [LIKE_POST] Error liking post $postId: $e');
+      return false;
+    }
+  }
+
+  // Unlike a post
+  Future<bool> unlikePost(String postId) async {
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        print('❌ [UNLIKE_POST] No auth token available');
+        return false;
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.delete(
+        Uri.parse('$_postServiceUrl/api/posts/$postId/like'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          print('✅ [UNLIKE_POST] Unliked post $postId');
+          return true;
+        }
+      }
+
+      print('❌ [UNLIKE_POST] Failed to unlike post $postId: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('💥 [UNLIKE_POST] Error unliking post $postId: $e');
       return false;
     }
   }

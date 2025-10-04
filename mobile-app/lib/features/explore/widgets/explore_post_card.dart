@@ -425,7 +425,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
   }
 
   Widget _buildMultipleVideos() {
-    return Container(
+    return SizedBox(
       height: 200,
       child: Row(
         children: [
@@ -558,7 +558,7 @@ class _ExplorePostCardState extends State<ExplorePostCard>
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.black,
-          child: Container(
+          child: SizedBox(
             width: double.infinity,
             height: 300,
             child: FeedVideoPlayer(

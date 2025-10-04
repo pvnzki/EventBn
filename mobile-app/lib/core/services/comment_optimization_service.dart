@@ -78,10 +78,7 @@ class CommentOptimizationService {
       final cacheKey = '${postId}_page_${state.currentPage}';
       List<Comment>? cachedComments = _commentCache.get(cacheKey);
 
-      if (cachedComments == null) {
-        // Load from disk cache
-        cachedComments = await _loadCommentsFromDisk(cacheKey);
-      }
+      cachedComments ??= await _loadCommentsFromDisk(cacheKey);
 
       if (cachedComments == null) {
         // Load from network

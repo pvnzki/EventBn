@@ -54,12 +54,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       if (user == null) {
         print('⚠️ [CreatePost] User is null - backend might not be running');
+        print('🔧 [CreatePost] Creating fallback user for testing');
+        // Create a fallback user for testing when backend is not available
+        setState(() {
+          _currentUser = User(
+            id: '1001',
+            firstName: 'Test',
+            lastName: 'User',
+            email: 'test@example.com',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        });
       }
     } catch (e) {
       print('❌ [CreatePost] Error loading current user: $e');
+      print('🔧 [CreatePost] Creating fallback user for testing');
       // Set a fallback user for UI testing
       setState(() {
-        _currentUser = null;
+        _currentUser = User(
+          id: '1001',
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@example.com',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
       });
     }
   }
@@ -999,7 +1019,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
+        SizedBox(
           height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,

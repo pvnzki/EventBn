@@ -80,8 +80,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             'posts': 0, // Will be updated when posts are loaded
             'followers': fetchedUserData['followersCount']?.toString() ?? '0',
             'following': fetchedUserData['followingCount'] ?? 0,
-            'location': fetchedUserData['location'] ?? null,
-            'website': fetchedUserData['website'] ?? null,
+            'location': fetchedUserData['location'],
+            'website': fetchedUserData['website'],
             'joinedDate': _formatJoinDate(fetchedUserData['createdAt']),
             'isVerified': fetchedUserData['isVerified'] ?? false,
             'interests':
@@ -214,10 +214,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         return 'Recently';
       } else if (difference.inDays < 365) {
         final months = (difference.inDays / 30).round();
-        return '${months} month${months > 1 ? 's' : ''} ago';
+        return '$months month${months > 1 ? 's' : ''} ago';
       } else {
         final years = (difference.inDays / 365).round();
-        return '${years} year${years > 1 ? 's' : ''} ago';
+        return '$years year${years > 1 ? 's' : ''} ago';
       }
     } catch (e) {
       return 'Recently';

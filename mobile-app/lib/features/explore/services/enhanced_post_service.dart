@@ -50,7 +50,7 @@ class EnhancedExplorePostService {
   int _cacheHits = 0;
   int _cacheMisses = 0;
   int _networkRequests = 0;
-  List<int> _requestTimes = [];
+  final List<int> _requestTimes = [];
 
   // Configuration
   static const Duration _cacheExpiration = Duration(minutes: 10);
@@ -68,9 +68,8 @@ class EnhancedExplorePostService {
         'cache_hits': _cacheHits,
         'cache_misses': _cacheMisses,
         'cache_hit_rate': _cacheHits + _cacheMisses > 0
-            ? (_cacheHits / (_cacheHits + _cacheMisses) * 100)
-                    .toStringAsFixed(1) +
-                '%'
+            ? '${(_cacheHits / (_cacheHits + _cacheMisses) * 100)
+                    .toStringAsFixed(1)}%'
             : '0%',
         'network_requests': _networkRequests,
         'avg_request_time': _requestTimes.isNotEmpty

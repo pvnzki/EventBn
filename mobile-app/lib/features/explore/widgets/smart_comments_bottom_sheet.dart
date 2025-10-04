@@ -718,9 +718,17 @@ class _CommentsContentState extends State<_CommentsContent> {
     final user = comment['user'];
     if (user != null && user is Map<String, dynamic>) {
       print('🔍 [USERNAME] Checking nested user object: ${user.keys.toList()}');
+      
+      // Handle case where user object is wrapped in a response structure
+      Map<String, dynamic> actualUser = user;
+      if (user.containsKey('user') && user['user'] is Map<String, dynamic>) {
+        print('🔍 [USERNAME] Found wrapped user object, extracting...');
+        actualUser = user['user'] as Map<String, dynamic>;
+      }
+      
       final userFields = ['full_name', 'name', 'display_name'];
       for (final field in userFields) {
-        final value = user[field];
+        final value = actualUser[field];
         if (value != null && value.toString().trim().isNotEmpty) {
           print('🔍 [USERNAME] Found username in user.$field: $value');
           return value.toString();
@@ -736,7 +744,14 @@ class _CommentsContentState extends State<_CommentsContent> {
   Widget _buildUserAvatar(Map<String, dynamic> comment, bool isOptimistic,
       bool isDarkMode, ThemeData theme) {
     final userData = comment['user'];
-    final avatarUrl = userData?['avatar_url'] ?? userData?['profile_picture'];
+    
+    // Handle case where user object is wrapped in a response structure
+    Map<String, dynamic>? actualUser = userData;
+    if (userData is Map<String, dynamic> && userData.containsKey('user')) {
+      actualUser = userData['user'] as Map<String, dynamic>?;
+    }
+    
+    final avatarUrl = actualUser?['avatar_url'] ?? actualUser?['profile_picture'];
 
     return Container(
       width: 36,

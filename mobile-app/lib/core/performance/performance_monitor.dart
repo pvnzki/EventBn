@@ -182,9 +182,9 @@ class PerformanceMonitor {
     final loadTimes = _metrics['load_posts_duration_ms'] ?? [];
     if (loadTimes.isNotEmpty) {
       final avgLoadTime = loadTimes.reduce((a, b) => a + b) / loadTimes.length;
-      if (avgLoadTime > 1000)
+      if (avgLoadTime > 1000) {
         score -= 20;
-      else if (avgLoadTime > 500) score -= 10;
+      } else if (avgLoadTime > 500) score -= 10;
     }
 
     // Penalize for high error rates
@@ -192,9 +192,9 @@ class PerformanceMonitor {
         .where((e) => e.key.contains('_count'))
         .map((e) => e.value)
         .fold(0, (a, b) => a + b);
-    if (totalErrors > 10)
+    if (totalErrors > 10) {
       score -= 30;
-    else if (totalErrors > 5) score -= 15;
+    } else if (totalErrors > 5) score -= 15;
 
     // Bonus for high cache hit rates
     final cacheStats = _getCacheStats();
@@ -209,9 +209,9 @@ class PerformanceMonitor {
 
     if (cacheTypeCount > 0) {
       final avgHitRate = totalHitRate / cacheTypeCount;
-      if (avgHitRate > 80)
+      if (avgHitRate > 80) {
         score += 10;
-      else if (avgHitRate > 60) score += 5;
+      } else if (avgHitRate > 60) score += 5;
     }
 
     return score.clamp(0, 100);
