@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 class AppTheme {
   // San Francisco Font Configuration
   static const String primaryFontFamily = 'SF Pro Display';
-  static const String bodyFontFamily = 'SF Pro Display'; // Using SF Pro Display for all text
-  
+  static const String bodyFontFamily =
+      'SF Pro Display'; // Using SF Pro Display for all text
+
   // Fallback fonts for cross-platform compatibility
   static const List<String> fontFallbacks = [
     '-apple-system',
-    'BlinkMacSystemFont', 
+    'BlinkMacSystemFont',
     'Segoe UI',
     'Roboto',
     'Helvetica Neue',
@@ -244,7 +245,7 @@ class AppTheme {
         fontWeight: FontWeight.w400,
         color: textColor,
       ),
-      
+
       // Headline styles - for section headers
       headlineLarge: TextStyle(
         fontFamily: primaryFontFamily,
@@ -264,7 +265,7 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
-      
+
       // Title styles - for card titles, dialog titles
       titleLarge: TextStyle(
         fontFamily: primaryFontFamily,
@@ -286,7 +287,7 @@ class AppTheme {
         color: textColor,
         letterSpacing: 0.1,
       ),
-      
+
       // Body styles - for main content
       bodyLarge: TextStyle(
         fontFamily: bodyFontFamily,
@@ -309,7 +310,7 @@ class AppTheme {
         color: textColor,
         letterSpacing: 0.4,
       ),
-      
+
       // Label styles - for buttons, form labels
       labelLarge: TextStyle(
         fontFamily: bodyFontFamily,

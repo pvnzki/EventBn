@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 class SFFont {
   // Font families - Using SF Pro Display for all text since that's what we have
   static const String display = 'SF Pro Display';
-  static const String text = 'SF Pro Display'; // Same as display since we only have SF Pro Display
-  
+  static const String text =
+      'SF Pro Display'; // Same as display since we only have SF Pro Display
+
   // Quick access to common text styles with San Francisco fonts
-  
+
   /// Large display text - for app titles, hero sections
   static TextStyle displayLarge({
     Color? color,
@@ -23,7 +24,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? -0.25,
     );
   }
-  
+
   /// Medium display text - for section headers
   static TextStyle displayMedium({
     Color? color,
@@ -37,7 +38,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Small display text - for page headers
   static TextStyle displaySmall({
     Color? color,
@@ -51,7 +52,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Large headline - for main headers
   static TextStyle headlineLarge({
     Color? color,
@@ -65,7 +66,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Medium headline - for sub headers
   static TextStyle headlineMedium({
     Color? color,
@@ -79,7 +80,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Small headline - for card headers
   static TextStyle headlineSmall({
     Color? color,
@@ -93,7 +94,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Large title - for dialog titles, important labels
   static TextStyle titleLarge({
     Color? color,
@@ -107,7 +108,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// Medium title - for list item titles
   static TextStyle titleMedium({
     Color? color,
@@ -123,7 +124,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.15,
     );
   }
-  
+
   /// Small title - for small headers
   static TextStyle titleSmall({
     Color? color,
@@ -139,7 +140,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.1,
     );
   }
-  
+
   /// Large body text - for main content
   static TextStyle bodyLarge({
     Color? color,
@@ -155,7 +156,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.5,
     );
   }
-  
+
   /// Medium body text - for secondary content
   static TextStyle bodyMedium({
     Color? color,
@@ -171,7 +172,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.25,
     );
   }
-  
+
   /// Small body text - for captions, footnotes
   static TextStyle bodySmall({
     Color? color,
@@ -187,7 +188,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.4,
     );
   }
-  
+
   /// Large label - for button text
   static TextStyle labelLarge({
     Color? color,
@@ -203,7 +204,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.1,
     );
   }
-  
+
   /// Medium label - for form labels
   static TextStyle labelMedium({
     Color? color,
@@ -219,7 +220,7 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.5,
     );
   }
-  
+
   /// Small label - for small indicators
   static TextStyle labelSmall({
     Color? color,
@@ -235,9 +236,9 @@ class SFFont {
       letterSpacing: letterSpacing ?? 0.5,
     );
   }
-  
+
   // Custom weight methods for San Francisco
-  
+
   /// San Francisco Ultralight
   static TextStyle ultralight({
     required double fontSize,
@@ -251,7 +252,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Thin
   static TextStyle thin({
     required double fontSize,
@@ -265,7 +266,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Light
   static TextStyle light({
     required double fontSize,
@@ -279,7 +280,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Regular
   static TextStyle regular({
     required double fontSize,
@@ -293,7 +294,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Medium
   static TextStyle medium({
     required double fontSize,
@@ -307,7 +308,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Semibold
   static TextStyle semibold({
     required double fontSize,
@@ -321,7 +322,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Bold
   static TextStyle bold({
     required double fontSize,
@@ -335,7 +336,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Heavy
   static TextStyle heavy({
     required double fontSize,
@@ -349,7 +350,7 @@ class SFFont {
       color: color,
     );
   }
-  
+
   /// San Francisco Black
   static TextStyle black({
     required double fontSize,

@@ -5,6 +5,7 @@ This document explains how to use San Francisco fonts throughout the EventBn app
 ## Overview
 
 The app now uses San Francisco fonts to match Apple's design language:
+
 - **SF Pro Display**: For headlines, titles, and larger text elements
 - **SF Pro Text**: For body text, labels, and smaller text elements
 
@@ -66,26 +67,31 @@ TextStyle(
 ## Font Hierarchy
 
 ### Display Styles (SF Pro Display)
+
 - `displayLarge`: 57px - App titles, hero text
 - `displayMedium`: 45px - Large sections
 - `displaySmall`: 36px - Page headers
 
 ### Headlines (SF Pro Display)
+
 - `headlineLarge`: 32px, Semibold - Main headers
-- `headlineMedium`: 28px, Semibold - Sub headers  
+- `headlineMedium`: 28px, Semibold - Sub headers
 - `headlineSmall`: 24px, Semibold - Card headers
 
 ### Titles (SF Pro Display)
+
 - `titleLarge`: 22px, Semibold - Dialog titles
 - `titleMedium`: 16px, Semibold - List items
 - `titleSmall`: 14px, Semibold - Small headers
 
 ### Body Text (SF Pro Text)
+
 - `bodyLarge`: 16px, Regular - Main content
 - `bodyMedium`: 14px, Regular - Secondary content
 - `bodySmall`: 12px, Regular - Captions
 
 ### Labels (SF Pro Text)
+
 - `labelLarge`: 14px, Medium - Button text
 - `labelMedium`: 12px, Medium - Form labels
 - `labelSmall`: 11px, Medium - Small indicators
@@ -93,6 +99,7 @@ TextStyle(
 ## Font Weights
 
 San Francisco supports these weights:
+
 - `FontWeight.w100` - Ultralight
 - `FontWeight.w200` - Thin
 - `FontWeight.w300` - Light
@@ -106,21 +113,25 @@ San Francisco supports these weights:
 ## Best Practices
 
 ### 1. Choose the Right Font
+
 - Use **SF Pro Display** for headlines, titles, and UI elements
 - Use **SF Pro Text** for body text and reading content
 
 ### 2. Weight Selection
+
 - **Regular (400)**: Body text, normal content
 - **Medium (500)**: Important labels, emphasized text
 - **Semibold (600)**: Headlines, section headers
 - **Bold (700)**: Very important text, warnings
 
 ### 3. Size Guidelines
+
 - **12px and below**: Use SF Pro Text
 - **13px and above**: Either font works, choose based on context
 - **20px and above**: SF Pro Display usually works better
 
 ### 4. Platform Considerations
+
 - On iOS: San Francisco fonts are built-in and will render natively
 - On Android: Custom font files are used for consistency
 - On Web: Falls back to system fonts if files aren't loaded
@@ -128,6 +139,7 @@ San Francisco supports these weights:
 ## Examples
 
 ### Event Card
+
 ```dart
 Column(
   crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,6 +161,7 @@ Column(
 ```
 
 ### Button
+
 ```dart
 ElevatedButton(
   onPressed: () {},
@@ -160,6 +173,7 @@ ElevatedButton(
 ```
 
 ### App Bar
+
 ```dart
 AppBar(
   title: Text(
@@ -172,6 +186,7 @@ AppBar(
 ## Font Installation
 
 The font files should be placed in `assets/fonts/`:
+
 - SF-Pro-Display-Regular.ttf
 - SF-Pro-Display-Medium.ttf
 - SF-Pro-Display-Semibold.ttf
@@ -186,19 +201,23 @@ If font files are not available, the app will gracefully fall back to system fon
 ## Troubleshooting
 
 ### Fonts Not Showing
+
 1. Check that font files are in `assets/fonts/`
 2. Verify `pubspec.yaml` font configuration
 3. Run `flutter clean && flutter pub get`
 4. Check font family names match exactly
 
 ### Performance
+
 - San Francisco fonts are optimized for performance
 - Use theme text styles when possible for better caching
 - Avoid creating too many custom TextStyle objects
 
 ### Testing
+
 Test on multiple devices to ensure fonts render correctly:
+
 - iOS Simulator
-- Android Emulator  
+- Android Emulator
 - Physical devices
 - Different screen densities

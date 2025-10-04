@@ -8,7 +8,7 @@ class FontDemoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -30,7 +30,7 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Display Small', SFFont.displaySmall()),
               ],
             ),
-            
+
             // Headlines
             _buildSection(
               'Headlines (SF Pro Display)',
@@ -40,7 +40,7 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Headline Small', SFFont.headlineSmall()),
               ],
             ),
-            
+
             // Titles
             _buildSection(
               'Titles (SF Pro Display)',
@@ -50,7 +50,7 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Title Small', SFFont.titleSmall()),
               ],
             ),
-            
+
             // Body text
             _buildSection(
               'Body Text (SF Pro Text)',
@@ -60,7 +60,7 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Body Small', SFFont.bodySmall()),
               ],
             ),
-            
+
             // Labels
             _buildSection(
               'Labels (SF Pro Text)',
@@ -70,12 +70,13 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Label Small', SFFont.labelSmall()),
               ],
             ),
-            
+
             // Font weights
             _buildSection(
               'Font Weights',
               [
-                _buildFontExample('Ultralight', SFFont.ultralight(fontSize: 18)),
+                _buildFontExample(
+                    'Ultralight', SFFont.ultralight(fontSize: 18)),
                 _buildFontExample('Thin', SFFont.thin(fontSize: 18)),
                 _buildFontExample('Light', SFFont.light(fontSize: 18)),
                 _buildFontExample('Regular', SFFont.regular(fontSize: 18)),
@@ -86,16 +87,21 @@ class FontDemoScreen extends StatelessWidget {
                 _buildFontExample('Black', SFFont.black(fontSize: 18)),
               ],
             ),
-            
+
             // Theme styles
             _buildSection(
               'Theme Text Styles',
               [
-                _buildFontExample('Theme Display Large', theme.textTheme.displayLarge),
-                _buildFontExample('Theme Headline Large', theme.textTheme.headlineLarge),
-                _buildFontExample('Theme Title Large', theme.textTheme.titleLarge),
-                _buildFontExample('Theme Body Large', theme.textTheme.bodyLarge),
-                _buildFontExample('Theme Label Large', theme.textTheme.labelLarge),
+                _buildFontExample(
+                    'Theme Display Large', theme.textTheme.displayLarge),
+                _buildFontExample(
+                    'Theme Headline Large', theme.textTheme.headlineLarge),
+                _buildFontExample(
+                    'Theme Title Large', theme.textTheme.titleLarge),
+                _buildFontExample(
+                    'Theme Body Large', theme.textTheme.bodyLarge),
+                _buildFontExample(
+                    'Theme Label Large', theme.textTheme.labelLarge),
               ],
             ),
           ],
@@ -103,7 +109,7 @@ class FontDemoScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildSection(String title, List<Widget> children) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 32),
@@ -123,7 +129,7 @@ class FontDemoScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildFontExample(String label, TextStyle? style) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
