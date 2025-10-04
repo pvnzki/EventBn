@@ -54,7 +54,7 @@ class _ProfilePostsFeedScreenState extends State<ProfilePostsFeedScreen> {
 
   Future<void> _loadPosts() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _currentPage = 1;
@@ -215,7 +215,8 @@ class _ProfilePostsFeedScreenState extends State<ProfilePostsFeedScreen> {
                         await _postService.likePost(currentPost.id);
                       }
                       // Refresh the post in the list
-                      final updatedPost = await _postService.getPostById(currentPost.id);
+                      final updatedPost =
+                          await _postService.getPostById(currentPost.id);
                       if (updatedPost != null) {
                         setState(() {
                           _posts[index] = updatedPost;
@@ -233,13 +234,15 @@ class _ProfilePostsFeedScreenState extends State<ProfilePostsFeedScreen> {
                   onShare: () {
                     // Implement share functionality
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Share feature coming soon!')),
+                      const SnackBar(
+                          content: Text('Share feature coming soon!')),
                     );
                   },
                   onBookmark: () async {
                     // Implement bookmark functionality
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Bookmark feature coming soon!')),
+                      const SnackBar(
+                          content: Text('Bookmark feature coming soon!')),
                     );
                   },
                 );

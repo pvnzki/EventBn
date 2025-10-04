@@ -9,7 +9,7 @@ class PostShimmerLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return ListView.separated(
       itemCount: itemCount,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
@@ -91,7 +91,7 @@ class PostShimmerLoading extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Post content text
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -127,9 +127,9 @@ class PostShimmerLoading extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Post image
             Container(
               height: 200,
@@ -140,9 +140,9 @@ class PostShimmerLoading extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Engagement stats
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -168,9 +168,9 @@ class PostShimmerLoading extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Action buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -189,7 +189,7 @@ class PostShimmerLoading extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
           ],
         ),
@@ -206,7 +206,7 @@ class GridPostShimmerLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -248,7 +248,7 @@ class GridPostShimmerLoading extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            
+
             // Overlay gradient (like Instagram stories)
             Positioned(
               bottom: 0,
@@ -272,7 +272,7 @@ class GridPostShimmerLoading extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Play button for video posts
             if ((DateTime.now().millisecondsSinceEpoch % 3) == 0)
               const Positioned(
@@ -284,7 +284,7 @@ class GridPostShimmerLoading extends StatelessWidget {
                   size: 20,
                 ),
               ),
-              
+
             // Like count indicator
             Positioned(
               bottom: 8,

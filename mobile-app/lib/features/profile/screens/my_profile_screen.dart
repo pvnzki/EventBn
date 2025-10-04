@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.user;
-      
+
       if (currentUser?.id != null) {
         // Fetch posts for the current user
         final posts = await _postService.getExplorePostsForUser(
@@ -129,17 +129,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                   SliverToBoxAdapter(
                     child: _buildProfileHeader(context, user, colorScheme),
                   ),
-                  
+
                   // Story Highlights
                   SliverToBoxAdapter(
                     child: _buildStoryHighlights(context, colorScheme),
                   ),
-                  
+
                   // Tab Bar
                   SliverToBoxAdapter(
                     child: _buildTabBar(context, colorScheme),
                   ),
-                  
+
                   // Posts Grid
                   _isLoadingPosts
                       ? SliverToBoxAdapter(
@@ -159,7 +159,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             },
                             childCount: _userPosts.length,
                           ),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             crossAxisSpacing: 2,
                             mainAxisSpacing: 2,
@@ -338,7 +339,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -356,32 +360,43 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildSettingsOption(context, Icons.notifications_outlined, 'Notifications', () {
+                  _buildSettingsOption(
+                      context, Icons.notifications_outlined, 'Notifications',
+                      () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Notifications settings coming soon!')),
+                      const SnackBar(
+                          content: Text('Notifications settings coming soon!')),
                     );
                   }),
-                  _buildSettingsOption(context, Icons.privacy_tip_outlined, 'Privacy', () {
+                  _buildSettingsOption(
+                      context, Icons.privacy_tip_outlined, 'Privacy', () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Privacy settings coming soon!')),
+                      const SnackBar(
+                          content: Text('Privacy settings coming soon!')),
                     );
                   }),
-                  _buildSettingsOption(context, Icons.security_outlined, 'Security', () {
+                  _buildSettingsOption(
+                      context, Icons.security_outlined, 'Security', () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Security settings coming soon!')),
+                      const SnackBar(
+                          content: Text('Security settings coming soon!')),
                     );
                   }),
-                  _buildSettingsOption(context, Icons.palette_outlined, 'Theme', () {
+                  _buildSettingsOption(context, Icons.palette_outlined, 'Theme',
+                      () {
                     Navigator.pop(context);
-                    _showThemeDialog(context, Provider.of<ThemeProvider>(context, listen: false));
+                    _showThemeDialog(context,
+                        Provider.of<ThemeProvider>(context, listen: false));
                   }),
-                  _buildSettingsOption(context, Icons.help_outline, 'Help & Support', () {
+                  _buildSettingsOption(
+                      context, Icons.help_outline, 'Help & Support', () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Help & Support coming soon!')),
+                      const SnackBar(
+                          content: Text('Help & Support coming soon!')),
                     );
                   }),
                   const SizedBox(height: 16),
@@ -394,7 +409,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildSettingsOption(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+  Widget _buildSettingsOption(
+      BuildContext context, IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       title: Text(
@@ -486,7 +502,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, dynamic user, ColorScheme colorScheme) {
+  Widget _buildProfileHeader(
+      BuildContext context, dynamic user, ColorScheme colorScheme) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -519,15 +536,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                       : null,
                 ),
               ),
-              
+
               const SizedBox(width: 24),
-              
+
               // Stats
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatColumn('${_userPosts.length}', 'Posts', colorScheme),
+                    _buildStatColumn(
+                        '${_userPosts.length}', 'Posts', colorScheme),
                     _buildStatColumn('0', 'Followers', colorScheme),
                     _buildStatColumn('0', 'Following', colorScheme),
                   ],
@@ -535,9 +553,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Name and Bio
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,9 +591,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -826,7 +844,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-            
+
             // Multiple Photos Indicator
             if (post.imageUrls.length > 1)
               Positioned(
@@ -844,7 +862,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ],
                 ),
               ),
-            
+
             // Video Indicator
             if (post.videoUrls.isNotEmpty)
               Positioned(
@@ -885,7 +903,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -893,14 +914,17 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildCreateOption(context, Icons.add_box_outlined, 'Post', () {
+                  _buildCreateOption(context, Icons.add_box_outlined, 'Post',
+                      () {
                     Navigator.pop(context);
                     context.push('/create-post');
                   }),
-                  _buildCreateOption(context, Icons.video_call_outlined, 'Reel', () {
+                  _buildCreateOption(context, Icons.video_call_outlined, 'Reel',
+                      () {
                     Navigator.pop(context);
                   }),
-                  _buildCreateOption(context, Icons.add_circle_outline, 'Story', () {
+                  _buildCreateOption(context, Icons.add_circle_outline, 'Story',
+                      () {
                     Navigator.pop(context);
                   }),
                 ],
@@ -912,7 +936,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildCreateOption(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+  Widget _buildCreateOption(
+      BuildContext context, IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       title: Text(
@@ -943,7 +968,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -951,11 +979,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildMenuOption(context, Icons.settings_outlined, 'Settings', () {
+                  _buildMenuOption(context, Icons.settings_outlined, 'Settings',
+                      () {
                     Navigator.pop(context);
                     _showSettingsModal(context, authProvider);
                   }),
-                  _buildMenuOption(context, Icons.archive_outlined, 'Archive', () {
+                  _buildMenuOption(context, Icons.archive_outlined, 'Archive',
+                      () {
                     Navigator.pop(context);
                   }),
                   _buildMenuOption(context, Icons.history, 'Your Activity', () {
@@ -977,7 +1007,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildMenuOption(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+  Widget _buildMenuOption(
+      BuildContext context, IconData icon, String title, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       title: Text(

@@ -244,7 +244,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Reduced from 16
+      padding: const EdgeInsets.symmetric(
+          horizontal: 20, vertical: 12), // Reduced from 16
       child: Column(
         children: [
           // Search Bar
@@ -300,7 +301,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               ),
             ),
           ),
-          const SizedBox(height: 12), // Add small gap between search and filters
+          const SizedBox(
+              height: 12), // Add small gap between search and filters
           // Category Filter
           SizedBox(
             height: 32,
@@ -406,14 +408,20 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.6),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Loading more posts...',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.8),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -686,7 +694,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   Widget _buildLoadingTile() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Shimmer.fromColors(
       baseColor: isDark ? Colors.grey[700]! : Colors.grey[300]!,
       highlightColor: isDark ? Colors.grey[500]! : Colors.grey[100]!,

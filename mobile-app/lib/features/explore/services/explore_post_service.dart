@@ -707,20 +707,24 @@ class ExplorePostService {
         },
       );
 
-      print('🔍 [USER_POSTS] Fetching posts for user $userId (page: $page, limit: $limit)');
+      print(
+          '🔍 [USER_POSTS] Fetching posts for user $userId (page: $page, limit: $limit)');
       final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['posts'] is List) {
           final postsList = data['posts'] as List;
-          final posts = postsList.map((json) => ExplorePost.fromJson(json)).toList();
-          print('✅ [USER_POSTS] Fetched ${posts.length} posts for user $userId');
+          final posts =
+              postsList.map((json) => ExplorePost.fromJson(json)).toList();
+          print(
+              '✅ [USER_POSTS] Fetched ${posts.length} posts for user $userId');
           return posts;
         }
       }
 
-      print('❌ [USER_POSTS] Failed to fetch posts for user $userId: ${response.statusCode}');
+      print(
+          '❌ [USER_POSTS] Failed to fetch posts for user $userId: ${response.statusCode}');
       return [];
     } catch (e) {
       print('💥 [USER_POSTS] Error fetching posts for user $userId: $e');
@@ -750,7 +754,8 @@ class ExplorePostService {
         }
       }
 
-      print('❌ [GET_POST] Failed to fetch post $postId: ${response.statusCode}');
+      print(
+          '❌ [GET_POST] Failed to fetch post $postId: ${response.statusCode}');
       return null;
     } catch (e) {
       print('💥 [GET_POST] Error fetching post $postId: $e');
@@ -785,7 +790,8 @@ class ExplorePostService {
         }
       }
 
-      print('❌ [LIKE_POST] Failed to like post $postId: ${response.statusCode}');
+      print(
+          '❌ [LIKE_POST] Failed to like post $postId: ${response.statusCode}');
       return false;
     } catch (e) {
       print('💥 [LIKE_POST] Error liking post $postId: $e');
@@ -820,7 +826,8 @@ class ExplorePostService {
         }
       }
 
-      print('❌ [UNLIKE_POST] Failed to unlike post $postId: ${response.statusCode}');
+      print(
+          '❌ [UNLIKE_POST] Failed to unlike post $postId: ${response.statusCode}');
       return false;
     } catch (e) {
       print('💥 [UNLIKE_POST] Error unliking post $postId: $e');

@@ -196,7 +196,8 @@ class AppRouter {
         builder: (context, state) {
           final userId = state.pathParameters['userId']!;
           final extra = state.extra as Map<String, dynamic>?;
-          print('🛣️ Router: Building ProfilePostsFeedScreen for userId: $userId');
+          print(
+              '🛣️ Router: Building ProfilePostsFeedScreen for userId: $userId');
           return ProfilePostsFeedScreen(
             userId: userId,
             username: extra?['username'],
@@ -387,7 +388,7 @@ class AppRouter {
           final ticketId = state.pathParameters['ticketId']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
           final ticket = extra['ticket'];
-          
+
           return tickets.ETicketScreen(
             ticketId: ticketId,
             initialTicket: ticket,

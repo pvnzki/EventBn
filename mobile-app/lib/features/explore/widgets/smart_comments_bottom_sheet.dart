@@ -718,14 +718,14 @@ class _CommentsContentState extends State<_CommentsContent> {
     final user = comment['user'];
     if (user != null && user is Map<String, dynamic>) {
       print('🔍 [USERNAME] Checking nested user object: ${user.keys.toList()}');
-      
+
       // Handle case where user object is wrapped in a response structure
       Map<String, dynamic> actualUser = user;
       if (user.containsKey('user') && user['user'] is Map<String, dynamic>) {
         print('🔍 [USERNAME] Found wrapped user object, extracting...');
         actualUser = user['user'] as Map<String, dynamic>;
       }
-      
+
       final userFields = ['full_name', 'name', 'display_name'];
       for (final field in userFields) {
         final value = actualUser[field];
@@ -744,14 +744,15 @@ class _CommentsContentState extends State<_CommentsContent> {
   Widget _buildUserAvatar(Map<String, dynamic> comment, bool isOptimistic,
       bool isDarkMode, ThemeData theme) {
     final userData = comment['user'];
-    
+
     // Handle case where user object is wrapped in a response structure
     Map<String, dynamic>? actualUser = userData;
     if (userData is Map<String, dynamic> && userData.containsKey('user')) {
       actualUser = userData['user'] as Map<String, dynamic>?;
     }
-    
-    final avatarUrl = actualUser?['avatar_url'] ?? actualUser?['profile_picture'];
+
+    final avatarUrl =
+        actualUser?['avatar_url'] ?? actualUser?['profile_picture'];
 
     return Container(
       width: 36,

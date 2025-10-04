@@ -115,22 +115,24 @@ class AuthService {
             '🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
         return user;
       }
-      
+
       print('❌ [AUTH_SERVICE] Failed to get user: ${response.statusCode}');
-      print('🔧 [AUTH_SERVICE] Attempting fallback: extracting user info from JWT token');
-      
+      print(
+          '🔧 [AUTH_SERVICE] Attempting fallback: extracting user info from JWT token');
+
       // Fallback: Extract user info from JWT token
       return await _getUserFromToken(token);
     } catch (e) {
       print('❌ [AUTH_SERVICE] Error getting current user: $e');
-      print('🔧 [AUTH_SERVICE] Attempting fallback: extracting user info from JWT token');
-      
+      print(
+          '🔧 [AUTH_SERVICE] Attempting fallback: extracting user info from JWT token');
+
       // Fallback: Extract user info from JWT token
       final token = await getStoredToken();
       if (token != null) {
         return await _getUserFromToken(token);
       }
-      
+
       // Final fallback: try to get test token
       print('🔧 [AUTH_SERVICE] Trying to get test token as final fallback...');
       final testToken = await _getTestToken();
@@ -138,7 +140,7 @@ class AuthService {
         await _storeToken(testToken);
         return await _getUserFromToken(testToken);
       }
-      
+
       return null;
     }
   }
@@ -151,7 +153,7 @@ class AuthService {
         '$baseUrl/api/debug/test-token',
         'http://localhost:3002/api/debug/test-token', // Post service
       ];
-      
+
       for (final url in services) {
         try {
           final response = await http.get(
@@ -159,12 +161,14 @@ class AuthService {
             headers: {'Content-Type': 'application/json'},
           ).timeout(const Duration(seconds: 5));
 
-          print('🔑 [AUTH_SERVICE] Test token response from $url: ${response.statusCode}');
+          print(
+              '🔑 [AUTH_SERVICE] Test token response from $url: ${response.statusCode}');
 
           if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
             if (data['success'] == true && data['token'] != null) {
-              print('🔑 [AUTH_SERVICE] Test token obtained successfully from $url');
+              print(
+                  '🔑 [AUTH_SERVICE] Test token obtained successfully from $url');
               return data['token'];
             }
           }
@@ -202,22 +206,25 @@ class AuthService {
           normalizedPayload += '=';
           break;
       }
-      
+
       final decodedBytes = base64.decode(normalizedPayload);
       final decodedPayload = utf8.decode(decodedBytes);
       final payloadData = jsonDecode(decodedPayload);
-      
+
       print('🔧 [AUTH_SERVICE] JWT payload: $payloadData');
 
       // Extract user information from JWT payload
-      final userId = payloadData['userId']?.toString() ?? payloadData['user_id']?.toString() ?? payloadData['id']?.toString();
+      final userId = payloadData['userId']?.toString() ??
+          payloadData['user_id']?.toString() ??
+          payloadData['id']?.toString();
       final name = payloadData['name']?.toString() ?? 'Test User';
       final email = payloadData['email']?.toString() ?? 'test@example.com';
-      
+
       // Split name into first and last name if it's a full name
       final nameParts = name.split(' ');
       final firstName = nameParts.isNotEmpty ? nameParts.first : 'Test';
-      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      final lastName =
+          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
       final fallbackUser = User(
         id: userId ?? '1001',
@@ -230,7 +237,8 @@ class AuthService {
         updatedAt: DateTime.now(),
       );
 
-      print('🔧 [AUTH_SERVICE] Created fallback user: ${fallbackUser.firstName} ${fallbackUser.lastName}');
+      print(
+          '🔧 [AUTH_SERVICE] Created fallback user: ${fallbackUser.firstName} ${fallbackUser.lastName}');
       return fallbackUser;
     } catch (e) {
       print('❌ [AUTH_SERVICE] Error extracting user from token: $e');

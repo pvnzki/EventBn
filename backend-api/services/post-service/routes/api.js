@@ -28,23 +28,25 @@ console.log(
 // Helper function to safely parse userId - handle both string and numeric formats
 function parseUserId(userId) {
   if (!userId) {
-    console.warn('⚠️ parseUserId: userId is null or undefined');
+    console.warn("⚠️ parseUserId: userId is null or undefined");
     return null;
   }
-  
+
   // If already a number, return it
-  if (typeof userId === 'number') {
+  if (typeof userId === "number") {
     return userId;
   }
-  
+
   // If string and starts with 'user_', extract the numeric part
-  if (typeof userId === 'string') {
-    if (userId.startsWith('user_') && userId.length > 5) {
+  if (typeof userId === "string") {
+    if (userId.startsWith("user_") && userId.length > 5) {
       const numericPart = parseInt(userId.substring(5));
       if (!isNaN(numericPart)) {
         return numericPart;
       } else {
-        console.warn(`⚠️ parseUserId: Could not parse numeric part from '${userId}'`);
+        console.warn(
+          `⚠️ parseUserId: Could not parse numeric part from '${userId}'`
+        );
         return null;
       }
     } else {
@@ -58,8 +60,10 @@ function parseUserId(userId) {
       }
     }
   }
-  
-  console.warn(`⚠️ parseUserId: Unexpected userId type: ${typeof userId}, value: ${userId}`);
+
+  console.warn(
+    `⚠️ parseUserId: Unexpected userId type: ${typeof userId}, value: ${userId}`
+  );
   return null;
 }
 
@@ -665,10 +669,12 @@ router.get("/posts/explore", async (req, res) => {
           error: "Invalid userId format",
         });
       }
-      
+
       if (!isNaN(numericUserId)) {
         where.user_id = numericUserId;
-        console.log(`📋 [EXPLORE][${reqId}] Filtering by user_id: ${numericUserId} (from: ${userId})`);
+        console.log(
+          `📋 [EXPLORE][${reqId}] Filtering by user_id: ${numericUserId} (from: ${userId})`
+        );
       } else {
         console.warn(`📋 [EXPLORE][${reqId}] Invalid userId format: ${userId}`);
       }
@@ -889,7 +895,7 @@ router.post(
       }
 
       console.log("💾 [POST CREATION] Creating post in database...");
-      
+
       // Handle both numeric and string user IDs (e.g., "user_123" -> 123)
       const numericUserId = parseUserId(userId);
       if (numericUserId === null) {
@@ -899,7 +905,7 @@ router.post(
           error: "Invalid user ID format",
         });
       }
-      
+
       const post = await prisma.post.create({
         data: {
           caption: content || "",
@@ -1281,39 +1287,45 @@ router.get("/posts/:postId/comments", verifyJWT, async (req, res) => {
           `📖 [GET_COMMENTS] Received ${usersData.length} user records`
         );
         console.log(
-          `📖 [GET_COMMENTS] User response structure:`, Object.keys(userResponse || {})
+          `📖 [GET_COMMENTS] User response structure:`,
+          Object.keys(userResponse || {})
         );
       } catch (userError) {
         console.warn(
           "⚠️ [GET_COMMENTS] Failed to fetch users data from service, trying local database:",
           userError.message
         );
-        
+
         // Fallback: Try to get user data from local users table
         try {
           const localUsers = await prisma.users.findMany({
             where: {
               id: {
-                in: userIds.map(id => id.toString())
-              }
+                in: userIds.map((id) => id.toString()),
+              },
             },
             select: {
               id: true,
               full_name: true,
-              avatar_url: true
-            }
+              avatar_url: true,
+            },
           });
-          
-          usersData = localUsers.map(user => ({
+
+          usersData = localUsers.map((user) => ({
             id: parseInt(user.id),
             full_name: user.full_name,
             name: user.full_name,
-            avatar_url: user.avatar_url
+            avatar_url: user.avatar_url,
           }));
-          
-          console.log(`📖 [GET_COMMENTS] Found ${usersData.length} users in local database`);
+
+          console.log(
+            `📖 [GET_COMMENTS] Found ${usersData.length} users in local database`
+          );
         } catch (localError) {
-          console.warn("⚠️ [GET_COMMENTS] Local user lookup also failed:", localError.message);
+          console.warn(
+            "⚠️ [GET_COMMENTS] Local user lookup also failed:",
+            localError.message
+          );
           // Final fallback: use generic user names
         }
       }
@@ -1523,19 +1535,40 @@ router.post("/posts/:postId/comments", verifyJWT, async (req, res) => {
       await prisma.users.upsert({
         where: { id: authorId.toString() },
         update: {
-          full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
-          avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+          full_name:
+            req.user.name ||
+            req.user.fullName ||
+            req.user.full_name ||
+            `User ${authorId}`,
+          avatar_url:
+            req.user.avatar ||
+            req.user.avatarUrl ||
+            req.user.avatar_url ||
+            null,
           updated_at: new Date(),
         },
         create: {
           id: authorId.toString(),
-          full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
-          avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+          full_name:
+            req.user.name ||
+            req.user.fullName ||
+            req.user.full_name ||
+            `User ${authorId}`,
+          avatar_url:
+            req.user.avatar ||
+            req.user.avatarUrl ||
+            req.user.avatar_url ||
+            null,
         },
       });
-      console.log(`💾 [ADD_COMMENT] Updated local user data for user ${authorId}`);
+      console.log(
+        `💾 [ADD_COMMENT] Updated local user data for user ${authorId}`
+      );
     } catch (userStoreError) {
-      console.warn(`⚠️ [ADD_COMMENT] Failed to store user data locally:`, userStoreError.message);
+      console.warn(
+        `⚠️ [ADD_COMMENT] Failed to store user data locally:`,
+        userStoreError.message
+      );
     }
 
     // Update comment count on post
@@ -1561,9 +1594,18 @@ router.post("/posts/:postId/comments", verifyJWT, async (req, res) => {
     // Get user data from JWT token instead of making service call
     const userData = {
       id: authorId,
-      full_name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
-      name: req.user.name || req.user.fullName || req.user.full_name || `User ${authorId}`,
-      avatar_url: req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
+      full_name:
+        req.user.name ||
+        req.user.fullName ||
+        req.user.full_name ||
+        `User ${authorId}`,
+      name:
+        req.user.name ||
+        req.user.fullName ||
+        req.user.full_name ||
+        `User ${authorId}`,
+      avatar_url:
+        req.user.avatar || req.user.avatarUrl || req.user.avatar_url || null,
       email: req.user.email || null,
     };
 
@@ -1627,11 +1669,13 @@ router.put("/comments/:commentId", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
     const { content } = req.body;
-    
+
     // Parse userId - handle both string and numeric formats
     const authorId = parseUserId(req.user.userId);
     if (authorId === null) {
-      console.error(`❌ [COMMENT UPDATE] Invalid userId format: ${req.user.userId}`);
+      console.error(
+        `❌ [COMMENT UPDATE] Invalid userId format: ${req.user.userId}`
+      );
       return res.status(400).json({
         success: false,
         error: "Invalid user ID format",
@@ -1693,11 +1737,13 @@ router.put("/comments/:commentId", verifyJWT, async (req, res) => {
 router.delete("/comments/:commentId", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
-    
+
     // Parse userId - handle both string and numeric formats
     const authorId = parseUserId(req.user.userId);
     if (authorId === null) {
-      console.error(`❌ [COMMENT DELETE] Invalid userId format: ${req.user.userId}`);
+      console.error(
+        `❌ [COMMENT DELETE] Invalid userId format: ${req.user.userId}`
+      );
       return res.status(400).json({
         success: false,
         error: "Invalid user ID format",
@@ -1754,11 +1800,13 @@ router.delete("/comments/:commentId", verifyJWT, async (req, res) => {
 router.post("/comments/:commentId/like", verifyJWT, async (req, res) => {
   try {
     const { commentId } = req.params;
-    
+
     // Parse userId - handle both string and numeric formats
     const userId = parseUserId(req.user.userId);
     if (userId === null) {
-      console.error(`❌ [COMMENT LIKE] Invalid userId format: ${req.user.userId}`);
+      console.error(
+        `❌ [COMMENT LIKE] Invalid userId format: ${req.user.userId}`
+      );
       return res.status(400).json({
         success: false,
         error: "Invalid user ID format",
