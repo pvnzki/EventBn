@@ -765,7 +765,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildLoadingGrid(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 400,
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),

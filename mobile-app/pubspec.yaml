@@ -86,10 +86,31 @@ flutter:
     - assets/seat_map.json
     - .env
 
-  # Custom fonts (commented out until font files are added)
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: assets/fonts/Roboto-Regular.ttf
-  #       - asset: assets/fonts/Roboto-Bold.ttf
-  #         weight: 700
+  # Custom fonts - San Francisco
+  fonts:
+    - family: SF Pro Display
+      fonts:
+        - asset: assets/fonts/SFPRODISPLAYREGULAR.OTF
+        - asset: assets/fonts/SFPRODISPLAYMEDIUM.OTF
+          weight: 500
+        - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
+          weight: 700
+        # Italic variants
+        - asset: assets/fonts/SFPRODISPLAYLIGHTITALIC.OTF
+          weight: 300
+          style: italic
+        - asset: assets/fonts/SFPRODISPLAYTHINITALIC.OTF
+          weight: 200
+          style: italic
+        - asset: assets/fonts/SFPRODISPLAYULTRALIGHTITALIC.OTF
+          weight: 100
+          style: italic
+        - asset: assets/fonts/SFPRODISPLAYSEMIBOLDITALIC.OTF
+          weight: 600
+          style: italic
+        - asset: assets/fonts/SFPRODISPLAYHEAVYITALIC.OTF
+          weight: 800
+          style: italic
+        - asset: assets/fonts/SFPRODISPLAYBLACKITALIC.OTF
+          weight: 900
+          style: italic

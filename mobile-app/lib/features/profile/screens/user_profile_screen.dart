@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../explore/services/explore_post_service.dart';
 import '../../explore/models/post_model.dart';
-import '../../explore/widgets/explore_post_card.dart';
 import '../services/user_service.dart';
 
 class UserProfileScreen extends StatefulWidget {

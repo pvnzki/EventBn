@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:video_player/video_player.dart'; // Added for video support
+// Added for video support
 import 'dart:io';
 import '../services/explore_post_service.dart';
 import '../widgets/smart_event_picker.dart';
