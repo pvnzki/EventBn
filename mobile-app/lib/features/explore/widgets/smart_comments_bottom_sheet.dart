@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/services/smart_bottom_sheet_service.dart';
 import '../services/explore_post_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -488,10 +489,39 @@ class _CommentsContentState extends State<_CommentsContent> {
                         width: 0.5,
                       ),
                     ),
-                    child: Icon(
-                      Icons.person,
-                      size: 18,
-                      color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                    child: Consumer<AuthProvider>(
+                      builder: (context, authProvider, child) {
+                        final currentUser = authProvider.user;
+                        return currentUser?.profileImageUrl != null && currentUser!.profileImageUrl!.isNotEmpty
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: currentUser.profileImageUrl!,
+                                  width: 34,
+                                  height: 34,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    width: 34,
+                                    height: 34,
+                                    color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 18,
+                                      color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.person,
+                                    size: 18,
+                                    color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.person,
+                                size: 18,
+                                color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                              );
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -751,8 +781,15 @@ class _CommentsContentState extends State<_CommentsContent> {
       actualUser = userData['user'] as Map<String, dynamic>?;
     }
 
-    final avatarUrl =
-        actualUser?['avatar_url'] ?? actualUser?['profile_picture'];
+    // Try multiple possible field names for the avatar URL
+    final avatarUrl = actualUser?['avatar_url'] ?? 
+                     actualUser?['profile_picture'] ?? 
+                     actualUser?['profileImageUrl'] ??
+                     actualUser?['profilePicture'] ??
+                     actualUser?['avatar'] ??
+                     comment['avatar_url'] ??
+                     comment['profile_picture'] ??
+                     comment['profileImageUrl'];
 
     return Container(
       width: 36,
@@ -769,12 +806,22 @@ class _CommentsContentState extends State<_CommentsContent> {
       ),
       child: avatarUrl != null && avatarUrl.toString().isNotEmpty
           ? ClipOval(
-              child: Image.network(
-                avatarUrl.toString(),
+              child: CachedNetworkImage(
+                imageUrl: avatarUrl.toString(),
                 width: 36,
                 height: 36,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
+                placeholder: (context, url) => Container(
+                  width: 36,
+                  height: 36,
+                  color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                  child: Icon(
+                    Icons.person,
+                    size: 20,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                errorWidget: (context, url, error) =>
                     _buildDefaultAvatar(isOptimistic, isDarkMode, theme),
               ),
             )

@@ -35,6 +35,7 @@ import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/profile/screens/profile_posts_feed_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/create_post_screen.dart';
+import '../../features/events/widgets/mini_game_overlay.dart';
 
 import '../../common_widgets/bottom_nav_bar.dart';
 
@@ -176,6 +177,13 @@ class AppRouter {
         path: '/create-post',
         name: 'create-post',
         builder: (context, state) => const CreatePostScreen(),
+      ),
+
+      // Spinning Wheel Game Route
+      GoRoute(
+        path: '/games/spinning-wheel',
+        name: 'spinning-wheel',
+        builder: (context, state) => const SpinningWheelScreen(),
       ),
 
       // User Profile Route

@@ -86,7 +86,7 @@ flutter:
     - assets/seat_map.json
     - .env
 
-  # Custom fonts - San Francisco
+  # Custom fonts - San Francisco (No italic variants)
   fonts:
     - family: SF Pro Display
       fonts:
@@ -95,22 +95,3 @@ flutter:
           weight: 500
         - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
           weight: 700
-        # Italic variants
-        - asset: assets/fonts/SFPRODISPLAYLIGHTITALIC.OTF
-          weight: 300
-          style: italic
-        - asset: assets/fonts/SFPRODISPLAYTHINITALIC.OTF
-          weight: 200
-          style: italic
-        - asset: assets/fonts/SFPRODISPLAYULTRALIGHTITALIC.OTF
-          weight: 100
-          style: italic
-        - asset: assets/fonts/SFPRODISPLAYSEMIBOLDITALIC.OTF
-          weight: 600
-          style: italic
-        - asset: assets/fonts/SFPRODISPLAYHEAVYITALIC.OTF
-          weight: 800
-          style: italic
-        - asset: assets/fonts/SFPRODISPLAYBLACKITALIC.OTF
-          weight: 900
-          style: italic

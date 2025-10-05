@@ -774,4 +774,12 @@ router.post("/posts/:id/share", authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================================================
+// GAMES ROUTES
+// ============================================================================
+
+// Mount games router
+const gamesRouter = require('./games');
+router.use('/games', gamesRouter);
+
 module.exports = router;
