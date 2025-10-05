@@ -492,7 +492,8 @@ class _CommentsContentState extends State<_CommentsContent> {
                     child: Consumer<AuthProvider>(
                       builder: (context, authProvider, child) {
                         final currentUser = authProvider.user;
-                        return currentUser?.profileImageUrl != null && currentUser!.profileImageUrl!.isNotEmpty
+                        return currentUser?.profileImageUrl != null &&
+                                currentUser!.profileImageUrl!.isNotEmpty
                             ? ClipOval(
                                 child: CachedNetworkImage(
                                   imageUrl: currentUser.profileImageUrl!,
@@ -502,24 +503,32 @@ class _CommentsContentState extends State<_CommentsContent> {
                                   placeholder: (context, url) => Container(
                                     width: 34,
                                     height: 34,
-                                    color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                                    color: isDarkMode
+                                        ? Colors.grey[700]
+                                        : Colors.grey[300],
                                     child: Icon(
                                       Icons.person,
                                       size: 18,
-                                      color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                                      color: isDarkMode
+                                          ? Colors.grey[400]
+                                          : theme.primaryColor,
                                     ),
                                   ),
                                   errorWidget: (context, url, error) => Icon(
                                     Icons.person,
                                     size: 18,
-                                    color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : theme.primaryColor,
                                   ),
                                 ),
                               )
                             : Icon(
                                 Icons.person,
                                 size: 18,
-                                color: isDarkMode ? Colors.grey[400] : theme.primaryColor,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : theme.primaryColor,
                               );
                       },
                     ),
@@ -782,14 +791,14 @@ class _CommentsContentState extends State<_CommentsContent> {
     }
 
     // Try multiple possible field names for the avatar URL
-    final avatarUrl = actualUser?['avatar_url'] ?? 
-                     actualUser?['profile_picture'] ?? 
-                     actualUser?['profileImageUrl'] ??
-                     actualUser?['profilePicture'] ??
-                     actualUser?['avatar'] ??
-                     comment['avatar_url'] ??
-                     comment['profile_picture'] ??
-                     comment['profileImageUrl'];
+    final avatarUrl = actualUser?['avatar_url'] ??
+        actualUser?['profile_picture'] ??
+        actualUser?['profileImageUrl'] ??
+        actualUser?['profilePicture'] ??
+        actualUser?['avatar'] ??
+        comment['avatar_url'] ??
+        comment['profile_picture'] ??
+        comment['profileImageUrl'];
 
     return Container(
       width: 36,

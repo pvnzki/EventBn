@@ -1,35 +1,35 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
 // Helper function to parse user ID
 function parseUserId(userIdString) {
   if (!userIdString) return null;
-  
+
   // If it's already a number, return it
-  if (typeof userIdString === 'number') return userIdString;
-  
+  if (typeof userIdString === "number") return userIdString;
+
   // If it's a string like "user_123", extract the number
-  if (typeof userIdString === 'string') {
+  if (typeof userIdString === "string") {
     const match = userIdString.match(/^user_(\d+)$|^(\d+)$/);
     if (match) {
       return parseInt(match[1] || match[2], 10);
     }
   }
-  
+
   return null;
 }
 
 // Get user's game statistics
-router.get('/stats/:userId', async (req, res) => {
+router.get("/stats/:userId", async (req, res) => {
   try {
     const userIdParam = req.params.userId;
     const userId = parseUserId(userIdParam);
-    
+
     if (!userId) {
-      return res.status(400).json({ error: 'Invalid user ID format' });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     // Get or create user game stats
@@ -44,7 +44,7 @@ router.get('/stats/:userId', async (req, res) => {
         VALUES (${userId}, 3, 0, 0, 0, 0, 0, 0, 1, 0)
         ON CONFLICT (user_id) DO NOTHING
       `;
-      
+
       userStats = await prisma.$queryRaw`
         SELECT * FROM user_game_stats WHERE user_id = ${userId}
       `;
@@ -52,13 +52,13 @@ router.get('/stats/:userId', async (req, res) => {
 
     res.json(userStats[0]);
   } catch (error) {
-    console.error('Error fetching user game stats:', error);
-    res.status(500).json({ error: 'Failed to fetch user game stats' });
+    console.error("Error fetching user game stats:", error);
+    res.status(500).json({ error: "Failed to fetch user game stats" });
   }
 });
 
 // Get wheel configuration
-router.get('/wheel-config', async (req, res) => {
+router.get("/wheel-config", async (req, res) => {
   try {
     const wheelConfig = await prisma.$queryRaw`
       SELECT wc.*, ws.segment_order, ws.prize_type, ws.prize_value, ws.prize_label, 
@@ -70,7 +70,9 @@ router.get('/wheel-config', async (req, res) => {
     `;
 
     if (!wheelConfig || wheelConfig.length === 0) {
-      return res.status(404).json({ error: 'No active wheel configuration found' });
+      return res
+        .status(404)
+        .json({ error: "No active wheel configuration found" });
     }
 
     // Group segments by wheel configuration
@@ -78,32 +80,32 @@ router.get('/wheel-config', async (req, res) => {
       id: wheelConfig[0].id,
       wheel_name: wheelConfig[0].wheel_name,
       wheel_type: wheelConfig[0].wheel_type,
-      segments: wheelConfig.map(item => ({
+      segments: wheelConfig.map((item) => ({
         segment_order: item.segment_order,
         prize_type: item.prize_type,
         prize_value: item.prize_value,
         prize_label: item.prize_label,
         win_probability: parseFloat(item.win_probability),
         segment_color: item.segment_color,
-        icon_name: item.icon_name
-      }))
+        icon_name: item.icon_name,
+      })),
     };
 
     res.json(result);
   } catch (error) {
-    console.error('Error fetching wheel configuration:', error);
-    res.status(500).json({ error: 'Failed to fetch wheel configuration' });
+    console.error("Error fetching wheel configuration:", error);
+    res.status(500).json({ error: "Failed to fetch wheel configuration" });
   }
 });
 
 // Perform a spin
-router.post('/spin', async (req, res) => {
+router.post("/spin", async (req, res) => {
   try {
-    const { userId: userIdParam, spinType = 'free' } = req.body;
+    const { userId: userIdParam, spinType = "free" } = req.body;
     const userId = parseUserId(userIdParam);
-    
+
     if (!userId) {
-      return res.status(400).json({ error: 'Invalid user ID format' });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     // Check if user has spins available
@@ -112,13 +114,13 @@ router.post('/spin', async (req, res) => {
     `;
 
     if (!userStats || userStats.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const stats = userStats[0];
-    
-    if (spinType === 'free' && stats.current_freespins <= 0) {
-      return res.status(400).json({ error: 'No free spins available' });
+
+    if (spinType === "free" && stats.current_freespins <= 0) {
+      return res.status(400).json({ error: "No free spins available" });
     }
 
     // Get wheel segments
@@ -131,7 +133,7 @@ router.post('/spin', async (req, res) => {
     `;
 
     if (!segments || segments.length === 0) {
-      return res.status(500).json({ error: 'No wheel segments configured' });
+      return res.status(500).json({ error: "No wheel segments configured" });
     }
 
     // Weighted random selection based on probabilities
@@ -155,10 +157,13 @@ router.post('/spin', async (req, res) => {
     // Calculate spin result angle (for animation)
     const segmentAngle = 360 / segments.length;
     const baseAngle = selectedSegment.segment_order * segmentAngle;
-    const spinAngle = baseAngle + (Math.random() * segmentAngle);
+    const spinAngle = baseAngle + Math.random() * segmentAngle;
 
     // Determine if it's a big win
-    const isBigWin = selectedSegment.prize_value >= 500 || selectedSegment.prize_type === 'freespins' && selectedSegment.prize_value >= 50;
+    const isBigWin =
+      selectedSegment.prize_value >= 500 ||
+      (selectedSegment.prize_type === "freespins" &&
+        selectedSegment.prize_value >= 50);
 
     // Record the spin in history
     await prisma.$executeRaw`
@@ -168,17 +173,25 @@ router.post('/spin', async (req, res) => {
 
     // Update user stats
     const prizeValue = parseInt(selectedSegment.prize_value);
-    
-    if (spinType === 'free') {
+
+    if (spinType === "free") {
       await prisma.$executeRaw`
         UPDATE user_game_stats 
         SET current_freespins = current_freespins - 1,
             total_spins = total_spins + 1,
             total_wins = total_wins + ${prizeValue > 0 ? 1 : 0},
-            current_coins = current_coins + ${selectedSegment.prize_type === 'coins' ? prizeValue : 0},
-            total_coins_won = total_coins_won + ${selectedSegment.prize_type === 'coins' ? prizeValue : 0},
-            current_freespins = current_freespins + ${selectedSegment.prize_type === 'freespins' ? prizeValue : 0},
-            total_freespins_won = total_freespins_won + ${selectedSegment.prize_type === 'freespins' ? prizeValue : 0},
+            current_coins = current_coins + ${
+              selectedSegment.prize_type === "coins" ? prizeValue : 0
+            },
+            total_coins_won = total_coins_won + ${
+              selectedSegment.prize_type === "coins" ? prizeValue : 0
+            },
+            current_freespins = current_freespins + ${
+              selectedSegment.prize_type === "freespins" ? prizeValue : 0
+            },
+            total_freespins_won = total_freespins_won + ${
+              selectedSegment.prize_type === "freespins" ? prizeValue : 0
+            },
             experience_points = experience_points + 10,
             updated_at = NOW()
         WHERE user_id = ${userId}
@@ -194,24 +207,23 @@ router.post('/spin', async (req, res) => {
       spin_result_angle: spinAngle,
       is_big_win: isBigWin,
       segment_index: selectedSegment.segment_order,
-      segment_color: selectedSegment.segment_color
+      segment_color: selectedSegment.segment_color,
     });
-
   } catch (error) {
-    console.error('Error performing spin:', error);
-    res.status(500).json({ error: 'Failed to perform spin' });
+    console.error("Error performing spin:", error);
+    res.status(500).json({ error: "Failed to perform spin" });
   }
 });
 
 // Get user's spin history
-router.get('/history/:userId', async (req, res) => {
+router.get("/history/:userId", async (req, res) => {
   try {
     const userIdParam = req.params.userId;
     const userId = parseUserId(userIdParam);
     const limit = parseInt(req.query.limit) || 10;
-    
+
     if (!userId) {
-      return res.status(400).json({ error: 'Invalid user ID format' });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     const history = await prisma.$queryRaw`
@@ -224,19 +236,19 @@ router.get('/history/:userId', async (req, res) => {
 
     res.json(history);
   } catch (error) {
-    console.error('Error fetching spin history:', error);
-    res.status(500).json({ error: 'Failed to fetch spin history' });
+    console.error("Error fetching spin history:", error);
+    res.status(500).json({ error: "Failed to fetch spin history" });
   }
 });
 
 // Check spin availability
-router.get('/spin-availability/:userId', async (req, res) => {
+router.get("/spin-availability/:userId", async (req, res) => {
   try {
     const userIdParam = req.params.userId;
     const userId = parseUserId(userIdParam);
-    
+
     if (!userId) {
-      return res.status(400).json({ error: 'Invalid user ID format' });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     const userStats = await prisma.$queryRaw`
@@ -248,17 +260,19 @@ router.get('/spin-availability/:userId', async (req, res) => {
         can_spin: true,
         free_spins_left: 3,
         next_free_spin_at: null,
-        cooldown_message: null
+        cooldown_message: null,
       });
     }
 
     const stats = userStats[0];
     const now = new Date();
-    const lastSpinDate = stats.last_free_spin_date ? new Date(stats.last_free_spin_date) : null;
-    
+    const lastSpinDate = stats.last_free_spin_date
+      ? new Date(stats.last_free_spin_date)
+      : null;
+
     // Check if it's a new day (reset free spins)
-    const isNewDay = !lastSpinDate || 
-      lastSpinDate.toDateString() !== now.toDateString();
+    const isNewDay =
+      !lastSpinDate || lastSpinDate.toDateString() !== now.toDateString();
 
     if (isNewDay && stats.current_freespins < 3) {
       // Reset daily free spins
@@ -286,23 +300,22 @@ router.get('/spin-availability/:userId', async (req, res) => {
       can_spin: canSpin,
       free_spins_left: currentFreespins,
       next_free_spin_at: canSpin ? null : nextDay.toISOString(),
-      cooldown_message: canSpin ? null : 'Free spins reset daily at midnight'
+      cooldown_message: canSpin ? null : "Free spins reset daily at midnight",
     });
-
   } catch (error) {
-    console.error('Error checking spin availability:', error);
-    res.status(500).json({ error: 'Failed to check spin availability' });
+    console.error("Error checking spin availability:", error);
+    res.status(500).json({ error: "Failed to check spin availability" });
   }
 });
 
 // Get daily challenges
-router.get('/challenges/:userId', async (req, res) => {
+router.get("/challenges/:userId", async (req, res) => {
   try {
     const userIdParam = req.params.userId;
     const userId = parseUserId(userIdParam);
-    
+
     if (!userId) {
-      return res.status(400).json({ error: 'Invalid user ID format' });
+      return res.status(400).json({ error: "Invalid user ID format" });
     }
 
     const challenges = await prisma.$queryRaw`
@@ -320,19 +333,19 @@ router.get('/challenges/:userId', async (req, res) => {
 
     res.json(challenges);
   } catch (error) {
-    console.error('Error fetching daily challenges:', error);
-    res.status(500).json({ error: 'Failed to fetch daily challenges' });
+    console.error("Error fetching daily challenges:", error);
+    res.status(500).json({ error: "Failed to fetch daily challenges" });
   }
 });
 
 // Claim challenge reward
-router.post('/claim-challenge', async (req, res) => {
+router.post("/claim-challenge", async (req, res) => {
   try {
     const { userId: userIdParam, challengeId } = req.body;
     const userId = parseUserId(userIdParam);
-    
+
     if (!userId || !challengeId) {
-      return res.status(400).json({ error: 'Invalid parameters' });
+      return res.status(400).json({ error: "Invalid parameters" });
     }
 
     // Check if challenge is completed and not claimed
@@ -345,7 +358,9 @@ router.post('/claim-challenge', async (req, res) => {
     `;
 
     if (!progress || progress.length === 0) {
-      return res.status(400).json({ error: 'Challenge not completed or already claimed' });
+      return res
+        .status(400)
+        .json({ error: "Challenge not completed or already claimed" });
     }
 
     const challengeProgress = progress[0];
@@ -358,13 +373,13 @@ router.post('/claim-challenge', async (req, res) => {
     `;
 
     // Add reward to user stats
-    if (challengeProgress.reward_type === 'freespins') {
+    if (challengeProgress.reward_type === "freespins") {
       await prisma.$executeRaw`
         UPDATE user_game_stats 
         SET current_freespins = current_freespins + ${challengeProgress.reward_amount}
         WHERE user_id = ${userId}
       `;
-    } else if (challengeProgress.reward_type === 'coins') {
+    } else if (challengeProgress.reward_type === "coins") {
       await prisma.$executeRaw`
         UPDATE user_game_stats 
         SET current_coins = current_coins + ${challengeProgress.reward_amount}
@@ -372,10 +387,10 @@ router.post('/claim-challenge', async (req, res) => {
       `;
     }
 
-    res.json({ success: true, message: 'Reward claimed successfully' });
+    res.json({ success: true, message: "Reward claimed successfully" });
   } catch (error) {
-    console.error('Error claiming challenge reward:', error);
-    res.status(500).json({ error: 'Failed to claim challenge reward' });
+    console.error("Error claiming challenge reward:", error);
+    res.status(500).json({ error: "Failed to claim challenge reward" });
   }
 });
 

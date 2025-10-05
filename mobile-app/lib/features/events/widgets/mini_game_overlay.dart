@@ -20,7 +20,7 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
   // Animation controllers
   late AnimationController _wheelController;
   late AnimationController _celebrationAnimation;
-  
+
   // Wheel state
   double _wheelAngle = 0.0;
   double _startAngle = 0.0;
@@ -89,25 +89,30 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
 
     // Realistic spin physics - start fast, slow down gradually
     final Random random = Random();
-    final double baseSpins = 12 + random.nextDouble() * 8; // 12-20 full rotations for dramatic effect
-    final double randomOffset = random.nextDouble() * 2 * pi; // Random final position
+    final double baseSpins = 12 +
+        random.nextDouble() * 8; // 12-20 full rotations for dramatic effect
+    final double randomOffset =
+        random.nextDouble() * 2 * pi; // Random final position
     final double totalRotation = baseSpins * 2 * pi + randomOffset;
-    
+
     // Calculate target angle
     _targetAngle = _startAngle + totalRotation;
-    
+
     // Determine winning segment based on final position
     final double normalizedAngle = (_targetAngle % (2 * pi));
     final double segmentAngle = (2 * pi) / _wheelRewards.length;
-    final int winningSegment = ((2 * pi - normalizedAngle) / segmentAngle).floor() % _wheelRewards.length;
+    final int winningSegment =
+        ((2 * pi - normalizedAngle) / segmentAngle).floor() %
+            _wheelRewards.length;
 
     // Reset and start animation
     _wheelController.reset();
-    
+
     // Animate with realistic easing and higher FPS
     await _wheelController.animateTo(
       1.0,
-      duration: const Duration(milliseconds: 5000), // Longer spin for more dramatic effect
+      duration: const Duration(
+          milliseconds: 5000), // Longer spin for more dramatic effect
       curve: Curves.easeOutCirc, // More realistic casino wheel deceleration
     );
 
@@ -144,19 +149,24 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1),
             ),
           ),
           child: IconButton(
@@ -172,14 +182,16 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isDark 
-                ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                : [const Color(0xFF4F46E5), const Color(0xFF7C3AED)],
+              colors: isDark
+                  ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                  : [const Color(0xFF4F46E5), const Color(0xFF7C3AED)],
             ),
             borderRadius: BorderRadius.circular(25),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? const Color(0xFF6366F1) : const Color(0xFF4F46E5)).withOpacity(0.3),
+                color:
+                    (isDark ? const Color(0xFF6366F1) : const Color(0xFF4F46E5))
+                        .withOpacity(0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -206,10 +218,14 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
           Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.1),
               ),
             ),
             child: IconButton(
@@ -228,28 +244,28 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
       body: Container(
         decoration: BoxDecoration(
           gradient: isDark
-            ? const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF0D1117),
-                  Color(0xFF161B22),
-                  Color(0xFF21262D),
-                  Color(0xFF0D1117),
-                ],
-                stops: [0.0, 0.3, 0.7, 1.0],
-              )
-            : const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFF8FAFC),
-                  Color(0xFFF1F5F9),
-                  Color(0xFFE2E8F0),
-                  Color(0xFFF8FAFC),
-                ],
-                stops: [0.0, 0.3, 0.7, 1.0],
-              ),
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0D1117),
+                    Color(0xFF161B22),
+                    Color(0xFF21262D),
+                    Color(0xFF0D1117),
+                  ],
+                  stops: [0.0, 0.3, 0.7, 1.0],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFF8FAFC),
+                    Color(0xFFF1F5F9),
+                    Color(0xFFE2E8F0),
+                    Color(0xFFF8FAFC),
+                  ],
+                  stops: [0.0, 0.3, 0.7, 1.0],
+                ),
         ),
         child: Stack(
           children: [
@@ -258,7 +274,7 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  
+
                   // Casino-style header
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -266,16 +282,20 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isDark
-                          ? [const Color(0xFF1C2128), const Color(0xFF22272E)]
-                          : [Colors.white, const Color(0xFFFAFBFC)],
+                            ? [const Color(0xFF1C2128), const Color(0xFF22272E)]
+                            : [Colors.white, const Color(0xFFFAFBFC)],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.05),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.08),
+                          color: isDark
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.08),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -286,7 +306,11 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                         // Casino title with golden effect
                         ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFF8C00)],
+                            colors: [
+                              Color(0xFFFFD700),
+                              Color(0xFFFFA500),
+                              Color(0xFFFF8C00)
+                            ],
                           ).createShader(bounds),
                           child: Text(
                             'LUCKY WHEEL',
@@ -305,17 +329,22 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 8),
-                        
+
                         // Countdown timer with premium styling
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF0D1117) : const Color(0xFFF1F5F9),
+                            color: isDark
+                                ? const Color(0xFF0D1117)
+                                : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.black.withOpacity(0.05),
                             ),
                           ),
                           child: Row(
@@ -330,7 +359,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                               Text(
                                 'Next bonus in ${_formatTimer(_nextSpinTime)}',
                                 style: TextStyle(
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -341,279 +371,322 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                       ],
                     ),
                   ),
-              
-              const SizedBox(height: 40),
-              
-              // Casino wheel section
-              Expanded(
-                child: Center(
-                  child: Container(
-                    width: 320,
-                    height: 320,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: isDark
-                          ? [const Color(0xFF2D3748), const Color(0xFF1A202C)]
-                          : [const Color(0xFFFFFFFF), const Color(0xFFF7FAFC)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark ? Colors.black.withOpacity(0.6) : Colors.black.withOpacity(0.15),
-                          blurRadius: 30,
-                          offset: const Offset(0, 15),
-                        ),
-                      ],
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer ring decoration
-                        Container(
-                          width: 310,
-                          height: 310,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              width: 8,
-                              color: const Color(0xFFFFD700),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFFD700).withOpacity(0.5),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              ),
-                            ],
+
+                  const SizedBox(height: 40),
+
+                  // Casino wheel section
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 320,
+                        height: 320,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF2D3748),
+                                    const Color(0xFF1A202C)
+                                  ]
+                                : [
+                                    const Color(0xFFFFFFFF),
+                                    const Color(0xFFF7FAFC)
+                                  ],
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.6)
+                                  : Colors.black.withOpacity(0.15),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
                         ),
-                        
-                        // The spinning wheel
-                        AnimatedBuilder(
-                          animation: _wheelController,
-                          builder: (context, child) {
-                            // Calculate current rotation angle during animation
-                            double currentAngle = _wheelAngle;
-                            if (_isSpinning) {
-                              // During spinning, interpolate between start and target angle
-                              currentAngle = _startAngle + ((_targetAngle - _startAngle) * _wheelController.value);
-                            }
-                            
-                            return Container(
-                              width: 320,
-                              height: 320,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer ring decoration
+                            Container(
+                              width: 310,
+                              height: 310,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                // Add spinning glow effect
-                                boxShadow: _isSpinning ? [
+                                border: Border.all(
+                                  width: 8,
+                                  color: const Color(0xFFFFD700),
+                                ),
+                                boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFFD700).withOpacity(0.6),
-                                    blurRadius: 25,
-                                    spreadRadius: 5,
-                                  ),
-                                  BoxShadow(
-                                    color: const Color(0xFFFFD700).withOpacity(0.3),
-                                    blurRadius: 40,
-                                    spreadRadius: 10,
-                                  ),
-                                ] : [
-                                  BoxShadow(
-                                    color: isDark ? Colors.black.withOpacity(0.6) : Colors.black.withOpacity(0.15),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 15),
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.5),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: Transform.rotate(
-                                angle: currentAngle,
-                                child: Container(
-                                  width: 280,
-                                  height: 280,
-                                  child: CustomPaint(
-                                    painter: CasinoWheelPainter(
-                                      _wheelRewards,
-                                      _wheelColors,
-                                      isDark,
-                                    ),
-                                    size: const Size(280, 280),
+                            ),
+
+                            // The spinning wheel
+                            AnimatedBuilder(
+                              animation: _wheelController,
+                              builder: (context, child) {
+                                // Calculate current rotation angle during animation
+                                double currentAngle = _wheelAngle;
+                                if (_isSpinning) {
+                                  // During spinning, interpolate between start and target angle
+                                  currentAngle = _startAngle +
+                                      ((_targetAngle - _startAngle) *
+                                          _wheelController.value);
+                                }
+
+                                return Container(
+                                  width: 320,
+                                  height: 320,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    // Add spinning glow effect
+                                    boxShadow: _isSpinning
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFFFFD700)
+                                                  .withOpacity(0.6),
+                                              blurRadius: 25,
+                                              spreadRadius: 5,
+                                            ),
+                                            BoxShadow(
+                                              color: const Color(0xFFFFD700)
+                                                  .withOpacity(0.3),
+                                              blurRadius: 40,
+                                              spreadRadius: 10,
+                                            ),
+                                          ]
+                                        : [
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? Colors.black
+                                                      .withOpacity(0.6)
+                                                  : Colors.black
+                                                      .withOpacity(0.15),
+                                              blurRadius: 30,
+                                              offset: const Offset(0, 15),
+                                            ),
+                                          ],
                                   ),
+                                  child: Transform.rotate(
+                                    angle: currentAngle,
+                                    child: Container(
+                                      width: 280,
+                                      height: 280,
+                                      child: CustomPaint(
+                                        painter: CasinoWheelPainter(
+                                          _wheelRewards,
+                                          _wheelColors,
+                                          isDark,
+                                        ),
+                                        size: const Size(280, 280),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Center hub with casino styling
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const RadialGradient(
+                                  colors: [
+                                    Color(0xFFFFD700),
+                                    Color(0xFFFFA500),
+                                    Color(0xFFFF8C00)
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 4,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.diamond,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
+
+                            // Casino-style pointer
+                            Positioned(
+                              top: 20,
+                              child: Container(
+                                width: 0,
+                                height: 0,
+                                child: CustomPaint(
+                                  painter: CasinoPointerPainter(isDark),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                        
-                        // Center hub with casino styling
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const RadialGradient(
-                              colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFF8C00)],
                             ),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 4,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.diamond,
-                            color: Colors.white,
-                            size: 32,
-                          ),
+                          ],
                         ),
-                        
-                        // Casino-style pointer
-                        Positioned(
-                          top: 20,
-                          child: Container(
-                            width: 0,
-                            height: 0,
-                            child: CustomPaint(
-                              painter: CasinoPointerPainter(isDark),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-              
-              // Casino-style spin button
-              Container(
-                margin: const EdgeInsets.all(24),
-                child: GestureDetector(
-                  onTap: _spinWheel,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: double.infinity,
-                    height: 65,
-                    decoration: BoxDecoration(
-                      gradient: _isSpinning || _spinsLeft <= 0
-                          ? LinearGradient(
-                              colors: [Colors.grey.shade400, Colors.grey.shade600],
-                            )
-                          : const LinearGradient(
-                              colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFF8C00)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                      boxShadow: _isSpinning || _spinsLeft <= 0
-                          ? []
-                          : [
-                              BoxShadow(
-                                color: const Color(0xFFFFD700).withOpacity(0.4),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                    ),
-                    child: Stack(
-                      children: [
-                        // Button shimmer effect
-                        if (!_isSpinning && _spinsLeft > 0)
-                          AnimatedBuilder(
-                            animation: _celebrationAnimation,
-                            builder: (context, child) {
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(32),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment(-1 + _celebrationAnimation.value * 3, 0),
-                                      end: Alignment(0 + _celebrationAnimation.value * 3, 0),
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.white.withOpacity(0.3),
-                                        Colors.transparent,
-                                      ],
-                                      stops: const [0.0, 0.5, 1.0],
-                                    ),
-                                  ),
+
+                  // Casino-style spin button
+                  Container(
+                    margin: const EdgeInsets.all(24),
+                    child: GestureDetector(
+                      onTap: _spinWheel,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        height: 65,
+                        decoration: BoxDecoration(
+                          gradient: _isSpinning || _spinsLeft <= 0
+                              ? LinearGradient(
+                                  colors: [
+                                    Colors.grey.shade400,
+                                    Colors.grey.shade600
+                                  ],
+                                )
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFFD700),
+                                    Color(0xFFFFA500),
+                                    Color(0xFFFF8C00)
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                              );
-                            },
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
                           ),
-                        
-                        // Button content
-                        Center(
-                          child: _isSpinning
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white.withOpacity(0.8),
+                          boxShadow: _isSpinning || _spinsLeft <= 0
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.4),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Button shimmer effect
+                            if (!_isSpinning && _spinsLeft > 0)
+                              AnimatedBuilder(
+                                animation: _celebrationAnimation,
+                                builder: (context, child) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(32),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                              -1 +
+                                                  _celebrationAnimation.value *
+                                                      3,
+                                              0),
+                                          end: Alignment(
+                                              0 +
+                                                  _celebrationAnimation.value *
+                                                      3,
+                                              0),
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.white.withOpacity(0.3),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0.0, 0.5, 1.0],
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 16),
-                                    const Text(
-                                      'SPINNING...',
-                                      style: TextStyle(
+                                  );
+                                },
+                              ),
+
+                            // Button content
+                            Center(
+                              child: _isSpinning
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Colors.white.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        const Text(
+                                          'SPINNING...',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      _spinsLeft <= 0
+                                          ? 'NO SPINS LEFT'
+                                          : 'SPIN TO WIN',
+                                      style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 18,
+                                        fontSize: 20,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: 2,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black26,
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                )
-                              : Text(
-                                  _spinsLeft <= 0 ? 'NO SPINS LEFT' : 'SPIN TO WIN',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 2,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-              
-              // Add bottom padding for safe area
-              SizedBox(
-                height: MediaQuery.of(context).padding.bottom + 20,
-              ),
+
+                  // Add bottom padding for safe area
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + 20,
+                  ),
                 ],
               ),
             ),
-            
-            // Celebration overlay  
+
+            // Celebration overlay
             if (_selectedReward != null) _buildEnhancedResultDialog(),
           ],
         ),
@@ -628,14 +701,18 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
         Container(
           color: Colors.black.withOpacity(0.85),
         ),
-        
+
         // Confetti and celebration particles
-        ...List.generate(50, (index) => 
-          AnimatedBuilder(
+        ...List.generate(
+          50,
+          (index) => AnimatedBuilder(
             animation: _celebrationAnimation,
             builder: (context, child) {
               final randomX = (index * 7.3) % MediaQuery.of(context).size.width;
-              final randomY = _celebrationAnimation.value * MediaQuery.of(context).size.height + (index * 20) % 200 - 100;
+              final randomY = _celebrationAnimation.value *
+                      MediaQuery.of(context).size.height +
+                  (index * 20) % 200 -
+                  100;
               final randomRotation = _celebrationAnimation.value * 8 + index;
               final colors = [
                 Colors.amber,
@@ -646,7 +723,7 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                 Colors.orange,
               ];
               final color = colors[index % colors.length];
-              
+
               return Positioned(
                 left: randomX,
                 top: randomY,
@@ -657,8 +734,10 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                     height: 6 + (index % 4),
                     decoration: BoxDecoration(
                       color: color,
-                      shape: index % 3 == 0 ? BoxShape.circle : BoxShape.rectangle,
-                      borderRadius: index % 3 != 0 ? BorderRadius.circular(1) : null,
+                      shape:
+                          index % 3 == 0 ? BoxShape.circle : BoxShape.rectangle,
+                      borderRadius:
+                          index % 3 != 0 ? BorderRadius.circular(1) : null,
                     ),
                   ),
                 ),
@@ -666,29 +745,41 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
             },
           ),
         ),
-        
+
         // Firework bursts from corners
         Positioned.fill(
           child: AnimatedBuilder(
             animation: _celebrationAnimation,
             builder: (context, child) {
               List<Widget> fireworks = [];
-              
+
               for (int corner = 0; corner < 4; corner++) {
                 late double startX, startY;
                 switch (corner) {
-                  case 0: startX = 50; startY = 100; break;
-                  case 1: startX = MediaQuery.of(context).size.width - 50; startY = 100; break;
-                  case 2: startX = 50; startY = MediaQuery.of(context).size.height - 200; break;
-                  case 3: startX = MediaQuery.of(context).size.width - 50; startY = MediaQuery.of(context).size.height - 200; break;
+                  case 0:
+                    startX = 50;
+                    startY = 100;
+                    break;
+                  case 1:
+                    startX = MediaQuery.of(context).size.width - 50;
+                    startY = 100;
+                    break;
+                  case 2:
+                    startX = 50;
+                    startY = MediaQuery.of(context).size.height - 200;
+                    break;
+                  case 3:
+                    startX = MediaQuery.of(context).size.width - 50;
+                    startY = MediaQuery.of(context).size.height - 200;
+                    break;
                 }
-                
+
                 for (int burst = 0; burst < 8; burst++) {
                   final angle = (burst * 45.0) * (3.14159 / 180);
                   final distance = _celebrationAnimation.value * 120;
                   final x = startX + cos(angle) * distance;
                   final y = startY + sin(angle) * distance;
-                  
+
                   fireworks.add(
                     Positioned(
                       left: x - 4,
@@ -715,21 +806,23 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                   );
                 }
               }
-              
+
               return Stack(children: fireworks);
             },
           ),
         ),
-        
+
         // Central celebration content with smooth entrance
         Center(
           child: AnimatedBuilder(
             animation: _celebrationAnimation,
             builder: (context, child) {
               // Multi-stage animation
-              final stage1 = Curves.elasticOut.transform((_celebrationAnimation.value * 1.5).clamp(0.0, 1.0));
-              final stage2 = Curves.easeOutBack.transform((_celebrationAnimation.value * 2.0 - 0.5).clamp(0.0, 1.0));
-              
+              final stage1 = Curves.elasticOut.transform(
+                  (_celebrationAnimation.value * 1.5).clamp(0.0, 1.0));
+              final stage2 = Curves.easeOutBack.transform(
+                  (_celebrationAnimation.value * 2.0 - 0.5).clamp(0.0, 1.0));
+
               return Transform.scale(
                 scale: stage1,
                 child: Transform.translate(
@@ -774,9 +867,9 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             );
                           },
                         ),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // "BIG WIN!" text with golden effect
                         ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
@@ -799,18 +892,20 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Prize amount with pulsing effect
                         AnimatedBuilder(
                           animation: _celebrationAnimation,
                           builder: (context, child) {
-                            final pulse = 1.0 + sin(_celebrationAnimation.value * 8) * 0.05;
+                            final pulse = 1.0 +
+                                sin(_celebrationAnimation.value * 8) * 0.05;
                             return Transform.scale(
                               scale: pulse,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 32, vertical: 16),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
                                     colors: [
@@ -822,7 +917,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.amber, width: 2),
+                                  border:
+                                      Border.all(color: Colors.amber, width: 2),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.amber.withOpacity(0.3),
@@ -857,9 +953,9 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             );
                           },
                         ),
-                        
+
                         const SizedBox(height: 32),
-                        
+
                         // Collect button with shimmer effect
                         AnimatedBuilder(
                           animation: _celebrationAnimation,
@@ -886,7 +982,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                   borderRadius: BorderRadius.circular(28),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF4CAF50).withOpacity(0.4),
+                                      color: const Color(0xFF4CAF50)
+                                          .withOpacity(0.4),
                                       blurRadius: 15,
                                       spreadRadius: 2,
                                     ),
@@ -900,8 +997,18 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                       child: Container(
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
-                                            begin: Alignment(-1 + _celebrationAnimation.value * 3, 0),
-                                            end: Alignment(0 + _celebrationAnimation.value * 3, 0),
+                                            begin: Alignment(
+                                                -1 +
+                                                    _celebrationAnimation
+                                                            .value *
+                                                        3,
+                                                0),
+                                            end: Alignment(
+                                                0 +
+                                                    _celebrationAnimation
+                                                            .value *
+                                                        3,
+                                                0),
                                             colors: [
                                               Colors.transparent,
                                               Colors.white.withOpacity(0.3),
@@ -949,20 +1056,20 @@ class Enhanced3DPointerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // Shadow for the pointer
     final shadowPaint = Paint()
       ..color = Colors.black.withOpacity(0.4)
       ..style = PaintingStyle.fill;
-    
+
     final shadowPath = Path();
     shadowPath.moveTo(center.dx + 2, center.dy + 2);
     shadowPath.lineTo(center.dx - 13, center.dy - 28);
     shadowPath.lineTo(center.dx + 17, center.dy - 28);
     shadowPath.close();
-    
+
     canvas.drawPath(shadowPath, shadowPaint);
-    
+
     // Main pointer with gradient
     final mainPaint = Paint()
       ..shader = LinearGradient(
@@ -975,34 +1082,34 @@ class Enhanced3DPointerPainter extends CustomPainter {
         ],
       ).createShader(Rect.fromLTWH(center.dx - 15, center.dy - 30, 30, 30))
       ..style = PaintingStyle.fill;
-    
+
     final mainPath = Path();
     mainPath.moveTo(center.dx, center.dy);
     mainPath.lineTo(center.dx - 15, center.dy - 30);
     mainPath.lineTo(center.dx + 15, center.dy - 30);
     mainPath.close();
-    
+
     canvas.drawPath(mainPath, mainPaint);
-    
+
     // Highlight on the pointer
     final highlightPaint = Paint()
       ..color = Colors.white.withOpacity(0.6)
       ..style = PaintingStyle.fill;
-    
+
     final highlightPath = Path();
     highlightPath.moveTo(center.dx - 3, center.dy - 5);
     highlightPath.lineTo(center.dx - 8, center.dy - 20);
     highlightPath.lineTo(center.dx + 2, center.dy - 20);
     highlightPath.close();
-    
+
     canvas.drawPath(highlightPath, highlightPaint);
-    
+
     // Border for definition
     final borderPaint = Paint()
       ..color = Colors.white.withOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    
+
     canvas.drawPath(mainPath, borderPaint);
   }
 
@@ -1016,13 +1123,13 @@ class PointerPainter extends CustomPainter {
     final paint = Paint()
       ..color = const Color(0xFFFFD700)
       ..style = PaintingStyle.fill;
-    
+
     final path = Path();
     path.moveTo(0, 0);
     path.lineTo(-15, -30);
     path.lineTo(15, -30);
     path.close();
-    
+
     canvas.drawPath(path, paint);
   }
 
@@ -1042,23 +1149,25 @@ class Enhanced3DWheelPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    
+
     final segmentAngle = 2 * pi / rewards.length;
-    
+
     // Draw outer ring with 3D effect
     _draw3DRing(canvas, center, radius);
-    
+
     for (int i = 0; i < rewards.length; i++) {
       final startAngle = i * segmentAngle - pi / 2;
       final sweepAngle = segmentAngle;
-      
+
       // Enhanced 3D segment painting
-      _draw3DSegment(canvas, rect, startAngle, sweepAngle, colors[i % colors.length], i);
-      
+      _draw3DSegment(
+          canvas, rect, startAngle, sweepAngle, colors[i % colors.length], i);
+
       // Draw enhanced text with better positioning
-      _drawSegmentText(canvas, center, radius, startAngle, sweepAngle, rewards[i]);
+      _drawSegmentText(
+          canvas, center, radius, startAngle, sweepAngle, rewards[i]);
     }
-    
+
     // Draw inner center circle with 3D effect
     _draw3DCenterCircle(canvas, center, radius);
   }
@@ -1087,7 +1196,8 @@ class Enhanced3DWheelPainter extends CustomPainter {
     canvas.drawCircle(center, radius - 3, outerRingPaint);
   }
 
-  void _draw3DSegment(Canvas canvas, Rect rect, double startAngle, double sweepAngle, Color baseColor, int index) {
+  void _draw3DSegment(Canvas canvas, Rect rect, double startAngle,
+      double sweepAngle, Color baseColor, int index) {
     // Base segment
     final basePaint = Paint()
       ..color = baseColor
@@ -1121,16 +1231,18 @@ class Enhanced3DWheelPainter extends CustomPainter {
       ..color = Colors.black.withOpacity(0.1)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    final innerRect = Rect.fromCircle(center: rect.center, radius: rect.width / 2 - 5);
+    final innerRect =
+        Rect.fromCircle(center: rect.center, radius: rect.width / 2 - 5);
     canvas.drawArc(innerRect, startAngle, sweepAngle, true, innerShadowPaint);
   }
 
-  void _drawSegmentText(Canvas canvas, Offset center, double radius, double startAngle, double sweepAngle, String text) {
+  void _drawSegmentText(Canvas canvas, Offset center, double radius,
+      double startAngle, double sweepAngle, String text) {
     final textAngle = startAngle + sweepAngle / 2;
     final textRadius = radius * 0.65; // Adjusted for better positioning
     final textX = center.dx + textRadius * cos(textAngle);
     final textY = center.dy + textRadius * sin(textAngle);
-    
+
     // Enhanced text with shadow
     final shadowTextSpan = TextSpan(
       text: text,
@@ -1140,7 +1252,7 @@ class Enhanced3DWheelPainter extends CustomPainter {
         fontWeight: FontWeight.bold,
       ),
     );
-    
+
     final mainTextSpan = TextSpan(
       text: text,
       style: const TextStyle(
@@ -1156,41 +1268,46 @@ class Enhanced3DWheelPainter extends CustomPainter {
         ],
       ),
     );
-    
+
     final shadowTextPainter = TextPainter(
       text: shadowTextSpan,
       textDirection: TextDirection.ltr,
     );
     shadowTextPainter.layout();
-    
+
     final mainTextPainter = TextPainter(
       text: mainTextSpan,
       textDirection: TextDirection.ltr,
     );
     mainTextPainter.layout();
-    
+
     // Draw text with rotation
     canvas.save();
     canvas.translate(textX, textY);
     canvas.rotate(textAngle + pi / 2);
-    
+
     // Draw shadow first
-    shadowTextPainter.paint(canvas, Offset(-shadowTextPainter.width / 2 + 1, -shadowTextPainter.height / 2 + 1));
+    shadowTextPainter.paint(
+        canvas,
+        Offset(-shadowTextPainter.width / 2 + 1,
+            -shadowTextPainter.height / 2 + 1));
     // Draw main text
-    mainTextPainter.paint(canvas, Offset(-mainTextPainter.width / 2, -mainTextPainter.height / 2));
-    
+    mainTextPainter.paint(canvas,
+        Offset(-mainTextPainter.width / 2, -mainTextPainter.height / 2));
+
     canvas.restore();
   }
 
   void _draw3DCenterCircle(Canvas canvas, Offset center, double radius) {
     final centerRadius = radius * 0.15;
-    
+
     // Center circle shadow
     final centerShadowPaint = Paint()
       ..color = Colors.black.withOpacity(0.4)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(center.dx + 2, center.dy + 2), centerRadius, centerShadowPaint);
-    
+    canvas.drawCircle(
+        Offset(center.dx + 2, center.dy + 2), centerRadius, centerShadowPaint);
+
     // Center circle with gradient
     final centerPaint = Paint()
       ..shader = RadialGradient(
@@ -1204,12 +1321,13 @@ class Enhanced3DWheelPainter extends CustomPainter {
       ).createShader(Rect.fromCircle(center: center, radius: centerRadius))
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, centerRadius, centerPaint);
-    
+
     // Center highlight
     final highlightPaint = Paint()
       ..color = Colors.white.withOpacity(0.6)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(center.dx - 3, center.dy - 3), centerRadius * 0.3, highlightPaint);
+    canvas.drawCircle(Offset(center.dx - 3, center.dy - 3), centerRadius * 0.3,
+        highlightPaint);
   }
 
   @override

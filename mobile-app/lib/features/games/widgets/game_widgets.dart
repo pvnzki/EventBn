@@ -150,9 +150,9 @@ class GameEntryCard extends StatelessWidget {
               size: 30,
             ),
           ),
-          
+
           const SizedBox(width: 16),
-          
+
           // Game info
           Expanded(
             child: Column(
@@ -177,7 +177,7 @@ class GameEntryCard extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Play button
           GestureDetector(
             onTap: () {
@@ -214,7 +214,7 @@ class GameEntryCard extends StatelessWidget {
 
 class DailySpinBanner extends StatelessWidget {
   final int spinsLeft;
-  
+
   const DailySpinBanner({
     super.key,
     this.spinsLeft = 3,
@@ -257,9 +257,9 @@ class DailySpinBanner extends StatelessWidget {
               size: 25,
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +282,7 @@ class DailySpinBanner extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Arrow indicator
           GestureDetector(
             onTap: () {

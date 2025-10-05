@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class SpinningWheelService {
   static const String baseUrl = 'http://10.0.2.2:3001'; // Android emulator
   // static const String baseUrl = 'http://localhost:3001'; // iOS simulator
-  
+
   // Get user's current game stats
   static Future<UserGameStats?> getUserGameStats(String userId) async {
     try {
@@ -67,7 +67,8 @@ class SpinningWheelService {
   }
 
   // Get user's spin history
-  static Future<List<SpinHistory>> getSpinHistory(String userId, {int limit = 10}) async {
+  static Future<List<SpinHistory>> getSpinHistory(String userId,
+      {int limit = 10}) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/games/history/$userId?limit=$limit'),
@@ -124,7 +125,8 @@ class SpinningWheelService {
   }
 
   // Claim daily challenge reward
-  static Future<bool> claimChallengeReward(String userId, String challengeId) async {
+  static Future<bool> claimChallengeReward(
+      String userId, String challengeId) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/games/claim-challenge'),
@@ -177,8 +179,8 @@ class UserGameStats {
       totalFreespinsWon: json['total_freespins_won'] ?? 0,
       currentCoins: json['current_coins'] ?? 0,
       currentFreespins: json['current_freespins'] ?? 3,
-      lastFreeSpinDate: json['last_free_spin_date'] != null 
-          ? DateTime.parse(json['last_free_spin_date']) 
+      lastFreeSpinDate: json['last_free_spin_date'] != null
+          ? DateTime.parse(json['last_free_spin_date'])
           : null,
       consecutiveDays: json['consecutive_days'] ?? 0,
       level: json['level'] ?? 1,
@@ -235,8 +237,9 @@ class WheelConfig {
       wheelName: json['wheel_name'] ?? 'Lucky Wheel',
       wheelType: json['wheel_type'] ?? 'daily_spin',
       segments: (json['segments'] as List<dynamic>?)
-          ?.map((segment) => WheelSegmentData.fromJson(segment))
-          .toList() ?? [],
+              ?.map((segment) => WheelSegmentData.fromJson(segment))
+              .toList() ??
+          [],
     );
   }
 }
@@ -319,8 +322,8 @@ class SpinAvailability {
     return SpinAvailability(
       canSpin: json['can_spin'] ?? false,
       freeSpinsLeft: json['free_spins_left'] ?? 0,
-      nextFreeSpinAt: json['next_free_spin_at'] != null 
-          ? DateTime.parse(json['next_free_spin_at']) 
+      nextFreeSpinAt: json['next_free_spin_at'] != null
+          ? DateTime.parse(json['next_free_spin_at'])
           : null,
       cooldownMessage: json['cooldown_message'],
     );

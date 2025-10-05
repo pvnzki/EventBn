@@ -32,7 +32,8 @@ class CasinoWheelPainter extends CustomPainter {
 
       // Draw section with gradient
       final paint = Paint()
-        ..shader = gradient.createShader(Rect.fromCircle(center: center, radius: radius))
+        ..shader = gradient
+            .createShader(Rect.fromCircle(center: center, radius: radius))
         ..style = PaintingStyle.fill;
 
       final path = Path();
@@ -59,7 +60,7 @@ class CasinoWheelPainter extends CustomPainter {
         ..color = const Color(0xFFFFD700)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5;
-      
+
       final borderPath = Path();
       borderPath.moveTo(center.dx, center.dy);
       borderPath.lineTo(

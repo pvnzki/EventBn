@@ -254,13 +254,11 @@ router.get("/tickets/my-tickets", authenticateToken, async (req, res) => {
     res.json({ success: true, tickets });
   } catch (error) {
     console.error("Tickets fetch error", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch tickets",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch tickets",
+      error: error.message,
+    });
   }
 });
 
@@ -273,13 +271,11 @@ router.get("/tickets/qr/:qrCode", authenticateToken, async (req, res) => {
         .json({ success: false, message: "Ticket not found" });
     res.json({ success: true, ticket });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch ticket",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch ticket",
+      error: error.message,
+    });
   }
 });
 
@@ -293,21 +289,17 @@ router.get(
         req.user.user_id || req.user.id
       );
       if (!ticket)
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Ticket not found or access denied",
-          });
+        return res.status(404).json({
+          success: false,
+          message: "Ticket not found or access denied",
+        });
       res.json({ success: true, ticket });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to fetch ticket details",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch ticket details",
+        error: error.message,
+      });
     }
   }
 );
@@ -319,13 +311,11 @@ router.get("/tickets/event/:eventId", authenticateToken, async (req, res) => {
     );
     res.json({ success: true, tickets });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch event tickets",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch event tickets",
+      error: error.message,
+    });
   }
 });
 
@@ -341,13 +331,11 @@ router.get("/tickets/:ticketId", authenticateToken, async (req, res) => {
         .json({ success: false, message: "Ticket not found or access denied" });
     res.json({ success: true, ticket });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch ticket details",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch ticket details",
+      error: error.message,
+    });
   }
 });
 
@@ -358,13 +346,11 @@ router.put("/tickets/:ticketId/attend", authenticateToken, async (req, res) => {
     );
     res.json({ success: true, message: "Ticket marked as attended", ticket });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to update ticket attendance",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update ticket attendance",
+      error: error.message,
+    });
   }
 });
 
@@ -375,22 +361,18 @@ router.post("/payments", authenticateToken, async (req, res) => {
       req.body,
       req.user
     );
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Payment record created successfully",
-        payment,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Payment record created successfully",
+      payment,
+    });
   } catch (error) {
     console.error("Payment create error", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to create payment record",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to create payment record",
+      error: error.message,
+    });
   }
 });
 
@@ -401,13 +383,11 @@ router.get("/payments/my-payments", authenticateToken, async (req, res) => {
     );
     res.json({ success: true, payments });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch payments",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payments",
+      error: error.message,
+    });
   }
 });
 
@@ -423,13 +403,11 @@ router.get("/payments/:payment_id", authenticateToken, async (req, res) => {
         .json({ success: false, message: "Payment not found" });
     res.json({ success: true, payment });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to fetch payment",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment",
+      error: error.message,
+    });
   }
 });
 
@@ -450,13 +428,11 @@ router.put(
         payment,
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to update payment status",
-          error: error.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Failed to update payment status",
+        error: error.message,
+      });
     }
   }
 );
@@ -779,7 +755,7 @@ router.post("/posts/:id/share", authenticateToken, async (req, res) => {
 // ============================================================================
 
 // Mount games router
-const gamesRouter = require('./games');
-router.use('/games', gamesRouter);
+const gamesRouter = require("./games");
+router.use("/games", gamesRouter);
 
 module.exports = router;
