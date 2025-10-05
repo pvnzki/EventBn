@@ -9,8 +9,6 @@ import 'dart:ui';
 import '../providers/event_provider.dart';
 import '../models/event_model.dart';
 
-import '../widgets/mini_game_overlay.dart';
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -80,12 +78,42 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'All', 'icon': Icons.grid_view_rounded, 'color': 0xFF1A1A1A, 'isSelected': true},
-    {'name': 'Concerts', 'icon': Icons.music_note_rounded, 'color': 0xFF6366F1, 'isSelected': false},
-    {'name': 'Sports', 'icon': Icons.sports_soccer_rounded, 'color': 0xFF10B981, 'isSelected': false},
-    {'name': 'Food', 'icon': Icons.restaurant_rounded, 'color': 0xFFF59E0B, 'isSelected': false},
-    {'name': 'Art', 'icon': Icons.palette_rounded, 'color': 0xFFEF4444, 'isSelected': false},
-    {'name': 'Business', 'icon': Icons.business_rounded, 'color': 0xFF8B5CF6, 'isSelected': false},
+    {
+      'name': 'All',
+      'icon': Icons.grid_view_rounded,
+      'color': 0xFF1A1A1A,
+      'isSelected': true
+    },
+    {
+      'name': 'Concerts',
+      'icon': Icons.music_note_rounded,
+      'color': 0xFF6366F1,
+      'isSelected': false
+    },
+    {
+      'name': 'Sports',
+      'icon': Icons.sports_soccer_rounded,
+      'color': 0xFF10B981,
+      'isSelected': false
+    },
+    {
+      'name': 'Food',
+      'icon': Icons.restaurant_rounded,
+      'color': 0xFFF59E0B,
+      'isSelected': false
+    },
+    {
+      'name': 'Art',
+      'icon': Icons.palette_rounded,
+      'color': 0xFFEF4444,
+      'isSelected': false
+    },
+    {
+      'name': 'Business',
+      'icon': Icons.business_rounded,
+      'color': 0xFF8B5CF6,
+      'isSelected': false
+    },
   ];
 
   @override
@@ -102,7 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_bannerController.hasClients) {
         _currentBannerIndex = (_currentBannerIndex + 1) % _bannerImages.length;
-        print('Banner auto-scroll: moving to index $_currentBannerIndex of ${_bannerImages.length} total banners');
+        print(
+            'Banner auto-scroll: moving to index $_currentBannerIndex of ${_bannerImages.length} total banners');
         _bannerController.animateToPage(
           _currentBannerIndex,
           duration: const Duration(milliseconds: 800),
@@ -291,7 +320,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isSearching) {
       return Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.3), // Center the loading
+          SizedBox(
+              height: MediaQuery.of(context).size.height *
+                  0.3), // Center the loading
           Padding(
             padding: const EdgeInsets.all(32.0),
             child: Center(
@@ -321,7 +352,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_searchResults.isEmpty) {
       return Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.2), // Dynamic spacing
+          SizedBox(
+              height:
+                  MediaQuery.of(context).size.height * 0.2), // Dynamic spacing
           Padding(
             padding: const EdgeInsets.all(32.0),
             child: Center(
@@ -549,11 +582,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildPromotionalBanner(),
         const SizedBox(height: 8), // Increased gap between banner and indicator
         _buildPageIndicators(),
-        const SizedBox(height: 2), // Keep user's preferred spacing
+        const SizedBox(height: 16), // Keep user's preferred spacing
         _buildCategories(),
         const SizedBox(height: 32),
         _buildEventGrid(),
-        const SizedBox(height: 16), // Reduced since we're adding proper padding in the main scroll view
+        const SizedBox(
+            height:
+                16), // Reduced since we're adding proper padding in the main scroll view
       ],
     );
   }
@@ -582,7 +617,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               _buildSearchResults(),
                               // Add bottom padding for search results too
-                              SizedBox(height: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16),
+                              SizedBox(
+                                  height:
+                                      MediaQuery.of(context).padding.bottom +
+                                          kBottomNavigationBarHeight +
+                                          16),
                             ],
                           ),
                         ),
@@ -599,13 +638,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 24),
                         _buildMainContentWithoutSearchBar(),
                         // Add bottom padding to account for bottom navigation bar
-                        SizedBox(height: MediaQuery.of(context).padding.bottom + kBottomNavigationBarHeight + 16),
+                        SizedBox(
+                            height: MediaQuery.of(context).padding.bottom +
+                                kBottomNavigationBarHeight +
+                                16),
                       ],
                     ),
                   ),
           ),
         ),
-        const MiniGameOverlay(),
+
+        // Floating Mini Game Button with Shimmer Effect
+        Positioned(
+          right: 16,
+          bottom: 80,
+          child: ShimmerGameButton(),
+        ),
       ],
     );
   }
@@ -707,22 +755,28 @@ class _HomeScreenState extends State<HomeScreen> {
               key: ValueKey(_currentBannerIndex),
               child: Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8), // Slightly inset
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8), // Slightly inset
                   child: Transform.translate(
                     offset: const Offset(0, -10), // Extend upward
                     child: SizedBox(
                       height: 180, // Increased height to extend on all sides
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(5), // Slightly less rounded for broader effect
+                        borderRadius: BorderRadius.circular(
+                            5), // Slightly less rounded for broader effect
                         child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 55, sigmaY: 55), // Increased blur for broader spread
+                          imageFilter: ImageFilter.blur(
+                              sigmaX: 55,
+                              sigmaY: 55), // Increased blur for broader spread
                           child: Container(
                             decoration: BoxDecoration(
                               image: DecorationImage(
-                                image: AssetImage(_bannerImages[_currentBannerIndex]),
+                                image: AssetImage(
+                                    _bannerImages[_currentBannerIndex]),
                                 fit: BoxFit.cover,
                                 onError: (error, stackTrace) {
-                                  print('Error loading banner background image: $error');
+                                  print(
+                                      'Error loading banner background image: $error');
                                 },
                               ),
                             ),
@@ -730,12 +784,21 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: BoxDecoration(
                                 gradient: RadialGradient(
                                   center: Alignment.center,
-                                  radius: 1.6, // Larger radius for broader spread
+                                  radius:
+                                      1.6, // Larger radius for broader spread
                                   colors: [
-                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.1),
-                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.3),
-                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
-                                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                                    Theme.of(context)
+                                        .scaffoldBackgroundColor
+                                        .withOpacity(0.1),
+                                    Theme.of(context)
+                                        .scaffoldBackgroundColor
+                                        .withOpacity(0.3),
+                                    Theme.of(context)
+                                        .scaffoldBackgroundColor
+                                        .withOpacity(0.6),
+                                    Theme.of(context)
+                                        .scaffoldBackgroundColor
+                                        .withOpacity(0.9),
                                   ],
                                   stops: const [0.0, 0.4, 0.7, 1.0],
                                 ),
@@ -768,7 +831,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   itemCount: _bannerImages.length,
                   itemBuilder: (context, index) {
-                    print('Building banner item at index: $index, image: ${_bannerImages[index]}');
+                    print(
+                        'Building banner item at index: $index, image: ${_bannerImages[index]}');
                     return AnimatedSwitcher(
                       duration: const Duration(milliseconds: 600),
                       transitionBuilder: (child, animation) {
@@ -808,32 +872,41 @@ class _HomeScreenState extends State<HomeScreen> {
                                     width: double.infinity,
                                     height: double.infinity,
                                     errorBuilder: (context, error, stackTrace) {
-                                      print('Error loading banner image ${_bannerImages[index]}: $error');
+                                      print(
+                                          'Error loading banner image ${_bannerImages[index]}: $error');
                                       return Container(
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                             colors: [
-                                              Theme.of(context).primaryColor.withOpacity(0.7),
-                                              Theme.of(context).primaryColor.withOpacity(0.9),
+                                              Theme.of(context)
+                                                  .primaryColor
+                                                  .withOpacity(0.7),
+                                              Theme.of(context)
+                                                  .primaryColor
+                                                  .withOpacity(0.9),
                                             ],
                                           ),
                                         ),
                                         child: Center(
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
                                               Icon(
-                                                Icons.image_not_supported_outlined,
-                                                color: Colors.white.withOpacity(0.8),
+                                                Icons
+                                                    .image_not_supported_outlined,
+                                                color: Colors.white
+                                                    .withOpacity(0.8),
                                                 size: 40,
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
                                                 'Banner ${index + 1}',
                                                 style: TextStyle(
-                                                  color: Colors.white.withOpacity(0.9),
+                                                  color: Colors.white
+                                                      .withOpacity(0.9),
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -850,14 +923,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                         colors: [
-                                          Theme.of(context).primaryColor.withOpacity(0.3),
-                                          Theme.of(context).primaryColor.withOpacity(0.5),
+                                          Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.3),
+                                          Theme.of(context)
+                                              .primaryColor
+                                              .withOpacity(0.5),
                                         ],
                                       ),
                                     ),
                                     child: Center(
                                       child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
                                           Colors.white.withOpacity(0.8),
                                         ),
                                         strokeWidth: 2,
@@ -904,7 +982,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                    const Icon(Icons.warning_amber,
+                        color: Colors.orange, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -930,7 +1009,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     TextButton(
                       onPressed: () => eventProvider.fetchEvents(),
-                      child: const Text('Retry', style: TextStyle(fontSize: 12)),
+                      child:
+                          const Text('Retry', style: TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -955,7 +1035,8 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.65, // Made taller to accommodate the new design
+              childAspectRatio:
+                  0.65, // Made taller to accommodate the new design
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
@@ -973,7 +1054,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getEventPriceText(Event event) {
     // Check if event has ticket types with pricing
     if (event.ticketTypes.isNotEmpty) {
-      final lowestPrice = event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+      final lowestPrice =
+          event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
       if (lowestPrice > 0) {
         return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
       }
@@ -983,7 +1065,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEventCard(Event event) {
     final theme = Theme.of(context);
-    
+
     return GestureDetector(
       onTap: () => context.push('/events/${event.id}'),
       child: Container(
@@ -1051,7 +1133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         // Price tag
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(20),
@@ -1114,7 +1197,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.orange,
                                 borderRadius: BorderRadius.circular(6),
@@ -1153,7 +1237,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                event.address.isNotEmpty ? event.address : event.venue,
+                                event.address.isNotEmpty
+                                    ? event.address
+                                    : event.venue,
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.white70,
@@ -1209,8 +1295,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: index == 0 
-                            ? Colors.white 
+                        color: index == 0
+                            ? Colors.white
                             : Colors.white.withOpacity(0.5),
                       ),
                     ),
@@ -1249,7 +1335,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategories() {
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1273,7 +1359,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final category = _categories[index];
               final isSelected = category['isSelected'] ?? false;
-              
+
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -1287,7 +1373,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 child: Container(
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? theme.colorScheme.onSurface
@@ -1317,6 +1404,126 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class ShimmerGameButton extends StatefulWidget {
+  const ShimmerGameButton({super.key});
+
+  @override
+  State<ShimmerGameButton> createState() => _ShimmerGameButtonState();
+}
+
+class _ShimmerGameButtonState extends State<ShimmerGameButton>
+    with TickerProviderStateMixin {
+  late AnimationController _shimmerController;
+  late AnimationController _pulseController;
+  late Animation<double> _shimmerAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Shimmer animation for the overlay effect
+    _shimmerController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    // Pulse animation for size changes
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _shimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.08,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        context.go('/games/spinning-wheel');
+      },
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_shimmerAnimation, _pulseAnimation]),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: Container(
+              width: 70,
+              height: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(98),
+              ),
+              child: Stack(
+                children: [
+                  // Base image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(98),
+                    child: Transform.scale(
+                      scale: 1.35,
+                      child: Image.asset(
+                        'assets/icons/Offers_Green.png',
+                        fit: BoxFit.cover,
+                        width: 90,
+                        height: 90,
+                      ),
+                    ),
+                  ),
+                  // Shimmer overlay - now fits exactly to the button
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(100),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          stops: [
+                            _shimmerAnimation.value - 0.3,
+                            _shimmerAnimation.value,
+                            _shimmerAnimation.value + 0.3,
+                          ],
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withOpacity(0.4),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
