@@ -1677,9 +1677,9 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
         price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
-        event: ticket.event,
+        event: ticket.Event,
         payment: ticket.payment,
-        user: ticket.user,
+        user: ticket.User,
       },
     });
   } catch (e) {
@@ -1735,9 +1735,9 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
         price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
-        event: ticket.event,
+        event: ticket.Event,
         payment: ticket.payment,
-        user: ticket.user,
+        user: ticket.User,
       },
     });
   } catch (e) {
@@ -1796,9 +1796,9 @@ router.get(
           price: Number(ticket.price),
           user_id: Number(ticket.user_id),
           event_id: Number(ticket.event_id),
-          event: ticket.event,
+          event: ticket.Event,
           payment: ticket.payment,
-          user: ticket.user,
+          user: ticket.User,
         },
       });
     } catch (e) {
@@ -1852,7 +1852,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
     res.json({
       success: true,
       message: "Ticket marked as attended",
-      ticket: { ...updated, price: Number(updated.price), event: ticket.event },
+      ticket: { ...updated, price: Number(updated.price), event: ticket.Event },
     });
   } catch (e) {
     console.error("[CORE-SERVICE][TICKETS] Error marking attendance", e);
