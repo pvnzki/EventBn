@@ -10,9 +10,12 @@ class RedisClient {
     try {
       // For now, we'll simulate connection
       this.isConnected = true;
-      console.log('✅ Redis client connected (simulated)');
+      console.log("✅ Redis client connected (simulated)");
     } catch (error) {
-      console.log('❌ Redis connection failed (using fallback):', error.message);
+      console.log(
+        "❌ Redis connection failed (using fallback):",
+        error.message
+      );
       this.isConnected = false;
     }
   }

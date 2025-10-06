@@ -4,7 +4,7 @@ console.log("[DATABASE] Initializing Prisma client...");
 
 // Initialize Prisma client
 const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  log: ["query", "info", "warn", "error"],
 });
 
 console.log("[DATABASE] Prisma client initialized:", !!prisma);

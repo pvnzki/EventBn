@@ -716,10 +716,11 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     });
 
     // Filter for completed/pending payments and create sets of booked seat IDs
-    const filteredSeats = bookedSeats.filter(seat => 
-      seat.payment && ["pending", "completed"].includes(seat.payment.status)
+    const filteredSeats = bookedSeats.filter(
+      (seat) =>
+        seat.payment && ["pending", "completed"].includes(seat.payment.status)
     );
-    
+
     const bookedSeatIds = new Set(
       filteredSeats.map((seat) => seat.seat_id).filter(Boolean)
     );
@@ -729,7 +730,8 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
 
     console.log(
       `[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`,
-      Array.from(bookedSeatIds), Array.from(bookedSeatLabels)
+      Array.from(bookedSeatIds),
+      Array.from(bookedSeatLabels)
     );
 
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
