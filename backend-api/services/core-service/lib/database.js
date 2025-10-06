@@ -1,13 +1,15 @@
 const { PrismaClient } = require("@prisma/client");
 
-console.log("[DATABASE] Initializing Prisma client...");
-
-// Initialize Prisma client
 const prisma = new PrismaClient({
-  log: ["query", "info", "warn", "error"],
+  log:
+    process.env.NODE_ENV === "Dev"
+      ? ["query", "info", "warn", "error"]
+      : ["error"],
 });
 
-console.log("[DATABASE] Prisma client initialized:", !!prisma);
-console.log("[DATABASE] Available methods:", Object.keys(prisma));
+// Graceful shutdown
+process.on("beforeExit", async () => {
+  await prisma.$disconnect();
+});
 
 module.exports = prisma;

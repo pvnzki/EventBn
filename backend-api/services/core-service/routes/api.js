@@ -4,10 +4,6 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/database");
 
-console.log("[API] Prisma import result:", prisma);
-console.log("[API] Prisma type:", typeof prisma);
-console.log("[API] Has ticketPurchase:", !!(prisma && prisma.ticketPurchase));
-
 // Import seat lock service at the top level
 const seatLockService = require("../seat-locks/seatLockService");
 
@@ -147,7 +143,7 @@ router.get("/debug/db-test", async (req, res) => {
     console.log("[DEBUG] User count:", userCount);
 
     // Test if TicketPurchase table exists
-    const ticketCount = await prisma.ticketPurchase.count();
+    const ticketCount = await prisma.ticket_purchase.count();
     console.log("[DEBUG] Ticket purchase count:", ticketCount);
 
     res.json({
@@ -702,30 +698,27 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     }
 
     // Fetch booked seats for this event (from completed/pending payments)
-    const bookedSeats = await prisma.ticketPurchase.findMany({
+    const bookedSeats = await prisma.ticket_purchase.findMany({
       where: {
         event_id: eventIdNum,
-      },
-      include: {
         payment: {
-          select: {
-            status: true,
+          status: {
+            in: ["pending", "completed"],
           },
         },
       },
+      select: {
+        seat_id: true,
+        seat_label: true,
+      },
     });
 
-    // Filter for completed/pending payments and create sets of booked seat IDs
-    const filteredSeats = bookedSeats.filter(
-      (seat) =>
-        seat.payment && ["pending", "completed"].includes(seat.payment.status)
-    );
-
+    // Create a set of booked seat IDs for quick lookup
     const bookedSeatIds = new Set(
-      filteredSeats.map((seat) => seat.seat_id).filter(Boolean)
+      bookedSeats.map((seat) => seat.seat_id).filter(Boolean)
     );
     const bookedSeatLabels = new Set(
-      filteredSeats.map((seat) => seat.seat_label).filter(Boolean)
+      bookedSeats.map((seat) => seat.seat_label).filter(Boolean)
     );
 
     console.log(
@@ -820,7 +813,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
 router.get("/events/:eventId/booked-seats", async (req, res) => {
   try {
     const { eventId } = req.params;
-    const rows = await prisma.ticketPurchase.findMany({
+    const rows = await prisma.ticket_purchase.findMany({
       where: {
         event_id: parseInt(eventId),
         payment: { status: { in: ["pending", "completed"] } },
@@ -1395,7 +1388,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     }
 
     // Collect already booked seats (pending/completed payments)
-    const existingTickets = await prisma.ticketPurchase.findMany({
+    const existingTickets = await prisma.ticket_purchase.findMany({
       where: {
         event_id: event.event_id,
         payment: { status: { in: ["pending", "completed"] } },
@@ -1433,7 +1426,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     // Persist inside transaction
     const result = await prisma.$transaction(async (tx) => {
       // Re-check seats inside transaction for race condition
-      const concurrent = await tx.ticketPurchase.findMany({
+      const concurrent = await tx.ticket_purchase.findMany({
         where: {
           event_id: event.event_id,
           payment: { status: { in: ["pending", "completed"] } },
@@ -1468,7 +1461,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         const seatIdParsed = row.seatInfo?.id
           ? parseInt(row.seatInfo.id)
           : null;
-        const ticket = await tx.ticketPurchase.create({
+        const ticket = await tx.ticket_purchase.create({
           data: {
             event_id: event.event_id,
             user_id: userId,
@@ -1588,11 +1581,11 @@ router.get("/payments/:payment_id", authenticateUser, async (req, res) => {
 router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
-    const tickets = await prisma.ticketPurchase.findMany({
+    const tickets = await prisma.ticket_purchase.findMany({
       where: { user_id: userId },
       orderBy: { purchase_date: "desc" },
       include: {
-        event: {
+        Event: {
           select: {
             title: true,
             cover_image_url: true,
@@ -1609,7 +1602,7 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
             transaction_ref: true,
           },
         },
-        user: {
+        User: {
           select: {
             name: true,
             phone_number: true,
@@ -1624,9 +1617,9 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
         price: Number(t.price),
         user_id: Number(t.user_id),
         event_id: Number(t.event_id),
-        event: t.event,
+        event: t.Event,
         payment: t.payment,
-        user: t.user,
+        user: t.User,
       })),
     });
   } catch (e) {
@@ -1645,10 +1638,10 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
     const { ticketId } = req.params;
-    const ticket = await prisma.ticketPurchase.findUnique({
+    const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
       include: {
-        event: {
+        Event: {
           select: {
             title: true,
             cover_image_url: true,
@@ -1665,7 +1658,7 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
             transaction_ref: true,
           },
         },
-        user: {
+        User: {
           select: {
             name: true,
             phone_number: true,
@@ -1703,7 +1696,7 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
     const { qrCode } = req.params;
-    const ticket = await prisma.ticketPurchase.findFirst({
+    const ticket = await prisma.ticket_purchase.findFirst({
       where: { qr_code: qrCode, user_id: userId },
       include: {
         event: {
@@ -1827,7 +1820,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
       `[CORE-SERVICE][TICKETS] /tickets/:ticketId/attend userId=${userId} ticketId=${ticketId}`
     );
     // User can only mark own ticket for now (future: organizer scan logic)
-    const ticket = await prisma.ticketPurchase.findUnique({
+    const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
       include: {
         event: {
@@ -1851,7 +1844,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
         message: "Already marked attended",
         ticket: { ...ticket, price: Number(ticket.price) },
       });
-    const updated = await prisma.ticketPurchase.update({
+    const updated = await prisma.ticket_purchase.update({
       where: { ticket_id: ticketId },
       data: { attended: true },
     });
@@ -1877,8 +1870,8 @@ router.get("/debug/tickets-stats", authenticateUser, async (req, res) => {
     const userId = parseInt(req.userId);
     const [userTicketCount, totalTicketCount, userPaymentCount] =
       await Promise.all([
-        prisma.ticketPurchase.count({ where: { user_id: userId } }),
-        prisma.ticketPurchase.count(),
+        prisma.ticket_purchase.count({ where: { user_id: userId } }),
+        prisma.ticket_purchase.count(),
         prisma.payment.count({ where: { user_id: userId } }),
       ]);
     res.json({
@@ -1972,7 +1965,7 @@ router.get("/analytics/dashboard", async (req, res) => {
 
     // Provide basic analytics data directly from database
     const [userTickets, userPayments] = await Promise.all([
-      prisma.ticketPurchase.count({
+      prisma.ticket_purchase.count({
         where: { user_id: parseInt(userId) || 0 },
       }),
       prisma.payment.count({ where: { user_id: parseInt(userId) || 0 } }),

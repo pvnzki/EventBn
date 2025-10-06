@@ -135,7 +135,7 @@ class CasinoPointerPainter extends CustomPainter {
         colors: [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFF8C00)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, 30, 40))
+      ).createShader(const Rect.fromLTWH(0, 0, 30, 40))
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()

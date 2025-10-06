@@ -649,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         // Floating Mini Game Button with Shimmer Effect
-        Positioned(
+        const Positioned(
           right: 16,
           bottom: 80,
           child: ShimmerGameButton(),

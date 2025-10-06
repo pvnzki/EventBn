@@ -148,7 +148,7 @@ class AppTheme {
       scaffoldBackgroundColor: darkBackgroundColor,
       fontFamily: bodyFontFamily,
       textTheme: _buildTextTheme(darkTextPrimary),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: darkSurfaceColor,
         foregroundColor: darkTextPrimary,
         elevation: 0,
