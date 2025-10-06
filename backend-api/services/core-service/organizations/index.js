@@ -1,5 +1,6 @@
 // Organizations module
-const prisma = require('../../../lib/database');
+const express = require('express');
+const prisma = require('../lib/database');
 
 module.exports = {
   // Get single organization by ID

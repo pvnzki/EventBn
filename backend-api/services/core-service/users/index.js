@@ -1,5 +1,5 @@
 // Users module
-const prisma = require("../../../lib/database");
+const prisma = require("../lib/database");
 const bcrypt = require("bcrypt");
 
 const { publishUserEvent } = require("../utils/rabbitmq-publisher");

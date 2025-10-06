@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 // const coreService = require("../index"); // Disabled to prevent circular dependencies
 const jwt = require("jsonwebtoken");
-const prisma = require("../../../lib/database");
+const prisma = require("../lib/database");
+
+console.log("[API] Prisma import result:", prisma);
+console.log("[API] Prisma type:", typeof prisma);
+console.log("[API] Has ticketPurchase:", !!(prisma && prisma.ticketPurchase));
 
 // Import seat lock service at the top level
 const seatLockService = require("../seat-locks/seatLockService");
@@ -701,30 +705,31 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     const bookedSeats = await prisma.ticketPurchase.findMany({
       where: {
         event_id: eventIdNum,
+      },
+      include: {
         payment: {
-          status: {
-            in: ["pending", "completed"],
+          select: {
+            status: true,
           },
         },
       },
-      select: {
-        seat_id: true,
-        seat_label: true,
-      },
     });
 
-    // Create a set of booked seat IDs for quick lookup
+    // Filter for completed/pending payments and create sets of booked seat IDs
+    const filteredSeats = bookedSeats.filter(seat => 
+      seat.payment && ["pending", "completed"].includes(seat.payment.status)
+    );
+    
     const bookedSeatIds = new Set(
-      bookedSeats.map((seat) => seat.seat_id).filter(Boolean)
+      filteredSeats.map((seat) => seat.seat_id).filter(Boolean)
     );
     const bookedSeatLabels = new Set(
-      bookedSeats.map((seat) => seat.seat_label).filter(Boolean)
+      filteredSeats.map((seat) => seat.seat_label).filter(Boolean)
     );
 
     console.log(
       `[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`,
-      Array.from(bookedSeatIds),
-      Array.from(bookedSeatLabels)
+      Array.from(bookedSeatIds), Array.from(bookedSeatLabels)
     );
 
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;

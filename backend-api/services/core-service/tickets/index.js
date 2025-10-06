@@ -1,5 +1,5 @@
 // Tickets service (ported from monolith routes/tickets.js)
-const prisma = require("../../../lib/database");
+const prisma = require("../lib/database");
 
 function serializeTicket(ticket) {
   if (!ticket) return null;

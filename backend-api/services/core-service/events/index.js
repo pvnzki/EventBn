@@ -1,6 +1,7 @@
 // Events module
-const prisma = require("../../../lib/database");
-const { ValidationError } = require("../../../lib/validation");
+const express = require("express");
+const prisma = require("../lib/database");
+const { ValidationError } = require("../lib/validation");
 
 // Default seat map for events without custom seat maps - designed for ticket type selection
 const DEFAULT_SEAT_MAP = [

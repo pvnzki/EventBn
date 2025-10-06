@@ -1,12 +1,12 @@
 // Authentication service module within core-service
-const prisma = require('../../../lib/database');
+const prisma = require('../lib/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { 
   ValidationError, 
   validateUserRegistration, 
   validateLoginCredentials 
-} = require('../../../lib/validation');
+} = require('../lib/validation');
 
 class AuthService {
   // Generate JWT token

@@ -1,4 +1,4 @@
-const prisma = require('../../../lib/database');
+const prisma = require('../lib/database');
 
 module.exports = {
   // Get all analytics
