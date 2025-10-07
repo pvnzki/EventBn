@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 // const coreService = require("../index"); // Disabled to prevent circular dependencies
 const jwt = require("jsonwebtoken");
-const prisma = require("../../../lib/database");
+const prisma = require("../lib/database");
 
 // Import seat lock service at the top level
 const seatLockService = require("../seat-locks/seatLockService");
@@ -143,7 +143,7 @@ router.get("/debug/db-test", async (req, res) => {
     console.log("[DEBUG] User count:", userCount);
 
     // Test if TicketPurchase table exists
-    const ticketCount = await prisma.ticketPurchase.count();
+    const ticketCount = await prisma.ticket_purchase.count();
     console.log("[DEBUG] Ticket purchase count:", ticketCount);
 
     res.json({
@@ -698,7 +698,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     }
 
     // Fetch booked seats for this event (from completed/pending payments)
-    const bookedSeats = await prisma.ticketPurchase.findMany({
+    const bookedSeats = await prisma.ticket_purchase.findMany({
       where: {
         event_id: eventIdNum,
         payment: {
@@ -713,22 +713,57 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
       },
     });
 
-    // Create a set of booked seat IDs for quick lookup
-    const bookedSeatIds = new Set(
-      bookedSeats.map((seat) => seat.seat_id).filter(Boolean)
-    );
-    const bookedSeatLabels = new Set(
-      bookedSeats.map((seat) => seat.seat_label).filter(Boolean)
-    );
+    // Create sets of booked seat IDs and labels for quick lookup
+    // Handle both string and numeric IDs to avoid type mismatch issues
+    const bookedSeatIds = new Set();
+    const bookedSeatLabels = new Set();
+
+    bookedSeats.forEach((seat) => {
+      // Add seat_id in multiple formats
+      if (seat.seat_id != null) {
+        bookedSeatIds.add(seat.seat_id); // Original value
+        bookedSeatIds.add(String(seat.seat_id)); // String version
+        bookedSeatIds.add(Number(seat.seat_id)); // Numeric version (if valid)
+      }
+
+      // Add seat_label in multiple formats
+      if (seat.seat_label != null) {
+        bookedSeatLabels.add(seat.seat_label); // Original value
+        bookedSeatLabels.add(String(seat.seat_label)); // String version
+        // Also add numeric version if it's a valid number
+        const numericLabel = Number(seat.seat_label);
+        if (!isNaN(numericLabel)) {
+          bookedSeatLabels.add(numericLabel);
+        }
+      }
+    });
 
     console.log(
       `[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`,
+      "IDs:",
       Array.from(bookedSeatIds),
+      "Labels:",
       Array.from(bookedSeatLabels)
     );
 
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
     const ticketTypesRaw = event.ticket_types || null;
+
+    // Debug: Log seat map structure
+    if (rawSeatMap) {
+      console.log(`[SEATMAP] Raw seat map has ${rawSeatMap.length} seats`);
+      console.log(
+        `[SEATMAP] Sample seat map entries:`,
+        rawSeatMap.slice(0, 5).map((s, i) => ({
+          index: i,
+          id: s.id,
+          label: s.label,
+          seat_id: s.seat_id,
+          seat_label: s.seat_label,
+          available: s.available,
+        }))
+      );
+    }
 
     // Derive ticket types mapping (key -> { price, count }) for non custom seating
     function deriveTicketTypes(seatMapArray) {
@@ -754,13 +789,91 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
         hasCustomSeating: true,
         layout: "theater",
         layoutConfig: {},
-        seats: rawSeatMap.map((s) => {
-          // Check if seat is booked by seat_id or seat_label
-          const isBooked =
-            bookedSeatIds.has(s.id) ||
-            bookedSeatIds.has(s.seat_id) ||
-            bookedSeatLabels.has(s.label) ||
-            bookedSeatLabels.has(s.seat_label);
+        seats: rawSeatMap.map((s, index) => {
+          // Get all possible identifiers for this seat
+          const seatId = s.id;
+          const seatLabel = s.label;
+
+          // Create comprehensive list of possible identifiers
+          const possibleIds = [
+            seatId,
+            String(seatId),
+            Number(seatId),
+            s.seat_id,
+            String(s.seat_id),
+            Number(s.seat_id),
+            index, // Array index (0-based)
+            index + 1, // Array index (1-based)
+            String(index),
+            String(index + 1),
+          ].filter(
+            (id) => id !== undefined && id !== null && !isNaN(id) && id !== ""
+          );
+
+          const possibleLabels = [
+            seatLabel,
+            String(seatLabel),
+            Number(seatLabel),
+            s.seat_label,
+            String(s.seat_label),
+            Number(s.seat_label),
+          ].filter(
+            (label) => label !== undefined && label !== null && label !== ""
+          );
+
+          // Check if any identifier matches booked seats
+          const isBookedById = possibleIds.some(
+            (id) =>
+              bookedSeatIds.has(id) ||
+              bookedSeatIds.has(String(id)) ||
+              bookedSeatIds.has(Number(id))
+          );
+          const isBookedByLabel = possibleLabels.some(
+            (label) =>
+              bookedSeatLabels.has(label) || bookedSeatLabels.has(String(label))
+          );
+
+          const isBooked = isBookedById || isBookedByLabel;
+
+          // Enhanced debug logging for all seats to understand the mapping
+          const debugInfo = {
+            seatMapIndex: index,
+            seatData: {
+              id: seatId,
+              label: seatLabel,
+              seat_id: s.seat_id,
+              seat_label: s.seat_label,
+            },
+            possibleIds: possibleIds,
+            possibleLabels: possibleLabels,
+            isBookedById: isBookedById,
+            isBookedByLabel: isBookedByLabel,
+            isBooked: isBooked,
+          };
+
+          if (isBooked) {
+            console.log(`[SEATMAP] ✅ Marking seat as BOOKED:`, debugInfo);
+          } else {
+            // Also log available seats that might match some booked seat patterns
+            const hasMatchingPattern =
+              possibleIds.some((id) =>
+                Array.from(bookedSeatIds).some(
+                  (bookedId) => String(id) === String(bookedId)
+                )
+              ) ||
+              possibleLabels.some((label) =>
+                Array.from(bookedSeatLabels).some(
+                  (bookedLabel) => String(label) === String(bookedLabel)
+                )
+              );
+
+            if (hasMatchingPattern) {
+              console.log(
+                `[SEATMAP] 🤔 Seat looks like it should be booked but isn't marked:`,
+                debugInfo
+              );
+            }
+          }
 
           return {
             ...s,
@@ -813,7 +926,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
 router.get("/events/:eventId/booked-seats", async (req, res) => {
   try {
     const { eventId } = req.params;
-    const rows = await prisma.ticketPurchase.findMany({
+    const rows = await prisma.ticket_purchase.findMany({
       where: {
         event_id: parseInt(eventId),
         payment: { status: { in: ["pending", "completed"] } },
@@ -1280,6 +1393,25 @@ function markSeatsBooked(seatMapJson, seatIds) {
   if (!seatMapJson) return seatMapJson;
   try {
     const set = new Set(seatIds.map((s) => parseInt(s) || s));
+    console.log(
+      `[MARK_SEATS_BOOKED] Marking seats as booked: ${Array.from(set)}`
+    );
+
+    // Handle flat array format (direct seats array)
+    if (Array.isArray(seatMapJson)) {
+      for (const seat of seatMapJson) {
+        if (set.has(seat.id) || set.has(seat.seat_id) || set.has(seat.label)) {
+          seat.booked = true;
+          seat.available = false; // Also set available to false for consistency
+          console.log(
+            `[MARK_SEATS_BOOKED] Marked seat ${seat.id || seat.label} as booked`
+          );
+        }
+      }
+      return seatMapJson;
+    }
+
+    // Handle nested structure format (sections -> rows -> seats)
     for (const section of seatMapJson.sections || []) {
       for (const row of section.rows || []) {
         for (const seat of row.seats || []) {
@@ -1289,12 +1421,19 @@ function markSeatsBooked(seatMapJson, seatIds) {
             set.has(seat.label)
           ) {
             seat.booked = true;
+            seat.available = false; // Also set available to false for consistency
+            console.log(
+              `[MARK_SEATS_BOOKED] Marked seat ${
+                seat.id || seat.label
+              } as booked`
+            );
           }
         }
       }
     }
     return seatMapJson;
-  } catch {
+  } catch (e) {
+    console.error("[MARK_SEATS_BOOKED] Error:", e);
     return seatMapJson;
   }
 }
@@ -1309,6 +1448,15 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
       selectedSeatData,
       payment_method = "card",
     } = req.body || {};
+
+    console.log(
+      `[PAYMENT] User ${userId} creating payment for event ${event_id}`
+    );
+    console.log(`[PAYMENT] Selected seats: ${JSON.stringify(selected_seats)}`);
+    console.log(
+      `[PAYMENT] Selected seat data: ${JSON.stringify(selectedSeatData)}`
+    );
+
     if (
       !event_id ||
       !Array.isArray(selected_seats) ||
@@ -1388,17 +1536,46 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     }
 
     // Collect already booked seats (pending/completed payments)
-    const existingTickets = await prisma.ticketPurchase.findMany({
+    const existingTickets = await prisma.ticket_purchase.findMany({
       where: {
         event_id: event.event_id,
         payment: { status: { in: ["pending", "completed"] } },
       },
       select: { seat_id: true, seat_label: true },
     });
+
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Existing tickets for event ${event.event_id}:`,
+      existingTickets.map((t) => ({
+        seat_id: t.seat_id,
+        seat_label: t.seat_label,
+      }))
+    );
+
     const taken = new Set(
       existingTickets.map((t) => String(t.seat_id || t.seat_label))
     );
-    const conflicts = selected_seats.filter((s) => taken.has(String(s)));
+
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Taken seats (as strings):`,
+      Array.from(taken)
+    );
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Checking selected seats:`,
+      selected_seats
+    );
+
+    const conflicts = selected_seats.filter((s) => {
+      const asString = String(s);
+      const isTaken = taken.has(asString);
+      console.log(
+        `[PAYMENT_CONFLICT_CHECK] Seat ${s} (as string: "${asString}") - taken: ${isTaken}`
+      );
+      return isTaken;
+    });
+
+    console.log(`[PAYMENT_CONFLICT_CHECK] Conflicts found:`, conflicts);
+
     if (conflicts.length) {
       return res.status(409).json({
         success: false,
@@ -1409,7 +1586,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
 
     // Determine price per seat from selectedSeatData or default (1000 cents placeholder)
     let totalCents = 0;
-    const ticketRows = selected_seats.map((label, idx) => {
+    const ticketRows = selected_seats.map((seatIdOrLabel, idx) => {
       const seatInfo =
         selectedSeatData && selectedSeatData[idx]
           ? selectedSeatData[idx]
@@ -1420,13 +1597,23 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         ? Math.round(parseFloat(seatInfo.price) * 100)
         : 1000;
       totalCents += priceCents;
-      return { label, seatInfo, priceCents };
+
+      // Use seat label from seatInfo if available, otherwise use the seat ID/label as is
+      const displayLabel =
+        seatInfo?.label || seatInfo?.seat_label || String(seatIdOrLabel);
+
+      return {
+        seatIdOrLabel, // Original ID or label from selected_seats
+        displayLabel, // Human-readable label for display
+        seatInfo,
+        priceCents,
+      };
     });
 
     // Persist inside transaction
     const result = await prisma.$transaction(async (tx) => {
       // Re-check seats inside transaction for race condition
-      const concurrent = await tx.ticketPurchase.findMany({
+      const concurrent = await tx.ticket_purchase.findMany({
         where: {
           event_id: event.event_id,
           payment: { status: { in: ["pending", "completed"] } },
@@ -1458,16 +1645,24 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
 
       const createdTickets = [];
       for (const row of ticketRows) {
+        // Parse seat ID from the seat info or from the original seat identifier
         const seatIdParsed = row.seatInfo?.id
           ? parseInt(row.seatInfo.id)
-          : null;
-        const ticket = await tx.ticketPurchase.create({
+          : isNaN(parseInt(row.seatIdOrLabel))
+          ? null
+          : parseInt(row.seatIdOrLabel);
+
+        console.log(
+          `[TICKET_CREATE] Creating ticket for seat: ${row.seatIdOrLabel}, label: ${row.displayLabel}, parsed ID: ${seatIdParsed}`
+        );
+
+        const ticket = await tx.ticket_purchase.create({
           data: {
             event_id: event.event_id,
             user_id: userId,
             payment_id: payment.payment_id,
             seat_id: seatIdParsed,
-            seat_label: row.seatInfo?.label || String(row.label),
+            seat_label: row.displayLabel, // Use the human-readable label
             purchase_date: new Date(),
             price: BigInt(row.priceCents),
             attended: false,
@@ -1581,11 +1776,11 @@ router.get("/payments/:payment_id", authenticateUser, async (req, res) => {
 router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
-    const tickets = await prisma.ticketPurchase.findMany({
+    const tickets = await prisma.ticket_purchase.findMany({
       where: { user_id: userId },
       orderBy: { purchase_date: "desc" },
       include: {
-        event: {
+        Event: {
           select: {
             title: true,
             cover_image_url: true,
@@ -1602,7 +1797,7 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
             transaction_ref: true,
           },
         },
-        user: {
+        User: {
           select: {
             name: true,
             phone_number: true,
@@ -1617,9 +1812,9 @@ router.get("/tickets/my-tickets", authenticateUser, async (req, res) => {
         price: Number(t.price),
         user_id: Number(t.user_id),
         event_id: Number(t.event_id),
-        event: t.event,
+        event: t.Event,
         payment: t.payment,
-        user: t.user,
+        user: t.User,
       })),
     });
   } catch (e) {
@@ -1638,10 +1833,10 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
     const { ticketId } = req.params;
-    const ticket = await prisma.ticketPurchase.findUnique({
+    const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
       include: {
-        event: {
+        Event: {
           select: {
             title: true,
             cover_image_url: true,
@@ -1658,7 +1853,7 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
             transaction_ref: true,
           },
         },
-        user: {
+        User: {
           select: {
             name: true,
             phone_number: true,
@@ -1677,9 +1872,9 @@ router.get("/tickets/:ticketId", authenticateUser, async (req, res) => {
         price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
-        event: ticket.event,
+        event: ticket.Event,
         payment: ticket.payment,
-        user: ticket.user,
+        user: ticket.User,
       },
     });
   } catch (e) {
@@ -1696,7 +1891,7 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
   try {
     const userId = parseInt(req.userId);
     const { qrCode } = req.params;
-    const ticket = await prisma.ticketPurchase.findFirst({
+    const ticket = await prisma.ticket_purchase.findFirst({
       where: { qr_code: qrCode, user_id: userId },
       include: {
         event: {
@@ -1735,9 +1930,9 @@ router.get("/tickets/qr/:qrCode", authenticateUser, async (req, res) => {
         price: Number(ticket.price),
         user_id: Number(ticket.user_id),
         event_id: Number(ticket.event_id),
-        event: ticket.event,
+        event: ticket.Event,
         payment: ticket.payment,
-        user: ticket.user,
+        user: ticket.User,
       },
     });
   } catch (e) {
@@ -1796,9 +1991,9 @@ router.get(
           price: Number(ticket.price),
           user_id: Number(ticket.user_id),
           event_id: Number(ticket.event_id),
-          event: ticket.event,
+          event: ticket.Event,
           payment: ticket.payment,
-          user: ticket.user,
+          user: ticket.User,
         },
       });
     } catch (e) {
@@ -1820,7 +2015,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
       `[CORE-SERVICE][TICKETS] /tickets/:ticketId/attend userId=${userId} ticketId=${ticketId}`
     );
     // User can only mark own ticket for now (future: organizer scan logic)
-    const ticket = await prisma.ticketPurchase.findUnique({
+    const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
       include: {
         event: {
@@ -1844,7 +2039,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
         message: "Already marked attended",
         ticket: { ...ticket, price: Number(ticket.price) },
       });
-    const updated = await prisma.ticketPurchase.update({
+    const updated = await prisma.ticket_purchase.update({
       where: { ticket_id: ticketId },
       data: { attended: true },
     });
@@ -1852,7 +2047,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
     res.json({
       success: true,
       message: "Ticket marked as attended",
-      ticket: { ...updated, price: Number(updated.price), event: ticket.event },
+      ticket: { ...updated, price: Number(updated.price), event: ticket.Event },
     });
   } catch (e) {
     console.error("[CORE-SERVICE][TICKETS] Error marking attendance", e);
@@ -1870,8 +2065,8 @@ router.get("/debug/tickets-stats", authenticateUser, async (req, res) => {
     const userId = parseInt(req.userId);
     const [userTicketCount, totalTicketCount, userPaymentCount] =
       await Promise.all([
-        prisma.ticketPurchase.count({ where: { user_id: userId } }),
-        prisma.ticketPurchase.count(),
+        prisma.ticket_purchase.count({ where: { user_id: userId } }),
+        prisma.ticket_purchase.count(),
         prisma.payment.count({ where: { user_id: userId } }),
       ]);
     res.json({
@@ -1965,7 +2160,7 @@ router.get("/analytics/dashboard", async (req, res) => {
 
     // Provide basic analytics data directly from database
     const [userTickets, userPayments] = await Promise.all([
-      prisma.ticketPurchase.count({
+      prisma.ticket_purchase.count({
         where: { user_id: parseInt(userId) || 0 },
       }),
       prisma.payment.count({ where: { user_id: parseInt(userId) || 0 } }),

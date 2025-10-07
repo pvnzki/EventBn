@@ -475,7 +475,7 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                   ),
                                   child: Transform.rotate(
                                     angle: currentAngle,
-                                    child: Container(
+                                    child: SizedBox(
                                       width: 280,
                                       height: 280,
                                       child: CustomPaint(
@@ -527,7 +527,7 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             // Casino-style pointer
                             Positioned(
                               top: 20,
-                              child: Container(
+                              child: SizedBox(
                                 width: 0,
                                 height: 0,
                                 child: CustomPaint(
@@ -1072,13 +1072,13 @@ class Enhanced3DPointerPainter extends CustomPainter {
 
     // Main pointer with gradient
     final mainPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFFFFD700), // Gold
-          const Color(0xFFB8860B), // Darker gold
-          const Color(0xFF8B6914), // Even darker
+          Color(0xFFFFD700), // Gold
+          Color(0xFFB8860B), // Darker gold
+          Color(0xFF8B6914), // Even darker
         ],
       ).createShader(Rect.fromLTWH(center.dx - 15, center.dy - 30, 30, 30))
       ..style = PaintingStyle.fill;
@@ -1310,13 +1310,13 @@ class Enhanced3DWheelPainter extends CustomPainter {
 
     // Center circle with gradient
     final centerPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.3, -0.3),
+      ..shader = const RadialGradient(
+        center: Alignment(-0.3, -0.3),
         radius: 0.8,
         colors: [
-          const Color(0xFFFFD700), // Gold
-          const Color(0xFFB8860B), // Darker gold
-          const Color(0xFF8B6914), // Even darker
+          Color(0xFFFFD700), // Gold
+          Color(0xFFB8860B), // Darker gold
+          Color(0xFF8B6914), // Even darker
         ],
       ).createShader(Rect.fromCircle(center: center, radius: centerRadius))
       ..style = PaintingStyle.fill;

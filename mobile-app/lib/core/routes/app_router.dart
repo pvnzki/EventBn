@@ -302,15 +302,12 @@ class AppRouter {
             selectedSeatData:
                 (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ??
                     <Map<String, dynamic>>[],
-            name: extra['name'] ?? '',
-            email: extra['email'] ?? '',
-            phone: extra['phone'] ?? '',
           );
         },
       ),
 
       // New Multi-Step Booking Flow
-      // Step 1: Seat Selection
+      // Step 1: Enhanced Seat Selection
       GoRoute(
         path: '/booking/:eventId/seat-selection',
         name: 'booking-seat-selection',
@@ -380,11 +377,18 @@ class AppRouter {
         path: '/booking/payment-success',
         name: 'payment-success',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          return PaymentSuccessScreen(
-            bookingData: extra,
-            paymentId: extra['paymentId'] ?? '',
-          );
+          final bookingData = state.extra as Map<String, dynamic>? ?? {};
+          print(
+              '🔄 [ROUTER] Building PaymentSuccessScreen with data: $bookingData');
+
+          try {
+            return PaymentSuccessScreen(
+              bookingData: bookingData,
+            );
+          } catch (e) {
+            print('❌ [ROUTER] Error creating PaymentSuccessScreen: $e');
+            rethrow;
+          }
         },
       ),
 

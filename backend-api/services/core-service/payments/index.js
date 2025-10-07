@@ -1,5 +1,5 @@
 // Payments service (ported core logic from monolith routes/payments.js)
-const prisma = require("../../../lib/database");
+const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
 
 function generateTransactionRef(payment_id) {
