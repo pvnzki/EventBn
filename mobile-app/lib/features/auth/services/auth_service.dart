@@ -84,6 +84,13 @@ class AuthService {
   // Get current user
   Future<User?> getCurrentUser() async {
     try {
+      // First, try to get user from local storage (most complete data)
+      final storedUser = await getStoredUser();
+      if (storedUser != null) {
+        print('✅ [AUTH_SERVICE] Found complete user data in local storage');
+        return storedUser;
+      }
+
       final token = await getStoredToken();
       if (token == null) {
         print('❌ [AUTH_SERVICE] No token found, trying to get test token...');
@@ -111,6 +118,7 @@ class AuthService {
         final data = jsonDecode(response.body);
         print('🔍 [AUTH_SERVICE] Parsed data: $data');
         final user = User.fromJson(data['user']);
+        await _storeUser(user); // Store the complete user data
         print(
             '🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
         return user;
@@ -120,7 +128,7 @@ class AuthService {
       print(
           '🔧 [AUTH_SERVICE] Attempting fallback: extracting user info from JWT token');
 
-      // Fallback: Extract user info from JWT token
+      // Fallback: Extract user info from JWT token, but merge with stored data if available
       return await _getUserFromToken(token);
     } catch (e) {
       print('❌ [AUTH_SERVICE] Error getting current user: $e');
@@ -187,11 +195,14 @@ class AuthService {
   // Extract user information from JWT token (fallback when service is unavailable)
   Future<User?> _getUserFromToken(String token) async {
     try {
+      // First, check if we have any stored user data to merge with
+      final storedUser = await getStoredUser();
+      
       // JWT tokens have 3 parts separated by dots: header.payload.signature
       final parts = token.split('.');
       if (parts.length != 3) {
         print('❌ [AUTH_SERVICE] Invalid JWT token format');
-        return null;
+        return storedUser; // Return stored user if JWT is invalid
       }
 
       // Decode the payload (second part)
@@ -226,6 +237,20 @@ class AuthService {
       final lastName =
           nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
+      // If we have stored user data, merge with JWT data (keep stored profile data)
+      if (storedUser != null && storedUser.id == (userId ?? '1001')) {
+        print('🔧 [AUTH_SERVICE] Merging JWT data with stored user profile data');
+        final mergedUser = storedUser.copyWith(
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          updatedAt: DateTime.now(),
+        );
+        print('🔧 [AUTH_SERVICE] Merged user with complete profile data');
+        return mergedUser;
+      }
+
+      // Create new fallback user if no stored data available
       final fallbackUser = User(
         id: userId ?? '1001',
         firstName: firstName,
@@ -290,6 +315,73 @@ class AuthService {
     }
   }
 
+  // Comprehensive user profile update with all fields
+  Future<Map<String, dynamic>> updateUserProfile(User updatedUser) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Updating user profile in database...');
+      
+      // Prepare the data for database update using User's toJson method
+      final body = updatedUser.toJson();
+      
+      // Remove fields that shouldn't be updated via profile endpoint
+      body.remove('user_id');
+      body.remove('id');
+      body.remove('email'); // Email updates should go through separate endpoint
+      body.remove('created_at');
+      body.remove('updated_at');
+      
+      print('🔍 [AUTH_SERVICE] Sending profile data: $body');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl${Constants.authEndpoint}/profile'), // Use the new auth profile endpoint
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      print('🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
+      print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('✅ [AUTH_SERVICE] Basic profile updated in database');
+        
+        // Store the complete user data locally (including additional fields)
+        await _storeUser(updatedUser);
+        print('✅ [AUTH_SERVICE] Complete profile stored locally');
+        
+        return {'success': true, 'user': updatedUser};
+      } else {
+        final data = jsonDecode(response.body);
+        print('❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
+        
+        // Fallback: Store locally only
+        await _storeUser(updatedUser);
+        print('⚠️ [AUTH_SERVICE] Stored locally as fallback');
+        
+        return {'success': true, 'user': updatedUser, 'warning': 'Saved locally only'};
+      }
+      
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error updating user profile: $e');
+      
+      // Fallback: Store locally only
+      try {
+        await _storeUser(updatedUser);
+        print('⚠️ [AUTH_SERVICE] Stored locally as fallback after error');
+        return {'success': true, 'user': updatedUser, 'warning': 'Saved locally only due to network error'};
+      } catch (localError) {
+        return {'success': false, 'message': 'Failed to save profile: $localError'};
+      }
+    }
+  }
+
   // Change password
   Future<Map<String, dynamic>> changePassword({
     required String currentPassword,
@@ -350,7 +442,18 @@ class AuthService {
   // Store user data
   Future<void> _storeUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConfig.userKey, jsonEncode(user.toJson()));
+    final userJson = jsonEncode(user.toJson());
+    
+    print('📝 Storing user data:');
+    print('   Phone: ${user.phoneNumber}');
+    print('   Billing Address: ${user.billingAddress}');
+    print('   Billing City: ${user.billingCity}');
+    print('   Billing Country: ${user.billingCountry}');
+    print('   Emergency Name: ${user.emergencyContactName}');
+    print('   Emergency Phone: ${user.emergencyContactPhone}');
+    
+    await prefs.setString(AppConfig.userKey, userJson);
+    print('✅ User data stored successfully');
   }
 
   // Get stored user data
@@ -358,8 +461,19 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString(AppConfig.userKey);
     if (userJson != null) {
-      return User.fromJson(jsonDecode(userJson));
+      final user = User.fromJson(jsonDecode(userJson));
+      
+      print('📱 Retrieved user data:');
+      print('   Phone: ${user.phoneNumber}');
+      print('   Billing Address: ${user.billingAddress}');
+      print('   Billing City: ${user.billingCity}');
+      print('   Billing Country: ${user.billingCountry}');
+      print('   Emergency Name: ${user.emergencyContactName}');
+      print('   Emergency Phone: ${user.emergencyContactPhone}');
+      
+      return user;
     }
+    print('❌ No stored user data found');
     return null;
   }
 }

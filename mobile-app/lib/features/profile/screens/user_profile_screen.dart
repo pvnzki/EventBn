@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../explore/services/explore_post_service.dart';
 import '../../explore/models/post_model.dart';
 import '../services/user_service.dart';
+import '../../auth/services/auth_service.dart';
+import '../../auth/models/user_model.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userId;
@@ -19,9 +21,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   bool isFollowing = false;
   final ExplorePostService _postService = ExplorePostService();
   final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
   List<ExplorePost> _userPosts = [];
   bool _isLoadingPosts = false;
   bool _isLoadingUser = false;
+  String? _currentUserId; // Track current user ID for comparison
 
   // User data - will be fetched from API
   Map<String, dynamic>? userData;
@@ -50,8 +54,22 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadCurrentUserId();
     _loadUserData();
     _loadUserPosts();
+  }
+
+  void _loadCurrentUserId() async {
+    try {
+      final currentUser = await _authService.getCurrentUser();
+      if (currentUser != null) {
+        setState(() {
+          _currentUserId = currentUser.id;
+        });
+      }
+    } catch (e) {
+      print('❌ [UserProfile] Error getting current user ID: $e');
+    }
   }
 
   void _loadUserData() async {
@@ -59,12 +77,28 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     try {
       print('👤 [UserProfile] Loading user data for ID: ${widget.userId}');
-      final fetchedUserData = await _userService.getUserById(widget.userId);
+      
+      // Check if we're viewing the current user's profile
+      Map<String, dynamic>? fetchedUserData;
+      
+      if (_currentUserId != null && widget.userId == _currentUserId) {
+        print('👤 [UserProfile] Loading current user data from AuthService');
+        final currentUser = await _authService.getCurrentUser();
+        if (currentUser != null) {
+          fetchedUserData = _convertUserModelToMap(currentUser);
+        }
+      }
+      
+      // Fallback to UserService if AuthService didn't work or it's not the current user
+      if (fetchedUserData == null) {
+        print('👤 [UserProfile] Loading user data from UserService');
+        fetchedUserData = await _userService.getUserById(widget.userId);
+      }
 
       if (fetchedUserData != null) {
         setState(() {
           userData = {
-            'id': fetchedUserData['id'] ?? widget.userId,
+            'id': fetchedUserData!['id'] ?? widget.userId,
             'name': fetchedUserData['fullName'] ??
                 fetchedUserData['name'] ??
                 'Unknown User',
@@ -104,6 +138,30 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     } finally {
       setState(() => _isLoadingUser = false);
     }
+  }
+
+  // Public method to refresh user data (can be called from other screens)
+  void refreshUserData() {
+    _loadUserData();
+  }
+
+  // Convert User model to Map for compatibility with the existing UI
+  Map<String, dynamic> _convertUserModelToMap(User user) {
+    return {
+      'id': user.id,
+      'fullName': user.fullName,
+      'name': user.fullName,
+      'email': user.email,
+      'profileImageUrl': user.profileImageUrl,
+      'bio': 'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
+      'followersCount': 0,
+      'followingCount': 0,
+      'location': null,
+      'website': null,
+      'createdAt': user.createdAt.toIso8601String(),
+      'isVerified': false,
+      'interests': ['Events', 'Networking'],
+    };
   }
 
   Map<String, dynamic> _getEnhancedFallbackUserData(String userId) {

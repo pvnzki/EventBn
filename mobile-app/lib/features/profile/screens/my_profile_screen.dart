@@ -6,6 +6,7 @@ import '../../../core/providers/theme_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../explore/services/explore_post_service.dart';
 import '../../explore/models/post_model.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1022,11 +1023,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _editProfile(BuildContext context) {
+  void _editProfile(BuildContext context) async {
     // Navigate to edit profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit Profile coming soon!')),
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+      ),
     );
+    
+    // If profile was updated successfully, refresh the current screen
+    if (result == true) {
+      setState(() {
+        // This will trigger a rebuild and reload user data
+      });
+    }
   }
 
   void _shareProfile(BuildContext context) {

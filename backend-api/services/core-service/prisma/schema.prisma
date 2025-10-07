@@ -10,22 +10,38 @@ datasource db {
 }
 
 model User {
-  user_id           Int               @id @default(autoincrement())
-  name              String
-  email             String            @unique
-  password_hash     String
-  phone_number      String?
-  profile_picture   String?
-  is_active         Boolean           @default(true)
-  is_email_verified Boolean           @default(false)
-  role              String            @default("USER")
-  created_at        DateTime          @default(now())
-  updated_at        DateTime          @default(now()) @updatedAt
-  organizations     Organization[]
-  search_logs       Search_Log[]
-  payment           payment[]
-  ticket_purchase   ticket_purchase[]
+  user_id                        Int               @id @default(autoincrement())
+  name                           String
+  email                          String            @unique
+  password_hash                  String
+  phone_number                   String?
+  profile_picture                String?
+  is_active                      Boolean           @default(true)
+  is_email_verified              Boolean           @default(false)
+  role                           String            @default("USER")
+  created_at                     DateTime          @default(now())
+  updated_at                     DateTime          @default(now()) @updatedAt
+  billing_address                String?
+  billing_city                   String?           @db.VarChar(100)
+  billing_state                  String?           @db.VarChar(100)
+  billing_country                String?           @default("Sri Lanka") @db.VarChar(100)
+  billing_postal_code            String?           @db.VarChar(20)
+  profile_completed              Boolean?          @default(false)
+  date_of_birth                  DateTime?         @db.Date
+  emergency_contact_name         String?           @db.VarChar(255)
+  emergency_contact_phone        String?           @db.VarChar(20)
+  emergency_contact_relationship String?           @db.VarChar(100)
+  marketing_emails_enabled       Boolean?          @default(true)
+  event_notifications_enabled    Boolean?          @default(true)
+  sms_notifications_enabled      Boolean?          @default(true)
+  organizations                  Organization[]
+  search_logs                    Search_Log[]
+  payment                        payment[]
+  ticket_purchase                ticket_purchase[]
 
+  @@index([billing_country], map: "idx_user_billing_country")
+  @@index([phone_number], map: "idx_user_phone_number")
+  @@index([profile_completed], map: "idx_user_profile_completed")
   @@map("User")
 }
 

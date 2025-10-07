@@ -15,8 +15,13 @@ void main() async {
   // Load environment variables
   try {
     await dotenv.load(fileName: ".env");
+    print('✅ Successfully loaded .env file');
+    print('🔍 PAYHERE_MERCHANT_ID: ${dotenv.env['PAYHERE_MERCHANT_ID']}');
+    print('🔍 PAYHERE_SANDBOX: ${dotenv.env['PAYHERE_SANDBOX']}');
+    print('🔍 BASE_URL: ${dotenv.env['BASE_URL']}');
   } catch (e) {
-    print('Warning: Could not load .env file: $e');
+    print('❌ Error loading .env file: $e');
+    print('⚠️ Using fallback configurations');
   }
 
   runApp(

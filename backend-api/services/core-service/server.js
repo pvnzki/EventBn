@@ -74,6 +74,7 @@ app.use((req, res, next) => {
 
 // Import route handlers
 const apiRoutes = require("./routes/api");
+const authRoutes = require("./routes/auth");
 const internalRoutes = require("./routes/internal");
 
 // Health check - Always returns 200 for service readiness (no DB check for testing)
@@ -94,6 +95,7 @@ app.get("/health", (req, res) => {
 // API Routes
 app.use("/api/v1", apiRoutes); // Versioned API for clients
 app.use("/api", apiRoutes); // Legacy API for backward compatibility
+app.use("/api/auth", authRoutes); // Auth routes
 app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Root route for testing
