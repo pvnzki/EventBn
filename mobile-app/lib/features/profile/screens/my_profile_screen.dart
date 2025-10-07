@@ -1031,7 +1031,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         builder: (context) => const EditProfileScreen(),
       ),
     );
-    
+
     // If profile was updated successfully, refresh the current screen
     if (result == true) {
       setState(() {

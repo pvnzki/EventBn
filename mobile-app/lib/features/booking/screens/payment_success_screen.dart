@@ -14,16 +14,19 @@ class PaymentSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // Debug logging
     print('🎉 [PAYMENT_SUCCESS] Screen loaded with booking data:');
     print('🎉 [PAYMENT_SUCCESS] Event: ${bookingData['eventName']}');
     print('🎉 [PAYMENT_SUCCESS] Payment ID: $paymentId');
-    print('🎉 [PAYMENT_SUCCESS] Selected seats: ${bookingData['selectedSeats']}');
-    print('🎉 [PAYMENT_SUCCESS] Seat data type: ${bookingData['selectedSeatData'].runtimeType}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] Selected seats: ${bookingData['selectedSeats']}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] Seat data type: ${bookingData['selectedSeatData'].runtimeType}');
     print('🎉 [PAYMENT_SUCCESS] Total amount: ${bookingData['totalAmount']}');
-    print('🎉 [PAYMENT_SUCCESS] Current route: ${GoRouterState.of(context).uri.toString()}');
-    
+    print(
+        '🎉 [PAYMENT_SUCCESS] Current route: ${GoRouterState.of(context).uri.toString()}');
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -35,7 +38,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    
+
                     // Success Icon
                     Container(
                       width: 120,
@@ -57,9 +60,9 @@ class PaymentSuccessScreen extends StatelessWidget {
                         size: 64,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Success Title
                     Text(
                       'Payment Successful!',
@@ -70,9 +73,9 @@ class PaymentSuccessScreen extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Success Message
                     Text(
                       'Your payment has been successfully done.',
@@ -82,23 +85,23 @@ class PaymentSuccessScreen extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 40),
-                    
+
                     // Payment Details Card
                     _buildPaymentDetailsCard(context),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Event Details Card
                     _buildEventDetailsCard(context),
-                    
+
                     const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
-            
+
             // Bottom Buttons
             _buildBottomButtons(context),
           ],
@@ -109,12 +112,13 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Widget _buildPaymentDetailsCard(BuildContext context) {
     final theme = Theme.of(context);
-    final selectedSeats = (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
+    final selectedSeats =
+        (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
     final subtotal = _calculateSubtotal();
     final tax = subtotal * 0.1;
     final total = subtotal + tax;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -141,14 +145,15 @@ class PaymentSuccessScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
             _buildDetailRow(context, 'Payment ID', paymentId),
             const SizedBox(height: 12),
             _buildDetailRow(context, 'Date', _getCurrentDate()),
             const SizedBox(height: 12),
-            _buildDetailRow(context, 'Seats', '$seatCount x ${bookingData['ticketType'] ?? 'Economy'}'),
+            _buildDetailRow(context, 'Seats',
+                '$seatCount x ${bookingData['ticketType'] ?? 'Economy'}'),
             const SizedBox(height: 12),
-            _buildDetailRow(context, 'Amount', 'LKR ${total.toStringAsFixed(2)}'),
+            _buildDetailRow(
+                context, 'Amount', 'LKR ${total.toStringAsFixed(2)}'),
           ],
         ),
       ),
@@ -157,7 +162,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Widget _buildEventDetailsCard(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -183,7 +188,10 @@ class PaymentSuccessScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary
+                  ],
                 ),
               ),
               child: const Center(
@@ -195,7 +203,7 @@ class PaymentSuccessScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Event Details
             Expanded(
               child: Column(
@@ -213,7 +221,8 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    bookingData['eventDate'] ?? 'Mon, Dec 24 • 18.00 - 23.00 PM',
+                    bookingData['eventDate'] ??
+                        'Mon, Dec 24 • 18.00 - 23.00 PM',
                     style: TextStyle(
                       fontSize: 14,
                       color: theme.colorScheme.primary,
@@ -249,7 +258,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Widget _buildDetailRow(BuildContext context, String label, String value) {
     final theme = Theme.of(context);
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -275,7 +284,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   Widget _buildBottomButtons(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -315,9 +324,9 @@ class PaymentSuccessScreen extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Go to Home Button
           SizedBox(
             width: double.infinity,
@@ -350,12 +359,11 @@ class PaymentSuccessScreen extends StatelessWidget {
   double _calculateSubtotal() {
     double total = 0.0;
     final seatDataRaw = bookingData['selectedSeatData'];
-    
+
     if (seatDataRaw != null && seatDataRaw is List) {
-      final seatData = List<Map<String, dynamic>>.from(
-        seatDataRaw.map((item) => item is Map<String, dynamic> ? item : <String, dynamic>{})
-      );
-      
+      final seatData = List<Map<String, dynamic>>.from(seatDataRaw.map(
+          (item) => item is Map<String, dynamic> ? item : <String, dynamic>{}));
+
       for (var seat in seatData) {
         total += (seat['price'] ?? 0.0).toDouble();
       }
@@ -363,10 +371,12 @@ class PaymentSuccessScreen extends StatelessWidget {
       // Fallback: use total amount from booking data if seat data is not available
       final totalAmount = bookingData['totalAmount'];
       if (totalAmount != null) {
-        total = (totalAmount is double) ? totalAmount : double.tryParse(totalAmount.toString()) ?? 0.0;
+        total = (totalAmount is double)
+            ? totalAmount
+            : double.tryParse(totalAmount.toString()) ?? 0.0;
       }
     }
-    
+
     return total;
   }
 
@@ -379,9 +389,10 @@ class PaymentSuccessScreen extends StatelessWidget {
     try {
       // Extract bookingId from the booking data
       final bookingId = bookingData['bookingId']?.toString();
-      
+
       if (bookingId == null || bookingId.isEmpty) {
-        print('❌ [PAYMENT SUCCESS] No booking ID available for E-ticket navigation');
+        print(
+            '❌ [PAYMENT SUCCESS] No booking ID available for E-ticket navigation');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Unable to view ticket. Booking ID not found.'),
@@ -390,21 +401,24 @@ class PaymentSuccessScreen extends StatelessWidget {
         );
         return;
       }
-      
+
       // Validate UUID format (should be 32-36 characters for UUID)
       if (bookingId.length < 30) {
-        print('❌ [PAYMENT SUCCESS] Invalid booking ID format: $bookingId (length: ${bookingId.length})');
+        print(
+            '❌ [PAYMENT SUCCESS] Invalid booking ID format: $bookingId (length: ${bookingId.length})');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Invalid ticket ID format. Please try again or contact support.'),
+            content: Text(
+                'Invalid ticket ID format. Please try again or contact support.'),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
-      
-      print('🎫 [PAYMENT SUCCESS] Navigating to E-ticket with booking ID: $bookingId');
-      
+
+      print(
+          '🎫 [PAYMENT SUCCESS] Navigating to E-ticket with booking ID: $bookingId');
+
       // Navigate to E-Ticket screen using GoRouter with the booking ID
       context.pushNamed(
         'e-ticket',

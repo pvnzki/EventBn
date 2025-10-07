@@ -419,13 +419,13 @@ class AuthService {
 
 // JWT Authentication middleware
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Access token required'
+      message: "Access token required",
     });
   }
 
@@ -436,12 +436,12 @@ const authenticateToken = (req, res, next) => {
   } catch (error) {
     return res.status(403).json({
       success: false,
-      message: 'Invalid or expired token'
+      message: "Invalid or expired token",
     });
   }
 };
 
 module.exports = {
   authService: new AuthService(),
-  authenticateToken
+  authenticateToken,
 };

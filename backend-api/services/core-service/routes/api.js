@@ -717,15 +717,15 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     // Handle both string and numeric IDs to avoid type mismatch issues
     const bookedSeatIds = new Set();
     const bookedSeatLabels = new Set();
-    
-    bookedSeats.forEach(seat => {
+
+    bookedSeats.forEach((seat) => {
       // Add seat_id in multiple formats
       if (seat.seat_id != null) {
         bookedSeatIds.add(seat.seat_id); // Original value
         bookedSeatIds.add(String(seat.seat_id)); // String version
         bookedSeatIds.add(Number(seat.seat_id)); // Numeric version (if valid)
       }
-      
+
       // Add seat_label in multiple formats
       if (seat.seat_label != null) {
         bookedSeatLabels.add(seat.seat_label); // Original value
@@ -740,8 +740,10 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
 
     console.log(
       `[SEATMAP] Event ${eventId} - Found ${bookedSeats.length} booked seats:`,
-      'IDs:', Array.from(bookedSeatIds),
-      'Labels:', Array.from(bookedSeatLabels)
+      "IDs:",
+      Array.from(bookedSeatIds),
+      "Labels:",
+      Array.from(bookedSeatLabels)
     );
 
     const rawSeatMap = Array.isArray(event.seat_map) ? event.seat_map : null;
@@ -750,14 +752,17 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
     // Debug: Log seat map structure
     if (rawSeatMap) {
       console.log(`[SEATMAP] Raw seat map has ${rawSeatMap.length} seats`);
-      console.log(`[SEATMAP] Sample seat map entries:`, rawSeatMap.slice(0, 5).map((s, i) => ({
-        index: i,
-        id: s.id,
-        label: s.label,
-        seat_id: s.seat_id,
-        seat_label: s.seat_label,
-        available: s.available
-      })));
+      console.log(
+        `[SEATMAP] Sample seat map entries:`,
+        rawSeatMap.slice(0, 5).map((s, i) => ({
+          index: i,
+          id: s.id,
+          label: s.label,
+          seat_id: s.seat_id,
+          seat_label: s.seat_label,
+          available: s.available,
+        }))
+      );
     }
 
     // Derive ticket types mapping (key -> { price, count }) for non custom seating
@@ -788,7 +793,7 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
           // Get all possible identifiers for this seat
           const seatId = s.id;
           const seatLabel = s.label;
-          
+
           // Create comprehensive list of possible identifiers
           const possibleIds = [
             seatId,
@@ -800,8 +805,10 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
             index, // Array index (0-based)
             index + 1, // Array index (1-based)
             String(index),
-            String(index + 1)
-          ].filter(id => id !== undefined && id !== null && !isNaN(id) && id !== '');
+            String(index + 1),
+          ].filter(
+            (id) => id !== undefined && id !== null && !isNaN(id) && id !== ""
+          );
 
           const possibleLabels = [
             seatLabel,
@@ -809,42 +816,62 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
             Number(seatLabel),
             s.seat_label,
             String(s.seat_label),
-            Number(s.seat_label)
-          ].filter(label => label !== undefined && label !== null && label !== '');
-          
+            Number(s.seat_label),
+          ].filter(
+            (label) => label !== undefined && label !== null && label !== ""
+          );
+
           // Check if any identifier matches booked seats
-          const isBookedById = possibleIds.some(id => 
-            bookedSeatIds.has(id) || bookedSeatIds.has(String(id)) || bookedSeatIds.has(Number(id))
+          const isBookedById = possibleIds.some(
+            (id) =>
+              bookedSeatIds.has(id) ||
+              bookedSeatIds.has(String(id)) ||
+              bookedSeatIds.has(Number(id))
           );
-          const isBookedByLabel = possibleLabels.some(label => 
-            bookedSeatLabels.has(label) || bookedSeatLabels.has(String(label))
+          const isBookedByLabel = possibleLabels.some(
+            (label) =>
+              bookedSeatLabels.has(label) || bookedSeatLabels.has(String(label))
           );
-          
+
           const isBooked = isBookedById || isBookedByLabel;
 
           // Enhanced debug logging for all seats to understand the mapping
           const debugInfo = {
             seatMapIndex: index,
-            seatData: { id: seatId, label: seatLabel, seat_id: s.seat_id, seat_label: s.seat_label },
+            seatData: {
+              id: seatId,
+              label: seatLabel,
+              seat_id: s.seat_id,
+              seat_label: s.seat_label,
+            },
             possibleIds: possibleIds,
             possibleLabels: possibleLabels,
             isBookedById: isBookedById,
             isBookedByLabel: isBookedByLabel,
-            isBooked: isBooked
+            isBooked: isBooked,
           };
-          
+
           if (isBooked) {
             console.log(`[SEATMAP] ✅ Marking seat as BOOKED:`, debugInfo);
           } else {
             // Also log available seats that might match some booked seat patterns
-            const hasMatchingPattern = possibleIds.some(id => 
-              Array.from(bookedSeatIds).some(bookedId => String(id) === String(bookedId))
-            ) || possibleLabels.some(label => 
-              Array.from(bookedSeatLabels).some(bookedLabel => String(label) === String(bookedLabel))
-            );
-            
+            const hasMatchingPattern =
+              possibleIds.some((id) =>
+                Array.from(bookedSeatIds).some(
+                  (bookedId) => String(id) === String(bookedId)
+                )
+              ) ||
+              possibleLabels.some((label) =>
+                Array.from(bookedSeatLabels).some(
+                  (bookedLabel) => String(label) === String(bookedLabel)
+                )
+              );
+
             if (hasMatchingPattern) {
-              console.log(`[SEATMAP] 🤔 Seat looks like it should be booked but isn't marked:`, debugInfo);
+              console.log(
+                `[SEATMAP] 🤔 Seat looks like it should be booked but isn't marked:`,
+                debugInfo
+              );
             }
           }
 
@@ -1366,24 +1393,24 @@ function markSeatsBooked(seatMapJson, seatIds) {
   if (!seatMapJson) return seatMapJson;
   try {
     const set = new Set(seatIds.map((s) => parseInt(s) || s));
-    console.log(`[MARK_SEATS_BOOKED] Marking seats as booked: ${Array.from(set)}`);
-    
+    console.log(
+      `[MARK_SEATS_BOOKED] Marking seats as booked: ${Array.from(set)}`
+    );
+
     // Handle flat array format (direct seats array)
     if (Array.isArray(seatMapJson)) {
       for (const seat of seatMapJson) {
-        if (
-          set.has(seat.id) ||
-          set.has(seat.seat_id) ||
-          set.has(seat.label)
-        ) {
+        if (set.has(seat.id) || set.has(seat.seat_id) || set.has(seat.label)) {
           seat.booked = true;
           seat.available = false; // Also set available to false for consistency
-          console.log(`[MARK_SEATS_BOOKED] Marked seat ${seat.id || seat.label} as booked`);
+          console.log(
+            `[MARK_SEATS_BOOKED] Marked seat ${seat.id || seat.label} as booked`
+          );
         }
       }
       return seatMapJson;
     }
-    
+
     // Handle nested structure format (sections -> rows -> seats)
     for (const section of seatMapJson.sections || []) {
       for (const row of section.rows || []) {
@@ -1395,14 +1422,18 @@ function markSeatsBooked(seatMapJson, seatIds) {
           ) {
             seat.booked = true;
             seat.available = false; // Also set available to false for consistency
-            console.log(`[MARK_SEATS_BOOKED] Marked seat ${seat.id || seat.label} as booked`);
+            console.log(
+              `[MARK_SEATS_BOOKED] Marked seat ${
+                seat.id || seat.label
+              } as booked`
+            );
           }
         }
       }
     }
     return seatMapJson;
   } catch (e) {
-    console.error('[MARK_SEATS_BOOKED] Error:', e);
+    console.error("[MARK_SEATS_BOOKED] Error:", e);
     return seatMapJson;
   }
 }
@@ -1417,11 +1448,15 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
       selectedSeatData,
       payment_method = "card",
     } = req.body || {};
-    
-    console.log(`[PAYMENT] User ${userId} creating payment for event ${event_id}`);
+
+    console.log(
+      `[PAYMENT] User ${userId} creating payment for event ${event_id}`
+    );
     console.log(`[PAYMENT] Selected seats: ${JSON.stringify(selected_seats)}`);
-    console.log(`[PAYMENT] Selected seat data: ${JSON.stringify(selectedSeatData)}`);
-    
+    console.log(
+      `[PAYMENT] Selected seat data: ${JSON.stringify(selectedSeatData)}`
+    );
+
     if (
       !event_id ||
       !Array.isArray(selected_seats) ||
@@ -1508,27 +1543,39 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
       },
       select: { seat_id: true, seat_label: true },
     });
-    
-    console.log(`[PAYMENT_CONFLICT_CHECK] Existing tickets for event ${event.event_id}:`, 
-      existingTickets.map(t => ({ seat_id: t.seat_id, seat_label: t.seat_label }))
+
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Existing tickets for event ${event.event_id}:`,
+      existingTickets.map((t) => ({
+        seat_id: t.seat_id,
+        seat_label: t.seat_label,
+      }))
     );
-    
+
     const taken = new Set(
       existingTickets.map((t) => String(t.seat_id || t.seat_label))
     );
-    
-    console.log(`[PAYMENT_CONFLICT_CHECK] Taken seats (as strings):`, Array.from(taken));
-    console.log(`[PAYMENT_CONFLICT_CHECK] Checking selected seats:`, selected_seats);
-    
+
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Taken seats (as strings):`,
+      Array.from(taken)
+    );
+    console.log(
+      `[PAYMENT_CONFLICT_CHECK] Checking selected seats:`,
+      selected_seats
+    );
+
     const conflicts = selected_seats.filter((s) => {
       const asString = String(s);
       const isTaken = taken.has(asString);
-      console.log(`[PAYMENT_CONFLICT_CHECK] Seat ${s} (as string: "${asString}") - taken: ${isTaken}`);
+      console.log(
+        `[PAYMENT_CONFLICT_CHECK] Seat ${s} (as string: "${asString}") - taken: ${isTaken}`
+      );
       return isTaken;
     });
-    
+
     console.log(`[PAYMENT_CONFLICT_CHECK] Conflicts found:`, conflicts);
-    
+
     if (conflicts.length) {
       return res.status(409).json({
         success: false,
@@ -1550,15 +1597,16 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         ? Math.round(parseFloat(seatInfo.price) * 100)
         : 1000;
       totalCents += priceCents;
-      
+
       // Use seat label from seatInfo if available, otherwise use the seat ID/label as is
-      const displayLabel = seatInfo?.label || seatInfo?.seat_label || String(seatIdOrLabel);
-      
-      return { 
+      const displayLabel =
+        seatInfo?.label || seatInfo?.seat_label || String(seatIdOrLabel);
+
+      return {
         seatIdOrLabel, // Original ID or label from selected_seats
-        displayLabel,  // Human-readable label for display
-        seatInfo, 
-        priceCents 
+        displayLabel, // Human-readable label for display
+        seatInfo,
+        priceCents,
       };
     });
 
@@ -1600,10 +1648,14 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
         // Parse seat ID from the seat info or from the original seat identifier
         const seatIdParsed = row.seatInfo?.id
           ? parseInt(row.seatInfo.id)
-          : (isNaN(parseInt(row.seatIdOrLabel)) ? null : parseInt(row.seatIdOrLabel));
-          
-        console.log(`[TICKET_CREATE] Creating ticket for seat: ${row.seatIdOrLabel}, label: ${row.displayLabel}, parsed ID: ${seatIdParsed}`);
-        
+          : isNaN(parseInt(row.seatIdOrLabel))
+          ? null
+          : parseInt(row.seatIdOrLabel);
+
+        console.log(
+          `[TICKET_CREATE] Creating ticket for seat: ${row.seatIdOrLabel}, label: ${row.displayLabel}, parsed ID: ${seatIdParsed}`
+        );
+
         const ticket = await tx.ticket_purchase.create({
           data: {
             event_id: event.event_id,

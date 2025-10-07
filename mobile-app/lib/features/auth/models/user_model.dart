@@ -12,21 +12,21 @@ class User {
   final String? profileImageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
-  
+
   // Billing information
   final String? billingAddress;
   final String? billingCity;
   final String? billingState;
   final String? billingCountry;
   final String? billingPostalCode;
-  
+
   // Profile information
   final bool profileCompleted;
   final DateTime? dateOfBirth;
   final String? emergencyContactName;
   final String? emergencyContactPhone;
   final String? emergencyContactRelationship;
-  
+
   // Communication preferences
   final bool marketingEmailsEnabled;
   final bool eventNotificationsEnabled;
@@ -63,7 +63,7 @@ class User {
     List<String> nameParts = fullName.trim().split(' ');
     String firstName = nameParts.isNotEmpty ? nameParts.first : '';
     String lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
-    
+
     return User(
       id: json['user_id']?.toString() ?? json['id']?.toString() ?? '',
       firstName: firstName,
@@ -73,7 +73,7 @@ class User {
       profileImageUrl: json['profile_picture'] ?? json['profileImageUrl'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
-          : (json['createdAt'] != null 
+          : (json['createdAt'] != null
               ? DateTime.parse(json['createdAt'])
               : DateTime.now()),
       updatedAt: json['updated_at'] != null
@@ -83,11 +83,11 @@ class User {
               : DateTime.now()),
       billingAddress: json['billing_address'],
       billingCity: json['billing_city'],
-      billingState: json['billing_state'], 
+      billingState: json['billing_state'],
       billingCountry: json['billing_country'],
       billingPostalCode: json['billing_postal_code'],
       profileCompleted: json['profile_completed'] ?? false,
-      dateOfBirth: json['date_of_birth'] != null 
+      dateOfBirth: json['date_of_birth'] != null
           ? DateTime.parse(json['date_of_birth'])
           : null,
       emergencyContactName: json['emergency_contact_name'],
@@ -126,11 +126,15 @@ class User {
 
   String get fullName => '$firstName $lastName';
 
-  bool get hasCompleteBillingInfo => 
-      phoneNumber != null && phoneNumber!.isNotEmpty &&
-      billingAddress != null && billingAddress!.isNotEmpty &&
-      billingCity != null && billingCity!.isNotEmpty &&
-      billingCountry != null && billingCountry!.isNotEmpty;
+  bool get hasCompleteBillingInfo =>
+      phoneNumber != null &&
+      phoneNumber!.isNotEmpty &&
+      billingAddress != null &&
+      billingAddress!.isNotEmpty &&
+      billingCity != null &&
+      billingCity!.isNotEmpty &&
+      billingCountry != null &&
+      billingCountry!.isNotEmpty;
 
   User copyWith({
     String? id,
@@ -172,11 +176,16 @@ class User {
       profileCompleted: profileCompleted ?? this.profileCompleted,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       emergencyContactName: emergencyContactName ?? this.emergencyContactName,
-      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
-      emergencyContactRelationship: emergencyContactRelationship ?? this.emergencyContactRelationship,
-      marketingEmailsEnabled: marketingEmailsEnabled ?? this.marketingEmailsEnabled,
-      eventNotificationsEnabled: eventNotificationsEnabled ?? this.eventNotificationsEnabled,
-      smsNotificationsEnabled: smsNotificationsEnabled ?? this.smsNotificationsEnabled,
+      emergencyContactPhone:
+          emergencyContactPhone ?? this.emergencyContactPhone,
+      emergencyContactRelationship:
+          emergencyContactRelationship ?? this.emergencyContactRelationship,
+      marketingEmailsEnabled:
+          marketingEmailsEnabled ?? this.marketingEmailsEnabled,
+      eventNotificationsEnabled:
+          eventNotificationsEnabled ?? this.eventNotificationsEnabled,
+      smsNotificationsEnabled:
+          smsNotificationsEnabled ?? this.smsNotificationsEnabled,
     );
   }
 }

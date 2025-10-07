@@ -77,10 +77,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     try {
       print('👤 [UserProfile] Loading user data for ID: ${widget.userId}');
-      
+
       // Check if we're viewing the current user's profile
       Map<String, dynamic>? fetchedUserData;
-      
+
       if (_currentUserId != null && widget.userId == _currentUserId) {
         print('👤 [UserProfile] Loading current user data from AuthService');
         final currentUser = await _authService.getCurrentUser();
@@ -88,7 +88,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           fetchedUserData = _convertUserModelToMap(currentUser);
         }
       }
-      
+
       // Fallback to UserService if AuthService didn't work or it's not the current user
       if (fetchedUserData == null) {
         print('👤 [UserProfile] Loading user data from UserService');
@@ -153,7 +153,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       'name': user.fullName,
       'email': user.email,
       'profileImageUrl': user.profileImageUrl,
-      'bio': 'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
+      'bio':
+          'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
       'followersCount': 0,
       'followingCount': 0,
       'location': null,

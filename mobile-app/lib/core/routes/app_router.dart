@@ -378,8 +378,9 @@ class AppRouter {
         name: 'payment-success',
         builder: (context, state) {
           final bookingData = state.extra as Map<String, dynamic>? ?? {};
-          print('🔄 [ROUTER] Building PaymentSuccessScreen with data: $bookingData');
-          
+          print(
+              '🔄 [ROUTER] Building PaymentSuccessScreen with data: $bookingData');
+
           try {
             return PaymentSuccessScreen(
               bookingData: bookingData,

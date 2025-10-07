@@ -39,14 +39,16 @@ class PaymentUserProfile {
   // Factory method to create from user preferences
   factory PaymentUserProfile.fromUserData(Map<String, dynamic>? userData) {
     if (userData == null) return defaultProfile;
-    
+
     return PaymentUserProfile(
       address: userData['address'] ?? defaultProfile.address,
       city: userData['city'] ?? defaultProfile.city,
       country: userData['country'] ?? defaultProfile.country,
-      deliveryAddress: userData['delivery_address'] ?? defaultProfile.deliveryAddress,
+      deliveryAddress:
+          userData['delivery_address'] ?? defaultProfile.deliveryAddress,
       deliveryCity: userData['delivery_city'] ?? defaultProfile.deliveryCity,
-      deliveryCountry: userData['delivery_country'] ?? defaultProfile.deliveryCountry,
+      deliveryCountry:
+          userData['delivery_country'] ?? defaultProfile.deliveryCountry,
     );
   }
 }
@@ -82,7 +84,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _paymentCompleted = false;
   PaymentUserProfile _userProfile = PaymentUserProfile.defaultProfile;
   bool _isLoadingProfile = true;
-  
+
   // Current user information
   String _currentUserName = '';
   String _currentUserEmail = '';
@@ -115,20 +117,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (currentUser != null) {
         // Load user information for payment
         setState(() {
-          _currentUserName = '${currentUser.firstName} ${currentUser.lastName}'.trim();
+          _currentUserName =
+              '${currentUser.firstName} ${currentUser.lastName}'.trim();
           _currentUserEmail = currentUser.email;
           _currentUserPhone = currentUser.phoneNumber ?? '';
-          
+
           // Ensure we have valid names for payment
           if (_currentUserName.isEmpty) {
             _currentUserName = 'User';
           }
         });
-        
+
         final userProfileData = <String, dynamic>{
           // These would come from user profile settings in a real app
           'address': currentUser.billingAddress,
-          'city': currentUser.billingCity,    
+          'city': currentUser.billingCity,
           'country': currentUser.billingCountry,
           'delivery_address': currentUser.billingAddress,
           'delivery_city': currentUser.billingCity,
@@ -163,7 +166,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   /// Extend seat locks when payment screen starts
   Future<void> _extendSeatLocks() async {
     if (_locksExtended) return;
-    
+
     try {
       for (final seatId in widget.selectedSeats) {
         await _seatLockService.extendSeatLock(
@@ -203,7 +206,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         print('❌ No current user found');
         return false;
       }
-      
+
       print('🔍 Checking profile completion for user: ${currentUser.email}');
       print('📱 Phone: ${currentUser.phoneNumber}');
       print('🏠 Billing Address: ${currentUser.billingAddress}');
@@ -211,7 +214,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       print('🌍 Billing Country: ${currentUser.billingCountry}');
       print('🚨 Emergency Contact Name: ${currentUser.emergencyContactName}');
       print('📞 Emergency Contact Phone: ${currentUser.emergencyContactPhone}');
-      
+
       print('📱 Phone: "${currentUser.phoneNumber}"');
       print('🏠 Address: "${currentUser.billingAddress}"');
       print('🏙️ City: "${currentUser.billingCity}"');
@@ -219,20 +222,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
       print('📮 Postal: "${currentUser.billingPostalCode}"');
       print('🚨 Emergency Name: "${currentUser.emergencyContactName}"');
       print('☎️ Emergency Phone: "${currentUser.emergencyContactPhone}"');
-      
+
       final hasBillingInfo = currentUser.hasCompleteBillingInfo;
-      final hasEmergencyName = currentUser.emergencyContactName?.isNotEmpty == true;
-      final hasEmergencyPhone = currentUser.emergencyContactPhone?.isNotEmpty == true;
-      
+      final hasEmergencyName =
+          currentUser.emergencyContactName?.isNotEmpty == true;
+      final hasEmergencyPhone =
+          currentUser.emergencyContactPhone?.isNotEmpty == true;
+
       print('✅ Has billing info: $hasBillingInfo');
       print('✅ Has emergency name: $hasEmergencyName');
       print('✅ Has emergency phone: $hasEmergencyPhone');
-      
+
       // For better UX, we'll require at least billing info and phone number
       // Emergency contact is recommended but not strictly required for payment
       final isComplete = hasBillingInfo;
       print('🎯 Profile completion result: $isComplete');
-      
+
       return isComplete;
     } catch (e) {
       print('❌ Error checking profile completion: $e');
@@ -244,7 +249,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _proceedWithPayment() async {
     print('🚀 Starting payment process...');
     final isProfileComplete = await _checkProfileCompletion();
-    
+
     if (!isProfileComplete) {
       print('⚠️ Profile incomplete, showing completion dialog');
       // Show profile completion dialog
@@ -257,17 +262,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
             builder: (context) => const EditProfileScreen(),
           ),
         );
-        
+
         print('🔄 Returned from edit profile with result: $result');
-        
+
         // If profile was updated, check again and reload user data
         if (result == true) {
           print('✅ Profile was updated, reloading user data...');
           await _loadUserProfile(); // Reload the user data first
-          
+
           final isNowComplete = await _checkProfileCompletion();
           print('🔍 Profile completion after update: $isNowComplete');
-          
+
           if (isNowComplete) {
             print('🎉 Profile now complete, starting payment...');
             startSandboxPayment();
@@ -327,15 +332,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     print('🔍 [PAYMENT] Merchant Secret: "${AppConfig.payhereMerchantSecret}"');
     print('🔍 [PAYMENT] Notify URL: "${AppConfig.payhereNotifyUrl}"');
     print('🔍 [PAYMENT] Sandbox Mode: ${AppConfig.payhereSandbox}');
-    
+
     // Validate PayHere configuration
-    if (AppConfig.payhereMerchantId.isEmpty || AppConfig.payhereMerchantSecret.isEmpty) {
+    if (AppConfig.payhereMerchantId.isEmpty ||
+        AppConfig.payhereMerchantSecret.isEmpty) {
       print('❌ [PAYMENT] PayHere configuration is missing!');
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Configuration Error'),
-          content: const Text('PayHere payment credentials are not properly configured. Please check your environment variables.'),
+          content: const Text(
+              'PayHere payment credentials are not properly configured. Please check your environment variables.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -473,7 +480,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           'payment_method': 'payhere',
           'payment_id': paymentId,
           'selected_seats': widget.selectedSeats,
-          'selectedSeatData': widget.selectedSeatData, // Include seat data for proper seat labels
+          'selectedSeatData': widget
+              .selectedSeatData, // Include seat data for proper seat labels
         }),
       );
 
@@ -481,31 +489,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
         // Payment record saved successfully - now release seat locks
         _paymentCompleted = true;
         await _releaseSeatLocks();
-        
+
         // Parse response to get ticket IDs
         final responseData = jsonDecode(response.body);
         print('🎫 [PAYMENT] Full response: $responseData');
-        
+
         // Extract ticket IDs from the tickets array
         String? ticketId;
-        if (responseData['tickets'] != null && responseData['tickets'] is List) {
+        if (responseData['tickets'] != null &&
+            responseData['tickets'] is List) {
           final tickets = responseData['tickets'] as List;
           if (tickets.isNotEmpty) {
             // Use the first ticket's ID (for single ticket purchase) or primary ticket
             ticketId = tickets[0]['ticket_id']?.toString();
           }
         }
-        
+
         // Fallback to other possible ID fields
-        final bookingId = ticketId ?? 
-                         responseData['booking_id']?.toString() ?? 
-                         responseData['ticket_id']?.toString() ?? 
-                         responseData['id']?.toString() ?? 
-                         paymentId; // Last resort fallback
-        
+        final bookingId = ticketId ??
+            responseData['booking_id']?.toString() ??
+            responseData['ticket_id']?.toString() ??
+            responseData['id']?.toString() ??
+            paymentId; // Last resort fallback
+
         print('🎫 [PAYMENT] Extracted ticket ID: $ticketId');
         print('🎫 [PAYMENT] Final booking ID: $bookingId');
-        
+
         if (mounted) {
           // Navigate to payment success screen
           final bookingData = {
@@ -521,9 +530,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'bookingId': bookingId, // Database ticket ID (UUID)
             'tickets': responseData['tickets'], // Full ticket data
           };
-          
-          print('🎉 [PAYMENT] Navigating to payment success with data: $bookingData');
-          
+
+          print(
+              '🎉 [PAYMENT] Navigating to payment success with data: $bookingData');
+
           // Use go instead of pushReplacementNamed to ensure clean navigation
           context.go('/booking/payment-success', extra: bookingData);
         }
@@ -559,7 +569,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     if (_isLoadingProfile) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -577,7 +587,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       );
     }
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -665,11 +675,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildSummaryRow('Event', widget.eventName, theme),
             _buildSummaryRow('Date', widget.eventDate, theme),
             _buildSummaryRow('Seats', seatLabels.join(', '), theme),
-            
+
             const SizedBox(height: 16),
             Divider(color: theme.colorScheme.outline.withOpacity(0.3)),
             const SizedBox(height: 16),
-            
+
             // Contact Details Section
             Text('Contact Details',
                 style: TextStyle(
@@ -680,11 +690,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildSummaryRow('Name', _currentUserName, theme),
             _buildSummaryRow('Email', _currentUserEmail, theme),
             _buildSummaryRow('Phone', _currentUserPhone, theme),
-            
+
             const SizedBox(height: 16),
             Divider(color: theme.colorScheme.outline.withOpacity(0.3)),
             const SizedBox(height: 16),
-            
+
             // Billing Address Section
             Text('Billing Address',
                 style: TextStyle(
@@ -695,21 +705,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildSummaryRow('Address', _userProfile.address, theme),
             _buildSummaryRow('City', _userProfile.city, theme),
             _buildSummaryRow('Country', _userProfile.country, theme),
-            
+
             const SizedBox(height: 16),
             Divider(color: theme.colorScheme.outline.withOpacity(0.3)),
             const SizedBox(height: 16),
-            
+
             // Total Section
             _buildSummaryRow(
-                'Total', 'LKR ${totalPrice.toStringAsFixed(2)}', theme, isTotal: true),
+                'Total', 'LKR ${totalPrice.toStringAsFixed(2)}', theme,
+                isTotal: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, ThemeData theme, {bool isTotal = false}) {
+  Widget _buildSummaryRow(String label, String value, ThemeData theme,
+      {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -717,7 +729,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Text(label,
               style: TextStyle(
-                  color: isTotal 
+                  color: isTotal
                       ? theme.colorScheme.onSurface
                       : theme.colorScheme.onSurface.withOpacity(0.7),
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
@@ -726,7 +738,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Text(value,
                 textAlign: TextAlign.end,
                 style: TextStyle(
-                    color: isTotal 
+                    color: isTotal
                         ? theme.colorScheme.primary
                         : theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
@@ -737,4 +749,3 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 }
-

@@ -197,7 +197,7 @@ class AuthService {
     try {
       // First, check if we have any stored user data to merge with
       final storedUser = await getStoredUser();
-      
+
       // JWT tokens have 3 parts separated by dots: header.payload.signature
       final parts = token.split('.');
       if (parts.length != 3) {
@@ -239,7 +239,8 @@ class AuthService {
 
       // If we have stored user data, merge with JWT data (keep stored profile data)
       if (storedUser != null && storedUser.id == (userId ?? '1001')) {
-        print('🔧 [AUTH_SERVICE] Merging JWT data with stored user profile data');
+        print(
+            '🔧 [AUTH_SERVICE] Merging JWT data with stored user profile data');
         final mergedUser = storedUser.copyWith(
           firstName: firstName,
           lastName: lastName,
@@ -324,21 +325,22 @@ class AuthService {
       }
 
       print('🔄 [AUTH_SERVICE] Updating user profile in database...');
-      
+
       // Prepare the data for database update using User's toJson method
       final body = updatedUser.toJson();
-      
+
       // Remove fields that shouldn't be updated via profile endpoint
       body.remove('user_id');
       body.remove('id');
       body.remove('email'); // Email updates should go through separate endpoint
       body.remove('created_at');
       body.remove('updated_at');
-      
+
       print('🔍 [AUTH_SERVICE] Sending profile data: $body');
 
       final response = await http.put(
-        Uri.parse('$baseUrl${Constants.authEndpoint}/profile'), // Use the new auth profile endpoint
+        Uri.parse(
+            '$baseUrl${Constants.authEndpoint}/profile'), // Use the new auth profile endpoint
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -346,38 +348,50 @@ class AuthService {
         body: jsonEncode(body),
       );
 
-      print('🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
+      print(
+          '🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
       print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         print('✅ [AUTH_SERVICE] Basic profile updated in database');
-        
+
         // Store the complete user data locally (including additional fields)
         await _storeUser(updatedUser);
         print('✅ [AUTH_SERVICE] Complete profile stored locally');
-        
+
         return {'success': true, 'user': updatedUser};
       } else {
         final data = jsonDecode(response.body);
-        print('❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
-        
+        print(
+            '❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
+
         // Fallback: Store locally only
         await _storeUser(updatedUser);
         print('⚠️ [AUTH_SERVICE] Stored locally as fallback');
-        
-        return {'success': true, 'user': updatedUser, 'warning': 'Saved locally only'};
+
+        return {
+          'success': true,
+          'user': updatedUser,
+          'warning': 'Saved locally only'
+        };
       }
-      
     } catch (e) {
       print('❌ [AUTH_SERVICE] Error updating user profile: $e');
-      
+
       // Fallback: Store locally only
       try {
         await _storeUser(updatedUser);
         print('⚠️ [AUTH_SERVICE] Stored locally as fallback after error');
-        return {'success': true, 'user': updatedUser, 'warning': 'Saved locally only due to network error'};
+        return {
+          'success': true,
+          'user': updatedUser,
+          'warning': 'Saved locally only due to network error'
+        };
       } catch (localError) {
-        return {'success': false, 'message': 'Failed to save profile: $localError'};
+        return {
+          'success': false,
+          'message': 'Failed to save profile: $localError'
+        };
       }
     }
   }
@@ -443,7 +457,7 @@ class AuthService {
   Future<void> _storeUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = jsonEncode(user.toJson());
-    
+
     print('📝 Storing user data:');
     print('   Phone: ${user.phoneNumber}');
     print('   Billing Address: ${user.billingAddress}');
@@ -451,7 +465,7 @@ class AuthService {
     print('   Billing Country: ${user.billingCountry}');
     print('   Emergency Name: ${user.emergencyContactName}');
     print('   Emergency Phone: ${user.emergencyContactPhone}');
-    
+
     await prefs.setString(AppConfig.userKey, userJson);
     print('✅ User data stored successfully');
   }
@@ -462,7 +476,7 @@ class AuthService {
     final userJson = prefs.getString(AppConfig.userKey);
     if (userJson != null) {
       final user = User.fromJson(jsonDecode(userJson));
-      
+
       print('📱 Retrieved user data:');
       print('   Phone: ${user.phoneNumber}');
       print('   Billing Address: ${user.billingAddress}');
@@ -470,7 +484,7 @@ class AuthService {
       print('   Billing Country: ${user.billingCountry}');
       print('   Emergency Name: ${user.emergencyContactName}');
       print('   Emergency Phone: ${user.emergencyContactPhone}');
-      
+
       return user;
     }
     print('❌ No stored user data found');

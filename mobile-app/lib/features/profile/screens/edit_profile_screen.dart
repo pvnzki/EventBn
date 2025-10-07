@@ -15,38 +15,38 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
-  
+
   // Tab controller for professional sections
   late TabController _tabController;
-  
+
   // Loading states
   bool _isLoading = false;
   bool _isSaving = false;
-  
+
   // Form controllers - Personal Information
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late TextEditingController _dateOfBirthController;
-  
+
   // Form controllers - Billing Address
   late TextEditingController _billingAddressController;
   late TextEditingController _billingCityController;
   late TextEditingController _billingStateController;
   late TextEditingController _billingCountryController;
   late TextEditingController _billingPostalCodeController;
-  
+
   // Form controllers - Emergency Contact
   late TextEditingController _emergencyContactNameController;
   late TextEditingController _emergencyContactPhoneController;
   late TextEditingController _emergencyContactRelationshipController;
-  
+
   // Form controllers - Communication Preferences
   bool _marketingEmails = false;
   bool _eventNotifications = true;
   bool _smsNotifications = false;
-  
+
   User? _currentUser;
   double _profileCompletionProgress = 0.0;
 
@@ -72,14 +72,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
     _dateOfBirthController = TextEditingController();
-    
+
     // Billing Address
     _billingAddressController = TextEditingController();
     _billingCityController = TextEditingController();
     _billingStateController = TextEditingController();
     _billingCountryController = TextEditingController();
     _billingPostalCodeController = TextEditingController();
-    
+
     // Emergency Contact
     _emergencyContactNameController = TextEditingController();
     _emergencyContactPhoneController = TextEditingController();
@@ -93,14 +93,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _emailController.dispose();
     _phoneController.dispose();
     _dateOfBirthController.dispose();
-    
+
     // Billing Address
     _billingAddressController.dispose();
     _billingCityController.dispose();
     _billingStateController.dispose();
     _billingCountryController.dispose();
     _billingPostalCodeController.dispose();
-    
+
     // Emergency Contact
     _emergencyContactNameController.dispose();
     _emergencyContactPhoneController.dispose();
@@ -136,22 +136,23 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _lastNameController.text = user.lastName;
     _emailController.text = user.email;
     _phoneController.text = user.phoneNumber ?? '';
-    _dateOfBirthController.text = user.dateOfBirth != null 
+    _dateOfBirthController.text = user.dateOfBirth != null
         ? '${user.dateOfBirth!.year}-${user.dateOfBirth!.month.toString().padLeft(2, '0')}-${user.dateOfBirth!.day.toString().padLeft(2, '0')}'
         : '';
-    
+
     // Billing Address
     _billingAddressController.text = user.billingAddress ?? '';
     _billingCityController.text = user.billingCity ?? '';
     _billingStateController.text = user.billingState ?? '';
     _billingCountryController.text = user.billingCountry ?? '';
     _billingPostalCodeController.text = user.billingPostalCode ?? '';
-    
+
     // Emergency Contact
     _emergencyContactNameController.text = user.emergencyContactName ?? '';
     _emergencyContactPhoneController.text = user.emergencyContactPhone ?? '';
-    _emergencyContactRelationshipController.text = user.emergencyContactRelationship ?? '';
-    
+    _emergencyContactRelationshipController.text =
+        user.emergencyContactRelationship ?? '';
+
     // Communication Preferences
     _marketingEmails = user.marketingEmailsEnabled;
     _eventNotifications = user.eventNotificationsEnabled;
@@ -160,27 +161,29 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   void _calculateProfileCompletion() {
     if (_currentUser == null) return;
-    
+
     int completedFields = 0;
     int totalFields = 11; // Total required fields for professional profile
-    
+
     // Personal Information (5 fields)
     if (_currentUser!.firstName.isNotEmpty) completedFields++;
     if (_currentUser!.lastName.isNotEmpty) completedFields++;
     if (_currentUser!.email.isNotEmpty) completedFields++;
     if (_currentUser!.phoneNumber?.isNotEmpty == true) completedFields++;
     if (_currentUser!.dateOfBirth != null) completedFields++;
-    
+
     // Billing Address (5 fields)
     if (_currentUser!.billingAddress?.isNotEmpty == true) completedFields++;
     if (_currentUser!.billingCity?.isNotEmpty == true) completedFields++;
     if (_currentUser!.billingCountry?.isNotEmpty == true) completedFields++;
     if (_currentUser!.billingPostalCode?.isNotEmpty == true) completedFields++;
-    
+
     // Emergency Contact (2 fields - relationship removed from calculation)
-    if (_currentUser!.emergencyContactName?.isNotEmpty == true) completedFields++;
-    if (_currentUser!.emergencyContactPhone?.isNotEmpty == true) completedFields++;
-    
+    if (_currentUser!.emergencyContactName?.isNotEmpty == true)
+      completedFields++;
+    if (_currentUser!.emergencyContactPhone?.isNotEmpty == true)
+      completedFields++;
+
     setState(() {
       _profileCompletionProgress = completedFields / totalFields;
     });
@@ -188,7 +191,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   Future<void> _saveProfile() async {
     print('🔄 [EditProfile] Save button clicked');
-    
+
     // Check individual field validation for debugging
     print('🔍 [EditProfile] Checking individual fields:');
     print('   First Name: "${_firstNameController.text}"');
@@ -198,10 +201,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     print('   Billing Address: "${_billingAddressController.text}"');
     print('   Billing City: "${_billingCityController.text}"');
     print('   Billing Country: "${_billingCountryController.text}"');
-    
+
     final isValid = _formKey.currentState!.validate();
     print('🔍 [EditProfile] Form validation result: $isValid');
-    
+
     if (!isValid) {
       print('❌ [EditProfile] Form validation failed, aborting save');
       _showErrorSnackBar('Please fill in all required fields marked with *');
@@ -218,7 +221,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
-        dateOfBirth: _dateOfBirthController.text.trim().isNotEmpty 
+        dateOfBirth: _dateOfBirthController.text.trim().isNotEmpty
             ? DateTime.parse(_dateOfBirthController.text.trim())
             : null,
         billingAddress: _billingAddressController.text.trim(),
@@ -228,11 +231,13 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         billingPostalCode: _billingPostalCodeController.text.trim(),
         emergencyContactName: _emergencyContactNameController.text.trim(),
         emergencyContactPhone: _emergencyContactPhoneController.text.trim(),
-        emergencyContactRelationship: _emergencyContactRelationshipController.text.trim(),
+        emergencyContactRelationship:
+            _emergencyContactRelationshipController.text.trim(),
         marketingEmailsEnabled: _marketingEmails,
         eventNotificationsEnabled: _eventNotifications,
         smsNotificationsEnabled: _smsNotifications,
-        profileCompleted: _profileCompletionProgress >= 0.8, // 80% completion required
+        profileCompleted:
+            _profileCompletionProgress >= 0.8, // 80% completion required
       );
 
       print('💾 Attempting to save profile:');
@@ -245,7 +250,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
       // Update user profile using AuthService
       final result = await _authService.updateUserProfile(updatedUser);
-      
+
       if (result['success'] == true) {
         // Update local state
         setState(() {
@@ -253,7 +258,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         });
 
         if (result['warning'] != null) {
-          _showSuccessSnackBar('Profile updated successfully! (${result['warning']})');
+          _showSuccessSnackBar(
+              'Profile updated successfully! (${result['warning']})');
         } else {
           _showSuccessSnackBar('Profile updated successfully in database!');
         }
@@ -261,7 +267,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       } else {
         _showErrorSnackBar('Failed to update profile: ${result['message']}');
       }
-      
     } catch (e) {
       _showErrorSnackBar('Failed to update profile: $e');
     } finally {
@@ -278,10 +283,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
     );
-    
+
     if (picked != null) {
       setState(() {
-        _dateOfBirthController.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        _dateOfBirthController.text =
+            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
     }
   }
@@ -425,11 +431,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           Text(
             'Basic information for your account and event bookings.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
-          
+
           // First Name
           TextFormField(
             controller: _firstNameController,
@@ -446,7 +452,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Last Name
           TextFormField(
             controller: _lastNameController,
@@ -463,7 +469,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Email (readonly)
           TextFormField(
             controller: _emailController,
@@ -476,7 +482,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Phone Number
           TextFormField(
             controller: _phoneController,
@@ -484,7 +490,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               labelText: 'Phone Number *',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.phone_outlined),
-              helperText: 'Enter your phone number (with or without country code)',
+              helperText:
+                  'Enter your phone number (with or without country code)',
             ),
             keyboardType: TextInputType.phone,
             validator: (value) {
@@ -504,7 +511,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Date of Birth
           TextFormField(
             controller: _dateOfBirthController,
@@ -537,11 +544,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           Text(
             'This information will be used for payment processing and receipts.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
-          
+
           // Billing Address
           TextFormField(
             controller: _billingAddressController,
@@ -560,7 +567,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // City and State Row
           Row(
             children: [
@@ -594,7 +601,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Country and Postal Code Row
           Row(
             children: [
@@ -628,12 +635,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -651,8 +661,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                   child: Text(
                     'Your billing address is securely stored and used only for payment verification and receipt generation.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ),
               ],
@@ -677,11 +687,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           Text(
             'Emergency contact information for safety at events.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
-          
+
           // Emergency Contact Name
           TextFormField(
             controller: _emergencyContactNameController,
@@ -697,7 +707,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Emergency Contact Phone
           TextFormField(
             controller: _emergencyContactPhoneController,
@@ -705,7 +715,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               labelText: 'Emergency Contact Phone',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.phone_outlined),
-              helperText: 'Optional - Include country code (e.g., +94xxxxxxxxx)',
+              helperText:
+                  'Optional - Include country code (e.g., +94xxxxxxxxx)',
             ),
             keyboardType: TextInputType.phone,
             validator: (value) {
@@ -719,7 +730,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             },
           ),
           const SizedBox(height: 16),
-          
+
           // Emergency Contact Relationship
           TextFormField(
             controller: _emergencyContactRelationshipController,
@@ -734,12 +745,13 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               return null;
             },
           ),
-          
+
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+              color:
+                  Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: Theme.of(context).colorScheme.error.withOpacity(0.3),
@@ -761,15 +773,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                       Text(
                         'Emergency Contact Information',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'This information will only be used in case of emergency during events. Your privacy is protected.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -796,16 +810,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           Text(
             'Choose how you want to receive notifications and updates.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
           ),
           const SizedBox(height: 24),
-          
+
           // Event Notifications
           Card(
             child: SwitchListTile(
               title: const Text('Event Notifications'),
-              subtitle: const Text('Receive notifications about your booked events'),
+              subtitle:
+                  const Text('Receive notifications about your booked events'),
               value: _eventNotifications,
               onChanged: (value) {
                 setState(() {
@@ -815,14 +830,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               secondary: const Icon(Icons.event_outlined),
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Marketing Emails
           Card(
             child: SwitchListTile(
               title: const Text('Marketing Emails'),
-              subtitle: const Text('Receive promotional offers and event recommendations'),
+              subtitle: const Text(
+                  'Receive promotional offers and event recommendations'),
               value: _marketingEmails,
               onChanged: (value) {
                 setState(() {
@@ -832,9 +848,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               secondary: const Icon(Icons.mail_outline),
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // SMS Notifications
           Card(
             child: SwitchListTile(
@@ -849,7 +865,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               secondary: const Icon(Icons.sms_outlined),
             ),
           ),
-          
+
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -869,8 +885,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                   child: Text(
                     'You can change these preferences at any time. We respect your privacy and follow data protection regulations.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ),
               ],
