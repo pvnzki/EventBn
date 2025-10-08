@@ -27,9 +27,9 @@ const authenticateToken = async (req, res, next) => {
       exp: decoded.exp
     });
     
-    // Check if this is a test environment (TEST_MODE or test email)
+    // Check if this is a test environment (only with @test.com emails or explicit TEST_MODE_MOCK)
     const isTestMode = process.env.NODE_ENV === 'test' && 
-                      (process.env.TEST_MODE === 'true' || decoded.email?.includes('@test.com'));
+                      (process.env.TEST_MODE_MOCK === 'true' || decoded.email?.includes('@test.com'));
     
     if (isTestMode) {
       // For testing: create mock user object from JWT payload without database lookup

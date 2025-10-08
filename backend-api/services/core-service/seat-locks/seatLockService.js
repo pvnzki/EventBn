@@ -119,9 +119,10 @@ class SeatLockService {
    * @param {string} eventId 
    * @param {string} seatId 
    * @param {string} userId 
+   * @param {string} type - 'payment' for extended duration, otherwise default
    * @returns {Promise<boolean>}
    */
-  async extendLock(eventId, seatId, userId) {
+  async extendLock(eventId, seatId, userId, type = 'default') {
     const normalizedUserId = String(userId);
     
     try {
@@ -145,15 +146,11 @@ class SeatLockService {
         return false;
       }
 
-      // Atomic lock extension with conditional update
-      // Use SET with XX (only if exists) to ensure atomicity
-      const newLockValue = `${normalizedUserId}:${Date.now()}`;
-      const result = await redis.set(lockKey, newLockValue, {
-        XX: true, // Only set if key exists
-        EX: this.PAYMENT_LOCK_DURATION // Set expiration in seconds
-      });
+      // Extend the lock duration
+      const duration = type === 'payment' ? this.PAYMENT_LOCK_DURATION : this.LOCK_DURATION;
+      const result = await redis.expire(lockKey, duration);
       
-      if (result === 'OK') {
+      if (result === 1) {
         console.log(`✅ Lock extended successfully: ${eventId}:${seatId} for user ${normalizedUserId}`);
         return true;
       } else {
@@ -182,6 +179,17 @@ class SeatLockService {
   async releaseLock(eventId, seatId, userId = null) {
     const normalizedUserId = userId ? String(userId) : null;
     
+    // Validate required parameters
+    const missingFields = [];
+    if (!eventId) missingFields.push('eventId');
+    if (!seatId) missingFields.push('seatId');
+    
+    if (missingFields.length > 0) {
+      const error = new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      error.code = 'INVALID_PARAMETERS';
+      throw error;
+    }
+    
     try {
       const redis = getRedisClient();
       const lockKey = this.getLockKey(eventId, seatId);
@@ -193,7 +201,12 @@ class SeatLockService {
         const currentLock = await this.isSeatLocked(eventId, seatId);
         console.log(`🔍 Release ownership check: stored userId="${currentLock.userId}" (${typeof currentLock.userId}), requesting userId="${normalizedUserId}" (${typeof normalizedUserId})`);
         
-        if (currentLock.locked && String(currentLock.userId) !== normalizedUserId) {
+        if (!currentLock.locked) {
+          console.log(`❌ Cannot release lock: ${eventId}:${seatId} - no active lock found`);
+          return false;
+        }
+        
+        if (String(currentLock.userId) !== normalizedUserId) {
           console.log(`❌ Cannot release lock: ${eventId}:${seatId} - user ${normalizedUserId} doesn't own the lock (owned by ${String(currentLock.userId)})`);
           return false;
         }
@@ -251,6 +264,89 @@ class SeatLockService {
       console.error('Error getting event locked seats:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get detailed lock information for a seat
+   * @param {string} eventId 
+   * @param {string} seatId 
+   * @returns {Promise<Object|null>}
+   */
+  async getLockInfo(eventId, seatId) {
+    try {
+      const redis = getRedisClient();
+      const lockKey = this.getLockKey(eventId, seatId);
+      
+      const lockValue = await redis.get(lockKey);
+      
+      if (!lockValue) {
+        return null;
+      }
+      
+      const [userId, timestamp] = lockValue.split(':');
+      const ttl = await redis.ttl(lockKey);
+      
+      // Handle malformed lock values - check if it has the expected format
+      if (!lockValue.includes(':') || !timestamp) {
+        return {
+          isLocked: true,
+          lockedBy: 'unknown',
+          lockedAt: null,
+          ttl: null
+        };
+      }
+      
+      return {
+        isLocked: true,
+        lockedBy: userId,
+        lockedAt: timestamp ? parseInt(timestamp) : NaN,
+        ttl: ttl > 0 ? ttl : 0
+      };
+    } catch (error) {
+      console.error(`Error getting lock info for ${eventId}:${seatId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a seat is locked (alias for compatibility)
+   * @param {string} eventId 
+   * @param {string} seatId 
+   * @returns {Promise<boolean>}
+   */
+  async isLocked(eventId, seatId) {
+    try {
+      const redis = getRedisClient();
+      const lockKey = this.getLockKey(eventId, seatId);
+      const exists = await redis.exists(lockKey);
+      return exists === 1;
+    } catch (error) {
+      console.error(`Error checking if seat is locked ${eventId}:${seatId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Unlock/release a seat (alias for compatibility)
+   * @param {string} eventId 
+   * @param {string} seatId 
+   * @param {string} userId 
+   * @returns {Promise<boolean>}
+   */
+  async unlockSeat(eventId, seatId, userId) {
+    // Validate required parameters
+    const missingFields = [];
+    if (!eventId) missingFields.push('eventId');
+    if (!seatId) missingFields.push('seatId');
+    if (!userId) missingFields.push('userId');
+    
+    if (missingFields.length > 0) {
+      const error = new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      error.code = 'INVALID_PARAMETERS';
+      throw error;
+    }
+    
+    return this.releaseLock(eventId, seatId, userId);
   }
 
   /**

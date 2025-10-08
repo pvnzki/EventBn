@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "targetUrl",
+      "type": "promptString",
+      "description": "Target URL to scan",
+      "default": "http://localhost:3000"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Security: Smoke Scan",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}\\scripts\\security\\security-smoke.ps1",
+        "-TargetUrl", "${input:targetUrl}"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

@@ -6,7 +6,14 @@
     "build": "next build",
     "dev": "next dev -p 3001",
     "lint": "next lint",
-    "start": "next start -p 3001"
+    "start": "next start -p 3001",
+    "cy:open": "cypress open --e2e",
+    "cy:run": "cypress run --e2e",
+    "test:ui:open": "start-server-and-test dev http://localhost:3001 cy:open",
+    "test:ui:dev": "start-server-and-test dev http://localhost:3001 cy:run",
+    "test:ui:prod": "next build && start-server-and-test start http://localhost:3001 cy:run",
+    "bs:run": "browserstack-cypress run --sync",
+    "bs:local": "set BROWSERSTACK_LOCAL=1 & set BROWSERSTACK_LOCAL_IDENTIFIER=eventbn-local-%DATE% & browserstack-cypress run --sync"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -66,7 +73,13 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@testing-library/cypress": "^10.0.2",
+    "axe-core": "^4.10.0",
+    "cypress": "^13.15.0",
+    "cypress-axe": "^1.6.0",
+    "@browserstack/cypress-cli": "^1.23.1",
     "postcss": "^8.5",
+    "start-server-and-test": "^2.0.8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }

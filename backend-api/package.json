@@ -15,7 +15,9 @@
     "test:unit:watch": "npm run test:safety && jest tests/unit --watch",
     "test:integration:watch": "npm run test:safety && jest tests/integration --watch",
     "test:coverage": "npm run test:safety && jest --coverage",
-    "test:verbose": "jest --verbose"
+    "test:verbose": "jest --verbose",
+    "test:db-int": "jest --config jest.db.integration.config.js",
+    "test:db-int:watch": "jest --config jest.db.integration.config.js --watch"
   },
   "keywords": [
     "nodejs",
@@ -32,6 +34,7 @@
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.5.0",
     "cors": "^2.8.5",
+    "helmet": "^7.1.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
@@ -39,6 +42,7 @@
     "redis": "^5.8.2"
   },
   "devDependencies": {
+    "chalk": "^4.1.2",
     "jest": "^30.1.3",
     "jest-junit": "^16.0.0",
     "nodemon": "^3.1.7",

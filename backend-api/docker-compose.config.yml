@@ -1,0 +1,99 @@
+services:
+  app:
+    build: .
+    image: eventbn-backend-api:config
+    env_file:
+      - .env.test
+    environment:
+      # These can be overridden per run by setting env vars or compose profiles
+      - NODE_ENV=test
+      - PORT=3000
+      - HOST=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET:-test-secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL:-${DATABASE_URL}}
+      - TEST_MODE=true
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    # Keep container running for test execs (server is not started in NODE_ENV=test)
+    command: ["sh", "-lc", "tail -f /dev/null"]
+    restart: unless-stopped
+    profiles: ["app"]
+
+  # Redis shared across tests
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # Postgres 13
+  db_pg13:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=eventbn_test
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    profiles: ["pg13"]
+
+  # Postgres 15
+  db_pg15:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=eventbn_test
+    ports:
+      - "56432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    profiles: ["pg15"]
+
+  # NGINX reverse proxy
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./ops/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    profiles: ["nginx"]
+
+  # Apache HTTPD reverse proxy
+  apache:
+    image: httpd:2.4
+    depends_on:
+      - app
+    ports:
+      - "8081:80"
+    volumes:
+      - ./ops/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+    profiles: ["apache"]
+
+  # Optional: Toxiproxy for network condition simulation
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    ports:
+      - "8474:8474" # admin API
+      - "10443:10443" # example proxy listen port
+    profiles: ["toxiproxy"]
+
+networks:
+  default:
+    name: eventbn-config-net

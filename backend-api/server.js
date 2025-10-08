@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path")
 const cors = require("cors");
+const helmet = require("helmet");
 const prisma = require("./lib/database");
 const { connectRedis } = require("./lib/redis");
 
@@ -16,6 +17,22 @@ const app = express();
 // Middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// Security headers via Helmet
+// Disable CSP by default to avoid breaking local dev; configure a strict CSP later if needed.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+// In production, add HSTS when serving over HTTPS (handled by reverse proxy/CDN typically)
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet.hsts({
+    maxAge: 15552000, // 180 days
+    includeSubDomains: true,
+    preload: false,
+  }));
+}
 
 // CORS Configuration
 let corsOptions = {};
@@ -164,7 +181,7 @@ const startServer = async () => {
     await connectRedis();
     
     // Start the server
-    app.listen(PORT, HOST, () => {
+    const server = app.listen(PORT, HOST, () => {
       console.log(`
 \x1b[36m==============================\x1b[0m
 \x1b[35m EventBn API Server Started \x1b[0m
@@ -179,12 +196,16 @@ const startServer = async () => {
 \x1b[36m==============================\x1b[0m
 `);
     });
+    return server;
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };
 
-startServer();
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test' && !module.parent) {
+  startServer();
+}
 
 module.exports = app;
