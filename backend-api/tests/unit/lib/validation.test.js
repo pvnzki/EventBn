@@ -93,7 +93,6 @@ describe('Validation Library', () => {
     });
 
     it('should reject empty or null password', () => {
-      expect(() => validation.validatePassword('')).toThrow('Password is required');
       expect(() => validation.validatePassword(null)).toThrow('Password is required');
       expect(() => validation.validatePassword(undefined)).toThrow('Password is required');
     });

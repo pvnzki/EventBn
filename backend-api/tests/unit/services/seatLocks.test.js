@@ -1,4 +1,4 @@
-const SeatLockService = require('../../../services/core-service/seat-locks/seatLockService');
+const seatLockService = require('../../../services/core-service/seat-locks/seatLockService');
 const { getRedisClient } = require('../../../lib/redis');
 
 // Mock Redis client
@@ -7,7 +7,6 @@ jest.mock('../../../lib/redis', () => ({
 }));
 
 describe('SeatLockService', () => {
-  let seatLockService;
   let mockRedis;
 
   beforeEach(() => {
@@ -25,7 +24,6 @@ describe('SeatLockService', () => {
     };
     
     getRedisClient.mockReturnValue(mockRedis);
-    seatLockService = new SeatLockService();
   });
 
   describe('constructor', () => {
@@ -60,9 +58,10 @@ describe('SeatLockService', () => {
       expect(mockRedis.set).toHaveBeenCalledWith(
         'seat_lock:event123:A1',
         expect.stringMatching(/^456:\d+$/),
-        'NX',
-        'EX',
-        60
+        {
+          NX: true,
+          EX: 60
+        }
       );
       expect(result).toBe(true);
     });
@@ -101,9 +100,10 @@ describe('SeatLockService', () => {
       expect(mockRedis.set).toHaveBeenCalledWith(
         'seat_lock:event123:A1',
         expect.stringMatching(/^123:\d+$/),
-        'NX',
-        'EX',
-        60
+        {
+          NX: true,
+          EX: 60
+        }
       );
     });
 
@@ -125,9 +125,10 @@ describe('SeatLockService', () => {
       expect(mockRedis.set).toHaveBeenCalledWith(
         'seat_lock:event123:A1',
         '456:1234567890',
-        'NX',
-        'EX',
-        60
+        {
+          NX: true,
+          EX: 60
+        }
       );
 
       Date.now.mockRestore();
