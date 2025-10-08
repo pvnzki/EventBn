@@ -316,16 +316,45 @@ export default function CreateEventPage() {
 
       // No conversion needed, seatMap is already an array of seat objects
 
-      // Send to API
+      // Get auth token
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoading(false);
+        alert(
+          "You're not logged in. Please sign in as an organizer to create events."
+        );
+        return;
+      }
+
+      // Send to API with Authorization header
       const response = await fetch(
         `${
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
         }/api/events`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         }
       );
+
+      // Handle common auth errors explicitly
+      if (response.status === 401) {
+        const err = await response
+          .json()
+          .catch(() => ({ message: "Unauthorized" }));
+        throw new Error(err.message || "Unauthorized. Please log in again.");
+      }
+      if (response.status === 403) {
+        const err = await response
+          .json()
+          .catch(() => ({ message: "Forbidden" }));
+        throw new Error(
+          err.message || "Organizer access required to create events."
+        );
+      }
 
       const result = await response.json();
 
