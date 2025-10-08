@@ -179,10 +179,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     if (_currentUser!.billingPostalCode?.isNotEmpty == true) completedFields++;
 
     // Emergency Contact (2 fields - relationship removed from calculation)
-    if (_currentUser!.emergencyContactName?.isNotEmpty == true)
+    if (_currentUser!.emergencyContactName?.isNotEmpty == true) {
       completedFields++;
-    if (_currentUser!.emergencyContactPhone?.isNotEmpty == true)
+    }
+    if (_currentUser!.emergencyContactPhone?.isNotEmpty == true) {
       completedFields++;
+    }
 
     setState(() {
       _profileCompletionProgress = completedFields / totalFields;

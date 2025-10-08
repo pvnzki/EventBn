@@ -407,7 +407,7 @@ class PaymentSuccessScreen extends StatelessWidget {
         print(
             '❌ [PAYMENT SUCCESS] Invalid booking ID format: $bookingId (length: ${bookingId.length})');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
                 'Invalid ticket ID format. Please try again or contact support.'),
             backgroundColor: Colors.red,
