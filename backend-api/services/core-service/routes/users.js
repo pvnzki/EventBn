@@ -1,7 +1,11 @@
 const express = require('express');
-const multer =require('multer');
 const router = express.Router();
-const usersService = require('../services/core-service/users');
+const usersService = require('../users');
+const multer = require('multer');
+const { cloudinary } = require('../lib/cloudinary');
+
+// Configure multer for memory storage
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all users
 router.get('/', async (req, res) => {
@@ -58,29 +62,10 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Configure Multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Folder to save images (make sure it exists)
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
-  },
-});
-
-const upload = multer({ storage });
-
-// Update user
-router.put("/:id", upload.single("profile_picture"), async (req, res) => {
+// Update user (basic update without file upload)
+router.put("/:id", async (req, res) => {
   try {
     const updateData = { ...req.body };
-
-    // If a new profile picture is uploaded, set its path
-    if (req.file) {
-      updateData.profile_picture = `/uploads/${req.file.filename}`;
-    }
-
     const user = await usersService.updateUser(req.params.id, updateData);
 
     res.json({
@@ -92,6 +77,87 @@ router.put("/:id", upload.single("profile_picture"), async (req, res) => {
     res.status(400).json({
       success: false,
       message: error.message,
+    });
+  }
+});
+
+// Update user profile (for mobile app - accepts Cloudinary URLs)
+router.put('/:id/profile', async (req, res) => {
+  try {
+    const user = await usersService.updateUserProfile(req.params.id, req.body);
+    
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Upload profile image to Cloudinary
+router.post('/:id/upload-profile-image', upload.single('image'), async (req, res) => {
+  try {
+    console.log('📸 [PROFILE_UPLOAD] Received profile image upload request for user:', req.params.id);
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+    }
+
+    console.log('📸 [PROFILE_UPLOAD] File details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+
+    // Upload to Cloudinary
+    const uploadOptions = {
+      folder: 'eventbn/profile_pictures',
+      transformation: [
+        { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+        { quality: 'auto', fetch_format: 'auto' }
+      ]
+    };
+
+    console.log('☁️ [PROFILE_UPLOAD] Uploading to Cloudinary...');
+    
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+        if (error) {
+          console.error('❌ [PROFILE_UPLOAD] Cloudinary upload error:', error);
+          reject(error);
+        } else {
+          console.log('✅ [PROFILE_UPLOAD] Cloudinary upload success:', result.secure_url);
+          resolve(result);
+        }
+      }).end(req.file.buffer);
+    });
+
+    // Update user profile with the new image URL
+    const updatedUser = await usersService.updateUserProfile(req.params.id, {
+      avatarUrl: uploadResult.secure_url
+    });
+
+    console.log('✅ [PROFILE_UPLOAD] User profile updated with new image URL');
+
+    res.json({
+      success: true,
+      message: 'Profile image uploaded successfully',
+      data: updatedUser,
+      imageUrl: uploadResult.secure_url
+    });
+  } catch (error) {
+    console.error('❌ [PROFILE_UPLOAD] Upload failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile image: ' + (error.message || error.toString() || 'Unknown error')
     });
   }
 });

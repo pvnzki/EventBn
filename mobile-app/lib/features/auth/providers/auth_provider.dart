@@ -245,4 +245,10 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _setError(null);
   }
+
+  // Update user data (for profile updates)
+  void updateUser(User updatedUser) {
+    _user = updatedUser;
+    notifyListeners();
+  }
 }
