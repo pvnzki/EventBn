@@ -2188,4 +2188,8 @@ router.get("/analytics/dashboard", async (req, res) => {
   }
 });
 
+// Import and use users routes
+const usersRoutes = require("./users");
+router.use("/users", usersRoutes);
+
 module.exports = router;
