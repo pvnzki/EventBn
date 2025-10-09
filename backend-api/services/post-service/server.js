@@ -51,17 +51,45 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // CORS Configuration
-const corsOptions = {
-  origin: process.env.POST_SERVICE_CORS_ORIGINS?.split(",") || [
-    "http://localhost:3000",
-    "http://localhost:3001", // core-service
-    "http://localhost:8080",
-    /^http:\/\/localhost:\d+$/,
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key"],
-};
+let corsOptions = {};
+
+if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+  // Development → allow all localhost origins dynamically
+  corsOptions = {
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow any localhost or 127.0.0.1 origin on any port
+      if (origin.match(/^http:\/\/localhost:\d+$/) || 
+          origin.match(/^http:\/\/127\.0\.0\.1:\d+$/) ||
+          origin.includes('flutter') ||
+          origin.includes('dart')) {
+        return callback(null, true);
+      }
+      
+      return callback(null, true); // Allow all in development
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key", "X-Requested-With", "Accept", "Origin"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  };
+} else {
+  // Production → use environment variable or defaults
+  corsOptions = {
+    origin: process.env.POST_SERVICE_CORS_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+      "http://localhost:3001", // core-service
+      "http://localhost:8080",
+      /^http:\/\/localhost:\d+$/,
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key"],
+  };
+}
 app.use(cors(corsOptions));
 
 // Service identification middleware

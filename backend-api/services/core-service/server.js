@@ -51,7 +51,7 @@ app.use(limiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// CORS Configuration (improved to support any localhost:* during development)
+// CORS Configuration (enhanced for development diagnostics + broader dev ports)
 const explicitOrigins = (process.env.CORE_SERVICE_CORS_ORIGINS || "")
   .split(",")
   .map((o) => o.trim())
@@ -63,41 +63,73 @@ if (explicitOrigins.length === 0) {
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:8080"
   );
 }
 
 const LOCALHOST_REGEX = /^https?:\/\/localhost(?::\d+)?$/i;
 
+// For quick troubleshooting you can set CORE_SERVICE_ALLOW_ALL_CORS=true (dev only!)
+const allowAllDev = process.env.CORE_SERVICE_ALLOW_ALL_CORS === "true";
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow no-origin requests (mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
-
-    if (
-      LOCALHOST_REGEX.test(origin) ||
-      explicitOrigins.includes(origin)
-    ) {
+    if (allowAllDev) {
+      if (origin) console.log(`[CORS][DEV-WILDCARD] Allowing ${origin}`);
       return callback(null, true);
     }
 
-    console.warn(`[CORS] Blocked origin: ${origin}`);
+    // Allow no-origin requests (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (LOCALHOST_REGEX.test(origin) || explicitOrigins.includes(origin)) {
+      console.log(`[CORS] ✔ Allowed origin: ${origin}`);
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] ✖ Blocked origin: ${origin}`);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "X-Service-Key",
     "X-Requested-With",
+    "Accept",
+    "Origin",
   ],
   exposedHeaders: ["X-Service-Name", "X-Service-Version"],
-  maxAge: 600,
+  maxAge: 86400, // 24h to reduce preflights in dev
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
 };
+
+// Attach CORS early
 app.use(cors(corsOptions));
-// Explicit OPTIONS handler for legacy clients
 app.options("*", cors(corsOptions));
+
+// Safety middleware: ensure any error still returns an ACAO header in dev (best-effort)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowAllDev && origin && !res.headersSent) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      corsOptions.allowedHeaders.join(", ")
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      corsOptions.methods.join(", ")
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  next();
+});
 
 // Service identification middleware
 app.use((req, res, next) => {
