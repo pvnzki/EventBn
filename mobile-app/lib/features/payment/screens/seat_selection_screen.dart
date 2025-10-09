@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
+import '../../auth/services/auth_service.dart';
 import 'payment_screen.dart';
 
 class SeatSelectionScreen extends StatefulWidget {
@@ -36,6 +37,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   bool _sessionActive = false;
   int _sessionTimeLeft = 0;
   Timer? _sessionTimer;
+
+  // Seat lock timer management
+  Timer? _seatLockTimer;
+  int _seatLockTimeRemaining = 0;
+  static const int SEAT_LOCK_DURATION = 300; // 5 minutes in seconds
+  bool _showSeatLockTimer = false;
 
   // Animation controllers
   late AnimationController _selectionAnimation;
@@ -72,6 +79,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   @override
   void dispose() {
     _sessionTimer?.cancel();
+    _seatLockTimer?.cancel();
     _controlsTimer?.cancel();
     _selectionAnimation.dispose();
     _pulseAnimation.dispose();
@@ -126,6 +134,140 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       // Fallback to demo data for testing
       _loadDemoSeatMap();
     }
+  }
+
+  // ========== SEAT LOCKING API METHODS ==========
+  
+  Future<bool> _lockSeat(String seatId) async {
+    try {
+      print('🔒 API: Locking seat $seatId');
+      
+      // Import auth service at the top: import '../../../features/auth/services/auth_service.dart';
+      final authService = AuthService();
+      final token = await authService.getStoredToken();
+      
+      if (token == null) {
+        print('❌ No auth token available for seat locking');
+        return false;
+      }
+
+      final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
+      
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ API: Seat $seatId locked successfully');
+        return data['success'] == true;
+      } else {
+        print('❌ API: Failed to lock seat $seatId. Status: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ API: Error locking seat $seatId: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _unlockSeat(String seatId) async {
+    try {
+      print('🔓 API: Unlocking seat $seatId');
+      
+      final authService = AuthService();
+      final token = await authService.getStoredToken();
+      
+      if (token == null) {
+        print('❌ No auth token available for seat unlocking');
+        return false;
+      }
+
+      final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
+      
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ API: Seat $seatId unlocked successfully');
+        return data['success'] == true;
+      } else {
+        print('❌ API: Failed to unlock seat $seatId. Status: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ API: Error unlocking seat $seatId: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _extendSeatLocks(List<String> seatIds) async {
+    try {
+      print('⏰ API: Extending locks for seats: $seatIds');
+      
+      final authService = AuthService();
+      final token = await authService.getStoredToken();
+      
+      if (token == null) {
+        print('❌ No auth token available for seat lock extension');
+        return false;
+      }
+
+      bool allSuccess = true;
+      
+      for (String seatId in seatIds) {
+        final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock/extend';
+        
+        final response = await http.put(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['success'] != true) {
+            print('❌ API: Failed to extend lock for seat $seatId');
+            allSuccess = false;
+          } else {
+            print('✅ API: Extended lock for seat $seatId');
+          }
+        } else {
+          print('❌ API: Failed to extend lock for seat $seatId. Status: ${response.statusCode}');
+          print('Response: ${response.body}');
+          allSuccess = false;
+        }
+      }
+      
+      print(allSuccess ? '✅ API: All seat locks extended successfully' : '⚠️ API: Some seat lock extensions failed');
+      return allSuccess;
+    } catch (e) {
+      print('❌ API: Error extending seat locks: $e');
+      return false;
+    }
+  }
+
+  // Wrapper methods for individual seat operations
+  Future<bool> _releaseSeatLock(String seatId) async {
+    return await _unlockSeat(seatId);
+  }
+
+  Future<bool> _extendSeatLock(String seatId) async {
+    return await _extendSeatLocks([seatId]);
   }
 
   void _loadDemoSeatMap() {
@@ -216,6 +358,63 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     );
   }
 
+  // Seat lock timer methods
+  void _startSeatLockTimer() {
+    _seatLockTimer?.cancel();
+    
+    setState(() {
+      _seatLockTimeRemaining = SEAT_LOCK_DURATION;
+      _showSeatLockTimer = true;
+    });
+
+    _seatLockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _seatLockTimeRemaining--;
+      });
+
+      if (_seatLockTimeRemaining <= 0) {
+        _seatLockExpired();
+        timer.cancel();
+      }
+    });
+  }
+
+  void _stopSeatLockTimer() {
+    _seatLockTimer?.cancel();
+    setState(() {
+      _showSeatLockTimer = false;
+      _seatLockTimeRemaining = 0;
+    });
+  }
+
+  void _seatLockExpired() {
+    print('🕒 Seat locks expired, releasing all selected seats');
+    
+    // Release all selected seats
+    final seatsToRelease = List<String>.from(selectedSeats);
+    for (String seatId in seatsToRelease) {
+      _releaseSeatLock(seatId);
+    }
+
+    setState(() {
+      selectedSeats.clear();
+      lockedSeats.clear();
+      _showSeatLockTimer = false;
+      _seatLockTimeRemaining = 0;
+    });
+
+    _showSnackBar(
+      'Seat locks expired. Please select seats again.', 
+      Colors.orange
+    );
+  }
+
+  String _formatSeatLockTime(int seconds) {
+    int minutes = seconds ~/ 60;
+    int remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
   String _getSeatLabel(String seatId) {
     final seat = seatMap.firstWhere((s) => s['id'].toString() == seatId,
         orElse: () => <String, dynamic>{});
@@ -274,13 +473,30 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
 
       try {
         print('🔓 Unlocking seat: $seatId');
+        // Call backend API to release seat lock
+        await _releaseSeatLock(seatId);
+        
+        // Stop timer if no seats are selected
+        if (selectedSeats.isEmpty) {
+          _stopSeatLockTimer();
+        }
       } catch (e) {
         print('❌ Error unlocking seat: $e');
+        _showSnackBar('Failed to unlock seat', Colors.red);
+        // Revert UI state on failure
+        setState(() {
+          selectedSeats.add(seatId);
+          lockedSeats.add(seatId);
+        });
       }
     } else {
       // Select seat
       try {
         print('🔒 Locking seat: $seatId');
+        
+        // Call backend API to lock seat first
+        await _lockSeat(seatId);
+        
         setState(() {
           selectedSeats.add(seatId);
           lockedSeats.add(seatId);
@@ -295,13 +511,18 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         // Visual feedback for selection
         _showSnackBar('Seat ${_getSeatLabel(seatId)} selected', Colors.green);
 
+        // Start seat lock timer if this is the first seat selected
+        if (selectedSeats.length == 1) {
+          _startSeatLockTimer();
+        }
+
         // Start session if this is the first seat selected
         if (!_sessionActive) {
           _startSession();
         }
       } catch (e) {
         print('❌ Error locking seat: $e');
-        _showSnackBar('Error selecting seat', Colors.red);
+        _showSnackBar('Error selecting seat: ${e.toString()}', Colors.red);
       }
     }
   }
@@ -362,6 +583,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         child: Column(
           children: [
             _buildAppBar(theme),
+            if (_showSeatLockTimer) _buildSeatLockTimer(theme),
             if (_sessionActive) _buildSessionTimer(theme),
             Expanded(
               child: _buildSeatMapContainer(theme),
@@ -482,6 +704,63 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
               color:
                   _sessionTimeLeft < 300 ? Colors.orange : colorScheme.primary,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeatLockTimer(ThemeData theme) {
+    // Color coding: Green > 3min, Orange 1-3min, Red < 1min
+    Color timerColor;
+    Color backgroundColor;
+    IconData timerIcon;
+    
+    if (_seatLockTimeRemaining > 180) {
+      timerColor = Colors.green;
+      backgroundColor = Colors.green.withValues(alpha: 0.1);
+      timerIcon = Icons.lock;
+    } else if (_seatLockTimeRemaining > 60) {
+      timerColor = Colors.orange;
+      backgroundColor = Colors.orange.withValues(alpha: 0.1);
+      timerIcon = Icons.lock_clock;
+    } else {
+      timerColor = Colors.red;
+      backgroundColor = Colors.red.withValues(alpha: 0.1);
+      timerIcon = Icons.lock_clock;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border(
+          left: BorderSide(color: timerColor, width: 4),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            timerIcon,
+            size: 18,
+            color: timerColor,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Seats locked for: ${_formatSeatLockTime(_seatLockTimeRemaining)}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: timerColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '(${selectedSeats.length} seat${selectedSeats.length != 1 ? 's' : ''})',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: timerColor.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -1086,7 +1365,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     );
   }
 
-  void _proceedToBooking() {
+  Future<void> _proceedToBooking() async {
     if (selectedSeats.isEmpty) {
       HapticFeedback.heavyImpact();
       _showSnackBar('Please select at least one seat', Colors.orange);
@@ -1096,6 +1375,21 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     HapticFeedback.lightImpact();
 
     try {
+      // Show loading indicator
+      _showSnackBar('Extending seat locks for payment...', Colors.blue);
+      
+      // Extend locks for all selected seats for payment process
+      print('🔄 Extending locks for ${selectedSeats.length} seats');
+      for (String seatId in selectedSeats) {
+        try {
+          await _extendSeatLock(seatId);
+          print('✅ Extended lock for seat: $seatId');
+        } catch (e) {
+          print('⚠️ Failed to extend lock for seat $seatId: $e');
+          // Continue with other seats even if one fails
+        }
+      }
+      
       final selectedSeatData = selectedSeats.map((seatId) {
         final seat = seatMap.firstWhere((s) => s['id'].toString() == seatId,
             orElse: () => <String, dynamic>{});
