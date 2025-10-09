@@ -97,8 +97,7 @@ Future<bool> login(String email, String password) async {
 
   // Register
   Future<bool> register({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
     required String password,
     String? phoneNumber,
@@ -107,9 +106,10 @@ Future<bool> login(String email, String password) async {
     _setError(null);
 
     try {
+      print('🔄 [AUTH_PROVIDER] Registering user: $email');
+      
       final result = await _authService.register(
-        firstName: firstName,
-        lastName: lastName,
+        name: name,
         email: email,
         password: password,
         phoneNumber: phoneNumber,
@@ -119,18 +119,25 @@ Future<bool> login(String email, String password) async {
         _user = result['user'];
         _isAuthenticated = true;
 
+        final token = result['token'];
+        print('🔄 [AUTH_PROVIDER] Registration successful, storing token');
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', _user!.email);
+        await prefs.setString('auth_token', token);
         await prefs.setBool('is_authenticated', true);
 
+        print('✅ [AUTH_PROVIDER] Registration completed for: ${_user!.email}');
         _setLoading(false);
         return true;
       } else {
+        print('❌ [AUTH_PROVIDER] Registration failed: ${result['message']}');
         _setError(result['message'] ?? 'Registration failed');
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      print('❌ [AUTH_PROVIDER] Registration error: $e');
       _setError('Network error. Please try again.');
       _setLoading(false);
       return false;
