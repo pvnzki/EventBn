@@ -365,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showBillingAddressModal(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -376,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Handle billing address save using backend API
           try {
             print('💾 [BILLING] Saving billing address: $billingData');
-            
+
             // Create updated user with new billing data
             final updatedUser = authProvider.user!.copyWith(
               billingAddress: billingData['billingAddress']?.toString(),
@@ -386,24 +386,26 @@ class _ProfileScreenState extends State<ProfileScreen>
               billingPostalCode: billingData['billingPostalCode']?.toString(),
               profileCompleted: true,
             );
-            
+
             // Use AuthService to update profile with billing data
             final result = await _authService.updateUserProfile(updatedUser);
-            
+
             if (result['success'] == true) {
               print('✅ [BILLING] Billing address updated successfully');
-              
+
               // Update the AuthProvider with the new user data
               authProvider.updateUser(updatedUser);
-              
+
               // Check if widget is still mounted before showing snackbar
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Billing address updated successfully!')),
+                  const SnackBar(
+                      content: Text('Billing address updated successfully!')),
                 );
               }
             } else {
-              throw Exception(result['message'] ?? 'Failed to update billing address');
+              throw Exception(
+                  result['message'] ?? 'Failed to update billing address');
             }
           } catch (e) {
             print('❌ [BILLING] Failed to update billing address: $e');
@@ -421,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showEmergencyContactModal(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -432,7 +434,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Handle emergency contact save
           try {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Emergency contact updated successfully!')),
+              const SnackBar(
+                  content: Text('Emergency contact updated successfully!')),
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -446,7 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _showCommunicationPreferencesModal(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -457,11 +460,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Handle communication preferences save
           try {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Communication preferences updated successfully!')),
+              const SnackBar(
+                  content:
+                      Text('Communication preferences updated successfully!')),
             );
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to update communication preferences: $e')),
+              SnackBar(
+                  content:
+                      Text('Failed to update communication preferences: $e')),
             );
           }
         },
@@ -669,17 +676,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                     );
                   }),
                   _buildSettingsOption(
-                      context, Icons.location_on_outlined, 'Billing Address', () {
+                      context, Icons.location_on_outlined, 'Billing Address',
+                      () {
                     Navigator.pop(context);
                     _showBillingAddressModal(context);
                   }),
                   _buildSettingsOption(
-                      context, Icons.emergency_outlined, 'Emergency Contact', () {
+                      context, Icons.emergency_outlined, 'Emergency Contact',
+                      () {
                     Navigator.pop(context);
                     _showEmergencyContactModal(context);
                   }),
-                  _buildSettingsOption(
-                      context, Icons.settings_outlined, 'Communication Preferences', () {
+                  _buildSettingsOption(context, Icons.settings_outlined,
+                      'Communication Preferences', () {
                     Navigator.pop(context);
                     _showCommunicationPreferencesModal(context);
                   }),
@@ -1152,51 +1161,52 @@ class _ProfileScreenState extends State<ProfileScreen>
       useSafeArea: false,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 
-                  kBottomNavigationBarHeight + 16, // Add space for bottom navbar
+          bottom: MediaQuery.of(context).viewInsets.bottom +
+              kBottomNavigationBarHeight +
+              16, // Add space for bottom navbar
         ),
         child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant
-                    .withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildCreateOption(context, Icons.add_box_outlined, 'Post',
-                      () {
-                    Navigator.pop(context);
-                    context.push('/create-post');
-                  }),
-                  _buildCreateOption(context, Icons.video_call_outlined, 'Reel',
-                      () {
-                    Navigator.pop(context);
-                  }),
-                  _buildCreateOption(context, Icons.add_circle_outline, 'Story',
-                      () {
-                    Navigator.pop(context);
-                  }),
-                ],
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildCreateOption(context, Icons.add_box_outlined, 'Post',
+                        () {
+                      Navigator.pop(context);
+                      context.push('/create-post');
+                    }),
+                    _buildCreateOption(
+                        context, Icons.video_call_outlined, 'Reel', () {
+                      Navigator.pop(context);
+                    }),
+                    _buildCreateOption(
+                        context, Icons.add_circle_outline, 'Story', () {
+                      Navigator.pop(context);
+                    }),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -1225,7 +1235,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       useSafeArea: true,
       builder: (context) => Container(
         margin: const EdgeInsets.only(
-          bottom: kBottomNavigationBarHeight + 16, // Add space for bottom navbar
+          bottom:
+              kBottomNavigationBarHeight + 16, // Add space for bottom navbar
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -1383,7 +1394,8 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
       _billingCityController.text = widget.currentUser!.billingCity ?? '';
       _billingStateController.text = widget.currentUser!.billingState ?? '';
       _billingCountryController.text = widget.currentUser!.billingCountry ?? '';
-      _billingPostalCodeController.text = widget.currentUser!.billingPostalCode ?? '';
+      _billingPostalCodeController.text =
+          widget.currentUser!.billingPostalCode ?? '';
     }
   }
 
@@ -1443,7 +1455,8 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
                     Text(
                       'This information will be used for payment processing and receipts.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -1544,7 +1557,10 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
                             .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -1558,17 +1574,22 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
                           Expanded(
                             child: Text(
                               'Your billing address is securely stored and used only for payment verification and receipt generation.',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Save Button
                     SizedBox(
                       width: double.infinity,
@@ -1578,12 +1599,17 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
                             final billingData = {
                               'firstName': widget.currentUser?.firstName ?? '',
                               'lastName': widget.currentUser?.lastName ?? '',
-                              'phoneNumber': widget.currentUser?.phoneNumber ?? '',
-                              'billingAddress': _billingAddressController.text.trim(),
+                              'phoneNumber':
+                                  widget.currentUser?.phoneNumber ?? '',
+                              'billingAddress':
+                                  _billingAddressController.text.trim(),
                               'billingCity': _billingCityController.text.trim(),
-                              'billingState': _billingStateController.text.trim(),
-                              'billingCountry': _billingCountryController.text.trim(),
-                              'billingPostalCode': _billingPostalCodeController.text.trim(),
+                              'billingState':
+                                  _billingStateController.text.trim(),
+                              'billingCountry':
+                                  _billingCountryController.text.trim(),
+                              'billingPostalCode':
+                                  _billingPostalCodeController.text.trim(),
                             };
                             widget.onSave(billingData);
                             Navigator.of(context).pop();
@@ -1628,9 +1654,12 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
     super.initState();
     // Initialize with current user emergency contact data if available
     if (widget.currentUser != null) {
-      _emergencyContactNameController.text = widget.currentUser?.emergencyContactName ?? '';
-      _emergencyContactPhoneController.text = widget.currentUser?.emergencyContactPhone ?? '';
-      _emergencyContactRelationshipController.text = widget.currentUser?.emergencyContactRelationship ?? '';
+      _emergencyContactNameController.text =
+          widget.currentUser?.emergencyContactName ?? '';
+      _emergencyContactPhoneController.text =
+          widget.currentUser?.emergencyContactPhone ?? '';
+      _emergencyContactRelationshipController.text =
+          widget.currentUser?.emergencyContactRelationship ?? '';
     }
   }
 
@@ -1688,7 +1717,8 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                     Text(
                       'Emergency contact information for safety at events.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -1700,7 +1730,8 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                         labelText: 'Emergency Contact Name',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.person_outline),
-                        helperText: 'Optional - Full name of your emergency contact',
+                        helperText:
+                            'Optional - Full name of your emergency contact',
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1718,7 +1749,8 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value?.trim().isNotEmpty == true) {
-                          if (!RegExp(r'^\+\d{10,15}$').hasMatch(value!.trim())) {
+                          if (!RegExp(r'^\+\d{10,15}$')
+                              .hasMatch(value!.trim())) {
                             return 'Enter a valid phone number with country code';
                           }
                         }
@@ -1734,7 +1766,8 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                         labelText: 'Relationship',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.family_restroom_outlined),
-                        helperText: 'Optional - e.g., Parent, Spouse, Sibling, Friend',
+                        helperText:
+                            'Optional - e.g., Parent, Spouse, Sibling, Friend',
                       ),
                     ),
 
@@ -1742,11 +1775,16 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color:
-                            Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .errorContainer
+                            .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .error
+                              .withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -1764,14 +1802,21 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                               children: [
                                 Text(
                                   'Emergency Contact Information',
-                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.error,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.error,
                                       ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'This information will only be used in case of emergency during events. Your privacy is protected.',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         color: Theme.of(context)
                                             .colorScheme
                                             .onSurfaceVariant,
@@ -1783,9 +1828,9 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Save Button
                     SizedBox(
                       width: double.infinity,
@@ -1793,9 +1838,13 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
                         onPressed: () {
                           if (_formKey.currentState?.validate() ?? false) {
                             final emergencyData = {
-                              'emergencyContactName': _emergencyContactNameController.text.trim(),
-                              'emergencyContactPhone': _emergencyContactPhoneController.text.trim(),
-                              'emergencyContactRelationship': _emergencyContactRelationshipController.text.trim(),
+                              'emergencyContactName':
+                                  _emergencyContactNameController.text.trim(),
+                              'emergencyContactPhone':
+                                  _emergencyContactPhoneController.text.trim(),
+                              'emergencyContactRelationship':
+                                  _emergencyContactRelationshipController.text
+                                      .trim(),
                             };
                             widget.onSave(emergencyData);
                             Navigator.of(context).pop();
@@ -1826,10 +1875,12 @@ class _CommunicationPreferencesModal extends StatefulWidget {
   });
 
   @override
-  State<_CommunicationPreferencesModal> createState() => _CommunicationPreferencesModalState();
+  State<_CommunicationPreferencesModal> createState() =>
+      _CommunicationPreferencesModalState();
 }
 
-class _CommunicationPreferencesModalState extends State<_CommunicationPreferencesModal> {
+class _CommunicationPreferencesModalState
+    extends State<_CommunicationPreferencesModal> {
   bool _eventNotifications = true;
   bool _marketingEmails = false;
   bool _smsNotifications = true;
@@ -1839,7 +1890,8 @@ class _CommunicationPreferencesModalState extends State<_CommunicationPreference
     super.initState();
     // Initialize with current user preferences if available
     if (widget.currentUser != null) {
-      _eventNotifications = widget.currentUser?.eventNotificationsEnabled ?? true;
+      _eventNotifications =
+          widget.currentUser?.eventNotificationsEnabled ?? true;
       _marketingEmails = widget.currentUser?.marketingEmailsEnabled ?? false;
       _smsNotifications = widget.currentUser?.smsNotificationsEnabled ?? true;
     }
@@ -1898,8 +1950,8 @@ class _CommunicationPreferencesModalState extends State<_CommunicationPreference
                   Card(
                     child: SwitchListTile(
                       title: const Text('Event Notifications'),
-                      subtitle:
-                          const Text('Receive notifications about your booked events'),
+                      subtitle: const Text(
+                          'Receive notifications about your booked events'),
                       value: _eventNotifications,
                       onChanged: (value) {
                         setState(() {
@@ -1949,7 +2001,8 @@ class _CommunicationPreferencesModalState extends State<_CommunicationPreference
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1963,17 +2016,20 @@ class _CommunicationPreferencesModalState extends State<_CommunicationPreference
                         Expanded(
                           child: Text(
                             'You can change these preferences at any time. We respect your privacy and follow data protection regulations.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Save Button
                   SizedBox(
                     width: double.infinity,

@@ -104,8 +104,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         : '';
   }
 
-
-
   Future<void> _saveProfile() async {
     print('🔄 [EditProfile] Save button clicked');
 
@@ -213,7 +211,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   _pickImage(ImageSource.camera);
                 },
               ),
-              if (_currentUser?.profileImageUrl != null || _selectedImage != null)
+              if (_currentUser?.profileImageUrl != null ||
+                  _selectedImage != null)
                 ListTile(
                   leading: const Icon(Icons.delete),
                   title: const Text('Remove Photo'),
@@ -242,7 +241,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() {
           _selectedImage = File(image.path);
         });
-        
+
         // Upload image to Cloudinary
         await _uploadImageToCloudinary();
       }
@@ -267,72 +266,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       print('🔄 [EDIT_PROFILE] Starting backend image upload...');
-      
+
       // Get authentication token
       final token = await _authService.getStoredToken();
       if (token == null) {
         throw Exception('Authentication token not found. Please login again.');
       }
-      
+
       // Use the backend endpoint instead of direct Cloudinary upload
-      final uri = Uri.parse('${AppConfig.baseUrl}/api/users/${_currentUser!.id}/upload-profile-image');
+      final uri = Uri.parse(
+          '${AppConfig.baseUrl}/api/users/${_currentUser!.id}/upload-profile-image');
       final request = http.MultipartRequest('POST', uri);
-      
+
       // Add authentication header
       request.headers['Authorization'] = 'Bearer $token';
-      
+
       // Add the image file
-      final file = await http.MultipartFile.fromPath('image', _selectedImage!.path);
+      final file =
+          await http.MultipartFile.fromPath('image', _selectedImage!.path);
       request.files.add(file);
 
       print('🔄 [EDIT_PROFILE] Sending upload request to backend...');
       final response = await request.send();
-      
-      print('🔍 [EDIT_PROFILE] Backend upload response status: ${response.statusCode}');
-      
+
+      print(
+          '🔍 [EDIT_PROFILE] Backend upload response status: ${response.statusCode}');
+
       final responseBody = await response.stream.bytesToString();
       print('🔍 [EDIT_PROFILE] Backend upload response body: $responseBody');
-      
+
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(responseBody);
-        
+
         if (jsonResponse['success'] == true) {
           final imageUrl = jsonResponse['imageUrl'];
-          print('✅ [EDIT_PROFILE] Image uploaded successfully via backend: $imageUrl');
-          
+          print(
+              '✅ [EDIT_PROFILE] Image uploaded successfully via backend: $imageUrl');
+
           // Add cache-busting parameter to force image reload
-          final cacheBustedUrl = '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
-          
+          final cacheBustedUrl =
+              '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
           // Update the current user state immediately
           setState(() {
-            _currentUser = _currentUser!.copyWith(profileImageUrl: cacheBustedUrl);
-            _selectedImage = null; // Clear the selected image since it's now uploaded
+            _currentUser =
+                _currentUser!.copyWith(profileImageUrl: cacheBustedUrl);
+            _selectedImage =
+                null; // Clear the selected image since it's now uploaded
           });
-          
-          print('🔄 [EDIT_PROFILE] Updated current user with new image URL: $cacheBustedUrl');
-          
-          // Update the auth provider with the new user data  
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+          print(
+              '🔄 [EDIT_PROFILE] Updated current user with new image URL: $cacheBustedUrl');
+
+          // Update the auth provider with the new user data
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
           authProvider.updateUser(_currentUser!);
-          
+
           print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
-          
+
           _showSuccessSnackBar('Profile picture updated successfully!');
         } else {
           throw Exception('Backend upload failed: ${jsonResponse['message']}');
         }
       } else {
-        throw Exception('Backend upload failed with status: ${response.statusCode}');
+        throw Exception(
+            'Backend upload failed with status: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ [EDIT_PROFILE] Error uploading via backend: $e');
-      
+
       // Fallback to placeholder for testing
       try {
         print('⚠️ [EDIT_PROFILE] Using fallback placeholder image...');
-        const placeholderImageUrl = 'https://ui-avatars.com/api/?name=User&background=FF6B6B&color=FFFFFF&size=200';
+        const placeholderImageUrl =
+            'https://ui-avatars.com/api/?name=User&background=FF6B6B&color=FFFFFF&size=200';
         await _updateProfileImage(placeholderImageUrl);
-        _showSuccessSnackBar('Profile picture updated successfully! (Demo mode)');
+        _showSuccessSnackBar(
+            'Profile picture updated successfully! (Demo mode)');
       } catch (fallbackError) {
         _showErrorSnackBar('Failed to upload image: $e');
       }
@@ -346,26 +357,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _updateProfileImage(String imageUrl) async {
     try {
       print('🔄 [EDIT_PROFILE] Updating profile image: $imageUrl');
-      
+
       final result = await _authService.updateProfileImage(imageUrl: imageUrl);
-      
+
       if (result['success'] == true) {
         print('✅ [EDIT_PROFILE] Profile image updated successfully');
-        
+
         // Update the local state
         setState(() {
           _currentUser = result['user'];
         });
-        
+
         // Update the provider if available
         if (mounted) {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
           authProvider.updateUser(result['user']);
         }
-        
+
         _showSuccessSnackBar('Profile picture updated successfully!');
       } else {
-        print('❌ [EDIT_PROFILE] Profile image update failed: ${result['message']}');
+        print(
+            '❌ [EDIT_PROFILE] Profile image update failed: ${result['message']}');
         throw Exception(result['message'] ?? 'Failed to update profile image');
       }
     } catch (e) {
@@ -436,7 +449,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // Profile Picture Section
           Center(
             child: Column(
@@ -445,7 +457,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 60,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: _selectedImage != null
                           ? ClipOval(
                               child: Image.file(
@@ -462,22 +475,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     width: 120,
                                     height: 120,
                                     fit: BoxFit.cover,
-                                    key: ValueKey(_currentUser!.profileImageUrl), // Force rebuild when URL changes
+                                    key: ValueKey(_currentUser!
+                                        .profileImageUrl), // Force rebuild when URL changes
                                     errorBuilder: (context, error, stackTrace) {
-                                      print('🖼️ [EDIT_PROFILE] Failed to load profile image: $error');
+                                      print(
+                                          '🖼️ [EDIT_PROFILE] Failed to load profile image: $error');
                                       return Icon(
                                         Icons.person,
                                         size: 60,
-                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                       );
                                     },
-                                    loadingBuilder: (context, child, loadingProgress) {
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
                                       if (loadingProgress == null) return child;
                                       return Center(
                                         child: CircularProgressIndicator(
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded /
-                                                  loadingProgress.expectedTotalBytes!
+                                          value: loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
                                               : null,
                                         ),
                                       );
@@ -487,7 +509,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               : Icon(
                                   Icons.person,
                                   size: 60,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                     ),
                     Positioned(
@@ -499,19 +523,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          onPressed: _isUploadingImage ? null : _showImagePickerOptions,
+                          onPressed: _isUploadingImage
+                              ? null
+                              : _showImagePickerOptions,
                           icon: _isUploadingImage
                               ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Theme.of(context).colorScheme.onPrimary,
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
                                   ),
                                 )
                               : Icon(
                                   Icons.camera_alt,
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
                                   size: 20,
                                 ),
                         ),

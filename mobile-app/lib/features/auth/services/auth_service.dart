@@ -426,7 +426,8 @@ class AuthService {
         body: jsonEncode(body),
       );
 
-      print('🔍 [AUTH_SERVICE] Profile image update response: ${response.statusCode}');
+      print(
+          '🔍 [AUTH_SERVICE] Profile image update response: ${response.statusCode}');
       print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -437,15 +438,12 @@ class AuthService {
         final updatedUser = user.copyWith(profileImageUrl: imageUrl);
         await _storeUser(updatedUser);
 
-        return {
-          'success': true,
-          'user': updatedUser,
-          'data': data['data']
-        };
+        return {'success': true, 'user': updatedUser, 'data': data['data']};
       } else {
         final data = jsonDecode(response.body);
-        print('❌ [AUTH_SERVICE] Profile image update failed: ${data['message'] ?? 'Unknown error'}');
-        
+        print(
+            '❌ [AUTH_SERVICE] Profile image update failed: ${data['message'] ?? 'Unknown error'}');
+
         return {
           'success': false,
           'message': data['message'] ?? 'Profile image update failed',
@@ -453,10 +451,7 @@ class AuthService {
       }
     } catch (e) {
       print('❌ [AUTH_SERVICE] Error updating profile image: $e');
-      return {
-        'success': false,
-        'message': 'Network error occurred: $e'
-      };
+      return {'success': false, 'message': 'Network error occurred: $e'};
     }
   }
 
