@@ -12,7 +12,7 @@ const prisma = require("./lib/database");
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
 
 // Redis
-// const { connectRedis } = require("../../lib/redis"); // Disabled for now
+const { connectRedis } = require("./lib/redis");
 
 // RabbitMQ
 const {
@@ -227,8 +227,7 @@ app.listen(PORT, HOST, async () => {
     );
   }
 
-  // Initialize Redis for seat locking - Disabled for now
-  /*
+  // Initialize Redis for seat locking
   try {
     console.log("\x1b[34m⏳ Initializing Redis...\x1b[0m");
     await connectRedis();
@@ -243,7 +242,6 @@ app.listen(PORT, HOST, async () => {
       "\x1b[33m⚠️  Continuing without Redis (seat locking disabled)\x1b[0m"
     );
   }
-  */
 
   // Initialize RabbitMQ if enabled
   if (process.env.RABBITMQ_ENABLED === "true") {
