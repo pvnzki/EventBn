@@ -31,29 +31,52 @@ class AuthProvider extends ChangeNotifier {
 
   // Initialize authentication state
   Future<void> initializeAuth() async {
+    print('🔄 AuthProvider: Initializing authentication...');
     _setLoading(true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final isAuthenticated = prefs.getBool('is_authenticated') ?? false;
       final userEmail = prefs.getString('user_email');
+      final authToken = prefs.getString('auth_token');
 
-      if (isAuthenticated && userEmail != null) {
-        final now = DateTime.now();
-        _user = User(
-          id: 'user_${userEmail.hashCode}',
-          firstName: userEmail.split('@')[0],
-          lastName: 'User',
-          email: userEmail,
-          phoneNumber: null,
-          createdAt: now,
-          updatedAt: now,
-        );
-        _isAuthenticated = true;
+      print('🔍 AuthProvider: isAuthenticated=$isAuthenticated, email=$userEmail, hasToken=${authToken != null}');
+
+      if (isAuthenticated && userEmail != null && authToken != null) {
+        // Get the actual user data from the backend/token instead of creating from email hash
+        print('🔍 AuthProvider: Getting user data from AuthService...');
+        final user = await _authService.getCurrentUser();
+        
+        if (user != null) {
+          _user = user;
+          _isAuthenticated = true;
+          print('✅ AuthProvider: User initialized from backend - ID: ${_user!.id}, Email: ${_user!.email}');
+        } else {
+          // Fallback: create user from stored data (this should be rare)
+          print('⚠️ AuthProvider: Fallback to creating user from stored email');
+          final now = DateTime.now();
+          _user = User(
+            id: 'user_${userEmail.hashCode}',
+            firstName: userEmail.split('@')[0],
+            lastName: 'User',
+            email: userEmail,
+            phoneNumber: null,
+            createdAt: now,
+            updatedAt: now,
+          );
+          _isAuthenticated = true;
+          print('⚠️ AuthProvider: User initialized from fallback - ID: ${_user!.id}, Email: ${_user!.email}');
+        }
+      } else {
+        print('❌ AuthProvider: Authentication data incomplete, user not set');
+        _user = null;
+        _isAuthenticated = false;
       }
     } catch (e) {
+      print('❌ AuthProvider: Error initializing authentication: $e');
       _setError('Failed to initialize authentication');
     } finally {
       _setLoading(false);
+      print('🏁 AuthProvider: Initialization complete. User: ${_user?.id}, Authenticated: $_isAuthenticated');
     }
   }
 
