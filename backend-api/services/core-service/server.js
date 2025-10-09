@@ -12,7 +12,7 @@ const prisma = require("./lib/database");
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
 
 // Redis
-const { connectRedis } = require("./lib/redis"); 
+const { connectRedis } = require("./lib/redis");
 
 // RabbitMQ
 const {

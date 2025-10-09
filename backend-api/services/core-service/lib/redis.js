@@ -1,4 +1,4 @@
-﻿const Redis = require('ioredis');
+﻿const Redis = require("ioredis");
 
 let redisClient = null;
 
@@ -10,34 +10,34 @@ class RedisClient {
 
   async connect() {
     try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
+      const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
       this.client = new Redis(redisUrl, {
         retryDelayOnFailover: 100,
         enableReadyCheck: true,
         maxRetriesPerRequest: 3,
-        lazyConnect: true
+        lazyConnect: true,
       });
 
-      this.client.on('connect', () => {
-        console.log('Redis client connected');
+      this.client.on("connect", () => {
+        console.log("Redis client connected");
         this.isConnected = true;
       });
 
-      this.client.on('error', (err) => {
-        console.error('Redis client error:', err);
+      this.client.on("error", (err) => {
+        console.error("Redis client error:", err);
         this.isConnected = false;
       });
 
-      this.client.on('close', () => {
-        console.log('Redis client connection closed');
+      this.client.on("close", () => {
+        console.log("Redis client connection closed");
         this.isConnected = false;
       });
 
       await this.client.connect();
       return this.client;
     } catch (error) {
-      console.error('Failed to connect to Redis:', error);
+      console.error("Failed to connect to Redis:", error);
       throw error;
     }
   }
@@ -52,7 +52,7 @@ class RedisClient {
 
   getClient() {
     if (!this.client || !this.isConnected) {
-      throw new Error('Redis client is not connected');
+      throw new Error("Redis client is not connected");
     }
     return this.client;
   }
@@ -116,5 +116,5 @@ async function getRedisClient() {
 module.exports = {
   connectRedis,
   getRedisClient,
-  RedisClient
+  RedisClient,
 };

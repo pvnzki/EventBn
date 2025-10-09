@@ -56,7 +56,13 @@ class SeatLockService {
       );
 
       // Use SET with NX (only if not exists) and EX (expiration) - ATOMIC operation
-      const result = await redis.set(lockKey, lockValue, 'NX', 'EX', this.LOCK_DURATION);
+      const result = await redis.set(
+        lockKey,
+        lockValue,
+        "NX",
+        "EX",
+        this.LOCK_DURATION
+      );
 
       if (result === "OK") {
         console.log(
@@ -161,7 +167,13 @@ class SeatLockService {
       // Atomic lock extension with conditional update
       // Use SET with XX (only if exists) to ensure atomicity
       const newLockValue = `${normalizedUserId}:${Date.now()}`;
-      const result = await redis.set(lockKey, newLockValue, 'XX', 'EX', this.PAYMENT_LOCK_DURATION);
+      const result = await redis.set(
+        lockKey,
+        newLockValue,
+        "XX",
+        "EX",
+        this.PAYMENT_LOCK_DURATION
+      );
 
       if (result === "OK") {
         console.log(

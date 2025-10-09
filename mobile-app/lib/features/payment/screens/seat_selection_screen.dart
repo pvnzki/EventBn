@@ -137,22 +137,23 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   }
 
   // ========== SEAT LOCKING API METHODS ==========
-  
+
   Future<bool> _lockSeat(String seatId) async {
     try {
       print('🔒 API: Locking seat $seatId');
-      
+
       // Import auth service at the top: import '../../../features/auth/services/auth_service.dart';
       final authService = AuthService();
       final token = await authService.getStoredToken();
-      
+
       if (token == null) {
         print('❌ No auth token available for seat locking');
         return false;
       }
 
-      final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
-      
+      final url =
+          '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
+
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -166,7 +167,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         print('✅ API: Seat $seatId locked successfully');
         return data['success'] == true;
       } else {
-        print('❌ API: Failed to lock seat $seatId. Status: ${response.statusCode}');
+        print(
+            '❌ API: Failed to lock seat $seatId. Status: ${response.statusCode}');
         print('Response: ${response.body}');
         return false;
       }
@@ -179,17 +181,18 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   Future<bool> _unlockSeat(String seatId) async {
     try {
       print('🔓 API: Unlocking seat $seatId');
-      
+
       final authService = AuthService();
       final token = await authService.getStoredToken();
-      
+
       if (token == null) {
         print('❌ No auth token available for seat unlocking');
         return false;
       }
 
-      final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
-      
+      final url =
+          '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
+
       final response = await http.delete(
         Uri.parse(url),
         headers: {
@@ -203,7 +206,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         print('✅ API: Seat $seatId unlocked successfully');
         return data['success'] == true;
       } else {
-        print('❌ API: Failed to unlock seat $seatId. Status: ${response.statusCode}');
+        print(
+            '❌ API: Failed to unlock seat $seatId. Status: ${response.statusCode}');
         print('Response: ${response.body}');
         return false;
       }
@@ -216,20 +220,21 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   Future<bool> _extendSeatLocks(List<String> seatIds) async {
     try {
       print('⏰ API: Extending locks for seats: $seatIds');
-      
+
       final authService = AuthService();
       final token = await authService.getStoredToken();
-      
+
       if (token == null) {
         print('❌ No auth token available for seat lock extension');
         return false;
       }
 
       bool allSuccess = true;
-      
+
       for (String seatId in seatIds) {
-        final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock/extend';
-        
+        final url =
+            '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock/extend';
+
         final response = await http.put(
           Uri.parse(url),
           headers: {
@@ -247,13 +252,16 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
             print('✅ API: Extended lock for seat $seatId');
           }
         } else {
-          print('❌ API: Failed to extend lock for seat $seatId. Status: ${response.statusCode}');
+          print(
+              '❌ API: Failed to extend lock for seat $seatId. Status: ${response.statusCode}');
           print('Response: ${response.body}');
           allSuccess = false;
         }
       }
-      
-      print(allSuccess ? '✅ API: All seat locks extended successfully' : '⚠️ API: Some seat lock extensions failed');
+
+      print(allSuccess
+          ? '✅ API: All seat locks extended successfully'
+          : '⚠️ API: Some seat lock extensions failed');
       return allSuccess;
     } catch (e) {
       print('❌ API: Error extending seat locks: $e');
@@ -361,7 +369,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   // Seat lock timer methods
   void _startSeatLockTimer() {
     _seatLockTimer?.cancel();
-    
+
     setState(() {
       _seatLockTimeRemaining = SEAT_LOCK_DURATION;
       _showSeatLockTimer = true;
@@ -389,7 +397,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
 
   void _seatLockExpired() {
     print('🕒 Seat locks expired, releasing all selected seats');
-    
+
     // Release all selected seats
     final seatsToRelease = List<String>.from(selectedSeats);
     for (String seatId in seatsToRelease) {
@@ -404,9 +412,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     });
 
     _showSnackBar(
-      'Seat locks expired. Please select seats again.', 
-      Colors.orange
-    );
+        'Seat locks expired. Please select seats again.', Colors.orange);
   }
 
   String _formatSeatLockTime(int seconds) {
@@ -475,7 +481,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         print('🔓 Unlocking seat: $seatId');
         // Call backend API to release seat lock
         await _releaseSeatLock(seatId);
-        
+
         // Stop timer if no seats are selected
         if (selectedSeats.isEmpty) {
           _stopSeatLockTimer();
@@ -493,10 +499,10 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       // Select seat
       try {
         print('🔒 Locking seat: $seatId');
-        
+
         // Call backend API to lock seat first
         await _lockSeat(seatId);
-        
+
         setState(() {
           selectedSeats.add(seatId);
           lockedSeats.add(seatId);
@@ -716,7 +722,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     Color timerColor;
     Color backgroundColor;
     IconData timerIcon;
-    
+
     if (_seatLockTimeRemaining > 180) {
       timerColor = Colors.green;
       backgroundColor = Colors.green.withValues(alpha: 0.1);
@@ -1377,7 +1383,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     try {
       // Show loading indicator
       _showSnackBar('Extending seat locks for payment...', Colors.blue);
-      
+
       // Extend locks for all selected seats for payment process
       print('🔄 Extending locks for ${selectedSeats.length} seats');
       for (String seatId in selectedSeats) {
@@ -1389,7 +1395,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
           // Continue with other seats even if one fails
         }
       }
-      
+
       final selectedSeatData = selectedSeats.map((seatId) {
         final seat = seatMap.firstWhere((s) => s['id'].toString() == seatId,
             orElse: () => <String, dynamic>{});
