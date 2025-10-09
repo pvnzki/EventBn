@@ -12,11 +12,24 @@ class AuthService {
   // Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl${Constants.authEndpoint}/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
+      final sw = Stopwatch()..start();
+      final fullUrl = '$baseUrl${Constants.authEndpoint}/login';
+      print(
+          '[AUTH][DEBUG] Attempting login -> URL=$fullUrl email=$email kIsWeb=${identical(0, 0.0)} (not reliable flag)');
+      print('[AUTH][DEBUG] BASE_URL runtime value: $baseUrl');
+      final response = await http
+          .post(
+            Uri.parse(fullUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      sw.stop();
+      print(
+          '[AUTH][DEBUG] Response in ${sw.elapsedMilliseconds} ms status=${response.statusCode}');
+      print(
+          '[AUTH][DEBUG] Raw body: ${response.body.substring(0, response.body.length > 400 ? 400 : response.body.length)}');
 
       final data = jsonDecode(response.body);
 
@@ -34,6 +47,7 @@ class AuthService {
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {
+      print('[AUTH][ERROR] Login network exception: $e');
       return {'success': false, 'message': 'Network error occurred'};
     }
   }
