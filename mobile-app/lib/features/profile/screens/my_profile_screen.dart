@@ -146,28 +146,37 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ? SliverToBoxAdapter(
                           child: _buildLoadingGrid(context),
                         )
-                      : SliverGrid(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              if (index < _userPosts.length) {
-                                return _buildPostGridItem(
-                                  context,
-                                  _userPosts[index],
-                                  colorScheme,
-                                );
-                              }
-                              return null;
-                            },
-                            childCount: _userPosts.length,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 2,
-                            mainAxisSpacing: 2,
-                            childAspectRatio: 1.0,
-                          ),
-                        ),
+                      : _userPosts.isEmpty
+                          ? SliverToBoxAdapter(
+                              child:
+                                  _buildEmptyPostsState(context, colorScheme),
+                            )
+                          : SliverPadding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              sliver: SliverGrid(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    if (index < _userPosts.length) {
+                                      return _buildPostGridItem(
+                                        context,
+                                        _userPosts[index],
+                                        colorScheme,
+                                      );
+                                    }
+                                    return null;
+                                  },
+                                  childCount: _userPosts.length,
+                                ),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 1.0,
+                                ),
+                              ),
+                            ),
                 ],
               ),
             ),
@@ -505,8 +514,24 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileHeader(
       BuildContext context, dynamic user, ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -518,12 +543,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.2),
-                    width: 1,
+                    color: colorScheme.primary.withOpacity(0.2),
+                    width: 2,
                   ),
                 ),
                 child: CircleAvatar(
-                  radius: 42,
+                  radius: 45,
                   backgroundColor: colorScheme.surfaceContainerHighest,
                   backgroundImage: user?.profileImageUrl != null
                       ? CachedNetworkImageProvider(user!.profileImageUrl!)
@@ -531,7 +556,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: user?.profileImageUrl == null
                       ? Icon(
                           Icons.person,
-                          size: 40,
+                          size: 45,
                           color: colorScheme.onSurfaceVariant,
                         )
                       : null,
@@ -555,72 +580,106 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Name and Bio
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                user?.firstName != null && user?.lastName != null
-                    ? '${user!.firstName} ${user!.lastName}'
-                    : user?.firstName ?? 'User',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
+              Row(
+                children: [
+                  Text(
+                    user?.firstName != null && user?.lastName != null
+                        ? '${user!.firstName} ${user!.lastName}'
+                        : user?.firstName ?? 'User',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'User',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               Text(
                 'EventBn user • Event enthusiast 🎉',
                 style: TextStyle(
                   fontSize: 14,
-                  color: colorScheme.onSurface,
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.3,
                 ),
               ),
               if (user?.email != null) ...[
                 const SizedBox(height: 4),
-                Text(
-                  user!.email,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      user!.email,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Action Buttons
           Row(
             children: [
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: _buildActionButton(
                   'Edit Profile',
                   colorScheme,
+                  icon: Icons.edit_outlined,
                   onTap: () => _editProfile(context),
+                  isPrimary: true,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 flex: 3,
                 child: _buildActionButton(
-                  'Share Profile',
+                  'Share',
                   colorScheme,
+                  icon: Icons.share_outlined,
                   onTap: () => _shareProfile(context),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               _buildActionButton(
                 '',
                 colorScheme,
-                icon: Icons.person_add_outlined,
-                onTap: () => _suggestPeople(context),
+                icon: Icons.settings_outlined,
+                onTap: () => _showQuickSettingsModal(context),
                 isIconOnly: true,
               ),
             ],
@@ -659,16 +718,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     IconData? icon,
     VoidCallback? onTap,
     bool isIconOnly = false,
+    bool isPrimary = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
+        height: 36,
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: isPrimary
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: colorScheme.outline.withOpacity(0.3),
+            color: isPrimary
+                ? colorScheme.primary
+                : colorScheme.outline.withOpacity(0.3),
             width: 0.5,
           ),
         ),
@@ -676,16 +740,34 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: isIconOnly
               ? Icon(
                   icon,
-                  size: 16,
-                  color: colorScheme.onSurface,
+                  size: 18,
+                  color:
+                      isPrimary ? colorScheme.onPrimary : colorScheme.onSurface,
                 )
-              : Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: 16,
+                        color: isPrimary
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isPrimary
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
         ),
       ),
@@ -736,29 +818,81 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildTabBar(BuildContext context, ColorScheme colorScheme) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.2),
-            width: 0.5,
-          ),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TabBar(
         controller: _tabController,
-        indicatorColor: colorScheme.onSurface,
-        indicatorWeight: 1,
-        labelColor: colorScheme.onSurface,
+        indicator: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: const EdgeInsets.all(4),
+        dividerColor: Colors.transparent,
+        labelColor: colorScheme.onPrimaryContainer,
         unselectedLabelColor: colorScheme.onSurfaceVariant,
-        tabs: const [
+        tabs: [
           Tab(
-            icon: Icon(Icons.grid_on, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.grid_on, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Posts',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           Tab(
-            icon: Icon(Icons.video_library_outlined, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.video_library_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Videos',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           Tab(
-            icon: Icon(Icons.bookmark_border, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.bookmark_border, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Saved',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -770,17 +904,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       height: 400,
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 2,
-          mainAxisSpacing: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
           childAspectRatio: 1.0,
         ),
         itemCount: 9,
         itemBuilder: (context, index) {
           return Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
@@ -789,6 +926,61 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.photo_library_outlined,
+              size: 48,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No posts yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Share your first post to get started!',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => _showCreateMenu(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Post'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -813,7 +1005,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -956,68 +1161,245 @@ class _ProfileScreenState extends State<ProfileScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Profile Menu',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Manage your profile and account settings • Scroll down for more options',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Profile Section
+                        _buildSectionHeader(context, 'Profile'),
+                        _buildMenuOption(
+                            context, Icons.edit_outlined, 'Edit Profile', () {
+                          Navigator.pop(context);
+                          _editProfile(context);
+                        }),
+                        _buildMenuOption(
+                            context, Icons.share_outlined, 'Share Profile', () {
+                          Navigator.pop(context);
+                          _shareProfile(context);
+                        }),
+
+                        const SizedBox(height: 16),
+
+                        // Account Section
+                        _buildSectionHeader(context, 'Account'),
+                        _buildMenuOption(
+                            context, Icons.settings_outlined, 'Settings', () {
+                          Navigator.pop(context);
+                          _showSettingsModal(context, authProvider);
+                        }),
+                        _buildMenuOption(
+                            context, Icons.privacy_tip_outlined, 'Privacy', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Privacy settings coming soon!')),
+                          );
+                        }),
+                        _buildMenuOption(
+                            context, Icons.security_outlined, 'Security', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Security settings coming soon!')),
+                          );
+                        }),
+
+                        const SizedBox(height: 16),
+
+                        // Activity Section
+                        _buildSectionHeader(context, 'Activity'),
+                        _buildMenuOption(
+                            context, Icons.archive_outlined, 'Archive', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Archive feature coming soon!')),
+                          );
+                        }),
+                        _buildMenuOption(
+                            context, Icons.history, 'Your Activity', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Activity feature coming soon!')),
+                          );
+                        }),
+                        _buildMenuOption(
+                            context, Icons.bookmark_outline, 'Saved Posts', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Saved posts feature coming soon!')),
+                          );
+                        }),
+
+                        const SizedBox(height: 16),
+
+                        // Support Section
+                        _buildSectionHeader(context, 'Support'),
+                        _buildMenuOption(
+                            context, Icons.help_outline, 'Help & Support', () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Help & Support coming soon!')),
+                          );
+                        }),
+                        _buildMenuOption(
+                            context, Icons.feedback_outlined, 'Send Feedback',
+                            () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Feedback feature coming soon!')),
+                          );
+                        }),
+
+                        const SizedBox(height: 16),
+
+                        // Logout
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .errorContainer
+                                .withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .error
+                                  .withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: _buildMenuOption(
+                            context,
+                            Icons.logout,
+                            'Log Out',
+                            () {
+                              Navigator.pop(context);
+                              _showLogoutDialog(context, authProvider);
+                            },
+                            isDestructive: true,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Visual indicator that this is the end
+                        Center(
+                          child: Container(
+                            width: 80,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant
-                    .withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildMenuOption(context, Icons.settings_outlined, 'Settings',
-                      () {
-                    Navigator.pop(context);
-                    _showSettingsModal(context, authProvider);
-                  }),
-                  _buildMenuOption(context, Icons.archive_outlined, 'Archive',
-                      () {
-                    Navigator.pop(context);
-                  }),
-                  _buildMenuOption(context, Icons.history, 'Your Activity', () {
-                    Navigator.pop(context);
-                  }),
-                  _buildMenuOption(context, Icons.qr_code, 'QR Code', () {
-                    Navigator.pop(context);
-                  }),
-                  _buildMenuOption(context, Icons.logout, 'Log Out', () {
-                    Navigator.pop(context);
-                    _showLogoutDialog(context, authProvider);
-                  }),
-                ],
-              ),
-            ),
-          ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
   }
 
   Widget _buildMenuOption(
-      BuildContext context, IconData icon, String title, VoidCallback onTap) {
+      BuildContext context, IconData icon, String title, VoidCallback onTap,
+      {bool isDestructive = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+      leading: Icon(
+        icon,
+        color: isDestructive ? colorScheme.error : colorScheme.onSurface,
+      ),
       title: Text(
         title,
         style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
+          color: isDestructive ? colorScheme.error : colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        color: isDestructive
+            ? colorScheme.error.withOpacity(0.6)
+            : colorScheme.onSurfaceVariant,
       ),
       onTap: onTap,
     );
@@ -1047,10 +1429,86 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _suggestPeople(BuildContext context) {
-    // Navigate to suggest people screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Suggest People coming soon!')),
+  void _showQuickSettingsModal(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuOption(context, Icons.edit_outlined, 'Edit Profile',
+                      () {
+                    Navigator.pop(context);
+                    _editProfile(context);
+                  }),
+                  _buildMenuOption(context, Icons.settings_outlined, 'Settings',
+                      () {
+                    Navigator.pop(context);
+                    _showSettingsModal(context, authProvider);
+                  }),
+                  _buildMenuOption(
+                      context, Icons.share_outlined, 'Share Profile', () {
+                    Navigator.pop(context);
+                    _shareProfile(context);
+                  }),
+                  _buildMenuOption(context, Icons.archive_outlined, 'Archive',
+                      () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Archive feature coming soon!')),
+                    );
+                  }),
+                  _buildMenuOption(context, Icons.history, 'Your Activity', () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Activity feature coming soon!')),
+                    );
+                  }),
+                  _buildMenuOption(context, Icons.logout, 'Log Out', () {
+                    Navigator.pop(context);
+                    _showLogoutDialog(context, authProvider);
+                  }),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

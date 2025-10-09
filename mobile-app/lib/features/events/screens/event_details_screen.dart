@@ -35,7 +35,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool isBookmarked = false;
   bool isFollowing = false;
   bool isAboutExpanded = false;
-  
+
   // Seat map cache
   bool? _hasCustomSeating;
   bool _seatMapLoaded = false;
@@ -62,16 +62,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Future<void> _loadSeatMapInfo() async {
     try {
       final url = '${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap';
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
       );
-      
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final seatMapData = responseData['data'];
-        
+
         setState(() {
           _hasCustomSeating = seatMapData['hasCustomSeating'] == true;
           _seatMapData = seatMapData['seats'] ?? [];
@@ -104,7 +104,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   double? _getLowestPriceFromSeatMap() {
     if (_seatMapData.isEmpty) return null;
-    
+
     try {
       List<double> prices = [];
       for (var seat in _seatMapData) {
@@ -112,7 +112,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           prices.add((seat['price'] as num).toDouble());
         }
       }
-      
+
       if (prices.isEmpty) return null;
       final lowestPrice = prices.reduce((a, b) => a < b ? a : b);
       return lowestPrice;
@@ -787,13 +787,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               if (lowestPrice != null) {
                 return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
               }
-              
+
               // Fallback to ticket types if available
               if (event.ticketTypes.isNotEmpty) {
-                final ticketPrice = event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+                final ticketPrice = event.ticketTypes
+                    .map((t) => t.price)
+                    .reduce((a, b) => a < b ? a : b);
                 return 'From LKR ${ticketPrice.toStringAsFixed(0)}';
               }
-              
+
               return 'Free';
             }(),
             style: textTheme.titleLarge?.copyWith(
@@ -814,8 +816,60 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         if (_videoController != null && _videoController!.value.isPlaying) {
           _videoController?.pause();
         }
-        // Navigate to organization details page
-        context.push('/organization/${event.organizationId}');
+        // Navigate to organizer profile page instead of organization
+        // Try to get the organizer user ID from the event data
+        print(
+            '🔍 [EventDetails] Event organizationId: ${event.organizationId}');
+        print(
+            '🔍 [EventDetails] Event organization data: ${event.organization}');
+
+        String organizerId = event.organizationId;
+
+        // If the event has creator info, use that as the organizer ID
+        if (event.organization != null &&
+            event.organization!['creator_id'] != null) {
+          organizerId = event.organization!['creator_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['user_id'] != null) {
+          organizerId = event.organization!['user_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['organization_id'] != null) {
+          organizerId = event.organization!['organization_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['id'] != null) {
+          organizerId = event.organization!['id'].toString();
+        }
+
+        // If still empty, try to use organization name as a fallback
+        if (organizerId.isEmpty || organizerId == 'null') {
+          if (event.organization != null &&
+              event.organization!['name'] != null) {
+            // Create a hash-based ID from organization name for consistency
+            organizerId = event.organization!['name']
+                .toString()
+                .hashCode
+                .abs()
+                .toString();
+            print(
+                '🔄 [EventDetails] Using organization name hash as organizer ID: $organizerId');
+          }
+        }
+
+        // Validate that organizerId is not empty
+        if (organizerId.isEmpty || organizerId == 'null') {
+          print('❌ [EventDetails] Invalid organizer ID: "$organizerId"');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Organizer profile not available'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
+        print('🔗 Navigating to organizer profile: $organizerId');
+        print('🔗 Full URL: /organizer/$organizerId');
+        context.push('/organizer/$organizerId');
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1195,7 +1249,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (_videoController != null && _videoController!.value.isPlaying) {
             _videoController?.pause();
           }
-          
+
           // Wait for seat map info to be loaded if still loading
           if (!_seatMapLoaded) {
             showDialog(
@@ -1205,17 +1259,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 child: CircularProgressIndicator(),
               ),
             );
-            
+
             // Wait for seat map to load
             while (!_seatMapLoaded) {
               await Future.delayed(const Duration(milliseconds: 100));
             }
-            
+
             if (mounted) Navigator.of(context).pop();
           }
-          
+
           // Navigate based on cached seat map information
-          print('🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
+          print(
+              '🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
           if (_hasCustomSeating == true) {
             // Event has seat map - go to seat selection
             print('🎯 Navigating to seat selection screen');
