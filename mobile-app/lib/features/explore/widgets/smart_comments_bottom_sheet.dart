@@ -189,33 +189,31 @@ class _CommentsContentState extends State<_CommentsContent> {
       if (currentUser != null && authProvider.isAuthenticated) {
         // Use the actual user ID from backend (this should now be 131)
         userId = currentUser.id; // This will be "131" after auth fix
-        
+
         // Extract numeric user ID if it starts with "user_"
-        final numericUserId = userId.startsWith('user_') 
-            ? userId.substring(5) 
-            : userId;
-        
+        final numericUserId =
+            userId.startsWith('user_') ? userId.substring(5) : userId;
+
         // Build proper user names
         userName = currentUser.fullName.isNotEmpty
             ? currentUser.fullName
             : '${currentUser.firstName} ${currentUser.lastName}'.trim();
-        
+
         if (userName.isEmpty || userName == ' ') {
-          userName = currentUser.firstName.isNotEmpty 
+          userName = currentUser.firstName.isNotEmpty
               ? currentUser.firstName
               : 'User'; // Better fallback than "Anonymous"
         }
-        
+
         userDisplayName = userName;
-        username = currentUser.firstName.isNotEmpty 
-            ? currentUser.firstName 
-            : userName;
-        
+        username =
+            currentUser.firstName.isNotEmpty ? currentUser.firstName : userName;
+
         // Use proper avatar URL or provide a default
         avatarUrl = currentUser.profileImageUrl?.isNotEmpty == true
             ? currentUser.profileImageUrl!
             : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=007AFF&color=fff&size=100';
-        
+
         userObject = {
           'id': numericUserId, // Use numeric ID for backend compatibility
           'user_id': numericUserId,
@@ -226,20 +224,22 @@ class _CommentsContentState extends State<_CommentsContent> {
           'avatar_url': avatarUrl,
           'email': currentUser.email,
         };
-        
+
         print('✅ [OPTIMISTIC_COMMENT] Using authenticated user data:');
         print('   - User ID: $numericUserId (from: $userId)');
         print('   - Display Name: $userName');
         print('   - Avatar URL: $avatarUrl');
       } else {
         // Fallback for unauthenticated users
-        print('⚠️ [OPTIMISTIC_COMMENT] No authenticated user found, using fallback');
+        print(
+            '⚠️ [OPTIMISTIC_COMMENT] No authenticated user found, using fallback');
         userId = 'guest_user';
         userName = 'Guest User';
         userDisplayName = 'Guest User';
         username = 'Guest';
-        avatarUrl = 'https://ui-avatars.com/api/?name=Guest&background=6B7280&color=fff&size=100';
-        
+        avatarUrl =
+            'https://ui-avatars.com/api/?name=Guest&background=6B7280&color=fff&size=100';
+
         userObject = {
           'id': userId,
           'user_id': userId,
@@ -276,9 +276,10 @@ class _CommentsContentState extends State<_CommentsContent> {
         'display_name': userDisplayName,
         'full_name': userName,
       };
-      
+
       print('✅ [OPTIMISTIC_COMMENT] Created optimistic comment:');
-      print('   - Content: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+      print(
+          '   - Content: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
       print('   - User: $userName (ID: ${userObject['id']})');
       print('   - Avatar: $avatarUrl');
 
@@ -314,7 +315,8 @@ class _CommentsContentState extends State<_CommentsContent> {
       if (result != null && result['comment_id'] != null) {
         print('✅ [SMART_COMMENTS] Comment/reply posted successfully');
         print('   - Backend comment ID: ${result['comment_id']}');
-        print('   - Backend user data: ${result['user_name'] ?? result['user']?['name'] ?? 'N/A'}');
+        print(
+            '   - Backend user data: ${result['user_name'] ?? result['user']?['name'] ?? 'N/A'}');
 
         // Update optimistic comment with real server data
         setState(() {
@@ -337,13 +339,17 @@ class _CommentsContentState extends State<_CommentsContent> {
                   'replies_count': 0,
                   'is_optimistic': false, // Mark as real data
                   // Preserve user info from optimistic comment if backend doesn't return it
-                  'user_name': result['user_name'] ?? optimisticItem['user_name'],
-                  'user_display_name': result['user_display_name'] ?? optimisticItem['user_display_name'],
-                  'avatar_url': result['avatar_url'] ?? optimisticItem['avatar_url'],
+                  'user_name':
+                      result['user_name'] ?? optimisticItem['user_name'],
+                  'user_display_name': result['user_display_name'] ??
+                      optimisticItem['user_display_name'],
+                  'avatar_url':
+                      result['avatar_url'] ?? optimisticItem['avatar_url'],
                   'user': result['user'] ?? optimisticItem['user'],
                 };
                 _comments[parentIndex]['replies'][replyIndex] = realReply;
-                print('✅ [SMART_COMMENTS] Updated optimistic reply with backend data');
+                print(
+                    '✅ [SMART_COMMENTS] Updated optimistic reply with backend data');
               }
             }
           } else {
@@ -359,25 +365,28 @@ class _CommentsContentState extends State<_CommentsContent> {
                 'is_optimistic': false, // Mark as real data
                 // Preserve user info from optimistic comment if backend doesn't return it
                 'user_name': result['user_name'] ?? optimisticItem['user_name'],
-                'user_display_name': result['user_display_name'] ?? optimisticItem['user_display_name'],
-                'avatar_url': result['avatar_url'] ?? optimisticItem['avatar_url'],
+                'user_display_name': result['user_display_name'] ??
+                    optimisticItem['user_display_name'],
+                'avatar_url':
+                    result['avatar_url'] ?? optimisticItem['avatar_url'],
                 'user': result['user'] ?? optimisticItem['user'],
               };
               _comments[optimisticIndex] = realComment;
-              print('✅ [SMART_COMMENTS] Updated optimistic comment with backend data');
+              print(
+                  '✅ [SMART_COMMENTS] Updated optimistic comment with backend data');
             }
           }
         });
 
         // Clear cache to force fresh load on next open
         SmartCommentsBottomSheet.clearCache(widget.postId);
-        
+
         // Notify parent widget
         widget.onCommentAdded?.call();
       } else {
         print('❌ [SMART_COMMENTS] Backend returned null or invalid result:');
         print('   - Result: $result');
-        
+
         // Remove optimistic item on failure
         setState(() {
           if (parentCommentId != null) {
@@ -385,12 +394,14 @@ class _CommentsContentState extends State<_CommentsContent> {
                 (c['comment_id'] ?? c['id']).toString() ==
                 parentCommentId.toString());
             if (parentIndex != -1) {
-              _comments[parentIndex]['replies']?.removeWhere((reply) => reply['is_optimistic'] == true);
+              _comments[parentIndex]['replies']
+                  ?.removeWhere((reply) => reply['is_optimistic'] == true);
               _comments[parentIndex]['replies_count'] =
                   (_comments[parentIndex]['replies_count'] ?? 1) - 1;
             }
           } else {
-            _comments.removeWhere((comment) => comment['is_optimistic'] == true);
+            _comments
+                .removeWhere((comment) => comment['is_optimistic'] == true);
           }
         });
 
@@ -414,7 +425,8 @@ class _CommentsContentState extends State<_CommentsContent> {
               (c['comment_id'] ?? c['id']).toString() ==
               parentCommentId.toString());
           if (parentIndex != -1) {
-            _comments[parentIndex]['replies']?.removeWhere((reply) => reply['is_optimistic'] == true);
+            _comments[parentIndex]['replies']
+                ?.removeWhere((reply) => reply['is_optimistic'] == true);
             _comments[parentIndex]['replies_count'] =
                 (_comments[parentIndex]['replies_count'] ?? 1) - 1;
           }

@@ -28,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Wait for the next frame to ensure AuthProvider is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeProfileData();
@@ -37,76 +37,84 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _initializeProfileData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     // Wait for auth to be fully initialized AND user to be available
     print('🔄 [PROFILE] Waiting for authentication to complete...');
-    
+
     // More robust waiting with both polling and listener approach
     if (authProvider.isLoading || authProvider.user == null) {
       // Create a completer to wait for auth completion
       final completer = Completer<void>();
       late VoidCallback listener;
-      
+
       // Set up listener to complete when auth is ready
       listener = () {
         if (!authProvider.isLoading && authProvider.user != null) {
-          print('✅ [PROFILE] Authentication ready via listener - user: ${authProvider.user?.id}');
+          print(
+              '✅ [PROFILE] Authentication ready via listener - user: ${authProvider.user?.id}');
           authProvider.removeListener(listener);
           if (!completer.isCompleted) {
             completer.complete();
           }
         }
       };
-      
+
       // Add listener to auth provider
       authProvider.addListener(listener);
-      
+
       // Also use polling as backup with timeout
       int waitAttempts = 0;
       const maxWaitAttempts = 100; // 10 seconds total (100 * 100ms)
-      
+
       Future.doWhile(() async {
         await Future.delayed(const Duration(milliseconds: 100));
         waitAttempts++;
-        
-        final stillWaiting = authProvider.isLoading || authProvider.user == null;
+
+        final stillWaiting =
+            authProvider.isLoading || authProvider.user == null;
         if (stillWaiting) {
-          print('🔄 [PROFILE] Still waiting (${waitAttempts}/100) - isLoading: ${authProvider.isLoading}, user: ${authProvider.user?.id ?? 'null'}');
+          print(
+              '🔄 [PROFILE] Still waiting (${waitAttempts}/100) - isLoading: ${authProvider.isLoading}, user: ${authProvider.user?.id ?? 'null'}');
         }
-        
+
         // Complete if auth is ready
         if (!stillWaiting && !completer.isCompleted) {
-          print('✅ [PROFILE] Authentication ready via polling - user: ${authProvider.user?.id}');
+          print(
+              '✅ [PROFILE] Authentication ready via polling - user: ${authProvider.user?.id}');
           authProvider.removeListener(listener);
           completer.complete();
           return false;
         }
-        
+
         // Stop waiting if we've reached timeout
         if (waitAttempts >= maxWaitAttempts) {
-          print('⚠️ [PROFILE] Timeout waiting for authentication - proceeding anyway');
+          print(
+              '⚠️ [PROFILE] Timeout waiting for authentication - proceeding anyway');
           authProvider.removeListener(listener);
           if (!completer.isCompleted) {
             completer.complete();
           }
           return false;
         }
-        
+
         return stillWaiting && !completer.isCompleted;
       });
-      
+
       // Wait for completion
       await completer.future;
     } else {
-      print('✅ [PROFILE] Authentication already ready - user: ${authProvider.user?.id}');
+      print(
+          '✅ [PROFILE] Authentication already ready - user: ${authProvider.user?.id}');
     }
-    
+
     if (authProvider.user != null) {
-      print('✅ [PROFILE] Final check - authentication ready - user: ${authProvider.user?.id}');
+      print(
+          '✅ [PROFILE] Final check - authentication ready - user: ${authProvider.user?.id}');
     } else {
-      print('❌ [PROFILE] Final check - authentication timeout - user still null after waiting');
+      print(
+          '❌ [PROFILE] Final check - authentication timeout - user still null after waiting');
     }
-    
+
     // Now load user posts
     _loadUserPosts();
   }
@@ -126,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (currentUser?.id != null) {
         print('📋 [PROFILE] Loading posts for user: ${currentUser!.id}');
         _lastLoadedUserId = currentUser.id; // Update the tracked user ID
-        
+
         // Fetch posts for the current user
         final posts = await _postService.getExplorePostsForUser(
           userId: currentUser.id,
@@ -137,9 +145,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           _userPosts = posts;
           _isLoadingPosts = false;
         });
-        print('✅ [PROFILE] Successfully loaded ${posts.length} posts for user: ${currentUser.id}');
+        print(
+            '✅ [PROFILE] Successfully loaded ${posts.length} posts for user: ${currentUser.id}');
       } else {
-        print('❌ [PROFILE] No user ID available for loading posts - currentUser: $currentUser');
+        print(
+            '❌ [PROFILE] No user ID available for loading posts - currentUser: $currentUser');
         setState(() {
           _userPosts = [];
           _isLoadingPosts = false;
@@ -164,15 +174,17 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final user = authProvider.user;
-          
+
           // Check if user has changed and reload posts if needed
-          if (user?.id != null && user!.id != _lastLoadedUserId && !_isLoadingPosts) {
+          if (user?.id != null &&
+              user!.id != _lastLoadedUserId &&
+              !_isLoadingPosts) {
             _lastLoadedUserId = user.id;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _loadUserPosts();
             });
           }
-          
+
           return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverAppBar(
@@ -244,7 +256,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         )
                       : _userPosts.isEmpty
                           ? SliverToBoxAdapter(
-                              child: _buildEmptyPostsState(context, colorScheme),
+                              child:
+                                  _buildEmptyPostsState(context, colorScheme),
                             )
                           : SliverGrid(
                               delegate: SliverChildBuilderDelegate(
