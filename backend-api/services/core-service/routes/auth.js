@@ -7,13 +7,35 @@ const { authService, authenticateToken } = require("../auth/index.js");
 // Register user
 router.post("/register", async (req, res) => {
   try {
-    // TODO: Implement registration logic
-    res.status(501).json({
-      success: false,
-      message: "Registration endpoint not implemented yet",
+    const { name, email, password, phone, phone_number, profile_picture, role } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "name, email and password are required",
+      });
+    }
+
+    const { user, token } = await authService.register({
+      name,
+      email,
+      password,
+      phone,
+      phone_number,
+      profile_picture,
+      role,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user,
+      token,
     });
   } catch (error) {
-    res.status(400).json({
+    console.error("[AUTH][REGISTER] Error:", error.message);
+    const status = /already registered|validation/i.test(error.message) ? 400 : 500;
+    return res.status(status).json({
       success: false,
       message: error.message,
     });
@@ -23,13 +45,26 @@ router.post("/register", async (req, res) => {
 // Login user
 router.post("/login", async (req, res) => {
   try {
-    // TODO: Implement login logic
-    res.status(501).json({
-      success: false,
-      message: "Login endpoint not implemented yet",
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "email and password are required",
+      });
+    }
+
+    const { user, token } = await authService.login({ email, password });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user,
+      token,
     });
   } catch (error) {
-    res.status(401).json({
+    console.error("[AUTH][LOGIN] Error:", error.message);
+    const status = /invalid email or password|validation|failed/i.test(error.message.toLowerCase()) ? 401 : 500;
+    return res.status(status).json({
       success: false,
       message: error.message,
     });

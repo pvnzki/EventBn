@@ -51,19 +51,53 @@ app.use(limiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// CORS Configuration
-const corsOptions = {
-  origin: process.env.CORE_SERVICE_CORS_ORIGINS?.split(",") || [
+// CORS Configuration (improved to support any localhost:* during development)
+const explicitOrigins = (process.env.CORE_SERVICE_CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Default dev origins if none provided
+if (explicitOrigins.length === 0) {
+  explicitOrigins.push(
     "http://localhost:3000",
-    "http://localhost:3002", // post-service
-    "http://localhost:8080",
-    /^http:\/\/localhost:\d+$/,
-  ],
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:8080"
+  );
+}
+
+const LOCALHOST_REGEX = /^https?:\/\/localhost(?::\d+)?$/i;
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow no-origin requests (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (
+      LOCALHOST_REGEX.test(origin) ||
+      explicitOrigins.includes(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Service-Key",
+    "X-Requested-With",
+  ],
+  exposedHeaders: ["X-Service-Name", "X-Service-Version"],
+  maxAge: 600,
 };
 app.use(cors(corsOptions));
+// Explicit OPTIONS handler for legacy clients
+app.options("*", cors(corsOptions));
 
 // Service identification middleware
 app.use((req, res, next) => {
