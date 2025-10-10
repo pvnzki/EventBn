@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
+const emailService = require("../services/email");
 
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
@@ -209,6 +210,59 @@ router.post("/", authenticateToken, async (req, res) => {
           // Continue with payment success even if ticket creation fails
         }
       }
+    }
+
+    // Send email with tickets after successful payment and ticket creation
+    try {
+      // Fetch the created tickets for email
+      const createdTickets = await prisma.$queryRaw`
+        SELECT 
+          tp.*,
+          u.name as user_name,
+          u.email as user_email,
+          e.title as event_title,
+          e.venue as event_venue,
+          e.location as event_location,
+          e.start_time as event_start_time
+        FROM ticket_purchase tp
+        JOIN users u ON tp.user_id = u.user_id
+        JOIN events e ON tp.event_id = e.event_id
+        WHERE tp.payment_id = ${payment.payment_id}::uuid
+        ORDER BY tp.seat_label
+      `;
+
+      if (createdTickets && createdTickets.length > 0) {
+        // Prepare ticket data for email
+        const ticketsForEmail = createdTickets.map(ticket => ({
+          user_name: ticket.user_name,
+          user_email: ticket.user_email,
+          event_title: ticket.event_title,
+          event_venue: ticket.event_venue,
+          event_location: ticket.event_location,
+          event_start_time: ticket.event_start_time,
+          seat_label: ticket.seat_label,
+          price: Number(ticket.price), // Convert BigInt to number
+          qr_code: ticket.qr_code,
+          payment_id: payment.payment_id,
+          purchase_date: ticket.purchase_date
+        }));
+
+        const userEmail = payment.user.email;
+        
+        // Send email based on number of tickets
+        if (ticketsForEmail.length === 1) {
+          // Single ticket
+          await emailService.sendTicketEmail(ticketsForEmail[0], userEmail);
+          console.log(`✅ Single ticket email sent to ${userEmail}`);
+        } else {
+          // Multiple tickets
+          await emailService.sendMultipleTicketsEmail(ticketsForEmail, userEmail);
+          console.log(`✅ Multiple tickets email sent to ${userEmail} (${ticketsForEmail.length} tickets)`);
+        }
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending ticket email:', emailError);
+      // Don't fail the payment if email fails - just log it
     }
 
     res.status(201).json({
