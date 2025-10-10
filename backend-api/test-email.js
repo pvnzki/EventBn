@@ -1,7 +1,7 @@
 // Load environment variables
 require('dotenv').config();
 
-const emailService = require('./services/core-service/services/email');
+const emailService = require('./services/core-service/email');
 
 // Test email configuration
 async function testEmail() {
