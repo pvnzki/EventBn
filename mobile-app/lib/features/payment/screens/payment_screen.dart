@@ -468,8 +468,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       }
 
       // Create payment record in backend
+      // Add skipLockValidation for AWS deployment to avoid Redis issues
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/payments')
+          .replace(queryParameters: {'skipLockValidation': '1'});
+
       final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/payments'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
