@@ -936,12 +936,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     final colorScheme = theme.colorScheme;
 
     // Debug print for troubleshooting
-    if (!isAvailableFromBackend ||
-        seatStatus != 'available' ||
-        isBookedExplicitly) {
-      print(
-          '🔍 Seat ${seat['label'] ?? seatId} - Status: $seatStatus, Available: ${seat['available']}, Booked: ${seat['booked']}, isOccupied: $isOccupied');
-    }
+    // if (!isAvailableFromBackend ||
+    //     seatStatus != 'available' ||
+    //     isBookedExplicitly) {
+    //   print(
+    //       '🔍 Seat ${seat['label'] ?? seatId} - Status: $seatStatus, Available: ${seat['available']}, Booked: ${seat['booked']}, isOccupied: $isOccupied');
+    // }
 
     Color getSeatColor() {
       if (isOccupied) {

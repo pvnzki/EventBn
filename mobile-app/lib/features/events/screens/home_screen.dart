@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:developer';
 import 'dart:async';
-import 'dart:ui';
 
 import '../providers/event_provider.dart';
 import '../models/event_model.dart';
@@ -741,78 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPromotionalBanner() {
     return Stack(
       children: [
-        // Ambient background effect with smooth transitions - spread around all sides (dark mode only)
-        if (_imagesPreloaded && Theme.of(context).brightness == Brightness.dark)
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 1200),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            child: Container(
-              key: ValueKey(_currentBannerIndex),
-              child: Positioned.fill(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8), // Slightly inset
-                  child: Transform.translate(
-                    offset: const Offset(0, -10), // Extend upward
-                    child: SizedBox(
-                      height: 180, // Increased height to extend on all sides
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            5), // Slightly less rounded for broader effect
-                        child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(
-                              sigmaX: 55,
-                              sigmaY: 55), // Increased blur for broader spread
-                          child: Container(
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage(
-                                    _bannerImages[_currentBannerIndex]),
-                                fit: BoxFit.cover,
-                                onError: (error, stackTrace) {
-                                  print(
-                                      'Error loading banner background image: $error');
-                                },
-                              ),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: RadialGradient(
-                                  center: Alignment.center,
-                                  radius:
-                                      1.6, // Larger radius for broader spread
-                                  colors: [
-                                    Theme.of(context)
-                                        .scaffoldBackgroundColor
-                                        .withOpacity(0.1),
-                                    Theme.of(context)
-                                        .scaffoldBackgroundColor
-                                        .withOpacity(0.3),
-                                    Theme.of(context)
-                                        .scaffoldBackgroundColor
-                                        .withOpacity(0.6),
-                                    Theme.of(context)
-                                        .scaffoldBackgroundColor
-                                        .withOpacity(0.9),
-                                  ],
-                                  stops: const [0.0, 0.4, 0.7, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // Ambient background effect removed to fix Android APK crash in dark mode
         // Main banner content
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
