@@ -12,71 +12,112 @@ class AuthService {
   // Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      print('🔄 [AUTH_SERVICE] Logging in user: $email');
+      
       final response = await http.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
 
+      print('🔄 [AUTH_SERVICE] Login response status: ${response.statusCode}');
+      print('🔄 [AUTH_SERVICE] Login response body: ${response.body}');
+
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 &&
-          data['success'] == true &&
-          data['token'] != null &&
-          data['data'] != null) {
-        // Store token
-        await _storeToken(data['token']);
-        // Store user data
-        final user = User.fromJson(data['data']);
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Backend may return user under 'data' or 'user'. Handle both.
+        final token = data['token'];
+        final dynamic userPayload = data['data'] ?? data['user'];
+
+        if (token == null) {
+          print('❌ [AUTH_SERVICE] Login succeeded but token missing in response');
+          return {'success': false, 'message': 'Token missing in response'};
+        }
+
+        if (userPayload == null || userPayload is! Map<String, dynamic>) {
+          print('❌ [AUTH_SERVICE] Login succeeded but user payload missing/invalid: $userPayload');
+          return {'success': false, 'message': 'User data missing in response'};
+        }
+
+        // Store token and user
+        await _storeToken(token);
+        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
         await _storeUser(user);
-        return {'success': true, 'user': user, 'token': data['token']};
+
+        print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
+        return {'success': true, 'user': user, 'token': token};
       } else {
+        print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {
+      print('❌ [AUTH_SERVICE] Login error: $e');
       return {'success': false, 'message': 'Network error occurred'};
     }
   }
 
   // Register user
   Future<Map<String, dynamic>> register({
-    required String firstName,
-    required String lastName,
+    required String name,
     required String email,
     required String password,
     String? phoneNumber,
   }) async {
     try {
+      print('🔄 [AUTH_SERVICE] Registering user: $email');
+      
+      final requestBody = {
+        'name': name,
+        'email': email,
+        'password': password,
+        if (phoneNumber != null && phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
+      };
+      
+      print('🔄 [AUTH_SERVICE] Request body: $requestBody');
+
       final response = await http.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/register'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'firstName': firstName,
-          'lastName': lastName,
-          'email': email,
-          'password': password,
-          'phoneNumber': phoneNumber,
-        }),
+        body: jsonEncode(requestBody),
       );
+
+      print('🔄 [AUTH_SERVICE] Response status: ${response.statusCode}');
+      print('🔄 [AUTH_SERVICE] Response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 201) {
-        // Store token
-        await _storeToken(data['token']);
+      if (response.statusCode == 201 && data['success'] == true) {
+        // Backend may return user under 'data' or 'user'. Handle both.
+        final token = data['token'];
+        final dynamic userPayload = data['data'] ?? data['user'];
 
-        // Store user data
-        final user = User.fromJson(data['user']);
+        if (token == null) {
+          print('❌ [AUTH_SERVICE] Registration succeeded but token missing in response');
+          return {'success': false, 'message': 'Token missing in response'};
+        }
+
+        if (userPayload == null || userPayload is! Map<String, dynamic>) {
+          print('❌ [AUTH_SERVICE] Registration succeeded but user payload missing/invalid: $userPayload');
+          return {'success': false, 'message': 'User data missing in response'};
+        }
+
+        // Store token and user
+        await _storeToken(token);
+        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
         await _storeUser(user);
 
-        return {'success': true, 'user': user, 'token': data['token']};
+        print('✅ [AUTH_SERVICE] Registration successful for: ${user.email}');
+        return {'success': true, 'user': user, 'token': token};
       } else {
+        print('❌ [AUTH_SERVICE] Registration failed: ${data['message']}');
         return {
           'success': false,
           'message': data['message'] ?? 'Registration failed',
         };
       }
     } catch (e) {
+      print('❌ [AUTH_SERVICE] Registration error: $e');
       return {'success': false, 'message': 'Network error occurred'};
     }
   }
@@ -117,11 +158,16 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('🔍 [AUTH_SERVICE] Parsed data: $data');
-        final user = User.fromJson(data['user']);
-        await _storeUser(user); // Store the complete user data
-        print(
-            '🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
-        return user;
+        final dynamic userPayload = data['user'] ?? data['data'];
+        if (userPayload == null || userPayload is! Map<String, dynamic>) {
+          print('❌ [AUTH_SERVICE] /me returned invalid user payload: $userPayload');
+        } else {
+          final user = User.fromJson(Map<String, dynamic>.from(userPayload));
+          await _storeUser(user); // Store the complete user data
+          print(
+              '🔍 [AUTH_SERVICE] Created user object: firstName=${user.firstName}, lastName=${user.lastName}');
+          return user;
+        }
       }
 
       print('❌ [AUTH_SERVICE] Failed to get user: ${response.statusCode}');
@@ -301,7 +347,14 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final user = User.fromJson(data['user']);
+        final dynamic userPayload = data['user'] ?? data['data'];
+        if (userPayload == null || userPayload is! Map<String, dynamic>) {
+          return {
+            'success': false,
+            'message': 'User data missing in response',
+          };
+        }
+        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
         await _storeUser(user);
 
         return {'success': true, 'user': user};
