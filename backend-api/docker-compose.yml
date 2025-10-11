@@ -8,6 +8,8 @@ services:
       - redis_data:/data
     restart: unless-stopped
     command: redis-server --appendonly yes
+    networks:
+      - eventbn-net
 
   eventbn-rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -38,6 +40,8 @@ services:
     env_file:
       - ./services/core-service/.env
     depends_on:
+      redis:
+        condition: service_started
       eventbn-rabbitmq:
         condition: service_healthy
     networks:

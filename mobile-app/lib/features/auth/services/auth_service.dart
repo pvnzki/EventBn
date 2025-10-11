@@ -449,6 +449,65 @@ class AuthService {
     }
   }
 
+  // Update profile image with Cloudinary URL
+  Future<Map<String, dynamic>> updateProfileImage({
+    required String imageUrl,
+  }) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final user = await getStoredUser();
+      if (user == null) {
+        return {'success': false, 'message': 'User not found'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Updating profile image...');
+
+      final body = {
+        'avatarUrl': imageUrl,
+      };
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/users/${user.id}/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      print(
+          '🔍 [AUTH_SERVICE] Profile image update response: ${response.statusCode}');
+      print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ [AUTH_SERVICE] Profile image updated successfully');
+
+        // Update the local user with new image URL
+        final updatedUser = user.copyWith(profileImageUrl: imageUrl);
+        await _storeUser(updatedUser);
+
+        return {'success': true, 'user': updatedUser, 'data': data['data']};
+      } else {
+        final data = jsonDecode(response.body);
+        print(
+            '❌ [AUTH_SERVICE] Profile image update failed: ${data['message'] ?? 'Unknown error'}');
+
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Profile image update failed',
+        };
+      }
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error updating profile image: $e');
+      return {'success': false, 'message': 'Network error occurred: $e'};
+    }
+  }
+
   // Change password
   Future<Map<String, dynamic>> changePassword({
     required String currentPassword,

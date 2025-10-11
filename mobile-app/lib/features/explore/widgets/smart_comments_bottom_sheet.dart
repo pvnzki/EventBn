@@ -173,46 +173,85 @@ class _CommentsContentState extends State<_CommentsContent> {
       _isSubmitting = true;
     });
 
-    try {
-      final content = _commentController.text.trim();
-      final parentCommentId =
-          _replyingToComment?['comment_id'] ?? _replyingToComment?['id'];
+    final content = _commentController.text.trim();
+    final parentCommentId =
+        _replyingToComment?['comment_id'] ?? _replyingToComment?['id'];
 
+    try {
       // Get current user data from AuthProvider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.user;
 
-      // Use current user data with better fallback names that won't be "Anonymous"
-      String userName, userDisplayName, username;
+      // Use real user data for optimistic comment
+      String userName, userDisplayName, username, userId, avatarUrl;
       Map<String, dynamic> userObject;
 
       if (currentUser != null && authProvider.isAuthenticated) {
+        // Use the actual user ID from backend (this should now be 131)
+        userId = currentUser.id; // This will be "131" after auth fix
+
+        // Extract numeric user ID if it starts with "user_"
+        final numericUserId =
+            userId.startsWith('user_') ? userId.substring(5) : userId;
+
+        // Build proper user names
         userName = currentUser.fullName.isNotEmpty
             ? currentUser.fullName
             : '${currentUser.firstName} ${currentUser.lastName}'.trim();
+
+        if (userName.isEmpty || userName == ' ') {
+          userName = currentUser.firstName.isNotEmpty
+              ? currentUser.firstName
+              : 'User'; // Better fallback than "Anonymous"
+        }
+
         userDisplayName = userName;
         username =
             currentUser.firstName.isNotEmpty ? currentUser.firstName : userName;
+
+        // Use proper avatar URL or provide a default
+        avatarUrl = currentUser.profileImageUrl?.isNotEmpty == true
+            ? currentUser.profileImageUrl!
+            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}&background=007AFF&color=fff&size=100';
+
         userObject = {
-          'id': currentUser.id,
+          'id': numericUserId, // Use numeric ID for backend compatibility
+          'user_id': numericUserId,
           'full_name': userName,
           'name': userName,
-          'avatar_url': currentUser.profileImageUrl,
+          'first_name': currentUser.firstName,
+          'last_name': currentUser.lastName,
+          'avatar_url': avatarUrl,
+          'email': currentUser.email,
         };
+
+        print('✅ [OPTIMISTIC_COMMENT] Using authenticated user data:');
+        print('   - User ID: $numericUserId (from: $userId)');
+        print('   - Display Name: $userName');
+        print('   - Avatar URL: $avatarUrl');
       } else {
-        // Fallback for unauthenticated users - use a more descriptive name than "Anonymous"
-        userName = 'You';
-        userDisplayName = 'You';
-        username = 'You';
+        // Fallback for unauthenticated users
+        print(
+            '⚠️ [OPTIMISTIC_COMMENT] No authenticated user found, using fallback');
+        userId = 'guest_user';
+        userName = 'Guest User';
+        userDisplayName = 'Guest User';
+        username = 'Guest';
+        avatarUrl =
+            'https://ui-avatars.com/api/?name=Guest&background=6B7280&color=fff&size=100';
+
         userObject = {
-          'id': 'guest_user',
-          'full_name': 'You',
-          'name': 'You',
-          'avatar_url': null,
+          'id': userId,
+          'user_id': userId,
+          'full_name': userName,
+          'name': userName,
+          'first_name': 'Guest',
+          'last_name': 'User',
+          'avatar_url': avatarUrl,
         };
       }
 
-      // Add optimistic comment/reply
+      // Add optimistic comment/reply with proper user data
       final optimisticItem = {
         'id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
         'comment_id': DateTime.now().millisecondsSinceEpoch,
@@ -221,17 +260,28 @@ class _CommentsContentState extends State<_CommentsContent> {
         'user_name': userName,
         'user_display_name': userDisplayName,
         'username': username,
-        'user_id': userObject['id'],
+        'user_id': userObject['id'], // This will be numeric ID (131)
         'created_at': DateTime.now().toIso8601String(),
         'like_count': 0,
         'likes_count': 0,
         'is_liked': false,
-        'is_optimistic': true,
+        'is_optimistic': true, // Mark as optimistic for temporary display
         'parent_comment_id': parentCommentId,
         'replies': [],
         'replies_count': 0,
-        'user': userObject,
+        'user': userObject, // Complete user object with avatar
+        // Additional fields for better compatibility
+        'avatar_url': avatarUrl,
+        'user_avatar_url': avatarUrl,
+        'display_name': userDisplayName,
+        'full_name': userName,
       };
+
+      print('✅ [OPTIMISTIC_COMMENT] Created optimistic comment:');
+      print(
+          '   - Content: ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+      print('   - User: $userName (ID: ${userObject['id']})');
+      print('   - Avatar: $avatarUrl');
 
       setState(() {
         if (parentCommentId != null) {
@@ -257,12 +307,16 @@ class _CommentsContentState extends State<_CommentsContent> {
       _commentController.clear();
       _cancelReply(); // Exit reply mode
 
-      // Post to server
+      // Post to server with enhanced error handling
+      print('🌐 [SMART_COMMENTS] Posting comment to backend...');
       final result = await SmartCommentsBottomSheet._postService
           .addComment(widget.postId, content, parentCommentId: parentCommentId);
 
-      if (result != null) {
+      if (result != null && result['comment_id'] != null) {
         print('✅ [SMART_COMMENTS] Comment/reply posted successfully');
+        print('   - Backend comment ID: ${result['comment_id']}');
+        print(
+            '   - Backend user data: ${result['user_name'] ?? result['user']?['name'] ?? 'N/A'}');
 
         // Update optimistic comment with real server data
         setState(() {
@@ -277,13 +331,25 @@ class _CommentsContentState extends State<_CommentsContent> {
               final replyIndex = _comments[parentIndex]['replies']
                   .indexWhere((reply) => reply['is_optimistic'] == true);
               if (replyIndex != -1) {
-                // Replace optimistic reply with real data
-                _comments[parentIndex]['replies'][replyIndex] = {
+                // Replace optimistic reply with real data, preserving user info
+                final realReply = {
                   ...result,
                   'parent_comment_id': parentCommentId,
                   'replies': [],
                   'replies_count': 0,
+                  'is_optimistic': false, // Mark as real data
+                  // Preserve user info from optimistic comment if backend doesn't return it
+                  'user_name':
+                      result['user_name'] ?? optimisticItem['user_name'],
+                  'user_display_name': result['user_display_name'] ??
+                      optimisticItem['user_display_name'],
+                  'avatar_url':
+                      result['avatar_url'] ?? optimisticItem['avatar_url'],
+                  'user': result['user'] ?? optimisticItem['user'],
                 };
+                _comments[parentIndex]['replies'][replyIndex] = realReply;
+                print(
+                    '✅ [SMART_COMMENTS] Updated optimistic reply with backend data');
               }
             }
           } else {
@@ -291,18 +357,36 @@ class _CommentsContentState extends State<_CommentsContent> {
             final optimisticIndex =
                 _comments.indexWhere((c) => c['is_optimistic'] == true);
             if (optimisticIndex != -1) {
-              _comments[optimisticIndex] = {
+              // Replace optimistic comment with real data, preserving user info
+              final realComment = {
                 ...result,
                 'replies': [],
                 'replies_count': 0,
+                'is_optimistic': false, // Mark as real data
+                // Preserve user info from optimistic comment if backend doesn't return it
+                'user_name': result['user_name'] ?? optimisticItem['user_name'],
+                'user_display_name': result['user_display_name'] ??
+                    optimisticItem['user_display_name'],
+                'avatar_url':
+                    result['avatar_url'] ?? optimisticItem['avatar_url'],
+                'user': result['user'] ?? optimisticItem['user'],
               };
+              _comments[optimisticIndex] = realComment;
+              print(
+                  '✅ [SMART_COMMENTS] Updated optimistic comment with backend data');
             }
           }
         });
 
-        // Don't clear cache immediately - keep the updated comments in memory
+        // Clear cache to force fresh load on next open
+        SmartCommentsBottomSheet.clearCache(widget.postId);
+
+        // Notify parent widget
         widget.onCommentAdded?.call();
       } else {
+        print('❌ [SMART_COMMENTS] Backend returned null or invalid result:');
+        print('   - Result: $result');
+
         // Remove optimistic item on failure
         setState(() {
           if (parentCommentId != null) {
@@ -310,36 +394,54 @@ class _CommentsContentState extends State<_CommentsContent> {
                 (c['comment_id'] ?? c['id']).toString() ==
                 parentCommentId.toString());
             if (parentIndex != -1) {
-              _comments[parentIndex]['replies']?.removeLast();
+              _comments[parentIndex]['replies']
+                  ?.removeWhere((reply) => reply['is_optimistic'] == true);
               _comments[parentIndex]['replies_count'] =
                   (_comments[parentIndex]['replies_count'] ?? 1) - 1;
             }
           } else {
-            _comments.removeAt(0);
+            _comments
+                .removeWhere((comment) => comment['is_optimistic'] == true);
           }
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Failed to post. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Failed to post comment. Please try again.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       }
     } catch (e) {
-      print('❌ [SMART_COMMENTS] Failed to post comment: $e');
+      print('❌ [SMART_COMMENTS] Exception while posting comment: $e');
 
       // Remove optimistic comment on error
       setState(() {
-        _comments.removeWhere((c) => c['is_optimistic'] == true);
+        if (parentCommentId != null) {
+          final parentIndex = _comments.indexWhere((c) =>
+              (c['comment_id'] ?? c['id']).toString() ==
+              parentCommentId.toString());
+          if (parentIndex != -1) {
+            _comments[parentIndex]['replies']
+                ?.removeWhere((reply) => reply['is_optimistic'] == true);
+            _comments[parentIndex]['replies_count'] =
+                (_comments[parentIndex]['replies_count'] ?? 1) - 1;
+          }
+        } else {
+          _comments.removeWhere((comment) => comment['is_optimistic'] == true);
+        }
       });
 
       // Show error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to post comment. Please try again.'),
+          SnackBar(
+            content: Text('Failed to post comment: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

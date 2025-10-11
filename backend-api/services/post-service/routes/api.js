@@ -485,10 +485,11 @@ router.get("/debug/test-token", async (req, res) => {
 
   try {
     // Create a test user payload with numeric user_id to match database schema
+    // Use the actual user ID from the database (131) to match existing posts
     const testUserPayload = {
-      userId: 1001, // Use numeric ID to match database schema
-      user_id: 1001, // Alternative format
-      id: 1001, // Another alternative
+      userId: 131, // Use actual user ID that has posts in database
+      user_id: 131, // Alternative format
+      id: 131, // Another alternative
       email: "test@eventbn.com",
       name: "Test User",
       role: "USER",
