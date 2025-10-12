@@ -60,8 +60,15 @@ export default function SettingsPage() {
           return;
         }
 
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
         const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`
+          `http://localhost:3001/api/users/${userId}`,
+          { headers }
         );
         if (!response.ok) throw new Error("Failed to fetch user data");
 
@@ -113,11 +120,17 @@ export default function SettingsPage() {
       const parsedUser = JSON.parse(userData);
       const userId = parsedUser.user_id;
 
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/users/${userId}`,
+        `http://localhost:3001/api/users/${userId}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             name: profileData.name,
             email: profileData.email,

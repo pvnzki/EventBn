@@ -1,0 +1,9 @@
+{
+  "user": {
+    "role": "ORGANIZER",
+    "name": "Olivia Organizer",
+    "user_id": 10,
+    "organization_id": 1
+  },
+  "token": "fake-token"
+}

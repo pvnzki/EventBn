@@ -80,7 +80,15 @@ export default function OrganizersPage() {
     const fetchOrganizers = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:3000/api/users");
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch("http://localhost:3001/api/users", {
+          headers,
+        });
         const data = await response.json();
 
         if (data.success && Array.isArray(data.data)) {
@@ -122,10 +130,17 @@ export default function OrganizersPage() {
   // Function to handle organizer deletion
   const handleDeleteOrganizer = async (organizer: Organizer) => {
     try {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/users/${organizer.id}`,
+        `http://localhost:3001/api/users/${organizer.id}`,
         {
           method: "DELETE",
+          headers,
         }
       );
 

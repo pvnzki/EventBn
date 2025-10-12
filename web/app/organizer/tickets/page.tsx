@@ -158,7 +158,7 @@ export default function TicketsPage() {
       }
 
       const response = await fetch(
-        "http://localhost:3000/api/tickets/my-events-tickets",
+        "http://localhost:3001/api/tickets/my-events-tickets",
         {
           method: "GET",
           headers: {
@@ -203,7 +203,7 @@ export default function TicketsPage() {
       if (!token) return;
 
       const response = await fetch(
-        `http://localhost:3000/api/tickets/${ticketId}/attend`,
+        `http://localhost:3001/api/tickets/${ticketId}/attend`,
         {
           method: "PUT",
           headers: {

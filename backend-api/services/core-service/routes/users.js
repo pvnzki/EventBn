@@ -1,7 +1,7 @@
 const express = require('express');
 const multer =require('multer');
 const router = express.Router();
-const usersService = require('../services/core-service/users');
+const usersService = require('../users');
 
 // Get all users
 router.get('/', async (req, res) => {

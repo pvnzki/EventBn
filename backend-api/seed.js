@@ -4,7 +4,7 @@ async function seedEvents() {
   console.log('🌱 Seeding events data...');
   
   try {
-    // First, let's check if we have any users to create events for
+    // First, let's check if we have any users to create an organization for
     let user = await prisma.user.findFirst();
     
     if (!user) {
@@ -20,6 +20,23 @@ async function seedEvents() {
       console.log('✅ Created test user');
     }
 
+    // Create an organization for the user
+    let organization = await prisma.organization.findFirst({
+      where: { user_id: user.user_id }
+    });
+
+    if (!organization) {
+      organization = await prisma.organization.create({
+        data: {
+          user_id: user.user_id,
+          name: 'EventBn Sample Organization',
+          description: 'A sample organization for seed data',
+          contact_email: user.email
+        }
+      });
+      console.log('✅ Created test organization');
+    }
+
     // Create sample events
     const events = [
       {
@@ -33,7 +50,7 @@ async function seedEvents() {
         capacity: 5000,
         cover_image_url: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&h=400&fit=crop',
         status: 'ACTIVE',
-        creator_id: user.user_id
+        organization_id: organization.organization_id
       },
       {
         title: 'Tech Innovation Summit',
@@ -46,7 +63,7 @@ async function seedEvents() {
         capacity: 1500,
         cover_image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop',
         status: 'ACTIVE',
-        creator_id: user.user_id
+        organization_id: organization.organization_id
       },
       {
         title: 'Food & Wine Tasting',
@@ -59,7 +76,7 @@ async function seedEvents() {
         capacity: 100,
         cover_image_url: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&h=400&fit=crop',
         status: 'ACTIVE',
-        creator_id: user.user_id
+        organization_id: organization.organization_id
       },
       {
         title: 'Art Gallery Opening',
@@ -72,7 +89,7 @@ async function seedEvents() {
         capacity: 200,
         cover_image_url: 'https://images.unsplash.com/photo-1578321272176-b7bbc0679853?w=800&h=400&fit=crop',
         status: 'ACTIVE',
-        creator_id: user.user_id
+        organization_id: organization.organization_id
       },
       {
         title: 'Marathon Training Workshop',
@@ -85,7 +102,7 @@ async function seedEvents() {
         capacity: 300,
         cover_image_url: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=800&h=400&fit=crop',
         status: 'ACTIVE',
-        creator_id: user.user_id
+        organization_id: organization.organization_id
       }
     ];
 

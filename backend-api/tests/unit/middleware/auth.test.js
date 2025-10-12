@@ -1,13 +1,13 @@
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../../../middleware/auth');
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/database');
+const prisma = require('../../../lib/database');
 
 // Mock dependencies
 jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
 }));
 
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   user: {
     findUnique: jest.fn(),
   },
@@ -97,7 +97,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access token required',
+        success: false,
+        message: 'Access token required',
         code: 'NO_TOKEN'
       });
       expect(next).not.toHaveBeenCalled();
@@ -110,7 +111,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access token required',
+        success: false,
+        message: 'Access token required',
         code: 'NO_TOKEN'
       });
       expect(next).not.toHaveBeenCalled();
@@ -123,7 +125,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access token required',
+        success: false,
+        message: 'Access token required',
         code: 'NO_TOKEN'
       });
     });
@@ -138,9 +141,10 @@ describe('Auth Middleware', () => {
 
       await authMiddleware.authenticateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Invalid token',
+        success: false,
+        message: 'Invalid token',
         code: 'INVALID_TOKEN'
       });
       expect(next).not.toHaveBeenCalled();
@@ -156,9 +160,10 @@ describe('Auth Middleware', () => {
 
       await authMiddleware.authenticateToken(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Token expired',
+        success: false,
+        message: 'Token expired',
         code: 'TOKEN_EXPIRED'
       });
       expect(next).not.toHaveBeenCalled();
@@ -173,7 +178,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'User not found',
+        success: false,
+        message: 'User not found',
         code: 'USER_NOT_FOUND'
       });
       expect(next).not.toHaveBeenCalled();
@@ -190,10 +196,11 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Internal server error',
-        code: 'SERVER_ERROR'
+        success: false,
+        message: 'Authentication error',
+        code: 'AUTH_ERROR'
       });
-      expect(consoleSpy).toHaveBeenCalledWith('Authentication error:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith('🚨 JWT Authentication error:', expect.any(Object));
       expect(next).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
@@ -208,6 +215,35 @@ describe('Auth Middleware', () => {
 
       expect(jwt.verify).toHaveBeenCalledWith('valid-token-format', 'test-jwt-secret');
       expect(next).toHaveBeenCalledTimes(1);
+    });
+
+    it('should only allow TEST_MODE in test environment', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      const originalTestMode = process.env.TEST_MODE;
+      
+      // Set production environment
+      process.env.NODE_ENV = 'production';
+      process.env.TEST_MODE = 'true';
+      
+      req.headers.authorization = 'Bearer test-token';
+      const testDecodedToken = {
+        userId: 1,
+        email: 'test@test.com',
+        name: 'Test User'
+      };
+      
+      jwt.verify.mockReturnValueOnce(testDecodedToken);
+      prisma.user.findUnique.mockResolvedValueOnce(mockUser);
+
+      await authMiddleware.authenticateToken(req, res, next);
+
+      // Should use database lookup in production, not test mode
+      expect(prisma.user.findUnique).toHaveBeenCalled();
+      expect(req.user).toEqual(mockUser);
+      
+      // Restore environment
+      process.env.NODE_ENV = originalNodeEnv;
+      process.env.TEST_MODE = originalTestMode;
     });
   });
 
@@ -236,15 +272,15 @@ describe('Auth Middleware', () => {
 
       expect(jwt.verify).toHaveBeenCalledWith('valid-token', 'test-jwt-secret');
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 1 },
+        where: { user_id: 1 },
         select: {
-          id: true,
+          user_id: true,
+          name: true,
           email: true,
-          username: true,
-          firstName: true,
-          lastName: true,
-          avatar: true,
-          isVerified: true,
+          phone_number: true,
+          profile_picture: true,
+          is_email_verified: true,
+          role: true,
         }
       });
       expect(req.user).toEqual(mockUser);
@@ -300,9 +336,9 @@ describe('Auth Middleware', () => {
   describe('requireVerified', () => {
     it('should proceed when user is authenticated and verified', () => {
       req.user = {
-        id: 1,
+        user_id: 1,
         email: 'john@example.com',
-        isVerified: true
+        is_email_verified: true
       };
 
       authMiddleware.requireVerified(req, res, next);
@@ -318,7 +354,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Authentication required',
+        success: false,
+        message: 'Authentication required',
         code: 'AUTH_REQUIRED'
       });
       expect(next).not.toHaveBeenCalled();
@@ -326,16 +363,17 @@ describe('Auth Middleware', () => {
 
     it('should return 403 when user is not verified', () => {
       req.user = {
-        id: 1,
+        user_id: 1,
         email: 'john@example.com',
-        isVerified: false
+        is_email_verified: false
       };
 
       authMiddleware.requireVerified(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Email verification required',
+        success: false,
+        message: 'Email verification required',
         code: 'EMAIL_NOT_VERIFIED'
       });
       expect(next).not.toHaveBeenCalled();
@@ -348,7 +386,8 @@ describe('Auth Middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Authentication required',
+        success: false,
+        message: 'Authentication required',
         code: 'AUTH_REQUIRED'
       });
     });
@@ -356,8 +395,8 @@ describe('Auth Middleware', () => {
 
   describe('requireOwnership', () => {
     it('should proceed when user owns the resource (default userIdField)', () => {
-      req.user = { id: 1 };
-      req.params.userId = 1;
+      req.user = { user_id: 1 };
+      req.params.user_id = '1'; // String from URL parameter
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
@@ -367,8 +406,8 @@ describe('Auth Middleware', () => {
     });
 
     it('should proceed when user owns the resource (custom userIdField)', () => {
-      req.user = { id: 1 };
-      req.params.ownerId = 1;
+      req.user = { user_id: 1 };
+      req.params.ownerId = '1';
 
       const middleware = authMiddleware.requireOwnership('ownerId');
       middleware(req, res, next);
@@ -377,8 +416,8 @@ describe('Auth Middleware', () => {
     });
 
     it('should proceed when resource userId is in request body', () => {
-      req.user = { id: 1 };
-      req.body.userId = 1;
+      req.user = { user_id: 1 };
+      req.body.user_id = '1';
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
@@ -388,60 +427,75 @@ describe('Auth Middleware', () => {
 
     it('should return 401 when user is not authenticated', () => {
       req.user = null;
-      req.params.userId = 1;
+      req.params.user_id = '1';
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Authentication required',
+        success: false,
+        message: 'Authentication required',
         code: 'AUTH_REQUIRED'
       });
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 403 when user does not own the resource', () => {
-      req.user = { id: 1 };
-      req.params.userId = 2; // Different user ID
+      req.user = { user_id: 1 };
+      req.params.user_id = '2'; // Different user ID
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access denied',
+        success: false,
+        message: 'Access denied',
         code: 'ACCESS_DENIED'
       });
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should handle string vs number comparison correctly', () => {
-      req.user = { id: 1 };
-      req.params.userId = '1'; // String version
+      req.user = { user_id: 1 };
+      req.params.user_id = '1'; // String version
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
 
-      // This will fail due to strict comparison, which is expected behavior
+      // Should now pass with proper type conversion
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('should return 403 when resource userId is missing', () => {
+      req.user = { user_id: 1 };
+      req.params = {}; // No user_id
+      req.body = {}; // No user_id
+
+      const middleware = authMiddleware.requireOwnership();
+      middleware(req, res, next);
+
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access denied',
+        success: false,
+        message: 'Access denied',
         code: 'ACCESS_DENIED'
       });
     });
 
-    it('should return 403 when resource userId is missing', () => {
-      req.user = { id: 1 };
-      req.params = {}; // No userId
-      req.body = {}; // No userId
+    it('should return 403 when resource userId is invalid', () => {
+      req.user = { user_id: 1 };
+      req.params.user_id = 'invalid'; // Non-numeric value
 
       const middleware = authMiddleware.requireOwnership();
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Access denied',
+        success: false,
+        message: 'Access denied',
         code: 'ACCESS_DENIED'
       });
     });

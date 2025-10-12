@@ -3,6 +3,8 @@ const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
+const crypto = require('crypto');
+const { validateUUID, ValidationError } = require("../lib/validation");
 
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
@@ -101,6 +103,7 @@ router.post("/", authenticateToken, async (req, res) => {
           const qrCode = `TICKET_${payment.payment_id}_${seatId}_${Date.now()}`;
 
           ticketPurchases.push({
+            ticket_id: crypto.randomUUID(),
             event_id: parseInt(event_id),
             user_id: user_id,
             payment_id: payment.payment_id,
@@ -119,8 +122,8 @@ router.post("/", authenticateToken, async (req, res) => {
         try {
           for (const ticket of ticketPurchases) {
             await prisma.$executeRaw`
-              INSERT INTO ticket_purchase (event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
-              VALUES (${ticket.event_id}, ${ticket.user_id}, ${
+              INSERT INTO ticket_purchase (ticket_id, event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
+              VALUES (${ticket.ticket_id}::uuid, ${ticket.event_id}, ${ticket.user_id}, ${
               ticket.payment_id
             }::uuid, ${ticket.seat_id}, ${ticket.seat_label}, ${
               ticket.purchase_date
@@ -150,6 +153,7 @@ router.post("/", authenticateToken, async (req, res) => {
           const qrCode = `TICKET_${payment.payment_id}_${i + 1}_${Date.now()}`;
 
           ticketPurchases.push({
+            ticket_id: crypto.randomUUID(),
             event_id: parseInt(event_id),
             user_id: user_id,
             payment_id: payment.payment_id,
@@ -173,6 +177,7 @@ router.post("/", authenticateToken, async (req, res) => {
           const qrCode = `TICKET_${payment.payment_id}_${i + 1}_${Date.now()}`;
 
           ticketPurchases.push({
+            ticket_id: crypto.randomUUID(),
             event_id: parseInt(event_id),
             user_id: user_id,
             payment_id: payment.payment_id,
@@ -191,8 +196,8 @@ router.post("/", authenticateToken, async (req, res) => {
         try {
           for (const ticket of ticketPurchases) {
             await prisma.$executeRaw`
-              INSERT INTO ticket_purchase (event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
-              VALUES (${ticket.event_id}, ${ticket.user_id}, ${
+              INSERT INTO ticket_purchase (ticket_id, event_id, user_id, payment_id, seat_id, seat_label, purchase_date, price, attended, qr_code)
+              VALUES (${ticket.ticket_id}::uuid, ${ticket.event_id}, ${ticket.user_id}, ${
               ticket.payment_id
             }::uuid, ${ticket.seat_id}, ${ticket.seat_label}, ${
               ticket.purchase_date
@@ -267,6 +272,17 @@ router.get("/:payment_id", authenticateToken, async (req, res) => {
   try {
     const { payment_id } = req.params;
     const user_id = req.user.user_id;
+
+    // Validate that payment_id is a proper UUID
+    try {
+      validateUUID(payment_id, 'Payment ID');
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+        error: "INVALID_PAYMENT_ID"
+      });
+    }
 
     const payment = await prisma.payment.findFirst({
       where: {

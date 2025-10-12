@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -49,6 +50,7 @@ interface Event {
 }
 
 export default function AdminEventsPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -57,7 +59,13 @@ export default function AdminEventsPage() {
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/events")
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    fetch("http://localhost:3001/api/events", { headers })
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
@@ -69,10 +77,17 @@ export default function AdminEventsPage() {
 
   const handleDeleteEvent = async (event: Event) => {
     try {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/events/${event.event_id}`,
+        `http://localhost:3001/api/events/${event.event_id}`,
         {
           method: "DELETE",
+          headers,
         }
       );
       if (response.ok) {
@@ -131,7 +146,7 @@ export default function AdminEventsPage() {
   };
 
   const handleViewEvent = (event: Event) => {
-    setSelectedEvent(event);
+    router.push(`/admin/events/${event.event_id}`);
   };
 
   const closeModal = () => {

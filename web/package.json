@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 5000",
     "lint": "next lint",
-    "start": "next start -p 3000"
+    "start": "next start -p 5000"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -66,7 +66,13 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@testing-library/cypress": "^10.0.2",
+    "axe-core": "^4.10.0",
+    "cypress": "^13.15.0",
+    "cypress-axe": "^1.6.0",
+    "@browserstack/cypress-cli": "^1.23.1",
     "postcss": "^8.5",
+    "start-server-and-test": "^2.0.8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }

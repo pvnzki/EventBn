@@ -62,10 +62,10 @@ export default function AdminEventsPage() {
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -101,7 +101,7 @@ export default function AdminEventsPage() {
     }
 
     // Fetch events and filter by user's organization_id
-    fetch("http://localhost:3000/api/events")
+    fetch("http://localhost:3001/api/events")
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -137,12 +137,23 @@ export default function AdminEventsPage() {
 
   const handleDeleteEvent = async (event: Event) => {
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/events/${event.event_id}`,
+        `http://localhost:3001/api/events/${event.event_id}`,
         {
           method: "DELETE",
+          headers: headers,
         }
       );
+
+      const data = await response.json();
+
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
@@ -151,20 +162,15 @@ export default function AdminEventsPage() {
           description: "Event deleted successfully",
         });
       } else {
-        console.error("Failed to delete event");
-        toast({
-          title: "Error",
-          description: "Failed to delete event",
-          variant: "destructive",
-        });
+        console.error("Failed to delete event:", data);
+        // Show error popup instead of toast
+        setDeleteError(data.message || "Failed to delete event");
+        setEventToDelete(null);
       }
     } catch (err) {
       console.error("Error deleting event:", err);
-      toast({
-        title: "Error",
-        description: "Error deleting event",
-        variant: "destructive",
-      });
+      setDeleteError("Error deleting event. Please try again.");
+      setEventToDelete(null);
     }
   };
 
@@ -176,29 +182,12 @@ export default function AdminEventsPage() {
         false) ||
       (event.venue?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
 
-    const matchesStatus =
-      statusFilter === "all" || event.status?.toLowerCase() === statusFilter;
     const matchesCategory =
       categoryFilter === "all" ||
       event.category?.toLowerCase() === categoryFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesCategory;
   });
-
-  const getStatusColor = (status: string | null) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-        return "default";
-      case "sold_out":
-        return "destructive";
-      case "draft":
-        return "secondary";
-      case "cancelled":
-        return "outline";
-      default:
-        return "secondary";
-    }
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
@@ -265,18 +254,6 @@ export default function AdminEventsPage() {
                     />
                   </div>
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="sold_out">Sold Out</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Select
                   value={categoryFilter}
                   onValueChange={setCategoryFilter}
@@ -333,14 +310,13 @@ export default function AdminEventsPage() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <Badge variant={getStatusColor(event.status)}>
-                          {event.status?.toLowerCase() || "N/A"}
-                        </Badge>
                         <div className="flex space-x-1">
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleViewEvent(event)}
+                            onClick={() =>
+                              router.push(`/organizer/events/${event.event_id}`)
+                            }
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -378,9 +354,7 @@ export default function AdminEventsPage() {
                   No events found
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {searchTerm ||
-                  statusFilter !== "all" ||
-                  categoryFilter !== "all"
+                  {searchTerm || categoryFilter !== "all"
                     ? "Try adjusting your filters to see more events."
                     : "Get started by creating your first event."}
                 </p>
@@ -442,10 +416,6 @@ export default function AdminEventsPage() {
               </p>
               <p className="text-sm">
                 <strong>Capacity:</strong> {selectedEvent.capacity ?? "N/A"}
-              </p>
-              <p className="text-sm">
-                <strong>Status:</strong>{" "}
-                {selectedEvent.status?.toLowerCase() || "N/A"}
               </p>
               <p className="text-sm">
                 <strong>Cover Image URL:</strong>{" "}
@@ -550,6 +520,56 @@ export default function AdminEventsPage() {
                 onClick={() => handleDeleteEvent(eventToDelete)}
               >
                 Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Popup for Delete Failures */}
+      {deleteError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl border-2 border-red-500">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-red-600">
+                Cannot Delete Event
+              </h2>
+              <Button variant="ghost" onClick={() => setDeleteError(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mb-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {deleteError}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setDeleteError(null)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                OK
               </Button>
             </div>
           </div>

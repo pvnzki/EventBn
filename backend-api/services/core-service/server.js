@@ -138,6 +138,43 @@ app.use((req, res, next) => {
   next();
 });
 
+// ANALYTICS TEST ROUTE - MUST BE BEFORE OTHER ROUTE IMPORTS
+app.get("/test-analytics/:organizationId", async (req, res) => {
+  try {
+    const organizationId = parseInt(req.params.organizationId);
+    console.log('=== DIRECT ANALYTICS TEST FOR ORG:', organizationId, '===');
+    
+    const events = await prisma.event.findMany({
+      where: { organization_id: organizationId },
+      select: { event_id: true, title: true }
+    });
+    console.log('EVENTS FOUND:', events.length, events);
+    
+    const eventIds = events.map(e => e.event_id);
+    const ticketCount = await prisma.ticket_purchase.count({
+      where: { event_id: { in: eventIds } }
+    });
+    console.log('TICKET COUNT:', ticketCount);
+    
+    const result = {
+      totalEvents: events.length,
+      ticketsSold: ticketCount,
+      totalRevenue: 0,
+      totalAttendees: ticketCount,
+      conversionRate: 0,
+      avgTicketPrice: 0,
+      revenueGrowth: 0,
+      attendeeGrowth: 0
+    };
+    
+    console.log('FINAL RESULT:', result);
+    res.json({ success: true, data: result, debug: true });
+  } catch (error) {
+    console.error('Direct test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Import route handlers
 const apiRoutes = require("./routes/api");
 const authRoutes = require("./routes/auth");

@@ -1,3 +1,6 @@
+process.env.NODE_ENV = 'test';
+
+// Place for shared per-test setup for DB-backed suites if needed
 /**
  * Jest Setup for Integration Tests
  * 
@@ -6,8 +9,15 @@
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = 'test-jwt-secret-key-for-integration-tests';
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/eventbn_test';
+// Respect values loaded from .env.test by env.load.js; only set fallbacks if missing
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'test-jwt-secret-key-for-integration-tests';
+}
+// Do NOT override DATABASE_URL if already provided via .env.test
+// This prevents accidental connection to the wrong DB/port/credentials
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/eventbn_test';
+}
 
 // Increase timeout for all tests
 jest.setTimeout(30000);

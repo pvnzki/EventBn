@@ -3,9 +3,35 @@ const router = express.Router();
 // const coreService = require("../index"); // Disabled to prevent circular dependencies
 const jwt = require("jsonwebtoken");
 const prisma = require("../lib/database");
+const eventsService = require("../events");
+const multer = require("multer");
+const { uploadStream } = require("../lib/cloudinary");
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 // Import seat lock service at the top level
 const seatLockService = require("../seat-locks/seatLockService");
+
+// Import organization routes
+const organizationRoutes = require("./organizations");
+
+// Import analytics routes
+const analyticsRoutes = require("./analytics");
+
+// Import users routes
+const usersRoutes = require("./users");
+
+// Import tickets routes - COMMENTED OUT: tickets.js has wrong auth middleware path
+// const ticketsRoutes = require("./tickets");
+
+// Import events routes - COMMENTED OUT DUE TO MODULE DEPENDENCY ISSUES
+// const eventsRoutes = require("./events");
+// console.log("[API.JS] Events routes loaded:", typeof eventsRoutes, eventsRoutes ? "✓" : "✗");
 
 // Authentication middleware (production style)
 const authenticateUser = (req, res, next) => {
@@ -398,6 +424,7 @@ router.get("/events", async (req, res) => {
         video_url: true,
         status: true,
         created_at: true,
+        organization_id: true, // Added this field for organization filtering
         organization: {
           select: {
             name: true,
@@ -953,8 +980,394 @@ router.get("/events/:eventId/booked-seats", async (req, res) => {
   }
 });
 
+// Mount analytics routes (before authentication middleware)
+router.use("/analytics", analyticsRoutes);
+
+// Mount events routes (has its own authentication middleware) - COMMENTED OUT DUE TO MODULE ISSUES
+// console.log("[API.JS] Mounting events routes at /events");
+// router.use("/events", eventsRoutes);
+
+// Add POST route to create event with file upload support
+router.post(
+  "/events", 
+  authenticateUser, 
+  upload.fields([
+    { name: 'cover_image', maxCount: 1 },
+    { name: 'other_images', maxCount: 5 },
+    { name: 'video', maxCount: 1 }
+  ]),
+  async (req, res) => {
+    try {
+      console.log("[API.JS] POST /events called");
+      console.log("[API.JS] Request body:", req.body);
+      console.log("[API.JS] Files:", req.files);
+      
+      // Parse JSON fields from FormData
+      const eventData = { ...req.body };
+      
+      // Parse seat_map if it's a string
+      if (eventData.seat_map && typeof eventData.seat_map === 'string') {
+        try {
+          eventData.seat_map = JSON.parse(eventData.seat_map);
+        } catch (e) {
+          console.error("[API.JS] Error parsing seat_map:", e);
+        }
+      }
+      
+      // Parse ticket_types if it's a string
+      if (eventData.ticket_types && typeof eventData.ticket_types === 'string') {
+        try {
+          eventData.ticket_types = JSON.parse(eventData.ticket_types);
+        } catch (e) {
+          console.error("[API.JS] Error parsing ticket_types:", e);
+        }
+      }
+      
+      // Upload cover image to Cloudinary if provided
+      if (req.files && req.files.cover_image && req.files.cover_image[0]) {
+        console.log("[API.JS] Uploading cover image to Cloudinary...");
+        const coverImageFile = req.files.cover_image[0];
+        const uploadResult = await uploadStream(coverImageFile.buffer, {
+          folder: 'eventbn/events/cover_images',
+          resource_type: 'image',
+          transformation: [
+            { width: 1200, height: 630, crop: 'fill' },
+            { quality: 'auto' }
+          ]
+        });
+        eventData.cover_image_url = uploadResult.secure_url;
+        console.log("[API.JS] Cover image uploaded:", uploadResult.secure_url);
+      }
+      
+      // Upload other images to Cloudinary if provided
+      if (req.files && req.files.other_images && req.files.other_images.length > 0) {
+        console.log("[API.JS] Uploading other images to Cloudinary...");
+        const otherImageUrls = [];
+        for (const imageFile of req.files.other_images) {
+          const uploadResult = await uploadStream(imageFile.buffer, {
+            folder: 'eventbn/events/gallery',
+            resource_type: 'image',
+            transformation: [
+              { width: 800, height: 600, crop: 'fill' },
+              { quality: 'auto' }
+            ]
+          });
+          otherImageUrls.push(uploadResult.secure_url);
+        }
+        eventData.other_images_url = JSON.stringify(otherImageUrls);
+        console.log("[API.JS] Other images uploaded:", otherImageUrls);
+      }
+      
+      // Upload video to Cloudinary if provided
+      if (req.files && req.files.video && req.files.video[0]) {
+        console.log("[API.JS] Uploading video to Cloudinary...");
+        const videoFile = req.files.video[0];
+        const uploadResult = await uploadStream(videoFile.buffer, {
+          folder: 'eventbn/events/videos',
+          resource_type: 'video',
+          transformation: [
+            { width: 1280, height: 720, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        });
+        eventData.video_url = uploadResult.secure_url;
+        console.log("[API.JS] Video uploaded:", uploadResult.secure_url);
+      }
+      
+      // Use events service to create the event
+      const newEvent = await eventsService.createEvent(eventData);
+      
+      res.status(201).json({
+        success: true,
+        message: "Event created successfully",
+        data: newEvent,
+      });
+    } catch (error) {
+      console.error("[API.JS] Error creating event:", error);
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+);
+
+// Add PUT route directly here for now with Cloudinary upload support
+router.put(
+  "/events/:id", 
+  authenticateUser, 
+  upload.fields([
+    { name: 'cover_image', maxCount: 1 },
+    { name: 'other_images', maxCount: 5 },
+    { name: 'video', maxCount: 1 }
+  ]),
+  async (req, res) => {
+    try {
+      console.log("[API.JS] PUT /events/:id called with ID:", req.params.id);
+      const eventId = req.params.id;
+      
+      // Parse JSON fields from FormData
+      const eventData = { ...req.body };
+      
+      // Parse seat_map if it's a string
+      if (eventData.seat_map && typeof eventData.seat_map === 'string') {
+        try {
+          eventData.seat_map = JSON.parse(eventData.seat_map);
+        } catch (e) {
+          console.error("[API.JS] Error parsing seat_map:", e);
+        }
+      }
+      
+      // Parse ticket_types if it's a string
+      if (eventData.ticket_types && typeof eventData.ticket_types === 'string') {
+        try {
+          eventData.ticket_types = JSON.parse(eventData.ticket_types);
+        } catch (e) {
+          console.error("[API.JS] Error parsing ticket_types:", e);
+        }
+      }
+      
+      // Upload cover image to Cloudinary if provided
+      if (req.files && req.files.cover_image && req.files.cover_image[0]) {
+        console.log("[API.JS] Uploading new cover image to Cloudinary...");
+        const coverImageFile = req.files.cover_image[0];
+        const uploadResult = await uploadStream(coverImageFile.buffer, {
+          folder: 'eventbn/events/cover_images',
+          resource_type: 'image',
+          transformation: [
+            { width: 1200, height: 630, crop: 'fill' },
+            { quality: 'auto' }
+          ]
+        });
+        eventData.cover_image_url = uploadResult.secure_url;
+        console.log("[API.JS] Cover image uploaded:", uploadResult.secure_url);
+      }
+      
+      // Upload other images to Cloudinary if provided
+      if (req.files && req.files.other_images && req.files.other_images.length > 0) {
+        console.log("[API.JS] Uploading new other images to Cloudinary...");
+        const otherImageUrls = [];
+        for (const imageFile of req.files.other_images) {
+          const uploadResult = await uploadStream(imageFile.buffer, {
+            folder: 'eventbn/events/gallery',
+            resource_type: 'image',
+            transformation: [
+              { width: 800, height: 600, crop: 'fill' },
+              { quality: 'auto' }
+            ]
+          });
+          otherImageUrls.push(uploadResult.secure_url);
+        }
+        eventData.other_images_url = JSON.stringify(otherImageUrls);
+        console.log("[API.JS] Other images uploaded:", otherImageUrls);
+      }
+      
+      // Upload video to Cloudinary if provided
+      if (req.files && req.files.video && req.files.video[0]) {
+        console.log("[API.JS] Uploading new video to Cloudinary...");
+        const videoFile = req.files.video[0];
+        const uploadResult = await uploadStream(videoFile.buffer, {
+          folder: 'eventbn/events/videos',
+          resource_type: 'video',
+          transformation: [
+            { width: 1280, height: 720, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        });
+        eventData.video_url = uploadResult.secure_url;
+        console.log("[API.JS] Video uploaded:", uploadResult.secure_url);
+      }
+      
+      // Use events service to update the event
+      const updatedEvent = await eventsService.updateEvent(eventId, eventData);
+      
+      res.json({
+        success: true,
+        message: "Event updated successfully",
+        data: updatedEvent,
+      });
+    } catch (error) {
+      console.error("[API.JS] Error updating event:", error);
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+);
+
+// Add DELETE route for events
+router.delete("/events/:id", authenticateUser, async (req, res) => {
+  try {
+    console.log("[API.JS] DELETE /events/:id called with ID:", req.params.id);
+    const eventId = req.params.id;
+    
+    // Use events service to delete the event
+    await eventsService.deleteEvent(eventId);
+    
+    res.json({
+      success: true,
+      message: "Event deleted successfully",
+    });
+  } catch (error) {
+    console.error("[API.JS] Error deleting event:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// Mount tickets routes - COMMENTED OUT: tickets.js has wrong auth import
+// router.use("/tickets", ticketsRoutes);
+
+// Add tickets route directly here
+router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
+  try {
+    const user_id = req.userId;
+
+    // Get all tickets for events owned by user's organizations
+    const ticketsData = await prisma.ticket_purchase.findMany({
+      where: {
+        Event: {
+          organization: {
+            user_id: user_id // Events from organizations owned by this user
+          }
+        }
+      },
+      include: {
+        User: {
+          select: {
+            name: true,
+            email: true,
+            phone_number: true,
+          },
+        },
+        Event: {
+          select: {
+            event_id: true,
+            title: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true,
+            capacity: true,
+          },
+        },
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
+        },
+      },
+      orderBy: {
+        purchase_date: 'desc'
+      }
+    });
+
+    // Get unique events from the tickets
+    const events = await prisma.event.findMany({
+      where: {
+        organization: {
+          user_id: user_id
+        }
+      },
+      select: {
+        event_id: true,
+        title: true,
+        description: true,
+        start_time: true,
+        end_time: true,
+        venue: true,
+        location: true,
+        cover_image_url: true,
+        capacity: true,
+      }
+    });
+
+    // Normalize ticket data - convert Prisma capitalized relations to lowercase for frontend
+    const normalizedTickets = ticketsData.map(ticket => ({
+      ...ticket,
+      event: ticket.Event,
+      user: ticket.User,
+      Event: undefined,
+      User: undefined
+    }));
+
+    // Calculate statistics and group by event
+    let totalRevenue = 0;
+    const eventTicketsMap = {};
+    const byStatus = {};
+
+    normalizedTickets.forEach(ticket => {
+      // Calculate total revenue (price is BigInt, convert to number)
+      totalRevenue += Number(ticket.price);
+
+      // Group by event
+      const eventId = ticket.event.event_id;
+      if (!eventTicketsMap[eventId]) {
+        eventTicketsMap[eventId] = {
+          event: ticket.event,
+          tickets: [],
+          ticketCount: 0,
+          eventRevenue: 0,
+          attendedCount: 0
+        };
+      }
+      eventTicketsMap[eventId].tickets.push(ticket);
+      eventTicketsMap[eventId].ticketCount++;
+      eventTicketsMap[eventId].eventRevenue += Number(ticket.price);
+      if (ticket.attended) {
+        eventTicketsMap[eventId].attendedCount++;
+      }
+
+      // Count by status
+      const status = ticket.payment?.status || 'unknown';
+      byStatus[status] = (byStatus[status] || 0) + 1;
+    });
+
+    // Convert eventTicketsMap to array
+    const ticketsByEvent = Object.values(eventTicketsMap);
+
+    const statistics = {
+      totalTicketsSold: normalizedTickets.length,
+      totalRevenue: totalRevenue,
+      totalEvents: events.length,
+      averageTicketPrice: normalizedTickets.length > 0 ? totalRevenue / normalizedTickets.length : 0,
+      byEvent: eventTicketsMap,
+      byStatus: byStatus,
+    };
+
+    res.json({
+      success: true,
+      tickets: normalizedTickets,
+      events: events,
+      ticketsByEvent: ticketsByEvent,
+      statistics: statistics
+    });
+  } catch (error) {
+    console.error("[API.JS] Error fetching organizer tickets:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch tickets",
+      error: error.message
+    });
+  }
+});
+
+// Mount organization routes
+router.use("/organizations", organizationRoutes);
+
 // Protected routes (require authentication)
 router.use(authenticateUser);
+
+// Mount users routes (protected)
+router.use("/users", usersRoutes);
 
 // (Temporary removal) Ticket & Payment routes will be re-added with DB logic below
 // ---------------------------------------------------------------------------
@@ -2014,36 +2427,69 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
     console.log(
       `[CORE-SERVICE][TICKETS] /tickets/:ticketId/attend userId=${userId} ticketId=${ticketId}`
     );
-    // User can only mark own ticket for now (future: organizer scan logic)
+    
+    // Fetch ticket with event details and organization
     const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
       include: {
-        event: {
+        Event: {
           select: {
+            event_id: true,
             title: true,
             cover_image_url: true,
             start_time: true,
             venue: true,
             location: true,
+            organization_id: true,
           },
         },
       },
     });
-    if (!ticket || ticket.user_id !== userId)
-      return res
-        .status(404)
-        .json({ success: false, error: "Ticket not found" });
-    if (ticket.attended)
+    
+    console.log(`[CORE-SERVICE][TICKETS] Ticket found:`, ticket ? `Yes, user_id=${ticket.user_id}, event_id=${ticket.Event?.event_id}` : 'No');
+    console.log(`[CORE-SERVICE][TICKETS] Requesting user_id=${userId}`);
+    
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: "Ticket not found" });
+    }
+    
+    // Get the requesting user's organizations (users can own multiple organizations)
+    const requestingUser = await prisma.user.findUnique({
+      where: { user_id: userId },
+      include: { organizations: { select: { organization_id: true } } },
+    });
+    
+    // Check if user can mark this ticket as attended:
+    // 1. User owns the ticket, OR
+    // 2. User owns an organization that matches the event's organization
+    const isTicketOwner = ticket.user_id === userId;
+    const userOrgIds = requestingUser?.organizations.map(org => org.organization_id) || [];
+    const isEventOrganizer = ticket.Event?.organization_id && 
+                             userOrgIds.includes(ticket.Event.organization_id);
+    
+    console.log(`[CORE-SERVICE][TICKETS] isTicketOwner=${isTicketOwner}, isEventOrganizer=${isEventOrganizer}, userOrgIds=[${userOrgIds}], eventOrgId=${ticket.Event?.organization_id}`);
+    
+    if (!isTicketOwner && !isEventOrganizer) {
+      return res.status(403).json({ 
+        success: false, 
+        error: "You don't have permission to mark this ticket as attended" 
+      });
+    }
+    
+    if (ticket.attended) {
       return res.json({
         success: true,
         message: "Already marked attended",
         ticket: { ...ticket, price: Number(ticket.price) },
       });
+    }
+    
     const updated = await prisma.ticket_purchase.update({
       where: { ticket_id: ticketId },
       data: { attended: true },
     });
-    console.log(`[CORE-SERVICE][TICKETS] Marked attended ticket=${ticketId}`);
+    
+    console.log(`[CORE-SERVICE][TICKETS] Marked attended ticket=${ticketId} by user=${userId}`);
     res.json({
       success: true,
       message: "Ticket marked as attended",
@@ -2083,6 +2529,58 @@ router.get("/debug/tickets-stats", authenticateUser, async (req, res) => {
       success: false,
       error: "Failed to get debug stats",
       message: e.message,
+    });
+  }
+});
+
+// Get all users (admin only)
+router.get("/users", async (req, res) => {
+  try {
+    // Check if user is admin
+    const currentUser = await prisma.user.findUnique({
+      where: { user_id: parseInt(req.userId) },
+      select: { role: true },
+    });
+
+    if (!currentUser || currentUser.role.toLowerCase() !== "admin") {
+      return res.status(403).json({ 
+        success: false, 
+        error: "Forbidden: Admin access required" 
+      });
+    }
+
+    // Fetch all users with their organization info
+    const users = await prisma.user.findMany({
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        profile_picture: true,
+        role: true,
+        is_active: true,
+        is_email_verified: true,
+        created_at: true,
+        updated_at: true,
+        organization_id: true,
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      data: users,
+      count: users.length,
+      service: "core-service" 
+    });
+  } catch (error) {
+    console.error("[API.JS] Error fetching users:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch users",
+      message: error.message,
     });
   }
 });
@@ -2153,6 +2651,116 @@ router.put("/users/profile", async (req, res) => {
   }
 });
 
+// Get user by ID (authenticated)
+router.get("/users/:id", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid user ID" 
+      });
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { user_id: userId },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        profile_picture: true,
+        role: true,
+        is_active: true,
+        is_email_verified: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      user, 
+      service: "core-service" 
+    });
+  } catch (error) {
+    console.error("[API.JS] Error fetching user:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch user",
+      message: error.message,
+    });
+  }
+});
+
+// Update user by ID (authenticated - can only update own profile)
+router.put("/users/:id", async (req, res) => {
+  try {
+    const targetUserId = parseInt(req.params.id);
+    const currentUserId = parseInt(req.userId);
+    
+    if (isNaN(targetUserId)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid user ID" 
+      });
+    }
+    
+    // Users can only update their own profile unless they're admin
+    if (targetUserId !== currentUserId && req.user?.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: "Forbidden: You can only update your own profile" 
+      });
+    }
+    
+    const { name, phone_number, profile_picture } = req.body;
+    
+    const user = await prisma.user.update({
+      where: { user_id: targetUserId },
+      data: { 
+        ...(name && { name }),
+        ...(phone_number !== undefined && { phone_number }),
+        ...(profile_picture !== undefined && { profile_picture })
+      },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        profile_picture: true,
+        role: true,
+        is_active: true,
+        is_email_verified: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+    
+    res.json({
+      success: true,
+      message: "User updated successfully",
+      user,
+      service: "core-service",
+    });
+  } catch (error) {
+    console.error("[API.JS] Error updating user:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update user",
+      message: error.message,
+    });
+  }
+});
+
 // Analytics routes
 router.get("/analytics/dashboard", async (req, res) => {
   try {
@@ -2189,3 +2797,4 @@ router.get("/analytics/dashboard", async (req, res) => {
 });
 
 module.exports = router;
+

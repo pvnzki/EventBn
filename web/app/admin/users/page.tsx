@@ -77,7 +77,15 @@ export default function UsersPage() {
     const fetchUsers = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:3000/api/users");
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch("http://localhost:3001/api/users", {
+          headers,
+        });
         const data = await response.json();
 
         if (data.success && Array.isArray(data.data)) {
@@ -123,10 +131,17 @@ export default function UsersPage() {
   // Function to handle user deletion
   const handleDeleteUser = async (user: User) => {
     try {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/users/${user.id}`,
+        `http://localhost:3001/api/users/${user.id}`,
         {
           method: "DELETE",
+          headers,
         }
       );
 

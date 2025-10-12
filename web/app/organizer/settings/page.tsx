@@ -60,20 +60,33 @@ export default function OrganizerSettingsPage() {
           return;
         }
 
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("Authentication token not found");
+          setLoading(false);
+          return;
+        }
+
         const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`
+          `http://localhost:3001/api/users/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const result = await response.json();
-        if (result.success && result.data) {
-          setUser(result.data);
+        if (result.success && result.user) {
+          setUser(result.user);
           setProfileData({
-            name: result.data.name || "",
-            email: result.data.email || "",
-            phone: result.data.phone_number || "",
+            name: result.user.name || "",
+            email: result.user.email || "",
+            phone: result.user.phone_number || "",
             avatar:
-              result.data.profile_picture ||
+              result.user.profile_picture ||
               "/placeholder.svg?height=100&width=100",
           });
         } else throw new Error("Invalid API response");
@@ -113,11 +126,20 @@ export default function OrganizerSettingsPage() {
       const parsedUser = JSON.parse(userData);
       const userId = parsedUser.user_id;
 
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Authentication token not found");
+        return;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/users/${userId}`,
+        `http://localhost:3001/api/users/${userId}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             name: profileData.name,
             email: profileData.email,

@@ -1,4 +1,4 @@
-const analyticsService = require('../services/core-service/analytics');
+const analyticsService = require('./index');
 
 module.exports = {
   async getAll(req, res) {
@@ -59,6 +59,109 @@ module.exports = {
       const { id } = req.params;
       await analyticsService.deleteAnalytics(id);
       res.json({ success: true, message: "Deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // New dashboard endpoints
+  async getDashboardOverview(req, res) {
+    try {
+      const { timeRange = '6months' } = req.query;
+      const data = await analyticsService.getDashboardOverview(timeRange);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getRevenueTrend(req, res) {
+    try {
+      const { timeRange = '6months' } = req.query;
+      const data = await analyticsService.getRevenueTrend(timeRange);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getEventCategories(req, res) {
+    try {
+      const data = await analyticsService.getEventCategories();
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getTopEvents(req, res) {
+    try {
+      const { limit = 5 } = req.query;
+      const data = await analyticsService.getTopEvents(parseInt(limit));
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getDailyAttendees(req, res) {
+    try {
+      const data = await analyticsService.getDailyAttendees();
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Organizer-specific endpoints
+  async getOrganizerDashboardOverview(req, res) {
+    try {
+      const { organizationId } = req.params;
+      const { timeRange = '6months' } = req.query;
+      const data = await analyticsService.getOrganizerDashboardOverview(organizationId, timeRange);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getOrganizerRevenueTrend(req, res) {
+    try {
+      const { organizationId } = req.params;
+      const { timeRange = '6months' } = req.query;
+      const data = await analyticsService.getOrganizerRevenueTrend(organizationId, timeRange);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getOrganizerEventCategories(req, res) {
+    try {
+      const { organizationId } = req.params;
+      const data = await analyticsService.getOrganizerEventCategories(organizationId);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getOrganizerTopEvents(req, res) {
+    try {
+      const { organizationId } = req.params;
+      const { limit = 5 } = req.query;
+      const data = await analyticsService.getOrganizerTopEvents(organizationId, parseInt(limit));
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getOrganizerDailyAttendees(req, res) {
+    try {
+      const { organizationId } = req.params;
+      const data = await analyticsService.getOrganizerDailyAttendees(organizationId);
+      res.json({ success: true, data });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

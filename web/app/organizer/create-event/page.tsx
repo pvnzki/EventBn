@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import {
   MapPin,
   Plus,
@@ -60,6 +61,7 @@ interface Seat {
 }
 
 export default function CreateEventPage() {
+  const { toast } = useToast();
   const [eventData, setEventData] = useState({
     title: "",
     description: "",
@@ -97,6 +99,10 @@ export default function CreateEventPage() {
     const file = e.target.files && e.target.files[0];
     if (file) {
       setEventData((prev) => ({ ...prev, videoFile: file }));
+      toast({
+        title: "Video uploaded",
+        description: "Your video has been successfully uploaded.",
+      });
     }
   }
 
@@ -224,6 +230,10 @@ export default function CreateEventPage() {
       // Create preview URL
       const url = URL.createObjectURL(file);
       setEventData((prev) => ({ ...prev, coverImageUrl: url }));
+      toast({
+        title: "Cover image uploaded",
+        description: "Your cover image has been successfully uploaded.",
+      });
     }
   };
 
@@ -238,6 +248,10 @@ export default function CreateEventPage() {
           ...files.map((file) => URL.createObjectURL(file)),
         ],
       }));
+      toast({
+        title: "Images uploaded",
+        description: `Successfully uploaded ${files.length} image(s).`,
+      });
     }
   };
 
@@ -281,7 +295,7 @@ export default function CreateEventPage() {
       formData.append("start_time", startDateTime.toISOString());
       formData.append("end_time", endDateTime.toISOString());
       formData.append("capacity", eventData.capacity);
-      formData.append("video_url", eventData.videoUrl);
+      // Don't send video_url as text field - only send video file if uploaded
       formData.append("status", eventData.status);
       // Add organization_id
       if (eventData.organization_id) {
@@ -316,16 +330,45 @@ export default function CreateEventPage() {
 
       // No conversion needed, seatMap is already an array of seat objects
 
-      // Send to API
+      // Get auth token
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoading(false);
+        alert(
+          "You're not logged in. Please sign in as an organizer to create events."
+        );
+        return;
+      }
+
+      // Send to API with Authorization header
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
         }/api/events`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         }
       );
+
+      // Handle common auth errors explicitly
+      if (response.status === 401) {
+        const err = await response
+          .json()
+          .catch(() => ({ message: "Unauthorized" }));
+        throw new Error(err.message || "Unauthorized. Please log in again.");
+      }
+      if (response.status === 403) {
+        const err = await response
+          .json()
+          .catch(() => ({ message: "Forbidden" }));
+        throw new Error(
+          err.message || "Organizer access required to create events."
+        );
+      }
 
       const result = await response.json();
 
