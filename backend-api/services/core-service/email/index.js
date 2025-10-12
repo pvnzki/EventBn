@@ -70,12 +70,13 @@ class EmailService {
    */
   async getLogoBase64() {
     try {
-      const logoPath = path.join(__dirname, "../../../../mobile-app/assets/images/White icon logo transparent.png")
+      const logoPath = path.join(__dirname, "../assets/images/White icon logo transparent.png")
       const logoBuffer = await fs.readFile(logoPath)
       const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
       return logoBase64
     } catch (error) {
       console.error("Error loading logo:", error)
+      console.log("Logo not found, continuing without logo")
       return null
     }
   }
