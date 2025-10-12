@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev -p 3001",
+    "dev": "next dev -p 5000",
     "lint": "next lint",
-    "start": "next start -p 3001",
+    "lint:fix": "next lint --fix",
+    "start": "next start -p 5000",
     "cy:open": "cypress open --e2e",
     "cy:run": "cypress run --e2e",
-    "test:ui:open": "start-server-and-test dev http://localhost:3001 cy:open",
-    "test:ui:dev": "start-server-and-test dev http://localhost:3001 cy:run",
-    "test:ui:prod": "next build && start-server-and-test start http://localhost:3001 cy:run",
+    "test:ui:open": "start-server-and-test dev http://localhost:5000 cy:open",
+    "test:ui:dev": "start-server-and-test dev http://localhost:5000 cy:run",
+    "test:ui:prod": "next build && start-server-and-test start http://localhost:5000 cy:run",
     "bs:run": "browserstack-cypress run --sync",
     "bs:local": "set BROWSERSTACK_LOCAL=1 & set BROWSERSTACK_LOCAL_IDENTIFIER=eventbn-local-%DATE% & browserstack-cypress run --sync"
   },
@@ -70,6 +71,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-cypress": "^2.14.0",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",

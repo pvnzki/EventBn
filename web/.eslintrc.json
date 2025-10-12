@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/eslintrc",
+  "root": true,
+  "extends": [
+    "next/core-web-vitals",
+    "eslint:recommended"
+  ],
+  "plugins": [
+    "cypress"
+  ],
+  "overrides": [
+    {
+      "files": ["cypress/**/*.{js,jsx,ts,tsx}", "**/*.cy.{js,jsx,ts,tsx}"],
+      "env": { "cypress/globals": true },
+      "extends": ["plugin:cypress/recommended"],
+      "rules": {
+        "cypress/no-unnecessary-waiting": "warn"
+      }
+    }
+  ]
+}
