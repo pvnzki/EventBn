@@ -1375,7 +1375,7 @@ router.get("/seat-locks/events/:eventId/locks", async (req, res) => {
         .status(400)
         .json({ success: false, message: "eventId required" });
     }
-    const locks = await seatLockService.getAllLocksForEvent(eventId);
+    const locks = await seatLockService.getEventLockedSeats(eventId);
     res.json({
       success: true,
       eventId,

@@ -2,8 +2,8 @@ const { getRedisClient } = require("../lib/redis");
 
 class SeatLockService {
   constructor() {
-    this.LOCK_DURATION = 5 * 60; // 5 minutes in seconds (more reasonable for user flow)
-    this.PAYMENT_LOCK_DURATION = 10 * 60; // 10 minutes for payment process
+    this.LOCK_DURATION = 5 * 60; // 5 minutes for regular seat selection
+    this.PAYMENT_LOCK_DURATION = 1 * 60; // 15 minutes for payment process
   }
 
   /**

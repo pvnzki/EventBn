@@ -5,19 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/email/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/email/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat-consistency.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat.js" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/payments.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/payments.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/android/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/android/local.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
