@@ -125,7 +125,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
-    String? phoneNumber,
+    required String phoneNumber,
   }) async {
     _setLoading(true);
     _setError(null);

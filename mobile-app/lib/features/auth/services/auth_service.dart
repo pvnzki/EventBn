@@ -62,7 +62,7 @@ class AuthService {
     required String name,
     required String email,
     required String password,
-    String? phoneNumber,
+    required String phoneNumber,
   }) async {
     try {
       print('🔄 [AUTH_SERVICE] Registering user: $email');
