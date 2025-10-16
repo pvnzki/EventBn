@@ -67,22 +67,8 @@ export default function AnalyticsPage() {
 
   // Only fetch analytics if user is loaded and is admin
   const isAdmin = user?.role === "admin";
-
   // Mirror organizer analytics flow: wait for user, require admin, then fetch platform-wide analytics
-  if (user && !isAdmin) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1 lg:ml-64 p-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl font-semibold">Access denied</h2>
-            <p className="mt-2 text-gray-600">You must be an admin to view platform analytics.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // IMPORTANT: hooks must be called unconditionally — call the admin analytics hook here even if user is null
   const {
     overview,
     revenueData,
@@ -93,6 +79,22 @@ export default function AnalyticsPage() {
     error,
     refetch,
   } = useAdminAnalytics(!!isAdmin, timeRange);
+
+  if (user && !isAdmin) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 p-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-2xl font-semibold">Access denied</h2>
+            <p className="mt-2 text-gray-600">
+              You must be an admin to view platform analytics.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -530,11 +532,23 @@ export default function AnalyticsPage() {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>Debug: Raw Analytics JSON</CardTitle>
-              <CardDescription>Temporary - remove in production</CardDescription>
+              <CardDescription>
+                Temporary - remove in production
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <pre className="text-xs overflow-auto max-h-64">
-{JSON.stringify({ overview, revenueData, categoryData, attendeeData, topEvents }, null, 2)}
+                {JSON.stringify(
+                  {
+                    overview,
+                    revenueData,
+                    categoryData,
+                    attendeeData,
+                    topEvents,
+                  },
+                  null,
+                  2
+                )}
               </pre>
             </CardContent>
           </Card>
@@ -543,7 +557,9 @@ export default function AnalyticsPage() {
               <CardTitle>Debug: User</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-xs">{JSON.stringify({ user, isAdmin }, null, 2)}</pre>
+              <pre className="text-xs">
+                {JSON.stringify({ user, isAdmin }, null, 2)}
+              </pre>
             </CardContent>
           </Card>
         </div>

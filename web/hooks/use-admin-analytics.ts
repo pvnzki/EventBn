@@ -12,6 +12,7 @@ export const useAdminAnalytics = (enabled: boolean, timeRange: string = '6months
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
   const fetchData = async () => {
     if (!enabled) return;
     try {
