@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
+import '../widgets/post_shimmer_loading.dart';
 
 class ExplorePostsPage extends StatefulWidget {
   final bool focusSearch;
@@ -97,7 +99,15 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     if (!_isInitialized) {
       return Scaffold(
         backgroundColor: colorScheme.surface,
-        body: _buildLoadingSkeleton(),
+        body: Column(
+          children: [
+            _buildAppBar(),
+            _buildSearchAndFilters(),
+            const Expanded(
+              child: GridPostShimmerLoading(itemCount: 12),
+            ),
+          ],
+        ),
       );
     }
 
@@ -160,10 +170,10 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
 
     return Container(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
+        top: MediaQuery.of(context).padding.top + 4, // Reduced from 8
         left: 20,
         right: 20,
-        bottom: 16,
+        bottom: 8, // Reduced from 16
       ),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -192,15 +202,15 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
               letterSpacing: -0.5,
-              fontSize: 24,
+              fontSize: 22, // Reduced from 24
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10), // Reduced from 12
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14), // Reduced from 16
               boxShadow: [
                 BoxShadow(
                   color: isDark
@@ -219,7 +229,7 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             ),
             child: Icon(
               Icons.tune_rounded,
-              size: 22,
+              size: 20, // Reduced from 22
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -234,12 +244,13 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 20, vertical: 12), // Reduced from 16
       child: Column(
         children: [
           // Search Bar
           Container(
-            height: 52,
+            height: 48, // Reduced from 52
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -290,6 +301,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               ),
             ),
           ),
+          const SizedBox(
+              height: 12), // Add small gap between search and filters
           // Category Filter
           SizedBox(
             height: 32,
@@ -345,14 +358,19 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     final posts = _postService.posts.toList();
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo is ScrollEndNotification && 
-            scrollInfo.metrics.extentAfter < 500) {
+        // More aggressive preloading - load when 800px from bottom
+        if (scrollInfo is ScrollEndNotification &&
+            scrollInfo.metrics.extentAfter < 800 &&
+            _postService.hasMoreData &&
+            !_postService.isLoading) {
           _loadMorePosts();
         }
         return false;
       },
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
+        // Add scroll caching for better performance
+        cacheExtent: 1000,
         slivers: [
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
@@ -360,8 +378,9 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   if (index < posts.length) {
-                    return _buildInstagramTile(posts[index]);
-                  } else if (_postService.isLoading && index < posts.length + 6) {
+                    return _buildOptimizedInstagramTile(posts[index]);
+                  } else if (_postService.isLoading &&
+                      index < posts.length + 6) {
                     return _buildLoadingTile();
                   }
                   return null;
@@ -376,12 +395,85 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               ),
             ),
           ),
+          // Show loading indicator at bottom when loading more
+          if (_postService.isLoading && posts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Loading more posts...',
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // Show "no more posts" indicator when reached end
+          if (!_postService.hasMoreData && posts.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    '🎉 You\'ve seen all posts!',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildInstagramTile(ExplorePost post) {
+  Widget _buildOptimizedInstagramTile(ExplorePost post) {
+    // Debug video content
+    if (post.videoUrls.isNotEmpty) {
+      print('🎬 [Tile] Post ${post.id} has videos:');
+      print('  - videoUrls: ${post.videoUrls}');
+      print('  - videoThumbnails: ${post.videoThumbnails}');
+      print('  - imageUrls: ${post.imageUrls}');
+
+      // Check and fix HTTP URLs
+      if (post.videoThumbnails.isNotEmpty) {
+        final originalUrl = post.videoThumbnails.first;
+        final fixedUrl = originalUrl.replaceFirst('http://', 'https://');
+        if (originalUrl != fixedUrl) {
+          print('🔧 [Tile] Fixed HTTP to HTTPS: $originalUrl -> $fixedUrl');
+        }
+      }
+    } else if (post.imageUrls.isEmpty) {
+      print('⚠️ [Tile] Post ${post.id} has no media:');
+      print('  - videoUrls: ${post.videoUrls}');
+      print('  - imageUrls: ${post.imageUrls}');
+    }
+
     return GestureDetector(
       onTap: () {
         print('🔍 Explore: Tapping post ${post.id}');
@@ -394,34 +486,143 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Main image
-            post.imageUrls.isNotEmpty
+            // Optimized image loading with better caching - prioritize video thumbnails for video posts
+            (post.videoUrls.isNotEmpty && post.videoThumbnails.isNotEmpty)
                 ? Image.network(
-                    post.imageUrls.first,
+                    // Fix HTTP to HTTPS for Cloudinary URLs
+                    post.videoThumbnails.first
+                        .replaceFirst('http://', 'https://'),
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
                         ),
                       );
                     },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    ),
+                    errorBuilder: (context, error, stackTrace) {
+                      print(
+                          '❌ Video thumbnail failed to load: ${post.videoThumbnails.first}');
+                      print('❌ Error details: $error');
+                      print('❌ Stack trace: $stackTrace');
+
+                      // Check if URL is HTTP vs HTTPS
+                      if (post.videoThumbnails.first.startsWith('http://')) {
+                        print(
+                            '⚠️ POTENTIAL ISSUE: Thumbnail URL uses HTTP instead of HTTPS');
+                      }
+
+                      // For video posts, show video thumbnail placeholder instead of trying images
+                      return Container(
+                        color: Colors.black87,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white,
+                                size: 50,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'VIDEO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   )
-                : Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(Icons.image, color: Colors.grey),
-                    ),
-                  ),
-            
+                : post.imageUrls.isNotEmpty
+                    ? Image.network(
+                        post.imageUrls.first,
+                        fit: BoxFit.cover,
+                        // Add better caching and loading
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[400],
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[900],
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const Center(
+                              child: Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white,
+                                size: 50,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'VIDEO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
             // Overlay for video posts or multiple images
             if (post.imageUrls.length > 1)
               Positioned(
@@ -440,7 +641,19 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                   ),
                 ),
               ),
-            
+
+            // Video indicator for video posts
+            if (post.videoUrls.isNotEmpty)
+              const Positioned(
+                top: 8,
+                left: 8,
+                child: Icon(
+                  Icons.play_circle_filled,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+
             // Bottom engagement overlay
             Positioned(
               bottom: 8,
@@ -479,10 +692,17 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
   }
 
   Widget _buildLoadingTile() {
-    return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+      highlightColor: isDark ? Colors.grey[500]! : Colors.grey[100]!,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -494,36 +714,6 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
       return '${(count / 1000).toStringAsFixed(1)}K';
     }
     return count.toString();
-  }
-
-
-
-  Widget _buildLoadingSkeleton() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
-          sliver: SliverGrid(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => Container(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              childCount: 12,
-            ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
-              childAspectRatio: 1.0,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildEmptyState() {
@@ -559,5 +749,3 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     );
   }
 }
-
-

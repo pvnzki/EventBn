@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../models/post_model.dart';
+import 'feed_video_player.dart'; // Import our custom video player
 
 class ExplorePostCard extends StatefulWidget {
   final ExplorePost post;
@@ -26,8 +28,59 @@ class ExplorePostCard extends StatefulWidget {
   State<ExplorePostCard> createState() => _ExplorePostCardState();
 }
 
-class _ExplorePostCardState extends State<ExplorePostCard> {
+class _ExplorePostCardState extends State<ExplorePostCard>
+    with TickerProviderStateMixin {
   bool _isImageLoaded = false;
+  double _swipeOffset = 0.0;
+
+  // Animation controllers for premium bookmark effects
+  late AnimationController _pulseController;
+  late AnimationController _shimmerController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _shimmerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize bookmark animations
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    _shimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start subtle animations
+    _pulseController.repeat(reverse: true);
+    _shimmerController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,27 +92,61 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
         print('👆 GestureDetector onTap triggered for post ${widget.post.id}');
         _onPostTap();
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildUserHeader(),
-            _buildContent(),
-            if (widget.post.relatedEventId != null) _buildEventConnection(),
-            _buildEngagementBar(),
-          ],
+      onPanUpdate: (details) {
+        // Only track horizontal swipes (left swipe for event)
+        if (details.delta.dx < 0) {
+          setState(() {
+            _swipeOffset += details.delta.dx;
+            // Limit the swipe offset to prevent over-swiping
+            _swipeOffset = _swipeOffset.clamp(-100.0, 0.0);
+          });
+        }
+      },
+      onPanEnd: (details) {
+        // If swiped left more than 50 pixels and has event, navigate to event
+        if (_swipeOffset < -50 && _hasEvent()) {
+          _onGoToEventWithAnimation();
+        }
+
+        // Reset swipe offset
+        setState(() {
+          _swipeOffset = 0.0;
+        });
+      },
+      child: Transform.translate(
+        offset: Offset(_swipeOffset, 0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Main post content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildUserHeader(),
+                  _buildContent(),
+                  // Remove the large event connection from here
+                  _buildEngagementBar(),
+                ],
+              ),
+              // Event bookmark at top right
+              if (widget.post.relatedEventId != null)
+                _buildEventBookmark()
+              else if (widget.post.id == "1")
+                _buildDemoEventBookmark(),
+            ],
+          ),
         ),
       ),
     );
@@ -88,11 +175,18 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      widget.post.userDisplayName,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                    GestureDetector(
+                      onTap: () {
+                        print(
+                            '👤 Navigating to user profile: ${widget.post.userId}');
+                        context.push('/user/${widget.post.userId}');
+                      },
+                      child: Text(
+                        widget.post.userDisplayName,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
                     if (widget.post.isUserVerified) ...[
@@ -146,6 +240,8 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
       children: [
         if (widget.post.content.isNotEmpty) _buildTextContent(),
         if (widget.post.imageUrls.isNotEmpty) _buildImages(),
+        if (widget.post.videoUrls.isNotEmpty)
+          _buildVideos(), // Added video support
         _buildPostType(),
       ],
     );
@@ -302,6 +398,180 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
     );
   }
 
+  Widget _buildVideos() {
+    if (widget.post.videoUrls.isEmpty) return const SizedBox.shrink();
+
+    print(
+        '🎬 [PostCard] Building videos section. Video count: ${widget.post.videoUrls.length}');
+    print('🎬 [PostCard] Video URLs: ${widget.post.videoUrls}');
+    print('🎬 [PostCard] Video thumbnails: ${widget.post.videoThumbnails}');
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: widget.post.videoUrls.length == 1
+          ? _buildSingleVideo(widget.post.videoUrls.first)
+          : _buildMultipleVideos(),
+    );
+  }
+
+  Widget _buildSingleVideo(String videoUrl) {
+    print('🎬 [PostCard] Building single video for URL: $videoUrl');
+    return FeedVideoPlayer(
+      videoUrl: videoUrl,
+      autoPlay: false, // Don't autoplay in feed to save bandwidth
+      showControls: true, // Show controls so users can play
+      aspectRatio: 16 / 9, // Set consistent aspect ratio
+    );
+  }
+
+  Widget _buildMultipleVideos() {
+    return SizedBox(
+      height: 200,
+      child: Row(
+        children: [
+          // First video (larger)
+          Expanded(
+            flex: 2,
+            child: _buildVideoThumbnail(widget.post.videoUrls.first),
+          ),
+          const SizedBox(width: 4),
+          // Other videos (smaller)
+          Expanded(
+            child: Column(
+              children: [
+                if (widget.post.videoUrls.length > 1)
+                  Expanded(
+                    child: _buildVideoThumbnail(widget.post.videoUrls[1]),
+                  ),
+                if (widget.post.videoUrls.length > 2) ...[
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        _buildVideoThumbnail(widget.post.videoUrls[2]),
+                        if (widget.post.videoUrls.length > 3)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '+${widget.post.videoUrls.length - 3}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoThumbnail(String videoUrl) {
+    // Try to get thumbnail from videoThumbnails array if available
+    String? thumbnailUrl;
+    if (widget.post.videoThumbnails.isNotEmpty) {
+      // Find corresponding thumbnail for this video URL
+      final videoIndex = widget.post.videoUrls.indexOf(videoUrl);
+      if (videoIndex >= 0 && videoIndex < widget.post.videoThumbnails.length) {
+        thumbnailUrl = widget.post.videoThumbnails[videoIndex];
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => _openVideoPlayer(videoUrl),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.black87,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Show thumbnail if available, otherwise show placeholder
+              if (thumbnailUrl != null)
+                Image.network(
+                  thumbnailUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.black87,
+                      child: const Icon(
+                        Icons.video_library_outlined,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
+                    );
+                  },
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.black87,
+                  child: const Icon(
+                    Icons.video_library_outlined,
+                    color: Colors.white70,
+                    size: 24,
+                  ),
+                ),
+              // Play button overlay
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openVideoPlayer(String videoUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          child: SizedBox(
+            width: double.infinity,
+            height: 300,
+            child: FeedVideoPlayer(
+              videoUrl: videoUrl,
+              autoPlay: true,
+              showControls: true,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPostType() {
     final theme = Theme.of(context);
 
@@ -365,66 +635,593 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
     );
   }
 
-  Widget _buildEventConnection() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          if (widget.post.relatedEventImage != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Image.network(
-                widget.post.relatedEventImage!,
-                width: 32,
-                height: 32,
-                fit: BoxFit.cover,
+  Widget _buildEventBookmark() {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: GestureDetector(
+              onTap: () => _onGoToEventWithAnimation(),
+              child: Container(
+                width: 95,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF84cc16), // lime-500
+                      Color(0xFF65a30d), // lime-600
+                      Color(0xFF4d7c0f), // lime-700
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF84cc16).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(-4, 3),
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(-2, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Shimmer effect overlay
+                    AnimatedBuilder(
+                      animation: _shimmerAnimation,
+                      builder: (context, child) {
+                        return Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              bottomLeft: Radius.circular(28),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                  begin: Alignment(
+                                      -1.0 + _shimmerAnimation.value, -0.5),
+                                  end: Alignment(
+                                      1.0 + _shimmerAnimation.value, 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.event,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Flexible(
+                            child: Text(
+                              widget.post.relatedEventName
+                                      ?.split(' ')
+                                      .take(2)
+                                      .join('\n') ??
+                                  'Event',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.post.relatedEventName ?? '',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (widget.post.relatedEventLocation != null)
-                  Text(
-                    widget.post.relatedEventLocation!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDemoEventBookmark() {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation.value,
+            child: GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber),
+                        SizedBox(width: 8),
+                        Text(
+                            '🎪 Demo: Premium Event bookmark! Create posts with events to see real connections.'),
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    backgroundColor: const Color(0xFF84cc16),
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
+                );
+              },
+              child: Container(
+                width: 95,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFfbbf24), // amber-400
+                      Color(0xFFf59e0b), // amber-500
+                      Color(0xFFd97706), // amber-600
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFfbbf24).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(-4, 3),
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(-2, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Shimmer effect overlay
+                    AnimatedBuilder(
+                      animation: _shimmerAnimation,
+                      builder: (context, child) {
+                        return Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              bottomLeft: Radius.circular(28),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                  begin: Alignment(
+                                      -1.0 + _shimmerAnimation.value, -0.5),
+                                  end: Alignment(
+                                      1.0 + _shimmerAnimation.value, 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          const Flexible(
+                            child: Text(
+                              'Demo\nEvent',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEventConnection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _onGoToEvent(),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF32CD32).withOpacity(0.1),
+                  const Color(0xFF228B22).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF32CD32).withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: widget.post.relatedEventImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            widget.post.relatedEventImage!,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.event,
+                          color: Color(0xFF32CD32),
+                          size: 20,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.post.relatedEventName ?? 'Related Event',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      if (widget.post.relatedEventLocation != null)
+                        Text(
+                          widget.post.relatedEventLocation!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (widget.post.relatedEventDate != null)
+                        Text(
+                          _formatEventDate(widget.post.relatedEventDate!),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF32CD32),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Go to Event',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 12,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  // Demo event connection for testing the UI when no real events are linked
+  Widget _buildDemoEventConnection() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    '🎪 Demo: Go to Event functionality works! Create a post with an event to see real connections.'),
+                backgroundColor: Color(0xFF32CD32),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFFF6B6B).withOpacity(0.1),
+                  const Color(0xFFFF4757).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.event,
+                    color: Color(0xFFFF6B6B),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Demo Event Connection',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFFF6B6B),
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Demo Location • Demo Date',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Demo Event',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatEventDate(DateTime dateTime) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${months[dateTime.month - 1]} ${dateTime.day}';
+  }
+
+  void _onGoToEvent() {
+    if (widget.post.relatedEventId != null) {
+      print('🎫 Navigating to event: ${widget.post.relatedEventId}');
+      context.push('/events/${widget.post.relatedEventId}');
+    }
+  }
+
+  bool _hasEvent() {
+    return widget.post.relatedEventId != null || widget.post.id == "1";
+  }
+
+  void _onGoToEventWithAnimation() {
+    if (widget.post.relatedEventId != null) {
+      print(
+          '🎫 [ANIMATION] Navigating to event with slide: ${widget.post.relatedEventId}');
+
+      // Add a small scale animation to the bookmark
+      final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        // Create a subtle feedback animation
+        HapticFeedback.lightImpact();
+      }
+
+      // Navigate with custom slide transition
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) {
+            // Import the event details screen when available
+            // For now, we'll use context.push as fallback
+            context.push('/events/${widget.post.relatedEventId}');
+            return Container(); // Placeholder
+          },
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0); // Slide from right
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+
+            var tween = Tween(begin: begin, end: end).chain(
+              CurveTween(curve: curve),
+            );
+            var offsetAnimation = animation.drive(tween);
+
+            return SlideTransition(
+              position: offsetAnimation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 350),
+        ),
+      );
+    }
   }
 
   Widget _buildEngagementBar() {
@@ -457,16 +1254,57 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
             onTap: widget.onShare,
           ),
           const Spacer(),
-          IconButton(
-            icon: Icon(
-              widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: widget.post.isBookmarked
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            iconSize: 18,
-            onPressed: widget.onBookmark,
-          ),
+          // Optimized "Go to Event" button for better space efficiency
+          widget.post.relatedEventId != null
+              ? GestureDetector(
+                  onTap: _onGoToEventWithAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6, // Reduced from 8
+                      vertical: 3, // Reduced from 4
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius:
+                          BorderRadius.circular(10), // Reduced from 12
+                      border: Border.all(
+                        color: colorScheme.primary,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.event,
+                          size: 14, // Reduced from 16
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 3), // Reduced from 4
+                        Text(
+                          'Event', // Shortened from 'Go to Event'
+                          style: TextStyle(
+                            fontSize: 11, // Reduced from 12
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    widget.post.isBookmarked
+                        ? Icons.bookmark
+                        : Icons.bookmark_border,
+                    color: widget.post.isBookmarked
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  iconSize: 18,
+                  onPressed: widget.onBookmark,
+                ),
         ],
       ),
     );
@@ -532,14 +1370,24 @@ class _ExplorePostCardState extends State<ExplorePostCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.bookmark_border),
-                title: const Text('Save Post'),
-                onTap: () {
-                  Navigator.pop(context);
-                  widget.onBookmark?.call();
-                },
-              ),
+              // Show "Go to Event" option if post has related event, otherwise show bookmark
+              widget.post.relatedEventId != null
+                  ? ListTile(
+                      leading: const Icon(Icons.event),
+                      title: const Text('Go to Event'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _onGoToEventWithAnimation();
+                      },
+                    )
+                  : ListTile(
+                      leading: const Icon(Icons.bookmark_border),
+                      title: const Text('Save Post'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        widget.onBookmark?.call();
+                      },
+                    ),
               ListTile(
                 leading: const Icon(Icons.share),
                 title: const Text('Share'),

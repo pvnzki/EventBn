@@ -715,7 +715,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                           },
                           activeColor: theme.primaryColor,
                         ))
-                    .toList(),
+                    ,
                 const SizedBox(height: 16),
                 const Text(
                   'Others',

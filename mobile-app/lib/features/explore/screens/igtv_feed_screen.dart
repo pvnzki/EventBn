@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 import '../services/explore_post_service.dart';
+import '../widgets/smart_comments_bottom_sheet.dart';
+import '../widgets/feed_video_player.dart'; // Add video player import
+import '../../events/screens/event_details_screen.dart';
 
 class IGTVFeedScreen extends StatefulWidget {
   final String postId;
@@ -17,17 +21,35 @@ class IGTVFeedScreen extends StatefulWidget {
 }
 
 class _IGTVFeedScreenState extends State<IGTVFeedScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final ExplorePostService _postService = ExplorePostService();
   final PageController _pageController = PageController();
-
   List<ExplorePost> _posts = [];
   int _currentIndex = 0;
   bool _isLoading = true;
   late AnimationController _animationController;
+  late AnimationController _likeAnimationController;
+  late Animation<double> _likeAnimation;
 
   // Bottom sheet for comments
   final TextEditingController _commentController = TextEditingController();
+
+  // Comments management
+  List<Map<String, dynamic>> _comments = [];
+  bool _commentsLoading = false;
+
+  // Track user interaction states
+  final Map<String, bool> _userHasCommented = {};
+
+  // Swipe gesture tracking
+  double _swipeOffset = 0.0;
+  bool _isSwipeActive = false;
+
+  // Bookmark animation controllers
+  AnimationController? _bookmarkPulseController;
+  AnimationController? _bookmarkShimmerController;
+  Animation<double>? _bookmarkPulseAnimation;
+  Animation<double>? _bookmarkShimmerAnimation;
 
   @override
   void initState() {
@@ -36,7 +58,53 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    _likeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _likeAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.3,
+    ).animate(CurvedAnimation(
+      parent: _likeAnimationController,
+      curve: Curves.elasticOut,
+    ));
+
+    // Initialize bookmark animations
+    _bookmarkPulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _bookmarkShimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _bookmarkPulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _bookmarkPulseController!,
+      curve: Curves.easeInOut,
+    ));
+
+    _bookmarkShimmerAnimation = Tween<double>(
+      begin: -1.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _bookmarkShimmerController!,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start bookmark animations
+    _bookmarkPulseController?.repeat(reverse: true);
+    _bookmarkShimmerController?.repeat();
+
+    // Check backend connectivity first
+    _checkBackendConnectivity();
     _loadPosts();
+
     // Set status bar to transparent for full screen experience
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -47,11 +115,47 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     );
   }
 
+  Future<void> _checkBackendConnectivity() async {
+    try {
+      print('🔍 [DEBUG] IGTV: Checking backend connectivity...');
+
+      // Try to reach the health endpoint
+      final response = await http.get(
+        Uri.parse('http://localhost:3002/health'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        print('✅ [DEBUG] IGTV: Backend is reachable');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Connected to backend services'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        print(
+            '⚠️ [DEBUG] IGTV: Backend returned status ${response.statusCode}');
+        // _showBackendError('Backend service returned error status ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ [DEBUG] IGTV: Backend connection failed: $e');
+      // _showBackendError('Failed to connect to backend services: ${e.toString().contains('Connection') ? 'Service not running' : e.toString()}');
+    }
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
     _commentController.dispose();
     _animationController.dispose();
+    _likeAnimationController.dispose();
+    _bookmarkPulseController?.dispose();
+    _bookmarkShimmerController?.dispose();
     // Restore status bar
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -96,6 +200,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   void _onPageChanged(int index) {
+    print(
+        '🎬 [IGTV] Page changed to index: $index (post: ${_posts.isNotEmpty && index < _posts.length ? _posts[index].id : 'none'})');
+
     setState(() {
       _currentIndex = index;
     });
@@ -113,28 +220,337 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     });
   }
 
-  void _toggleLike() {
-    if (_currentIndex < _posts.length) {
-      // In real app, call API to toggle like
-      // For now, just show a visual feedback without modifying the immutable post
+  Future<void> _loadComments(String postId) async {
+    setState(() {
+      _commentsLoading = true;
+    });
+
+    try {
+      print(
+          '� [DEBUG] IGTV: Loading comments for post $postId from database...');
+      final comments = await _postService.getComments(postId);
+
+      print('📊 [DEBUG] IGTV: Received ${comments.length} comments from API');
+      if (comments.isNotEmpty) {
+        print('📊 [DEBUG] IGTV: Sample comment structure: ${comments.first}');
+      }
+
+      setState(() {
+        // Filter out optimistic updates (temporary comments)
+        _comments = comments
+            .where((comment) => comment['is_optimistic'] != true)
+            .toList();
+        _commentsLoading = false;
+
+        // Check if current user has commented on this post
+        const currentUserId =
+            'current_user'; // This should come from auth service
+        _userHasCommented[postId] = comments
+            .any((comment) => comment['user_id']?.toString() == currentUserId);
+      });
+
+      print(
+          '✅ [DEBUG] IGTV: Successfully loaded ${_comments.length} real comments from database');
+      print(
+          '👤 [DEBUG] IGTV: User has commented: ${_userHasCommented[postId]}');
+
+      // Show success feedback if comments were loaded
+      if (mounted && comments.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.cloud_download, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                Text('📥 Loaded ${comments.length} comments from database'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ [ERROR] IGTV: Failed to load comments from database: $e');
+      setState(() {
+        _comments = [];
+        _commentsLoading = false;
+      });
+
+      // Show detailed error message to user
+      final isConnectionError =
+          e.toString().toLowerCase().contains('connection') ||
+              e.toString().toLowerCase().contains('socket') ||
+              e.toString().toLowerCase().contains('network');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.cloud_off, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text('❌ Failed to load comments',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(isConnectionError
+                    ? 'Cannot connect to backend (service not running)'
+                    : 'Database error: ${e.toString()}'),
+                if (isConnectionError) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                      '• Comments will only show temporarily until backend starts',
+                      style: TextStyle(fontSize: 12)),
+                ],
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _loadComments(postId),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty ||
+        _currentIndex >= _posts.length) {
+      return;
+    }
+
+    final commentContent = _commentController.text.trim();
+    final currentPost = _posts[_currentIndex];
+
+    print('📝 [DEBUG] IGTV: Starting comment post process...');
+    print('📝 [DEBUG] IGTV: Post ID: ${currentPost.id}');
+    print('📝 [DEBUG] IGTV: Comment content: "$commentContent"');
+    print(
+        '📝 [DEBUG] IGTV: Current comments count: ${currentPost.commentsCount}');
+
+    // Clear the input immediately for better UX
+    _commentController.clear();
+    FocusScope.of(context).unfocus();
+
+    // Optimistic UI update - immediately add comment and update count
+    final tempCommentId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    setState(() {
+      // Mark that user has commented on this post
+      _userHasCommented[currentPost.id] = true;
+
+      // Update post comment count
+      _posts[_currentIndex] = currentPost.copyWith(
+        commentsCount: currentPost.commentsCount + 1,
+      );
+
+      // Add optimistic comment to the list (will appear at top since we reverse)
+      _comments.insert(0, {
+        'comment_id': tempCommentId,
+        'comment_text': commentContent,
+        'user_display_name': 'You', // Current user
+        'user_id': 'current_user',
+        'created_at': DateTime.now().toIso8601String(),
+        'is_liked': false,
+        'likes_count': 0,
+        'is_optimistic': true, // Flag to identify optimistic updates
+      });
+    });
+
+    print(
+        '✅ [DEBUG] IGTV: Optimistic UI updated - comments count: ${_posts[_currentIndex].commentsCount}');
+
+    try {
+      print('🌐 [DEBUG] IGTV: Making API call to post comment...');
+      final result =
+          await _postService.addComment(currentPost.id, commentContent);
+
+      if (result != null) {
+        print('✅ [DEBUG] IGTV: Comment API call successful!');
+
+        // Show success feedback
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('✅ Comment posted to database!'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Reload comments to get the real data from server and replace optimistic comment
+        print('🔄 [DEBUG] IGTV: Reloading comments from server...');
+        await _loadComments(currentPost.id);
+      } else {
+        throw Exception('API returned null result');
+      }
+    } catch (e) {
+      print('❌ [ERROR] IGTV: Failed to post comment to database: $e');
+
+      // Revert optimistic updates on error
+      setState(() {
+        _userHasCommented[currentPost.id] = false;
+        _posts[_currentIndex] = currentPost.copyWith(
+          commentsCount:
+              currentPost.commentsCount, // Revert back to original count
+        );
+
+        // Remove the optimistic comment
+        _comments
+            .removeWhere((comment) => comment['comment_id'] == tempCommentId);
+      });
+
+      print('🔄 [DEBUG] IGTV: Optimistic UI reverted due to API failure');
+
+      // Show detailed error message
+      final isConnectionError =
+          e.toString().toLowerCase().contains('connection') ||
+              e.toString().toLowerCase().contains('socket') ||
+              e.toString().toLowerCase().contains('network');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text('❌ Failed to save comment',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(isConnectionError
+                    ? 'Cannot connect to backend service (not running)'
+                    : 'Database error: ${e.toString().length > 100 ? '${e.toString().substring(0, 100)}...' : e.toString()}'),
+                if (isConnectionError) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                      '• Start backend services to enable database persistence',
+                      style: TextStyle(fontSize: 12)),
+                ],
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () {
+                _commentController.text = commentContent;
+              },
+            ),
+          ),
+        );
+      }
+
+      // Restore the comment text on error
+      _commentController.text = commentContent;
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_currentIndex >= _posts.length) return;
+
+    final currentPost = _posts[_currentIndex];
+    print('❤️ [DEBUG] IGTV: Toggling like for post ${currentPost.id}');
+
+    // Trigger like animation
+    _likeAnimationController.forward().then((_) {
+      _likeAnimationController.reverse();
+    });
+
+    // Optimistic UI update - immediately toggle the like state and update count
+    setState(() {
+      final wasLiked = currentPost.isLiked;
+      _posts[_currentIndex] = currentPost.copyWith(
+        isLiked: !wasLiked, // Toggle like state
+        likesCount: wasLiked
+            ? currentPost.likesCount - 1
+            : currentPost.likesCount + 1, // Update count
+      );
+    });
+
+    try {
+      // Call the real API to toggle like
+      await _postService.toggleLike(currentPost.id);
+
+      // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_posts[_currentIndex].isLiked ? 'Unliked' : 'Liked'),
+          content: Text(currentPost.isLiked ? 'Liked!' : 'Unliked!'),
           duration: const Duration(milliseconds: 500),
-          backgroundColor: Colors.black87,
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ [ERROR] IGTV: Failed to toggle like: $e');
+
+      // Revert optimistic update on error
+      setState(() {
+        final currentLikedState = _posts[_currentIndex].isLiked;
+        _posts[_currentIndex] = _posts[_currentIndex].copyWith(
+          isLiked: !currentLikedState, // Revert like state
+          likesCount: currentLikedState
+              ? _posts[_currentIndex].likesCount - 1
+              : _posts[_currentIndex].likesCount + 1, // Revert count
+        );
+      });
+
+      // Show detailed error message
+      final errorMessage = e.toString().contains('Connection')
+          ? 'Cannot connect to server. Please check if services are running.'
+          : 'Failed to update like: ${e.toString()}';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () => _toggleLike(),
+          ),
         ),
       );
     }
   }
 
   void _showCommentsSheet() {
+    if (_currentIndex >= _posts.length) return;
+
+    final currentPost = _posts[_currentIndex];
     _animationController.forward();
 
-    showModalBottomSheet(
+    // Use smart comments that preload automatically
+    SmartCommentsBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _buildCommentsSheet(),
+      postId: currentPost.id,
+      onCommentAdded: () {
+        // Refresh post data if needed
+        setState(() {
+          // Update any local state if necessary
+        });
+      },
     ).then((_) {
       _animationController.reverse();
     });
@@ -175,15 +591,54 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Main PageView for posts
-          PageView.builder(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            onPageChanged: _onPageChanged,
-            itemCount: _posts.length,
-            itemBuilder: (context, index) {
-              return _buildPostPage(_posts[index]);
+          // Main PageView for posts with swipe gesture
+          GestureDetector(
+            behavior: HitTestBehavior
+                .deferToChild, // Allow child widgets to handle taps
+            onPanStart: (details) {
+              _isSwipeActive = true;
+              _swipeOffset = 0.0;
             },
+            onPanUpdate: (details) {
+              if (!_isSwipeActive) return;
+
+              // Only track horizontal left swipes for event navigation
+              if (details.delta.dx < 0) {
+                setState(() {
+                  _swipeOffset += details.delta.dx;
+                  // Limit the swipe offset to prevent over-swiping
+                  _swipeOffset = _swipeOffset.clamp(-150.0, 0.0);
+                });
+              }
+            },
+            onPanEnd: (details) {
+              if (!_isSwipeActive) return;
+
+              // If swiped left more than 80 pixels and current post has event, navigate to event
+              if (_swipeOffset < -80 &&
+                  _currentIndex < _posts.length &&
+                  _hasCurrentEvent()) {
+                _onGoToEventWithAnimation(_getCurrentEventId());
+              }
+
+              // Reset swipe state
+              setState(() {
+                _swipeOffset = 0.0;
+                _isSwipeActive = false;
+              });
+            },
+            child: Transform.translate(
+              offset: Offset(_swipeOffset, 0),
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: _onPageChanged,
+                itemCount: _posts.length,
+                itemBuilder: (context, index) {
+                  return _buildPostPage(_posts[index]);
+                },
+              ),
+            ),
           ),
 
           // Top app bar
@@ -193,6 +648,14 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             right: 0,
             child: _buildTopBar(),
           ),
+
+          // Event bookmark for current post
+          if (_posts.isNotEmpty && _currentIndex < _posts.length) ...[
+            if (_posts[_currentIndex].relatedEventId != null)
+              _buildIGTVEventBookmark(_posts[_currentIndex])
+            else if (_posts[_currentIndex].id == "1")
+              _buildDemoIGTVEventBookmark(),
+          ],
 
           // Right side actions
           Positioned(
@@ -259,55 +722,30 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
   }
 
   Widget _buildPostPage(ExplorePost post) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image/video
-          if (post.imageUrls.isNotEmpty)
-            Image.network(
-              post.imageUrls.first,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: Colors.grey[900],
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey[900],
-                child: const Center(
-                  child:
-                      Icon(Icons.broken_image, color: Colors.white, size: 64),
-                ),
-              ),
-            )
-          else
-            Container(
-              color: Colors.grey[900],
-              child: const Center(
-                child: Icon(Icons.image, color: Colors.white, size: 64),
-              ),
-            ),
+          // Background video/image with autoplay support
+          _buildMediaContent(post),
 
-          // Gradient overlays for better text visibility
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.transparent,
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
+          // Gradient overlays for better text visibility (ignoring pointer events)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                ),
               ),
             ),
           ),
@@ -316,27 +754,151 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     );
   }
 
+  Widget _buildMediaContent(ExplorePost post) {
+    // Prioritize videos with autoplay, fallback to images
+    if (post.videoUrls.isNotEmpty) {
+      print(
+          '🎬 [IGTV] Building autoplay video for post ${post.id}: ${post.videoUrls.first}');
+      return FeedVideoPlayer(
+        videoUrl: post.videoUrls.first
+            .replaceFirst('http://', 'https://'), // Fix HTTP to HTTPS
+        autoPlay: true, // Enable autoplay for IGTV feed
+        showControls: true, // Allow users to pause/play if needed
+        aspectRatio: null, // Let video maintain its aspect ratio
+      );
+    } else if (post.imageUrls.isNotEmpty) {
+      print(
+          '🖼️ [IGTV] Building image for post ${post.id}: ${post.imageUrls.first}');
+      return Image.network(
+        post.imageUrls.first,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey[900],
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.grey[900],
+          child: const Center(
+            child: Icon(Icons.broken_image, color: Colors.white, size: 64),
+          ),
+        ),
+      );
+    } else {
+      // No media content
+      return Container(
+        color: Colors.grey[900],
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.image, color: Colors.white, size: 64),
+              SizedBox(height: 16),
+              Text(
+                'No media content',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildActionButtons() {
     final currentPost = _posts[_currentIndex];
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Like button
+        // Like button with animation
         GestureDetector(
           onTap: _toggleLike,
+          child: AnimatedBuilder(
+            animation: _likeAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _likeAnimation.value,
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: currentPost.isLiked
+                            ? [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Icon(
+                        currentPost.isLiked
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: currentPost.isLiked ? Colors.red : Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatCount(currentPost.likesCount),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Comment button with colored state
+        GestureDetector(
+          onTap: _showCommentsSheet,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 150),
             child: Column(
               children: [
-                Icon(
-                  currentPost.isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: currentPost.isLiked ? Colors.red : Colors.white,
-                  size: 32,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                    boxShadow: (_userHasCommented[currentPost.id] == true)
+                        ? [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.3),
+                              blurRadius: 6,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    _userHasCommented[currentPost.id] == true
+                        ? Icons.chat_bubble
+                        : Icons.chat_bubble_outline,
+                    color: _userHasCommented[currentPost.id] == true
+                        ? Colors.blue
+                        : Colors.white,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _formatCount(currentPost.likesCount),
+                  _formatCount(currentPost.commentsCount),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -350,35 +912,17 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
         const SizedBox(height: 24),
 
-        // Comment button
-        GestureDetector(
-          onTap: _showCommentsSheet,
-          child: Column(
-            children: [
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.white,
-                size: 32,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _formatCount(currentPost.commentsCount),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
         // Share button
         GestureDetector(
           onTap: () {
             // Handle share
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Share functionality coming soon!'),
+                backgroundColor: Colors.black87,
+                duration: Duration(seconds: 2),
+              ),
+            );
           },
           child: const Column(
             children: [
@@ -387,7 +931,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                 color: Colors.white,
                 size: 32,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'Share',
                 style: TextStyle(
@@ -402,21 +946,63 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
         const SizedBox(height: 24),
 
-        // Bookmark button
-        GestureDetector(
-          onTap: () {
-            // Handle bookmark
-          },
-          child: const Column(
-            children: [
-              Icon(
-                Icons.bookmark_border,
-                color: Colors.white,
-                size: 32,
+        // Go to Event / Bookmark button
+        currentPost.relatedEventId != null
+            ? GestureDetector(
+                onTap: () {
+                  print(
+                      '🎫 Navigating to event: ${currentPost.relatedEventId}');
+                  context.push('/events/${currentPost.relatedEventId}');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Event',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : GestureDetector(
+                onTap: () {
+                  // Handle bookmark
+                  print('📌 Bookmark toggled for post: ${currentPost.id}');
+                },
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.bookmark_border,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -454,25 +1040,31 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentPost.userDisplayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              child: GestureDetector(
+                onTap: () {
+                  print('👤 Navigating to user profile: ${currentPost.userId}');
+                  context.push('/user/${currentPost.userId}');
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentPost.userDisplayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '2 hours ago', // In real app, format the actual timestamp
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
+                    Text(
+                      '2 hours ago', // In real app, format the actual timestamp
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             // Follow button
@@ -570,7 +1162,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                     ),
                     const Spacer(),
                     Text(
-                      '${_posts[_currentIndex].commentsCount}',
+                      '${_comments.length}',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -582,34 +1174,31 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
               const Divider(height: 1),
 
-              // Comments list
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: 5, // Mock comments
-                  itemBuilder: (context, index) {
-                    return _buildCommentItem(index);
-                  },
-                ),
-              ),
-
-              // Comment input
+              // Comment input at the top
               Container(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 8,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                ),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.grey[50],
                   border: Border(
-                    top: BorderSide(color: Colors.grey[200]!),
+                    bottom: BorderSide(color: Colors.grey[200]!),
                   ),
                 ),
                 child: Row(
                   children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue[100],
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 18,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: _commentController,
@@ -623,21 +1212,76 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                             horizontal: 16,
                             vertical: 8,
                           ),
+                          filled: true,
+                          fillColor: Colors.white,
                         ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _postComment(),
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      onPressed: () {
-                        // Handle send comment
-                        if (_commentController.text.isNotEmpty) {
-                          _commentController.clear();
-                        }
-                      },
+                      onPressed: _postComment,
                       icon: const Icon(Icons.send, color: Colors.blue),
                     ),
                   ],
                 ),
+              ),
+
+              // Comments list
+              Expanded(
+                child: _commentsLoading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : _comments.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No comments yet',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Be the first to comment!',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _comments.length,
+                            itemBuilder: (context, index) {
+                              // Show latest comments first by reversing the index
+                              final reversedIndex =
+                                  _comments.length - 1 - index;
+                              return _buildCommentItem(
+                                  _comments[reversedIndex]);
+                            },
+                          ),
               ),
             ],
           ),
@@ -646,16 +1290,20 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     );
   }
 
-  Widget _buildCommentItem(int index) {
-    final mockComments = [
-      {'user': 'alice_joy', 'comment': 'This looks amazing! 😍'},
-      {'user': 'bob_smith', 'comment': 'Great event, can\'t wait to attend!'},
-      {'user': 'sarah_k', 'comment': 'Thanks for sharing this ❤️'},
-      {'user': 'mike_jones', 'comment': 'Count me in! 🙌'},
-      {'user': 'lisa_wang', 'comment': 'This is going to be epic! 🔥'},
-    ];
-
-    final comment = mockComments[index % mockComments.length];
+  Widget _buildCommentItem(Map<String, dynamic> comment) {
+    // Extract comment data safely
+    final userId = comment['user_id']?.toString() ?? '';
+    final userName = comment['user_display_name']?.toString() ??
+        comment['user_name']?.toString() ??
+        'User $userId';
+    final commentText = comment['comment_text']?.toString() ??
+        comment['content']?.toString() ??
+        'No comment text';
+    final createdAt = comment['created_at']?.toString() ?? '';
+    final commentId =
+        comment['comment_id']?.toString() ?? comment['id']?.toString() ?? '';
+    final isLiked = comment['is_liked'] == true;
+    final likesCount = comment['likes_count'] ?? 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -671,7 +1319,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
             child: Center(
               child: Text(
-                comment['user']![0].toUpperCase(),
+                userName.isNotEmpty ? userName[0].toUpperCase() : '?',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -685,7 +1333,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  comment['user']!,
+                  userName,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -693,20 +1341,31 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  comment['comment']!,
+                  commentText,
                   style: const TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Text(
-                      '2h',
+                      _formatCommentTime(createdAt),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
                       ),
                     ),
                     const SizedBox(width: 16),
+                    if (likesCount > 0) ...[
+                      Text(
+                        '$likesCount ${likesCount == 1 ? 'like' : 'likes'}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
                     Text(
                       'Reply',
                       style: TextStyle(
@@ -721,11 +1380,13 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: commentId.isNotEmpty
+                ? () => _toggleCommentLike(commentId)
+                : null,
             icon: Icon(
-              Icons.favorite_border,
+              isLiked ? Icons.favorite : Icons.favorite_border,
               size: 18,
-              color: Colors.grey[600],
+              color: isLiked ? Colors.red : Colors.grey[600],
             ),
           ),
         ],
@@ -742,9 +1403,428 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
     return count.toString();
   }
 
+  String _formatCommentTime(String createdAt) {
+    if (createdAt.isEmpty) return 'now';
+
+    try {
+      final DateTime commentTime = DateTime.parse(createdAt);
+      final DateTime now = DateTime.now();
+      final Duration difference = now.difference(commentTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m';
+      } else {
+        return 'now';
+      }
+    } catch (e) {
+      return 'now';
+    }
+  }
+
+  Future<void> _toggleCommentLike(String commentId) async {
+    try {
+      print('❤️ [DEBUG] IGTV: Toggling comment like for comment $commentId');
+      await _postService.toggleCommentLike(commentId);
+
+      // Reload comments to get updated like status
+      if (_currentIndex < _posts.length) {
+        await _loadComments(_posts[_currentIndex].id);
+      }
+    } catch (e) {
+      print('❌ [ERROR] IGTV: Failed to toggle comment like: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update comment like: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   List<String> _extractHashtags(String content) {
     final regex = RegExp(r'#\w+');
     final matches = regex.allMatches(content);
     return matches.map((match) => match.group(0)!).toList();
+  }
+
+  Widget _buildIGTVEventBookmark(ExplorePost post) {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _bookmarkPulseAnimation ?? const AlwaysStoppedAnimation(1.0),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _bookmarkPulseAnimation?.value ?? 1.0,
+            child: GestureDetector(
+              onTap: () => _onGoToEventWithAnimation(post.relatedEventId ?? ''),
+              child: Container(
+                width: 90,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF84cc16), // lime-500
+                    Color(0xFF65a30d), // lime-600
+                    Color(0xFF4d7c0f), // lime-700
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF84cc16).withOpacity(0.4),
+                    blurRadius: 15,
+                    offset: const Offset(-4, 3),
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(-2, 2),
+                  ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                  // Shimmer effect overlay
+                  AnimatedBuilder(
+                    animation: _bookmarkShimmerAnimation ??
+                    const AlwaysStoppedAnimation(0.0),
+                    builder: (context, child) {
+                      return Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(28),
+                        bottomLeft: Radius.circular(28),
+                        ),
+                        child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.white.withOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                          begin: Alignment(
+                            -1.0 +
+                              (_bookmarkShimmerAnimation?.value ??
+                                0.0),
+                            -0.5),
+                          end: Alignment(
+                            1.0 +
+                              (_bookmarkShimmerAnimation?.value ??
+                                0.0),
+                            0.5),
+                          ),
+                        ),
+                        ),
+                      ),
+                      );
+                    },
+                    ),
+                    // Main content - Stack layout for precise positioning
+                    Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Stack(
+                      children: [
+                      // Ticket icon - Top left
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.local_activity,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        ),
+                      ),
+                      // Arrow icon - Bottom left
+                      Positioned(
+                        bottom: 2,
+                        left: 2,
+                        child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        ),
+                      ),
+                      // Buy Tickets text - Right side
+                      Positioned(
+                        right: 8,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                        constraints: const BoxConstraints(maxWidth: 50),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                          Text(
+                            'Buy',
+                            style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            height: 1.2,
+                            shadows: [
+                              Shadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                              ),
+                            ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            'Tickets',
+                            style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                            shadows: [
+                              Shadow(
+                              color: Colors.black26,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                              ),
+                            ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          ],
+                        ),
+                        ),
+                      ),
+                      ],
+                    ),
+                    ),
+                  ],
+                  ),
+                ),
+                ),
+              );
+              },
+            ),
+            );
+          }
+
+  Widget _buildDemoIGTVEventBookmark() {
+    return Positioned(
+      top: 120,
+      right: 0,
+      child: AnimatedBuilder(
+        animation: _bookmarkPulseAnimation ?? const AlwaysStoppedAnimation(1.0),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _bookmarkPulseAnimation?.value ?? 1.0,
+            child: GestureDetector(
+              onTap: () => _onGoToEventWithAnimation("demo-event"),
+              child: Container(
+                width: 95,
+                height: 75,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    bottomLeft: Radius.circular(28),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFfbbf24), // amber-400
+                      Color(0xFFf59e0b), // amber-500
+                      Color(0xFFd97706), // amber-600
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFfbbf24).withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(-4, 3),
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(-2, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Shimmer effect overlay
+                    AnimatedBuilder(
+                      animation: _bookmarkShimmerAnimation ??
+                          const AlwaysStoppedAnimation(0.0),
+                      builder: (context, child) {
+                        return Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(28),
+                              bottomLeft: Radius.circular(28),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                  begin: Alignment(
+                                      -1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      -0.5),
+                                  end: Alignment(
+                                      1.0 +
+                                          (_bookmarkShimmerAnimation?.value ??
+                                              0.0),
+                                      0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    // Main content
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.star,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          const Flexible(
+                            child: Text(
+                              'Demo\nEvent',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.1,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  bool _hasCurrentEvent() {
+    if (_currentIndex >= _posts.length) return false;
+    final currentPost = _posts[_currentIndex];
+    return currentPost.relatedEventId != null || currentPost.id == "1";
+  }
+
+  String _getCurrentEventId() {
+    if (_currentIndex >= _posts.length) return "";
+    final currentPost = _posts[_currentIndex];
+
+    if (currentPost.relatedEventId != null) {
+      return currentPost.relatedEventId!;
+    } else if (currentPost.id == "1") {
+      return "demo-event";
+    }
+    return "";
+  }
+
+  void _onGoToEventWithAnimation(String eventId) {
+    HapticFeedback.lightImpact();
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            EventDetailsScreen(eventId: eventId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 }

@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/config/app_config.dart';
+import '../../auth/services/auth_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -63,9 +64,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     try {
       final url = '${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap';
       
+      // Get authentication token
+      final authService = AuthService();
+      final token = await authService.getStoredToken();
+
+      final headers = {'Content-Type': 'application/json'};
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+        print('🔑 Using auth token for seat map info request');
+      } else {
+        print('⚠️ No auth token available for seat map info request');
+      }
+      
       final response = await http.get(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
       
       if (response.statusCode == 200) {

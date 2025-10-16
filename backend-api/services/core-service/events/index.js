@@ -1,44 +1,225 @@
 // Events module
-const prisma = require("../../../lib/database");
-const { ValidationError } = require("../../../lib/validation");
+const express = require("express");
+const prisma = require("../lib/database");
+const { ValidationError } = require("../lib/validation");
 
 // Default seat map for events without custom seat maps - designed for ticket type selection
 const DEFAULT_SEAT_MAP = [
   // Economy tickets (40 seats)
-  {"label": "Economy Ticket 1", "id": 1, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 2", "id": 2, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 3", "id": 3, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 4", "id": 4, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 5", "id": 5, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 6", "id": 6, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 7", "id": 7, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 8", "id": 8, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 9", "id": 9, "ticketType": "Economy", "price": 25.0, "available": true},
-  {"label": "Economy Ticket 10", "id": 10, "ticketType": "Economy", "price": 25.0, "available": true},
-  
+  {
+    label: "Economy Ticket 1",
+    id: 1,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 2",
+    id: 2,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 3",
+    id: 3,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 4",
+    id: 4,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 5",
+    id: 5,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 6",
+    id: 6,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 7",
+    id: 7,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 8",
+    id: 8,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 9",
+    id: 9,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+  {
+    label: "Economy Ticket 10",
+    id: 10,
+    ticketType: "Economy",
+    price: 25.0,
+    available: true,
+  },
+
   // Standard tickets (30 seats)
-  {"label": "Standard Ticket 1", "id": 11, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 2", "id": 12, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 3", "id": 13, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 4", "id": 14, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 5", "id": 15, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 6", "id": 16, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 7", "id": 17, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 8", "id": 18, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 9", "id": 19, "ticketType": "Standard", "price": 45.0, "available": true},
-  {"label": "Standard Ticket 10", "id": 20, "ticketType": "Standard", "price": 45.0, "available": true},
-  
+  {
+    label: "Standard Ticket 1",
+    id: 11,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 2",
+    id: 12,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 3",
+    id: 13,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 4",
+    id: 14,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 5",
+    id: 15,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 6",
+    id: 16,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 7",
+    id: 17,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 8",
+    id: 18,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 9",
+    id: 19,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+  {
+    label: "Standard Ticket 10",
+    id: 20,
+    ticketType: "Standard",
+    price: 45.0,
+    available: true,
+  },
+
   // VIP tickets (20 seats)
-  {"label": "VIP Ticket 1", "id": 21, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 2", "id": 22, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 3", "id": 23, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 4", "id": 24, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 5", "id": 25, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 6", "id": 26, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 7", "id": 27, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 8", "id": 28, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 9", "id": 29, "ticketType": "VIP", "price": 75.0, "available": true},
-  {"label": "VIP Ticket 10", "id": 30, "ticketType": "VIP", "price": 75.0, "available": true}
+  {
+    label: "VIP Ticket 1",
+    id: 21,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 2",
+    id: 22,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 3",
+    id: 23,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 4",
+    id: 24,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 5",
+    id: 25,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 6",
+    id: 26,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 7",
+    id: 27,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 8",
+    id: 28,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 9",
+    id: 29,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
+  {
+    label: "VIP Ticket 10",
+    id: 30,
+    ticketType: "VIP",
+    price: 75.0,
+    available: true,
+  },
 ];
 
 /**
@@ -50,22 +231,24 @@ function validateSeatMap(seatMap) {
   if (!Array.isArray(seatMap)) {
     throw new Error("Seat map must be an array");
   }
-  
+
   for (let i = 0; i < seatMap.length; i++) {
     const seat = seatMap[i];
     if (!seat.id || !seat.label) {
-      throw new Error(`Seat at index ${i} must have 'id' and 'label' properties`);
+      throw new Error(
+        `Seat at index ${i} must have 'id' and 'label' properties`
+      );
     }
-    if (typeof seat.id !== 'number') {
+    if (typeof seat.id !== "number") {
       throw new Error(`Seat at index ${i}: 'id' must be a number`);
     }
-    if (typeof seat.label !== 'string') {
+    if (typeof seat.label !== "string") {
       throw new Error(`Seat at index ${i}: 'label' must be a string`);
     }
-    if (seat.price !== undefined && typeof seat.price !== 'number') {
+    if (seat.price !== undefined && typeof seat.price !== "number") {
       throw new Error(`Seat at index ${i}: 'price' must be a number`);
     }
-    if (seat.available !== undefined && typeof seat.available !== 'boolean') {
+    if (seat.available !== undefined && typeof seat.available !== "boolean") {
       throw new Error(`Seat at index ${i}: 'available' must be a boolean`);
     }
   }
@@ -143,47 +326,59 @@ module.exports = {
 
   // Create new event
   async createEvent(data) {
-
     try {
       // Validate required fields
       const errors = [];
-      
+
       if (!data.title || !data.title.trim()) {
-        errors.push({ field: 'title', message: 'Title is required' });
+        errors.push({ field: "title", message: "Title is required" });
       }
       if (!data.start_time) {
-        errors.push({ field: 'start_time', message: 'Start time is required' });
+        errors.push({ field: "start_time", message: "Start time is required" });
       }
       if (!data.end_time) {
-        errors.push({ field: 'end_time', message: 'End time is required' });
+        errors.push({ field: "end_time", message: "End time is required" });
       }
       if (!data.location || !data.location.trim()) {
-        errors.push({ field: 'location', message: 'Location is required' });
+        errors.push({ field: "location", message: "Location is required" });
       }
-      
+
       if (errors.length > 0) {
-        const error = new ValidationError('Event validation failed');
+        const error = new ValidationError("Event validation failed");
         error.errors = errors;
         throw error;
       }
 
       // Debug log incoming data
-      console.log("[createEvent] seat_map type:", typeof data.seat_map, data.seat_map);
-      console.log("[createEvent] ticket_types type:", typeof data.ticket_types, data.ticket_types);
+      console.log(
+        "[createEvent] seat_map type:",
+        typeof data.seat_map,
+        data.seat_map
+      );
+      console.log(
+        "[createEvent] ticket_types type:",
+        typeof data.ticket_types,
+        data.ticket_types
+      );
 
       // Handle seat map validation and processing
       let seatMapData = null;
       if (data.seat_map) {
-        if (typeof data.seat_map === 'string') {
+        if (typeof data.seat_map === "string") {
           try {
             seatMapData = JSON.parse(data.seat_map);
           } catch (parseError) {
             throw new Error("Invalid JSON format for seat_map");
           }
-        } else if (Array.isArray(data.seat_map) || typeof data.seat_map === 'object') {
+        } else if (
+          Array.isArray(data.seat_map) ||
+          typeof data.seat_map === "object"
+        ) {
           seatMapData = data.seat_map;
         } else {
-          throw new Error("seat_map must be a JSON object or valid JSON string");
+          throw new Error(
+            "seat_map must be a JSON object or valid JSON string"
+          );
         }
         validateSeatMap(seatMapData);
       }
@@ -191,13 +386,16 @@ module.exports = {
       // Handle ticket_types validation and processing
       let ticketTypesData = null;
       if (data.ticket_types) {
-        if (typeof data.ticket_types === 'string') {
+        if (typeof data.ticket_types === "string") {
           try {
             ticketTypesData = JSON.parse(data.ticket_types);
           } catch (parseError) {
             throw new Error("Invalid JSON format for ticket_types");
           }
-        } else if (Array.isArray(data.ticket_types) || typeof data.ticket_types === 'object') {
+        } else if (
+          Array.isArray(data.ticket_types) ||
+          typeof data.ticket_types === "object"
+        ) {
           ticketTypesData = data.ticket_types;
         } else {
           throw new Error("ticket_types must be an array or valid JSON string");
@@ -205,7 +403,9 @@ module.exports = {
       }
 
       const eventData = {
-        organization_id: data.organization_id ? parseInt(data.organization_id) : null,
+        organization_id: data.organization_id
+          ? parseInt(data.organization_id)
+          : null,
         title: data.title,
         description: data.description || null,
         category: data.category || null,
@@ -228,7 +428,7 @@ module.exports = {
 
       return await prisma.event.create({
         // Extra logging to confirm structure before Prisma call
-      // Logging and validation temporarily removed due to syntax issues
+        // Logging and validation temporarily removed due to syntax issues
         data: eventData,
         include: {
           organization: {
@@ -247,7 +447,6 @@ module.exports = {
 
   // Update event
   async updateEvent(id, data) {
-
     try {
       const updateData = { ...data };
       delete updateData.event_id;
@@ -257,11 +456,20 @@ module.exports = {
 
       // Only allow valid Event table columns
       const validColumns = [
-        "organization_id", "title", "description", "category", "venue", "location",
-        "start_time", "end_time", "capacity", "cover_image_url", "other_images_url",
-        "video_url", "status"
+        "organization_id",
+        "title",
+        "description",
+        "category",
+        "venue",
+        "location",
+        "start_time",
+        "end_time",
+        "capacity",
+        "cover_image_url",
+        "other_images_url",
+        "video_url",
+        "status",
       ];
-
 
       // Convert dates if provided
       if (updateData.start_time) {
@@ -274,7 +482,7 @@ module.exports = {
       // Convert numbers if provided
       if (updateData.organization_id) {
         updateData.organization = {
-          connect: { organization_id: parseInt(updateData.organization_id) }
+          connect: { organization_id: parseInt(updateData.organization_id) },
         };
         delete updateData.organization_id;
       }
@@ -282,19 +490,34 @@ module.exports = {
         updateData.capacity = parseInt(updateData.capacity);
       }
 
-
       // Debug log for JSON fields
-      console.log("updateData.seat_map:", updateData.seat_map, typeof updateData.seat_map);
-      console.log("updateData.ticket_types:", updateData.ticket_types, typeof updateData.ticket_types);
+      console.log(
+        "updateData.seat_map:",
+        updateData.seat_map,
+        typeof updateData.seat_map
+      );
+      console.log(
+        "updateData.ticket_types:",
+        updateData.ticket_types,
+        typeof updateData.ticket_types
+      );
 
       // Accept seat_map and ticket_types as arrays of objects (not strings)
       if (updateData.seat_map === undefined) updateData.seat_map = null;
       if (updateData.ticket_types === undefined) updateData.ticket_types = null;
       // If not null, must be an array or object
-      if (updateData.seat_map !== null && !Array.isArray(updateData.seat_map) && typeof updateData.seat_map !== 'object') {
+      if (
+        updateData.seat_map !== null &&
+        !Array.isArray(updateData.seat_map) &&
+        typeof updateData.seat_map !== "object"
+      ) {
         updateData.seat_map = null;
       }
-      if (updateData.ticket_types !== null && !Array.isArray(updateData.ticket_types) && typeof updateData.ticket_types !== 'object') {
+      if (
+        updateData.ticket_types !== null &&
+        !Array.isArray(updateData.ticket_types) &&
+        typeof updateData.ticket_types !== "object"
+      ) {
         updateData.ticket_types = null;
       }
 
@@ -305,11 +528,7 @@ module.exports = {
 
       // Use raw SQL for seat_map and ticket_types jsonb[] columns
       const eventId = parseInt(id);
-      const {
-        seat_map,
-        ticket_types,
-        ...otherFields
-      } = updateData;
+      const { seat_map, ticket_types, ...otherFields } = updateData;
 
       // Filter only valid columns for SQL update
       const filteredFields = {};
@@ -318,7 +537,8 @@ module.exports = {
           filteredFields[key] = otherFields[key];
         }
       }
-      if (typeof filteredFields === 'object' && filteredFields.organization) delete filteredFields.organization;
+      if (typeof filteredFields === "object" && filteredFields.organization)
+        delete filteredFields.organization;
 
       // Build the SET clause for filtered fields
       const setClauses = [];
@@ -329,16 +549,22 @@ module.exports = {
         values.push(filteredFields[key]);
         idx++;
       }
-  // Add seat_map (serialize to JSON string and cast as jsonb)
-  setClauses.push(`seat_map = $${idx}::jsonb`);
-  values.push(seat_map ? JSON.stringify(seat_map) : null);
-  idx++;
+      // Add seat_map (serialize to JSON string and cast as jsonb)
+      setClauses.push(`seat_map = $${idx}::jsonb`);
+      values.push(seat_map ? JSON.stringify(seat_map) : null);
+      idx++;
       // Serialize ticket_types as Postgres array literal and cast to json[]
       let ticketTypesValue = ticket_types;
       let ticketTypesClause = `ticket_types = $${idx}`;
       if (Array.isArray(ticket_types)) {
         // Convert JS array to Postgres array literal: '{"{...}","{...}"}'
-        ticketTypesValue = '{' + ticket_types.map(obj => JSON.stringify(obj).replace(/"/g, '\"')).map(str => '"' + str + '"').join(',') + '}';
+        ticketTypesValue =
+          "{" +
+          ticket_types
+            .map((obj) => JSON.stringify(obj).replace(/"/g, '"'))
+            .map((str) => '"' + str + '"')
+            .join(",") +
+          "}";
         ticketTypesClause = `ticket_types = $${idx}::json[]`;
       }
       setClauses.push(ticketTypesClause);
@@ -347,7 +573,7 @@ module.exports = {
       // Add event_id for WHERE
       values.push(eventId);
 
-      const setClause = setClauses.join(', ');
+      const setClause = setClauses.join(", ");
       const sql = `UPDATE "Event" SET ${setClause} WHERE event_id = $${idx} RETURNING *`;
       const [updated] = await prisma.$queryRawUnsafe(sql, ...values);
       // Optionally, fetch organization info if needed
@@ -355,7 +581,7 @@ module.exports = {
     } catch (error) {
       throw new Error("Failed to update event: " + error.message);
     }
-    },
+  },
 
   // Delete event
   async deleteEvent(id) {
@@ -391,7 +617,6 @@ module.exports = {
       if (filters.start_date) {
         where.start_time = { gte: new Date(filters.start_date) };
       }
-
 
       return await prisma.event.findMany({
         where,
@@ -459,7 +684,6 @@ module.exports = {
         take: limit,
       });
     } catch (error) {
-
       throw new Error(`Failed to fetch events by category: ${error.message}`);
     }
   },
@@ -482,29 +706,29 @@ module.exports = {
           seats: [],
           hasCustomSeating: false,
           ticketTypes: {
-            'Economy': {
-              'price': 25.0,
-              'totalSeats': 50,
-              'availableSeats': 50,
+            Economy: {
+              price: 25.0,
+              totalSeats: 50,
+              availableSeats: 50,
             },
-            'Standard': {
-              'price': 50.0,
-              'totalSeats': 30,
-              'availableSeats': 30,
+            Standard: {
+              price: 50.0,
+              totalSeats: 30,
+              availableSeats: 30,
             },
-            'VIP': {
-              'price': 100.0,
-              'totalSeats': 20,
-              'availableSeats': 20,
+            VIP: {
+              price: 100.0,
+              totalSeats: 20,
+              availableSeats: 20,
             },
-          }
+          },
         };
       }
 
       // Return the custom seat map
       return {
         seats: event.seat_map,
-        hasCustomSeating: true
+        hasCustomSeating: true,
       };
     } catch (error) {
       throw new Error(`Failed to fetch seat map: ${error.message}`);
@@ -525,5 +749,4 @@ module.exports = {
       throw new Error(`Failed to update seat map: ${error.message}`);
     }
   },
-
 };

@@ -30,10 +30,12 @@ import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/all_events_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
-import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/my_profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
+import '../../features/profile/screens/profile_posts_feed_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/create_post_screen.dart';
+import '../../features/events/widgets/mini_game_overlay.dart';
 
 import '../../common_widgets/bottom_nav_bar.dart';
 
@@ -177,6 +179,13 @@ class AppRouter {
         builder: (context, state) => const CreatePostScreen(),
       ),
 
+      // Spinning Wheel Game Route
+      GoRoute(
+        path: '/games/spinning-wheel',
+        name: 'spinning-wheel',
+        builder: (context, state) => const SpinningWheelScreen(),
+      ),
+
       // User Profile Route
       GoRoute(
         path: '/user/:userId',
@@ -185,6 +194,22 @@ class AppRouter {
           final userId = state.pathParameters['userId']!;
           print('🛣️ Router: Building UserProfileScreen for userId: $userId');
           return UserProfileScreen(userId: userId);
+        },
+      ),
+
+      // Profile Posts Feed Route
+      GoRoute(
+        path: '/profile/posts/:userId',
+        name: 'profile-posts-feed',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          print(
+              '🛣️ Router: Building ProfilePostsFeedScreen for userId: $userId');
+          return ProfilePostsFeedScreen(
+            userId: userId,
+            username: extra?['username'],
+          );
         },
       ),
 
@@ -277,15 +302,12 @@ class AppRouter {
             selectedSeatData:
                 (extra['selectedSeatData'] as List<Map<String, dynamic>>?) ??
                     <Map<String, dynamic>>[],
-            name: extra['name'] ?? '',
-            email: extra['email'] ?? '',
-            phone: extra['phone'] ?? '',
           );
         },
       ),
 
       // New Multi-Step Booking Flow
-      // Step 1: Seat Selection
+      // Step 1: Enhanced Seat Selection
       GoRoute(
         path: '/booking/:eventId/seat-selection',
         name: 'booking-seat-selection',
@@ -355,11 +377,18 @@ class AppRouter {
         path: '/booking/payment-success',
         name: 'payment-success',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
-          return PaymentSuccessScreen(
-            bookingData: extra,
-            paymentId: extra['paymentId'] ?? '',
-          );
+          final bookingData = state.extra as Map<String, dynamic>? ?? {};
+          print(
+              '🔄 [ROUTER] Building PaymentSuccessScreen with data: $bookingData');
+
+          try {
+            return PaymentSuccessScreen(
+              bookingData: bookingData,
+            );
+          } catch (e) {
+            print('❌ [ROUTER] Error creating PaymentSuccessScreen: $e');
+            rethrow;
+          }
         },
       ),
 
@@ -371,7 +400,7 @@ class AppRouter {
           final ticketId = state.pathParameters['ticketId']!;
           final extra = state.extra as Map<String, dynamic>? ?? {};
           final ticket = extra['ticket'];
-          
+
           return tickets.ETicketScreen(
             ticketId: ticketId,
             initialTicket: ticket,

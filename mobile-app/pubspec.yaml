@@ -1,5 +1,5 @@
 name: event_booking_app
-description: A Flutter-based Event Booking mobile application
+description: EventBn - A Flutter-based Event Booking mobile application
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -45,6 +45,7 @@ dependencies:
 
   # Loading indicators
   flutter_spinkit: ^5.2.0
+  shimmer: ^3.0.0
 
   # Toast messages
   fluttertoast: ^8.2.4
@@ -75,6 +76,9 @@ dev_dependencies:
   # Linting
   flutter_lints: ^3.0.0
 
+  # Icon generation
+  flutter_launcher_icons: ^0.13.1
+
 flutter:
   uses-material-design: true
 
@@ -85,10 +89,20 @@ flutter:
     - assets/seat_map.json
     - .env
 
-  # Custom fonts (commented out until font files are added)
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: assets/fonts/Roboto-Regular.ttf
-  #       - asset: assets/fonts/Roboto-Bold.ttf
-  #         weight: 700
+  # Custom fonts - San Francisco (No italic variants)
+  fonts:
+    - family: SF Pro Display
+      fonts:
+        - asset: assets/fonts/SFPRODISPLAYREGULAR.OTF
+        - asset: assets/fonts/SFPRODISPLAYMEDIUM.OTF
+          weight: 500
+        - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
+          weight: 700
+
+# Flutter Launcher Icons configuration
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/images/eventbn logo bg black.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true

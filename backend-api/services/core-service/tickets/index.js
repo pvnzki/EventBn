@@ -1,235 +1,170 @@
-// Search Logs module
-const prisma = require('../../../lib/database');
+// Tickets service (ported from monolith routes/tickets.js)
+const prisma = require("../lib/database");
+
+function serializeTicket(ticket) {
+  if (!ticket) return null;
+  return {
+    ...ticket,
+    price: ticket.price != null ? Number(ticket.price) : null,
+    user_id: ticket.user_id != null ? Number(ticket.user_id) : null,
+    event_id: ticket.event_id != null ? Number(ticket.event_id) : null,
+  };
+}
 
 module.exports = {
-  // Create new search log
-  async createSearchLog(data) {
-    try {
-      return await prisma.search_Log.create({
-        data: {
-          user_id: data.user_id ? parseInt(data.user_id) : null,
-          search_query: data.search_query,
-          search_time: data.search_time ? new Date(data.search_time) : new Date(),
-          filters_applied: data.filters_applied || null
+  async getUserTickets(userId) {
+    const tickets = await prisma.ticketPurchase.findMany({
+      where: { user_id: userId },
+      include: {
+        event: {
+          select: {
+            title: true,
+            start_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true,
+          },
         },
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              name: true
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to create search log: ${error.message}`);
-    }
-  },
-
-  // Get all search logs with optional filtering
-  async getAllSearchLogs(filters = {}) {
-    try {
-      const where = {};
-      
-      if (filters.user_id) {
-        where.user_id = parseInt(filters.user_id);
-      }
-      
-      if (filters.search_query) {
-        where.search_query = { contains: filters.search_query, mode: 'insensitive' };
-      }
-      
-      if (filters.start_date) {
-        where.search_time = { gte: new Date(filters.start_date) };
-      }
-      
-      if (filters.end_date) {
-        where.search_time = { 
-          ...where.search_time,
-          lte: new Date(filters.end_date) 
-        };
-      }
-
-      return await prisma.search_Log.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              name: true,
-              email: true
-            }
-          }
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+          },
         },
-        orderBy: { search_time: 'desc' }
-      });
-    } catch (error) {
-      throw new Error(`Failed to fetch search logs: ${error.message}`);
-    }
+      },
+      orderBy: { purchase_date: "desc" },
+    });
+    return tickets.map(serializeTicket);
   },
 
-  // Get search log by ID
-  async getSearchLogById(id) {
-    try {
-      return await prisma.search_Log.findUnique({
-        where: { log_id: parseInt(id) },
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to fetch search log: ${error.message}`);
-    }
+  async getTicketByQr(qrCode) {
+    const ticket = await prisma.ticketPurchase.findFirst({
+      where: { qr_code: qrCode },
+      include: {
+        user: { select: { name: true, email: true } },
+        event: { select: { title: true, start_time: true, venue: true } },
+        payment: { select: { status: true } },
+      },
+    });
+    return serializeTicket(ticket);
   },
 
-  // Get user's search history
-  async getUserSearchHistory(userId, limit = 50) {
-    try {
-      return await prisma.search_Log.findMany({
-        where: { user_id: parseInt(userId) },
-        orderBy: { search_time: 'desc' },
-        take: limit
-      });
-    } catch (error) {
-      throw new Error(`Failed to fetch user search history: ${error.message}`);
-    }
-  },
-
-  // Get popular search queries
-  async getPopularSearchQueries(limit = 10, days = 30) {
-    try {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
-      const result = await prisma.search_Log.groupBy({
-        by: ['search_query'],
-        where: {
-          search_time: { gte: startDate }
+  async getTicketDetails(ticketId, userId) {
+    const ticket = await prisma.ticketPurchase.findFirst({
+      where: { ticket_id: ticketId, user_id: userId },
+      include: {
+        user: { select: { name: true, email: true, phone_number: true } },
+        event: {
+          select: {
+            title: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true,
+            ticket_price: true,
+          },
         },
-        _count: {
-          search_query: true
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
         },
-        orderBy: {
-          _count: {
-            search_query: 'desc'
-          }
-        },
-        take: limit
-      });
+      },
+    });
+    if (!ticket) return null;
 
-      return result.map(item => ({
-        query: item.search_query,
-        count: item._count.search_query
-      }));
-    } catch (error) {
-      throw new Error(`Failed to fetch popular search queries: ${error.message}`);
+    // Ensure QR code exists
+    if (!ticket.qr_code) {
+      const qrCode = `TICKET:${ticket.ticket_id}:${ticket.event_id}:${
+        ticket.user_id
+      }:${Date.now()}`;
+      await prisma.ticketPurchase.update({
+        where: { ticket_id: ticket.ticket_id },
+        data: { qr_code: qrCode },
+      });
+      ticket.qr_code = qrCode;
     }
+
+    const serialized = serializeTicket(ticket);
+    serialized.qr_code = ticket.qr_code;
+    serialized.event = {
+      ...ticket.event,
+      ticket_price: ticket.event?.ticket_price
+        ? Number(ticket.event.ticket_price)
+        : null,
+    };
+    return serialized;
   },
 
-  // Get search analytics
-  async getSearchAnalytics(days = 30) {
-    try {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+  async markTicketAttended(ticketId) {
+    const ticket = await prisma.ticketPurchase.update({
+      where: { ticket_id: ticketId },
+      data: { attended: true },
+      include: {
+        user: { select: { name: true, email: true } },
+        event: { select: { title: true } },
+      },
+    });
+    return serializeTicket(ticket);
+  },
 
-      const totalSearches = await prisma.search_Log.count({
-        where: {
-          search_time: { gte: startDate }
-        }
-      });
+  async getEventTickets(eventId) {
+    const tickets = await prisma.ticketPurchase.findMany({
+      where: { event_id: parseInt(eventId) },
+      include: {
+        user: { select: { name: true, email: true } },
+        payment: { select: { status: true, payment_method: true } },
+      },
+      orderBy: { purchase_date: "desc" },
+    });
+    return tickets.map(serializeTicket);
+  },
 
-      const uniqueUsers = await prisma.search_Log.findMany({
-        where: {
-          search_time: { gte: startDate },
-          user_id: { not: null }
+  async getTicketByPayment(paymentId, userId) {
+    const ticket = await prisma.ticketPurchase.findFirst({
+      where: { payment_id: paymentId, user_id: userId },
+      include: {
+        user: { select: { name: true, email: true, phone_number: true } },
+        event: {
+          select: {
+            title: true,
+            description: true,
+            start_time: true,
+            end_time: true,
+            venue: true,
+            location: true,
+            cover_image_url: true,
+          },
         },
-        distinct: ['user_id'],
-        select: { user_id: true }
-      });
-
-      const searchesByDay = await prisma.search_Log.groupBy({
-        by: ['search_time'],
-        where: {
-          search_time: { gte: startDate }
+        payment: {
+          select: {
+            payment_id: true,
+            status: true,
+            payment_method: true,
+            transaction_ref: true,
+          },
         },
-        _count: {
-          log_id: true
-        }
+      },
+    });
+    if (!ticket) return null;
+    if (!ticket.qr_code) {
+      const qrCode = `TICKET:${ticket.ticket_id}:${ticket.event_id}:${
+        ticket.user_id
+      }:${Date.now()}`;
+      await prisma.ticketPurchase.update({
+        where: { ticket_id: ticket.ticket_id },
+        data: { qr_code: qrCode },
       });
-
-      return {
-        totalSearches,
-        uniqueUsers: uniqueUsers.length,
-        searchesByDay: searchesByDay.map(item => ({
-          date: item.search_time,
-          count: item._count.log_id
-        }))
-      };
-    } catch (error) {
-      throw new Error(`Failed to fetch search analytics: ${error.message}`);
+      ticket.qr_code = qrCode;
     }
+    const serialized = serializeTicket(ticket);
+    serialized.qr_code = ticket.qr_code;
+    return serialized;
   },
-
-  // Delete old search logs
-  async cleanupOldSearchLogs(daysToKeep = 90) {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-      const result = await prisma.search_Log.deleteMany({
-        where: {
-          search_time: { lt: cutoffDate }
-        }
-      });
-
-      return { deletedCount: result.count };
-    } catch (error) {
-      throw new Error(`Failed to cleanup old search logs: ${error.message}`);
-    }
-  },
-
-  // Update search log
-  async updateSearchLog(id, data) {
-    try {
-      const updateData = { ...data };
-      delete updateData.log_id;
-      delete updateData.search_time;
-      
-      if (updateData.user_id) {
-        updateData.user_id = parseInt(updateData.user_id);
-      }
-
-      return await prisma.search_Log.update({
-        where: { log_id: parseInt(id) },
-        data: updateData,
-        include: {
-          user: {
-            select: {
-              user_id: true,
-              name: true
-            }
-          }
-        }
-      });
-    } catch (error) {
-      throw new Error(`Failed to update search log: ${error.message}`);
-    }
-  },
-
-  // Delete search log
-  async deleteSearchLog(id) {
-    try {
-      return await prisma.search_Log.delete({
-        where: { log_id: parseInt(id) }
-      });
-    } catch (error) {
-      throw new Error(`Failed to delete search log: ${error.message}`);
-    }
-  }
 };

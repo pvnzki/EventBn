@@ -31,69 +31,94 @@ class AuthProvider extends ChangeNotifier {
 
   // Initialize authentication state
   Future<void> initializeAuth() async {
+    print('🔄 AuthProvider: Initializing authentication...');
     _setLoading(true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final isAuthenticated = prefs.getBool('is_authenticated') ?? false;
       final userEmail = prefs.getString('user_email');
+      final authToken = prefs.getString('auth_token');
 
-      if (isAuthenticated && userEmail != null) {
-        final now = DateTime.now();
-        _user = User(
-          id: 'user_${userEmail.hashCode}',
-          firstName: userEmail.split('@')[0],
-          lastName: 'User',
-          email: userEmail,
-          phoneNumber: null,
-          createdAt: now,
-          updatedAt: now,
-        );
-        _isAuthenticated = true;
+      print(
+          '🔍 AuthProvider: isAuthenticated=$isAuthenticated, email=$userEmail, hasToken=${authToken != null}');
+
+      if (isAuthenticated && userEmail != null && authToken != null) {
+        // Get the actual user data from the backend/token instead of creating from email hash
+        print('🔍 AuthProvider: Getting user data from AuthService...');
+        final user = await _authService.getCurrentUser();
+
+        if (user != null) {
+          _user = user;
+          _isAuthenticated = true;
+          print(
+              '✅ AuthProvider: User initialized from backend - ID: ${_user!.id}, Email: ${_user!.email}');
+        } else {
+          // Fallback: create user from stored data (this should be rare)
+          print('⚠️ AuthProvider: Fallback to creating user from stored email');
+          final now = DateTime.now();
+          _user = User(
+            id: 'user_${userEmail.hashCode}',
+            firstName: userEmail.split('@')[0],
+            lastName: 'User',
+            email: userEmail,
+            phoneNumber: null,
+            createdAt: now,
+            updatedAt: now,
+          );
+          _isAuthenticated = true;
+          print(
+              '⚠️ AuthProvider: User initialized from fallback - ID: ${_user!.id}, Email: ${_user!.email}');
+        }
+      } else {
+        print('❌ AuthProvider: Authentication data incomplete, user not set');
+        _user = null;
+        _isAuthenticated = false;
       }
     } catch (e) {
+      print('❌ AuthProvider: Error initializing authentication: $e');
       _setError('Failed to initialize authentication');
     } finally {
       _setLoading(false);
+      print(
+          '🏁 AuthProvider: Initialization complete. User: ${_user?.id}, Authenticated: $_isAuthenticated');
     }
   }
 
   // Login
-Future<bool> login(String email, String password) async {
-  _setLoading(true);
-  _setError(null);
+  Future<bool> login(String email, String password) async {
+    _setLoading(true);
+    _setError(null);
 
-  try {
-    final result = await _authService.login(email, password);
+    try {
+      final result = await _authService.login(email, password);
 
-    // Ensure result is valid and contains both user + token
+      // Ensure result is valid and contains both user + token
 
-    if (result['user'] != null && result['token'] != null) {
+      if (result['user'] != null && result['token'] != null) {
+        _user = result['user'];
+        _isAuthenticated = true;
 
-      _user = result['user'];
-      _isAuthenticated = true;
+        final token = result['token'];
+        print('JWT Token: $token'); // For debugging
 
-      final token = result['token'];
-      print('JWT Token: $token'); // For debugging
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', _user!.email);
+        await prefs.setString('auth_token', token); // 🔥 store token
+        await prefs.setBool('is_authenticated', true);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_email', _user!.email);
-      await prefs.setString('auth_token', token); // 🔥 store token
-      await prefs.setBool('is_authenticated', true);
-
-      _setLoading(false);
-      return true;
-    } else {
-      _setError('Invalid email or password');
+        _setLoading(false);
+        return true;
+      } else {
+        _setError('Invalid email or password');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString().replaceAll('Exception: ', ''));
       _setLoading(false);
       return false;
     }
-  } catch (e) {
-    _setError(e.toString().replaceAll('Exception: ', ''));
-    _setLoading(false);
-    return false;
   }
-}
-
 
   // Register
   Future<bool> register({
@@ -106,6 +131,8 @@ Future<bool> login(String email, String password) async {
     _setError(null);
 
     try {
+      print('🔄 [AUTH_PROVIDER] Registering user: $email');
+      
       final result = await _authService.register(
         name: name,
         email: email,
@@ -117,18 +144,25 @@ Future<bool> login(String email, String password) async {
         _user = result['user'];
         _isAuthenticated = true;
 
+        final token = result['token'];
+        print('🔄 [AUTH_PROVIDER] Registration successful, storing token');
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', _user!.email);
+        await prefs.setString('auth_token', token);
         await prefs.setBool('is_authenticated', true);
 
+        print('✅ [AUTH_PROVIDER] Registration completed for: ${_user!.email}');
         _setLoading(false);
         return true;
       } else {
+        print('❌ [AUTH_PROVIDER] Registration failed: ${result['message']}');
         _setError(result['message'] ?? 'Registration failed');
         _setLoading(false);
         return false;
       }
     } catch (e) {
+      print('❌ [AUTH_PROVIDER] Registration error: $e');
       _setError('Network error. Please try again.');
       _setLoading(false);
       return false;
@@ -217,5 +251,11 @@ Future<bool> login(String email, String password) async {
 
   void clearError() {
     _setError(null);
+  }
+
+  // Update user data (for profile updates)
+  void updateUser(User updatedUser) {
+    _user = updatedUser;
+    notifyListeners();
   }
 }

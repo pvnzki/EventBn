@@ -1,0 +1,155 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  user_id                        Int               @id @default(autoincrement())
+  name                           String
+  email                          String            @unique
+  password_hash                  String
+  phone_number                   String?
+  profile_picture                String?
+  is_active                      Boolean           @default(true)
+  is_email_verified              Boolean           @default(false)
+  role                           String            @default("USER")
+  created_at                     DateTime          @default(now())
+  updated_at                     DateTime          @default(now()) @updatedAt
+  billing_address                String?
+  billing_city                   String?           @db.VarChar(100)
+  billing_state                  String?           @db.VarChar(100)
+  billing_country                String?           @default("Sri Lanka") @db.VarChar(100)
+  billing_postal_code            String?           @db.VarChar(20)
+  profile_completed              Boolean?          @default(false)
+  date_of_birth                  DateTime?         @db.Date
+  emergency_contact_name         String?           @db.VarChar(255)
+  emergency_contact_phone        String?           @db.VarChar(20)
+  emergency_contact_relationship String?           @db.VarChar(100)
+  marketing_emails_enabled       Boolean?          @default(true)
+  event_notifications_enabled    Boolean?          @default(true)
+  sms_notifications_enabled      Boolean?          @default(true)
+  organizations                  Organization[]
+  search_logs                    Search_Log[]
+  payment                        payment[]
+  ticket_purchase                ticket_purchase[]
+
+  @@index([billing_country], map: "idx_user_billing_country")
+  @@index([phone_number], map: "idx_user_phone_number")
+  @@index([profile_completed], map: "idx_user_profile_completed")
+  @@map("User")
+}
+
+model Organization {
+  organization_id Int      @id @default(autoincrement())
+  user_id         Int
+  name            String
+  description     String?
+  logo_url        String?
+  contact_email   String?
+  contact_number  String?
+  website_url     String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+  events          Event[]
+  user            User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("Organization")
+}
+
+model Event {
+  event_id         Int               @id @default(autoincrement())
+  organization_id  Int?
+  title            String
+  description      String?
+  category         String?
+  venue            String?
+  location         String?
+  start_time       DateTime
+  end_time         DateTime
+  capacity         Int?
+  cover_image_url  String?
+  other_images_url String?
+  created_at       DateTime          @default(now())
+  status           String            @default("ACTIVE")
+  updated_at       DateTime          @default(now()) @updatedAt
+  video_url        String?           @default("")
+  seat_map         Json?
+  ticket_types     Json?
+  organization     Organization?     @relation(fields: [organization_id], references: [organization_id])
+  payment          payment[]
+  ticket_purchase  ticket_purchase[]
+
+  @@map("Event")
+}
+
+model Search_Log {
+  log_id          Int      @id @default(autoincrement())
+  user_id         Int?
+  search_query    String
+  search_time     DateTime @default(now())
+  filters_applied String?
+  user            User?    @relation(fields: [user_id], references: [user_id])
+
+  @@map("Search_Log")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model monthly_analytics {
+  id              Int       @id
+  year            Int
+  month           Int
+  total_events    Int?      @default(0)
+  total_attendees Int?      @default(0)
+  total_revenue   Decimal?  @default(0) @db.Decimal(12, 2)
+  growth_rate     Decimal?  @default(0) @db.Decimal(5, 2)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([year, month])
+}
+
+model payment {
+  payment_id      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         Int
+  event_id        Int
+  amount          Decimal           @db.Decimal
+  payment_date    DateTime          @default(now()) @db.Timestamp(6)
+  status          status            @default(pending)
+  payment_method  String?
+  transaction_ref String?
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime          @default(now()) @db.Timestamp(6)
+  Event           Event             @relation(fields: [event_id], references: [event_id], onDelete: NoAction, onUpdate: NoAction)
+  User            User              @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  ticket_purchase ticket_purchase[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ticket_purchase {
+  ticket_id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id      Int
+  user_id       Int
+  purchase_date DateTime @db.Timestamp(6)
+  price         BigInt
+  payment_id    String?  @db.Uuid
+  seat_id       Int?
+  seat_label    String?
+  attended      Boolean? @default(false)
+  qr_code       String?
+  Event         Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
+  payment       payment? @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade, onUpdate: NoAction)
+  User          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum status {
+  pending
+  completed
+  failed
+  refunded
+}

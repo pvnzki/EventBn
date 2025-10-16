@@ -28,6 +28,8 @@ class ExplorePost {
   final bool isUserVerified;
   final String content;
   final List<String> imageUrls;
+  final List<String> videoUrls; // Added support for video URLs
+  final List<String> videoThumbnails; // Added support for video thumbnails
   final PostType postType;
   final PostCategory category;
   final DateTime createdAt;
@@ -58,6 +60,9 @@ class ExplorePost {
     this.isUserVerified = false,
     required this.content,
     required this.imageUrls,
+    this.videoUrls = const [], // Added videoUrls with default empty list
+    this.videoThumbnails =
+        const [], // Added videoThumbnails with default empty list
     required this.postType,
     required this.category,
     required this.createdAt,
@@ -85,6 +90,8 @@ class ExplorePost {
     bool? isUserVerified,
     String? content,
     List<String>? imageUrls,
+    List<String>? videoUrls, // Added videoUrls parameter
+    List<String>? videoThumbnails, // Added videoThumbnails parameter
     PostType? postType,
     PostCategory? category,
     DateTime? createdAt,
@@ -111,6 +118,9 @@ class ExplorePost {
       isUserVerified: isUserVerified ?? this.isUserVerified,
       content: content ?? this.content,
       imageUrls: imageUrls ?? this.imageUrls,
+      videoUrls: videoUrls ?? this.videoUrls, // Added videoUrls to copyWith
+      videoThumbnails: videoThumbnails ??
+          this.videoThumbnails, // Added videoThumbnails to copyWith
       postType: postType ?? this.postType,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
@@ -133,13 +143,17 @@ class ExplorePost {
 
   factory ExplorePost.fromJson(Map<String, dynamic> json) {
     return ExplorePost(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
+      id: json['id'].toString(),
+      userId: json['userId'].toString(),
       userDisplayName: json['userDisplayName'] as String,
       userAvatarUrl: json['userAvatarUrl'] as String,
       isUserVerified: json['isUserVerified'] as bool? ?? false,
       content: json['content'] as String,
       imageUrls: List<String>.from(json['imageUrls'] as List),
+      videoUrls: List<String>.from(
+          json['videoUrls'] as List? ?? []), // Added videoUrls parsing
+      videoThumbnails: List<String>.from(json['videoThumbnails'] as List? ??
+          []), // Added videoThumbnails parsing
       postType: PostType.values.firstWhere(
         (e) => e.toString() == 'PostType.${json['postType']}',
         orElse: () => PostType.eventInterest,
@@ -154,7 +168,7 @@ class ExplorePost {
       sharesCount: json['sharesCount'] as int? ?? 0,
       isLiked: json['isLiked'] as bool? ?? false,
       isBookmarked: json['isBookmarked'] as bool? ?? false,
-      relatedEventId: json['relatedEventId'] as String?,
+      relatedEventId: json['eventId']?.toString(),
       relatedEventName: json['relatedEventName'] as String?,
       relatedEventImage: json['relatedEventImage'] as String?,
       relatedEventDate: json['relatedEventDate'] != null
@@ -177,6 +191,8 @@ class ExplorePost {
       'isUserVerified': isUserVerified,
       'content': content,
       'imageUrls': imageUrls,
+      'videoUrls': videoUrls, // Added videoUrls to JSON
+      'videoThumbnails': videoThumbnails, // Added videoThumbnails to JSON
       'postType': postType.toString().split('.').last,
       'category': category.toString().split('.').last,
       'createdAt': createdAt.toIso8601String(),

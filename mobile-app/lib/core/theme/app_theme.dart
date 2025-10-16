@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // San Francisco Font Configuration
+  static const String primaryFontFamily = 'SF Pro Display';
+  static const String bodyFontFamily =
+      'SF Pro Display'; // Using SF Pro Display for all text
+
+  // Fallback fonts for cross-platform compatibility
+  static const List<String> fontFallbacks = [
+    '-apple-system',
+    'BlinkMacSystemFont',
+    'Segoe UI',
+    'Roboto',
+    'Helvetica Neue',
+    'Arial',
+    'sans-serif'
+  ];
+
   // Colors - Updated to black/white theme
   static const Color primaryColor = Color(0xFF000000); // Black for light mode
   static const Color secondaryColor =
@@ -47,6 +63,8 @@ class AppTheme {
         onError: Colors.white,
       ),
       scaffoldBackgroundColor: backgroundColor,
+      fontFamily: bodyFontFamily,
+      textTheme: _buildTextTheme(textPrimary),
       appBarTheme: const AppBarTheme(
         backgroundColor: surfaceColor,
         foregroundColor: textPrimary,
@@ -56,6 +74,7 @@ class AppTheme {
           color: textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w600,
+          fontFamily: primaryFontFamily,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -127,6 +146,8 @@ class AppTheme {
         onError: Colors.white,
       ),
       scaffoldBackgroundColor: darkBackgroundColor,
+      fontFamily: bodyFontFamily,
+      textTheme: _buildTextTheme(darkTextPrimary),
       appBarTheme: const AppBarTheme(
         backgroundColor: darkSurfaceColor,
         foregroundColor: darkTextPrimary,
@@ -136,6 +157,7 @@ class AppTheme {
           color: darkTextPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w600,
+          fontFamily: primaryFontFamily,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -196,6 +218,120 @@ class AppTheme {
       dividerColor: darkBorderColor,
       iconTheme: const IconThemeData(
         color: darkTextSecondary,
+      ),
+    );
+  }
+
+  // Text Theme Builder with San Francisco fonts
+  static TextTheme _buildTextTheme(Color textColor) {
+    return TextTheme(
+      // Display styles - for large text, headlines
+      displayLarge: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 57,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: -0.25,
+      ),
+      displayMedium: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 45,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      displaySmall: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 36,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+
+      // Headline styles - for section headers
+      headlineLarge: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      headlineMedium: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+
+      // Title styles - for card titles, dialog titles
+      titleLarge: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      titleMedium: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: 0.15,
+      ),
+      titleSmall: TextStyle(
+        fontFamily: primaryFontFamily,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: 0.1,
+      ),
+
+      // Body styles - for main content
+      bodyLarge: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: 0.5,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: 0.25,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: 0.4,
+      ),
+
+      // Label styles - for buttons, form labels
+      labelLarge: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+        letterSpacing: 0.1,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+        letterSpacing: 0.5,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: bodyFontFamily,
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+        letterSpacing: 0.5,
       ),
     );
   }

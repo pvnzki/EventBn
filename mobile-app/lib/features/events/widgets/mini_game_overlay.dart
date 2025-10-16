@@ -1,265 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:math';
+import 'casino_painters.dart';
 
-class MiniGameOverlay extends StatefulWidget {
-  const MiniGameOverlay({super.key});
+class SpinningWheelScreen extends StatefulWidget {
+  const SpinningWheelScreen({super.key});
 
   @override
-  State<MiniGameOverlay> createState() => _MiniGameOverlayState();
+  State<SpinningWheelScreen> createState() => _SpinningWheelScreenState();
 }
 
-class _MiniGameOverlayState extends State<MiniGameOverlay>
+class _SpinningWheelScreenState extends State<SpinningWheelScreen>
     with TickerProviderStateMixin {
-  bool _showWheel = false;
   int _spinsLeft = 3;
-  DateTime _nextSpinTime =
+  final DateTime _nextSpinTime =
       DateTime.now().add(const Duration(hours: 23, minutes: 9, seconds: 7));
 
   // Animation controllers
   late AnimationController _wheelController;
-  late AnimationController _pulseController;
-  late AnimationController _particleController;
-  late AnimationController _glowController;
-  late AnimationController _celebrationController;
-  late AnimationController _bounceController;
-  late AnimationController _shimmerController;
+  late AnimationController _celebrationAnimation;
 
-  double _wheelAngle = 0;
+  // Wheel state
+  double _wheelAngle = 0.0;
+  double _startAngle = 0.0;
+  double _targetAngle = 0.0;
   bool _isSpinning = false;
   String? _selectedReward;
 
-  // Enhanced animations
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _particleAnimation;
-  late Animation<double> _glowAnimation;
-  late Animation<double> _celebrationAnimation;
-  late Animation<double> _bounceAnimation;
-  late Animation<double> _shimmerAnimation;
-
-    final List<String> _wheelRewards = [
-      '1 Free Ticket',
-      '2 Free Tickets',
-      'VIP Ticket',
-      'Backstage Pass',
-      'LKR 500 Voucher',
-      'LKR 1000 Voucher',
-      'Try Again',
-      'Extra Spin'
-    ];
-
-  final List<Color> _wheelColors = [
-    const Color(0xFFFF6B35), // Vibrant orange
-    const Color(0xFFF7931E), // Golden orange
-    const Color(0xFF4285F4), // Google blue
-    const Color(0xFFEA4335), // Google red
-    const Color(0xFF9C27B0), // Purple
-    const Color(0xFFFF5722), // Deep orange
-    const Color(0xFF4CAF50), // Green
-    const Color(0xFF673AB7), // Deep purple
+  // TEMU-style wheel rewards (8 segments)
+  final List<String> _wheelRewards = [
+    '\$100',
+    '59 Freespins',
+    '\$200',
+    'Gift',
+    '\$300',
+    '59 Freespins',
+    '\$500',
+    '\$700',
   ];
 
-  // Particle system
-  List<Particle> _particles = [];
+  // TEMU-style colors (deep blues and golds)
+  final List<Color> _wheelColors = [
+    const Color(0xFF1A237E), // Deep blue
+    const Color(0xFFFFD700), // Gold
+    const Color(0xFF303F9F), // Medium blue
+    const Color(0xFFFFA000), // Amber
+    const Color(0xFF1A237E), // Deep blue
+    const Color(0xFFFFD700), // Gold
+    const Color(0xFF303F9F), // Medium blue
+    const Color(0xFFFFA000), // Amber
+  ];
 
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-    _generateParticles();
-  }
-
-  void _initializeAnimations() {
+    // Higher refresh rate animation controller for smoother spinning
     _wheelController = AnimationController(
-      duration: const Duration(milliseconds: 4000),
-      vsync: this,
-    );
-
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    _particleController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    _glowController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _celebrationController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
-
-    _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+    _celebrationAnimation = AnimationController(
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
-    _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    );
-
-    // Pulse animation for the floating button
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.15,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Particle animation
-    _particleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _particleController,
-      curve: Curves.easeOut,
-    ));
-
-    // Glow animation
-    _glowAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _glowController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Celebration animation
-    _celebrationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _celebrationController,
-      curve: Curves.elasticOut,
-    ));
-
-    // Bounce animation
-    _bounceAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _bounceController,
-      curve: Curves.elasticOut,
-    ));
-
-    // Shimmer animation
-    _shimmerAnimation = Tween<double>(
-      begin: -2.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _shimmerController,
-      curve: Curves.linear,
-    ));
-
-    // Start continuous animations
-    _pulseController.repeat(reverse: true);
-    _glowController.repeat(reverse: true);
-    _shimmerController.repeat();
-  }
-
-  void _generateParticles() {
-    _particles = List.generate(20, (index) {
-      final random = Random();
-      return Particle(
-        x: random.nextDouble() * 400,
-        y: random.nextDouble() * 400,
-        dx: (random.nextDouble() - 0.5) * 4,
-        dy: (random.nextDouble() - 0.5) * 4,
-        size: random.nextDouble() * 8 + 4,
-        color: _wheelColors[random.nextInt(_wheelColors.length)],
-        life: random.nextDouble() * 0.5 + 0.5,
-      );
-    });
   }
 
   @override
   void dispose() {
     _wheelController.dispose();
-    _pulseController.dispose();
-    _particleController.dispose();
-    _glowController.dispose();
-    _celebrationController.dispose();
-    _bounceController.dispose();
-    _shimmerController.dispose();
+    _celebrationAnimation.dispose();
     super.dispose();
-  }
-
-  void _startGame() {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _showWheel = true;
-    });
-    _bounceController.forward();
   }
 
   void _spinWheel() async {
     if (_isSpinning || _spinsLeft <= 0) return;
 
-    // Haptic feedback for premium feel
-    HapticFeedback.heavyImpact();
-
     setState(() {
       _isSpinning = true;
       _spinsLeft--;
-      _selectedReward = null;
     });
 
-    // Start particle effects
-    _particleController.forward();
-    _generateParticles();
+    // Strong haptic feedback for spin start
+    HapticFeedback.heavyImpact();
 
-    final random = Random();
-    final targetIndex = random.nextInt(_wheelRewards.length);
-    final singleSegment = 2 * pi / _wheelRewards.length;
-    final targetAngle = (targetIndex * singleSegment) + (singleSegment / 2);
+    // Store starting angle
+    _startAngle = _wheelAngle;
 
-    // Enhanced spin physics - more rotations and better easing
-    final minSpins = 6;
-    final maxSpins = 10;
-    final spins = minSpins + random.nextDouble() * (maxSpins - minSpins);
-    final fullSpins = spins * 2 * pi;
-    final finalAngle = _wheelAngle + fullSpins + (2 * pi - targetAngle);
+    // Realistic spin physics - start fast, slow down gradually
+    final Random random = Random();
+    final double baseSpins = 12 +
+        random.nextDouble() * 8; // 12-20 full rotations for dramatic effect
+    final double randomOffset =
+        random.nextDouble() * 2 * pi; // Random final position
+    final double totalRotation = baseSpins * 2 * pi + randomOffset;
 
+    // Calculate target angle
+    _targetAngle = _startAngle + totalRotation;
+
+    // Determine winning segment based on final position
+    final double normalizedAngle = (_targetAngle % (2 * pi));
+    final double segmentAngle = (2 * pi) / _wheelRewards.length;
+    final int winningSegment =
+        ((2 * pi - normalizedAngle) / segmentAngle).floor() %
+            _wheelRewards.length;
+
+    // Reset and start animation
     _wheelController.reset();
-    final animation = Tween<double>(
-      begin: _wheelAngle,
-      end: finalAngle,
-    ).animate(CurvedAnimation(
-      parent: _wheelController,
-      curve: const Cubic(0.25, 0.46, 0.45, 0.94), // Premium easing curve
-    ));
 
-    animation.addListener(() {
-      setState(() {
-        _wheelAngle = animation.value;
-      });
+    // Animate with realistic easing and higher FPS
+    await _wheelController.animateTo(
+      1.0,
+      duration: const Duration(
+          milliseconds: 5000), // Longer spin for more dramatic effect
+      curve: Curves.easeOutCirc, // More realistic casino wheel deceleration
+    );
+
+    // Update final state
+    setState(() {
+      _wheelAngle = _targetAngle;
+      _selectedReward = _wheelRewards[winningSegment];
+      _isSpinning = false;
     });
 
-    animation.addStatusListener((status) async {
-      if (status == AnimationStatus.completed) {
-        // Completion haptic
-        await Future.delayed(const Duration(milliseconds: 200));
-        HapticFeedback.heavyImpact();
-
-        setState(() {
-          _isSpinning = false;
-          _selectedReward = _wheelRewards[targetIndex];
-        });
-
-        // Start celebration animation
-        _celebrationController.forward();
-      }
+    // Show celebration with enhanced feedback
+    _celebrationAnimation.forward().then((_) {
+      _celebrationAnimation.reverse();
     });
 
-    await _wheelController.forward();
+    // Victory haptic feedback sequence
+    HapticFeedback.lightImpact();
+    await Future.delayed(const Duration(milliseconds: 100));
+    HapticFeedback.lightImpact();
   }
 
   String _formatTimer(DateTime nextSpinTime) {
@@ -275,849 +147,1189 @@ class _MiniGameOverlayState extends State<MiniGameOverlay>
 
   @override
   Widget build(BuildContext context) {
-    if (!_showWheel) {
-      return Positioned(
-        right: 6,
-        bottom: 70,
-        child: AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _pulseAnimation.value,
-              child: GestureDetector(
-                onTap: _startGame,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(35),
-                    // boxShadow: [
-                    //   BoxShadow(
-                    //     color: const Color(0xFF32CD32).withOpacity(0.6),
-                    //     blurRadius: 30,
-                    //     offset: const Offset(0, 8),
-                    //   ),
-                    //   BoxShadow(
-                    //     color: const Color(0xFF32CD32).withOpacity(0.3),
-                    //     blurRadius: 20,
-                    //     offset: const Offset(0, 16),
-                    //   ),
-                    // ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(25),
-                    child: Image.asset(
-                      'assets/icons/Offers_Green.png',
-                      fit: BoxFit.cover,
-                      width: 70,
-                      height: 70,
-                    ),
-                  ),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor:
+          isDark ? const Color(0xFF0D1117) : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1),
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: isDark ? Colors.white : Colors.black87,
+              size: 20,
+            ),
+            onPressed: () => context.go('/home'),
+          ),
+        ),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                  : [const Color(0xFF4F46E5), const Color(0xFF7C3AED)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    (isDark ? const Color(0xFF6366F1) : const Color(0xFF4F46E5))
+                        .withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.casino_outlined, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                '$_spinsLeft spins remaining',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
-      );
-    }
-
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-        constraints: const BoxConstraints(maxWidth: 420),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 32,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFF8FAFC), Color(0xFFE3E8EF)],
+        centerTitle: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.1),
               ),
             ),
-            child: SafeArea(
-              child: Stack(
+            child: IconButton(
+              icon: Icon(
+                Icons.help_outline_rounded,
+                color: isDark ? Colors.white : Colors.black87,
+                size: 20,
+              ),
+              onPressed: () {
+                // Help/Info action
+              },
+            ),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0D1117),
+                    Color(0xFF161B22),
+                    Color(0xFF21262D),
+                    Color(0xFF0D1117),
+                  ],
+                  stops: [0.0, 0.3, 0.7, 1.0],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFF8FAFC),
+                    Color(0xFFF1F5F9),
+                    Color(0xFFE2E8F0),
+                    Color(0xFFF8FAFC),
+                  ],
+                  stops: [0.0, 0.3, 0.7, 1.0],
+                ),
+        ),
+        child: Stack(
+          children: [
+            // Main content
+            SafeArea(
+              child: Column(
                 children: [
-                  // Animated background particles
-                  AnimatedBuilder(
-                    animation: _particleAnimation,
-                    builder: (context, child) {
-                      return CustomPaint(
-                        painter: ParticlePainter(_particles, _particleAnimation.value),
-                        size: Size.infinite,
-                      );
-                    },
-                  ),
-                  SingleChildScrollView(
+                  const SizedBox(height: 20),
+
+                  // Casino-style header
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF1C2128), const Color(0xFF22272E)]
+                            : [Colors.white, const Color(0xFFFAFBFC)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.05),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Enhanced Header
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  setState(() {
-                                    _showWheel = false;
-                                    _selectedReward = null;
-                                  });
-                                },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(22),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_back_ios_new,
-                                    color: Colors.black87,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              AnimatedBuilder(
-                                animation: _bounceAnimation,
-                                builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: _bounceAnimation.value,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFF32CD32), Color(0xFF1DE9B6)],
-                                        ),
-                                        borderRadius: BorderRadius.circular(25),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFF32CD32).withOpacity(0.18),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.flash_on, color: Colors.white, size: 18),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '$_spinsLeft spins left',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                child: const Icon(
-                                  Icons.more_horiz,
-                                  color: Colors.black87,
-                                  size: 24,
-                                ),
-                              ),
+                        // Casino title with golden effect
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color(0xFFFFD700),
+                              Color(0xFFFFA500),
+                              Color(0xFFFF8C00)
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Enhanced Title
-                        Text(
-                          'Lucky Spin',
-                          style: TextStyle(
-                            fontSize: 38,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black87,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Enhanced Timer
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                          ).createShader(bounds),
                           child: Text(
-                            'Next free spins: ${_formatTimer(_nextSpinTime)}',
+                            'LUCKY WHEEL',
                             style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 3,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 40),
-                        // Spin Button
-                        GestureDetector(
-                          onTap: _spinWheel,
-                          child: AnimatedBuilder(
-                            animation: Listenable.merge([_glowAnimation, _bounceAnimation]),
-                            builder: (context, child) {
-                              final isDisabled = _isSpinning || _spinsLeft <= 0;
-                              return Transform.scale(
-                                scale: isDisabled ? 1.0 : _bounceAnimation.value,
-                                child: Container(
-                                  width: 180,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    gradient: isDisabled
-                                        ? LinearGradient(
-                                            colors: [Colors.grey.shade400, Colors.grey.shade600],
-                                          )
-                                        : LinearGradient(
-                                            colors: [Color(0xFF32CD32), Color(0xFF1DE9B6)],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                    borderRadius: BorderRadius.circular(30),
-                                    boxShadow: isDisabled
-                                        ? []
-                                        : [
-                                            BoxShadow(
-                                              color: const Color(0xFF32CD32).withOpacity(0.18),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 8),
-                                            ),
-                                          ],
-                                  ),
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        if (_isSpinning) ...[
-                                          SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 3,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                        ],
-                                        Text(
-                                          _isSpinning ? 'Spinning...' : 'SPIN NOW',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+
+                        const SizedBox(height: 8),
+
+                        // Countdown timer with premium styling
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF0D1117)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.black.withOpacity(0.05),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 50),
-                        // Wheel
-                        Center(
-                          child: Stack(
-                            alignment: Alignment.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Outer glow
-                              AnimatedBuilder(
-                                animation: _glowAnimation,
-                                builder: (context, child) {
-                                  return Container(
-                                    width: 360,
-                                    height: 360,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF32CD32).withOpacity(_glowAnimation.value * 0.12),
-                                          blurRadius: 60,
-                                          offset: const Offset(0, 0),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 16,
+                                color: isDark ? Colors.white70 : Colors.black54,
                               ),
-                              // Main wheel
-                              AnimatedBuilder(
-                                animation: _wheelController,
-                                builder: (context, child) {
-                                  return Transform.rotate(
-                                    angle: _wheelAngle,
-                                    child: CustomPaint(
-                                      size: const Size(340, 340),
-                                      painter: EnhancedWheelPainter(_wheelRewards, _wheelColors),
-                                    ),
-                                  );
-                                },
-                              ),
-                              // Center decoration
-                              Container(
-                                width: 60,
-                                height: 60,
-                                decoration: BoxDecoration(
-                                  gradient: const RadialGradient(
-                                    colors: [Color(0xFF32CD32), Color(0xFF1DE9B6)],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF32CD32).withOpacity(0.18),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 0),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.stars,
-                                  color: Colors.white,
-                                  size: 32,
+                              const SizedBox(width: 8),
+                              Text(
+                                'Next bonus in ${_formatTimer(_nextSpinTime)}',
+                                style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white70 : Colors.black54,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
-                  // Enhanced Pointer
-                  Positioned(
-                    top: MediaQuery.of(context).size.height * 0.5 - 30,
-                    left: MediaQuery.of(context).size.width * 0.5 + 150,
-                    child: Container(
-                      width: 0,
-                      height: 0,
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(width: 20, color: Colors.transparent),
-                          right: BorderSide(width: 20, color: Colors.transparent),
-                          bottom: BorderSide(width: 30, color: Color(0xFF32CD32)),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF32CD32),
-                            blurRadius: 10,
-                            offset: Offset(0, 0),
+
+                  const SizedBox(height: 40),
+
+                  // Casino wheel section
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 320,
+                        height: 320,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF2D3748),
+                                    const Color(0xFF1A202C)
+                                  ]
+                                : [
+                                    const Color(0xFFFFFFFF),
+                                    const Color(0xFFF7FAFC)
+                                  ],
                           ),
-                        ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.black.withOpacity(0.6)
+                                  : Colors.black.withOpacity(0.15),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer ring decoration
+                            Container(
+                              width: 310,
+                              height: 310,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  width: 8,
+                                  color: const Color(0xFFFFD700),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.5),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // The spinning wheel
+                            AnimatedBuilder(
+                              animation: _wheelController,
+                              builder: (context, child) {
+                                // Calculate current rotation angle during animation
+                                double currentAngle = _wheelAngle;
+                                if (_isSpinning) {
+                                  // During spinning, interpolate between start and target angle
+                                  currentAngle = _startAngle +
+                                      ((_targetAngle - _startAngle) *
+                                          _wheelController.value);
+                                }
+
+                                return Container(
+                                  width: 320,
+                                  height: 320,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    // Add spinning glow effect
+                                    boxShadow: _isSpinning
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFFFFD700)
+                                                  .withOpacity(0.6),
+                                              blurRadius: 25,
+                                              spreadRadius: 5,
+                                            ),
+                                            BoxShadow(
+                                              color: const Color(0xFFFFD700)
+                                                  .withOpacity(0.3),
+                                              blurRadius: 40,
+                                              spreadRadius: 10,
+                                            ),
+                                          ]
+                                        : [
+                                            BoxShadow(
+                                              color: isDark
+                                                  ? Colors.black
+                                                      .withOpacity(0.6)
+                                                  : Colors.black
+                                                      .withOpacity(0.15),
+                                              blurRadius: 30,
+                                              offset: const Offset(0, 15),
+                                            ),
+                                          ],
+                                  ),
+                                  child: Transform.rotate(
+                                    angle: currentAngle,
+                                    child: SizedBox(
+                                      width: 280,
+                                      height: 280,
+                                      child: CustomPaint(
+                                        painter: CasinoWheelPainter(
+                                          _wheelRewards,
+                                          _wheelColors,
+                                          isDark,
+                                        ),
+                                        size: const Size(280, 280),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Center hub with casino styling
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const RadialGradient(
+                                  colors: [
+                                    Color(0xFFFFD700),
+                                    Color(0xFFFFA500),
+                                    Color(0xFFFF8C00)
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 4,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.diamond,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
+
+                            // Casino-style pointer
+                            Positioned(
+                              top: 20,
+                              child: SizedBox(
+                                width: 0,
+                                height: 0,
+                                child: CustomPaint(
+                                  painter: CasinoPointerPainter(isDark),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  // Enhanced Result Dialog
-                  if (_selectedReward != null) _buildEnhancedResultDialog(),
+
+                  // Casino-style spin button
+                  Container(
+                    margin: const EdgeInsets.all(24),
+                    child: GestureDetector(
+                      onTap: _spinWheel,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: double.infinity,
+                        height: 65,
+                        decoration: BoxDecoration(
+                          gradient: _isSpinning || _spinsLeft <= 0
+                              ? LinearGradient(
+                                  colors: [
+                                    Colors.grey.shade400,
+                                    Colors.grey.shade600
+                                  ],
+                                )
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFFD700),
+                                    Color(0xFFFFA500),
+                                    Color(0xFFFF8C00)
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                          boxShadow: _isSpinning || _spinsLeft <= 0
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD700)
+                                        .withOpacity(0.4),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Stack(
+                          children: [
+                            // Button shimmer effect
+                            if (!_isSpinning && _spinsLeft > 0)
+                              AnimatedBuilder(
+                                animation: _celebrationAnimation,
+                                builder: (context, child) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(32),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                              -1 +
+                                                  _celebrationAnimation.value *
+                                                      3,
+                                              0),
+                                          end: Alignment(
+                                              0 +
+                                                  _celebrationAnimation.value *
+                                                      3,
+                                              0),
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.white.withOpacity(0.3),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0.0, 0.5, 1.0],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                            // Button content
+                            Center(
+                              child: _isSpinning
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Colors.white.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        const Text(
+                                          'SPINNING...',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      _spinsLeft <= 0
+                                          ? 'NO SPINS LEFT'
+                                          : 'SPIN TO WIN',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 2,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black26,
+                                            blurRadius: 4,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Add bottom padding for safe area
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + 20,
+                  ),
                 ],
               ),
             ),
-          ),
+
+            // Celebration overlay
+            if (_selectedReward != null) _buildEnhancedResultDialog(),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildEnhancedResultDialog() {
-    return AnimatedBuilder(
-      animation: _celebrationAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _celebrationAnimation.value,
-          child: Container(
-            color: Colors.black.withOpacity(0.8),
-            child: Center(
-              child: Container(
-                margin: const EdgeInsets.all(20),
-                padding: const EdgeInsets.all(40),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF8B0000),
-                      Color(0xFFDC143C),
-                      Color(0xFFFF6347)
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+    return Stack(
+      children: [
+        // Semi-transparent background
+        Container(
+          color: Colors.black.withOpacity(0.85),
+        ),
+
+        // Confetti and celebration particles
+        ...List.generate(
+          50,
+          (index) => AnimatedBuilder(
+            animation: _celebrationAnimation,
+            builder: (context, child) {
+              final randomX = (index * 7.3) % MediaQuery.of(context).size.width;
+              final randomY = _celebrationAnimation.value *
+                      MediaQuery.of(context).size.height +
+                  (index * 20) % 200 -
+                  100;
+              final randomRotation = _celebrationAnimation.value * 8 + index;
+              final colors = [
+                Colors.amber,
+                Colors.red,
+                Colors.blue,
+                Colors.green,
+                Colors.purple,
+                Colors.orange,
+              ];
+              final color = colors[index % colors.length];
+
+              return Positioned(
+                left: randomX,
+                top: randomY,
+                child: Transform.rotate(
+                  angle: randomRotation,
+                  child: Container(
+                    width: 6 + (index % 4),
+                    height: 6 + (index % 4),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape:
+                          index % 3 == 0 ? BoxShape.circle : BoxShape.rectangle,
+                      borderRadius:
+                          index % 3 != 0 ? BorderRadius.circular(1) : null,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.7),
-                      blurRadius: 30,
-                      offset: const Offset(0, 15),
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFFDC143C).withOpacity(0.5),
-                      blurRadius: 60,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Celebration effects
-                    SizedBox(
-                      width: 200,
-                      height: 150,
-                      child: CustomPaint(
-                        painter:
-                            CelebrationPainter(_celebrationAnimation.value),
-                      ),
-                    ),
-
-                    // BIG WIN text with enhanced styling
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFFFD700),
-                          Color(0xFFFFA500),
-                          Color(0xFFFF6B35)
-                        ],
-                      ).createShader(bounds),
-                      child: const Text(
-                        'BIG WIN!',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // Enhanced treasure chest
-                    Container(
-                      width: 100,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFFD700),
-                            Color(0xFFFFA500),
-                            Color(0xFFB8860B)
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                            color: const Color(0xFF8B4513), width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFD700).withOpacity(0.6),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.card_giftcard,
-                        color: Color(0xFF8B4513),
-                        size: 50,
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // Enhanced reward text
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        _selectedReward == '60 freespins'
-                            ? '+60 FREE SPINS'
-                            : _selectedReward!,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Enhanced collect button
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.heavyImpact();
-                        _celebrationController.reset();
-                        setState(() {
-                          _selectedReward = null;
-                        });
-                      },
-                      child: Container(
-                        width: 200,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF32CD32),
-                              Color(0xFF1DE9B6),
-                              Color(0xFF00CED1)
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF32CD32).withOpacity(0.6),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'COLLECT',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              );
+            },
           ),
-        );
-      },
+        ),
+
+        // Firework bursts from corners
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _celebrationAnimation,
+            builder: (context, child) {
+              List<Widget> fireworks = [];
+
+              for (int corner = 0; corner < 4; corner++) {
+                late double startX, startY;
+                switch (corner) {
+                  case 0:
+                    startX = 50;
+                    startY = 100;
+                    break;
+                  case 1:
+                    startX = MediaQuery.of(context).size.width - 50;
+                    startY = 100;
+                    break;
+                  case 2:
+                    startX = 50;
+                    startY = MediaQuery.of(context).size.height - 200;
+                    break;
+                  case 3:
+                    startX = MediaQuery.of(context).size.width - 50;
+                    startY = MediaQuery.of(context).size.height - 200;
+                    break;
+                }
+
+                for (int burst = 0; burst < 8; burst++) {
+                  final angle = (burst * 45.0) * (3.14159 / 180);
+                  final distance = _celebrationAnimation.value * 120;
+                  final x = startX + cos(angle) * distance;
+                  final y = startY + sin(angle) * distance;
+
+                  fireworks.add(
+                    Positioned(
+                      left: x - 4,
+                      top: y - 4,
+                      child: Opacity(
+                        opacity: 1.0 - _celebrationAnimation.value,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.withOpacity(0.6),
+                                blurRadius: 6,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              }
+
+              return Stack(children: fireworks);
+            },
+          ),
+        ),
+
+        // Central celebration content with smooth entrance
+        Center(
+          child: AnimatedBuilder(
+            animation: _celebrationAnimation,
+            builder: (context, child) {
+              // Multi-stage animation
+              final stage1 = Curves.elasticOut.transform(
+                  (_celebrationAnimation.value * 1.5).clamp(0.0, 1.0));
+              final stage2 = Curves.easeOutBack.transform(
+                  (_celebrationAnimation.value * 2.0 - 0.5).clamp(0.0, 1.0));
+
+              return Transform.scale(
+                scale: stage1,
+                child: Transform.translate(
+                  offset: Offset(0, (1 - stage2) * 50),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Animated trophy/gift icon
+                        AnimatedBuilder(
+                          animation: _celebrationAnimation,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: sin(_celebrationAnimation.value * 6) * 0.1,
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.amber,
+                                      Colors.orange,
+                                      Colors.red.shade700,
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.amber.withOpacity(0.5),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.celebration,
+                                  size: 60,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // "BIG WIN!" text with golden effect
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Colors.yellow, Colors.orange, Colors.red],
+                          ).createShader(bounds),
+                          child: const Text(
+                            'BIG WIN!',
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 4,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Prize amount with pulsing effect
+                        AnimatedBuilder(
+                          animation: _celebrationAnimation,
+                          builder: (context, child) {
+                            final pulse = 1.0 +
+                                sin(_celebrationAnimation.value * 8) * 0.05;
+                            return Transform.scale(
+                              scale: pulse,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 32, vertical: 16),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF1A237E),
+                                      Color(0xFF3949AB),
+                                      Color(0xFF1A237E),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border:
+                                      Border.all(color: Colors.amber, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.amber.withOpacity(0.3),
+                                      blurRadius: 15,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'You Won',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white.withOpacity(0.8),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _selectedReward ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Collect button with shimmer effect
+                        AnimatedBuilder(
+                          animation: _celebrationAnimation,
+                          builder: (context, child) {
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedReward = null;
+                                });
+                              },
+                              child: Container(
+                                width: 200,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF4CAF50),
+                                      Color(0xFF2E7D32),
+                                      Color(0xFF4CAF50),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(28),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF4CAF50)
+                                          .withOpacity(0.4),
+                                      blurRadius: 15,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  children: [
+                                    // Shimmer overlay
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(28),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment(
+                                                -1 +
+                                                    _celebrationAnimation
+                                                            .value *
+                                                        3,
+                                                0),
+                                            end: Alignment(
+                                                0 +
+                                                    _celebrationAnimation
+                                                            .value *
+                                                        3,
+                                                0),
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.white.withOpacity(0.3),
+                                              Colors.transparent,
+                                            ],
+                                            stops: const [0.0, 0.5, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Button text
+                                    const Center(
+                                      child: Text(
+                                        'Collect Reward',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-// Enhanced Wheel Painter
-class EnhancedWheelPainter extends CustomPainter {
+// Pointer Painter for the wheel indicator
+// Enhanced 3D Pointer Painter with depth and shadows
+class Enhanced3DPointerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Shadow for the pointer
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+
+    final shadowPath = Path();
+    shadowPath.moveTo(center.dx + 2, center.dy + 2);
+    shadowPath.lineTo(center.dx - 13, center.dy - 28);
+    shadowPath.lineTo(center.dx + 17, center.dy - 28);
+    shadowPath.close();
+
+    canvas.drawPath(shadowPath, shadowPaint);
+
+    // Main pointer with gradient
+    final mainPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFFFD700), // Gold
+          Color(0xFFB8860B), // Darker gold
+          Color(0xFF8B6914), // Even darker
+        ],
+      ).createShader(Rect.fromLTWH(center.dx - 15, center.dy - 30, 30, 30))
+      ..style = PaintingStyle.fill;
+
+    final mainPath = Path();
+    mainPath.moveTo(center.dx, center.dy);
+    mainPath.lineTo(center.dx - 15, center.dy - 30);
+    mainPath.lineTo(center.dx + 15, center.dy - 30);
+    mainPath.close();
+
+    canvas.drawPath(mainPath, mainPaint);
+
+    // Highlight on the pointer
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.6)
+      ..style = PaintingStyle.fill;
+
+    final highlightPath = Path();
+    highlightPath.moveTo(center.dx - 3, center.dy - 5);
+    highlightPath.lineTo(center.dx - 8, center.dy - 20);
+    highlightPath.lineTo(center.dx + 2, center.dy - 20);
+    highlightPath.close();
+
+    canvas.drawPath(highlightPath, highlightPaint);
+
+    // Border for definition
+    final borderPaint = Paint()
+      ..color = Colors.white.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    canvas.drawPath(mainPath, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class PointerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFFFD700)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(-15, -30);
+    path.lineTo(15, -30);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+// Enhanced 3D Wheel Painter with realistic depth and lighting
+class Enhanced3DWheelPainter extends CustomPainter {
   final List<String> rewards;
   final List<Color> colors;
 
-  EnhancedWheelPainter(this.rewards, this.colors);
+  Enhanced3DWheelPainter(this.rewards, this.colors);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final sweepAngle = 2 * pi / rewards.length;
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
-    // Draw outer ring
-    final outerRingPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
+    final segmentAngle = 2 * pi / rewards.length;
+
+    // Draw outer ring with 3D effect
+    _draw3DRing(canvas, center, radius);
+
+    for (int i = 0; i < rewards.length; i++) {
+      final startAngle = i * segmentAngle - pi / 2;
+      final sweepAngle = segmentAngle;
+
+      // Enhanced 3D segment painting
+      _draw3DSegment(
+          canvas, rect, startAngle, sweepAngle, colors[i % colors.length], i);
+
+      // Draw enhanced text with better positioning
+      _drawSegmentText(
+          canvas, center, radius, startAngle, sweepAngle, rewards[i]);
+    }
+
+    // Draw inner center circle with 3D effect
+    _draw3DCenterCircle(canvas, center, radius);
+  }
+
+  void _draw3DRing(Canvas canvas, Offset center, double radius) {
+    // Outer shadow ring
+    final outerShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8;
+    canvas.drawCircle(center, radius + 2, outerShadowPaint);
 
-    canvas.drawCircle(center, radius, outerRingPaint);
-
-    // Draw wheel segments with enhanced styling
-    for (int i = 0; i < rewards.length; i++) {
-      final segmentPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            colors[i % colors.length].withOpacity(0.9),
-            colors[i % colors.length],
-            colors[i % colors.length].withOpacity(0.7),
-          ],
-          stops: const [0.0, 0.7, 1.0],
-        ).createShader(Rect.fromCircle(center: center, radius: radius))
-        ..style = PaintingStyle.fill;
-
-      // Draw segment
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - 4),
-        i * sweepAngle - pi / 2,
-        sweepAngle,
-        true,
-        segmentPaint,
-      );
-
-      // Draw segment border with gradient
-      final borderPaint = Paint()
-        ..color = Colors.white.withOpacity(0.8)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - 4),
-        i * sweepAngle - pi / 2,
-        sweepAngle,
-        true,
-        borderPaint,
-      );
-
-      // Draw enhanced text
-      final textSpan = TextSpan(
-        text: rewards[i],
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          shadows: [
-            Shadow(
-              color: Colors.black87,
-              offset: Offset(2, 2),
-              blurRadius: 4,
-            ),
-            Shadow(
-              color: Colors.black54,
-              offset: Offset(1, 1),
-              blurRadius: 2,
-            ),
-          ],
-        ),
-      );
-
-      final textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-
-      // Calculate text position
-      final textAngle = (i + 0.5) * sweepAngle - pi / 2;
-      final textRadius = radius * 0.75;
-      final textOffset = Offset(
-        center.dx + cos(textAngle) * textRadius - textPainter.width / 2,
-        center.dy + sin(textAngle) * textRadius - textPainter.height / 2,
-      );
-
-      canvas.save();
-      canvas.translate(textOffset.dx + textPainter.width / 2,
-          textOffset.dy + textPainter.height / 2);
-      canvas.rotate(textAngle + pi / 2);
-      canvas.translate(-textPainter.width / 2, -textPainter.height / 2);
-      textPainter.paint(canvas, Offset.zero);
-      canvas.restore();
-    }
-
-    // Draw inner decorative ring
-    final innerRingPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF8B4513), Color(0xFFCD853F)],
-      ).createShader(Rect.fromCircle(center: center, radius: 40))
+    // Main outer ring with gradient
+    final outerRingPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.3, -0.3),
+        radius: 0.8,
+        colors: [
+          const Color(0xFFFFD700), // Gold highlight
+          const Color(0xFFFFD700).withOpacity(0.7),
+          const Color(0xFFB8860B), // Darker gold
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6;
+    canvas.drawCircle(center, radius - 3, outerRingPaint);
+  }
 
-    canvas.drawCircle(center, 40, innerRingPaint);
+  void _draw3DSegment(Canvas canvas, Rect rect, double startAngle,
+      double sweepAngle, Color baseColor, int index) {
+    // Base segment
+    final basePaint = Paint()
+      ..color = baseColor
+      ..style = PaintingStyle.fill;
+    canvas.drawArc(rect, startAngle, sweepAngle, true, basePaint);
+
+    // 3D lighting effect - lighter on top-left, darker on bottom-right
+    final gradientPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.4, -0.4), // Light source position
+        radius: 1.2,
+        colors: [
+          Colors.white.withOpacity(0.3), // Highlight
+          Colors.transparent,
+          Colors.black.withOpacity(0.2), // Shadow
+        ],
+        stops: const [0.0, 0.6, 1.0],
+      ).createShader(rect)
+      ..style = PaintingStyle.fill;
+    canvas.drawArc(rect, startAngle, sweepAngle, true, gradientPaint);
+
+    // Enhanced border with depth
+    final borderPaint = Paint()
+      ..color = Colors.white.withOpacity(0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawArc(rect, startAngle, sweepAngle, true, borderPaint);
+
+    // Inner shadow for depth
+    final innerShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final innerRect =
+        Rect.fromCircle(center: rect.center, radius: rect.width / 2 - 5);
+    canvas.drawArc(innerRect, startAngle, sweepAngle, true, innerShadowPaint);
+  }
+
+  void _drawSegmentText(Canvas canvas, Offset center, double radius,
+      double startAngle, double sweepAngle, String text) {
+    final textAngle = startAngle + sweepAngle / 2;
+    final textRadius = radius * 0.65; // Adjusted for better positioning
+    final textX = center.dx + textRadius * cos(textAngle);
+    final textY = center.dy + textRadius * sin(textAngle);
+
+    // Enhanced text with shadow
+    final shadowTextSpan = TextSpan(
+      text: text,
+      style: TextStyle(
+        color: Colors.black.withOpacity(0.3),
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+
+    final mainTextSpan = TextSpan(
+      text: text,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(
+            color: Colors.black,
+            offset: Offset(1, 1),
+            blurRadius: 2,
+          ),
+        ],
+      ),
+    );
+
+    final shadowTextPainter = TextPainter(
+      text: shadowTextSpan,
+      textDirection: TextDirection.ltr,
+    );
+    shadowTextPainter.layout();
+
+    final mainTextPainter = TextPainter(
+      text: mainTextSpan,
+      textDirection: TextDirection.ltr,
+    );
+    mainTextPainter.layout();
+
+    // Draw text with rotation
+    canvas.save();
+    canvas.translate(textX, textY);
+    canvas.rotate(textAngle + pi / 2);
+
+    // Draw shadow first
+    shadowTextPainter.paint(
+        canvas,
+        Offset(-shadowTextPainter.width / 2 + 1,
+            -shadowTextPainter.height / 2 + 1));
+    // Draw main text
+    mainTextPainter.paint(canvas,
+        Offset(-mainTextPainter.width / 2, -mainTextPainter.height / 2));
+
+    canvas.restore();
+  }
+
+  void _draw3DCenterCircle(Canvas canvas, Offset center, double radius) {
+    final centerRadius = radius * 0.15;
+
+    // Center circle shadow
+    final centerShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.4)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+        Offset(center.dx + 2, center.dy + 2), centerRadius, centerShadowPaint);
+
+    // Center circle with gradient
+    final centerPaint = Paint()
+      ..shader = const RadialGradient(
+        center: Alignment(-0.3, -0.3),
+        radius: 0.8,
+        colors: [
+          Color(0xFFFFD700), // Gold
+          Color(0xFFB8860B), // Darker gold
+          Color(0xFF8B6914), // Even darker
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: centerRadius))
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, centerRadius, centerPaint);
+
+    // Center highlight
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.6)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(center.dx - 3, center.dy - 3), centerRadius * 0.3,
+        highlightPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-// Particle class for enhanced effects
-class Particle {
-  double x, y, dx, dy, size, life;
-  Color color;
-
-  Particle({
-    required this.x,
-    required this.y,
-    required this.dx,
-    required this.dy,
-    required this.size,
-    required this.color,
-    required this.life,
-  });
-}
-
-// Particle Painter for background effects
-class ParticlePainter extends CustomPainter {
-  final List<Particle> particles;
-  final double animationValue;
-
-  ParticlePainter(this.particles, this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (var particle in particles) {
-      final opacity = (1.0 - animationValue) * particle.life;
-      if (opacity <= 0) continue;
-
-      final paint = Paint()
-        ..color = particle.color.withOpacity(opacity * 0.6)
-        ..style = PaintingStyle.fill;
-
-      final currentX = particle.x + (particle.dx * animationValue * 100);
-      final currentY = particle.y + (particle.dy * animationValue * 100);
-      final currentSize = particle.size * (1.0 - animationValue * 0.5);
-
-      canvas.drawCircle(
-        Offset(currentX, currentY),
-        currentSize,
-        paint,
-      );
-
-      // Add glow effect
-      final glowPaint = Paint()
-        ..color = particle.color.withOpacity(opacity * 0.3)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-      canvas.drawCircle(
-        Offset(currentX, currentY),
-        currentSize * 1.5,
-        glowPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-// Celebration Painter for win effects
-class CelebrationPainter extends CustomPainter {
-  final double animationValue;
-
-  CelebrationPainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final random = Random(42); // Fixed seed for consistent animation
-
-    // Draw confetti
-    for (int i = 0; i < 30; i++) {
-      final angle = (i / 30) * 2 * pi;
-      final distance = animationValue * 80;
-      final x = center.dx + cos(angle + animationValue * 2) * distance;
-      final y = center.dy + sin(angle + animationValue * 2) * distance;
-
-      final colors = [
-        const Color(0xFFFFD700),
-        const Color(0xFFF7931E),
-        const Color(0xFF4285F4),
-        const Color(0xFFEA4335),
-        const Color(0xFF4CAF50),
-      ];
-
-      final paint = Paint()
-        ..color = colors[i % colors.length].withOpacity(1.0 - animationValue)
-        ..style = PaintingStyle.fill;
-
-      final size = 6 + random.nextDouble() * 4;
-      canvas.drawCircle(Offset(x, y), size, paint);
-    }
-
-    // Draw sparkles
-    for (int i = 0; i < 15; i++) {
-      final angle = (i / 15) * 2 * pi + animationValue * 3;
-      final distance = 60 + sin(animationValue * 4) * 20;
-      final x = center.dx + cos(angle) * distance;
-      final y = center.dy + sin(angle) * distance;
-
-      final sparkleSize = 3 + sin(animationValue * 6 + i) * 2;
-
-      final paint = Paint()
-        ..color = Colors.white.withOpacity((1.0 - animationValue) * 0.8)
-        ..style = PaintingStyle.fill;
-
-      // Draw star shape
-      _drawStar(canvas, Offset(x, y), sparkleSize, paint);
-    }
-
-    // Draw coins
-    for (int i = 0; i < 8; i++) {
-      final angle = (i / 8) * 2 * pi;
-      final distance = animationValue * 100;
-      final x = center.dx + cos(angle) * distance;
-      final y =
-          center.dy + sin(angle) * distance + sin(animationValue * 4) * 10;
-
-      final coinPaint = Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-        ).createShader(Rect.fromCircle(center: Offset(x, y), radius: 8))
-        ..style = PaintingStyle.fill;
-
-      canvas.drawCircle(Offset(x, y), 8, coinPaint);
-
-      final dollarPaint = Paint()
-        ..color = const Color(0xFF8B4513)
-        ..style = PaintingStyle.fill;
-
-      final textSpan = TextSpan(
-        text: '\',',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: dollarPaint.color,
-        ),
-      );
-
-      final textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(x - 4, y - 6));
-    }
-  }
-
-  void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
-    final path = Path();
-    const points = 5;
-    const angle = 2 * pi / points;
-
-    for (int i = 0; i < points * 2; i++) {
-      final radius = i.isEven ? size : size * 0.5;
-      final x = center.dx + cos(i * angle / 2 - pi / 2) * radius;
-      final y = center.dy + sin(i * angle / 2 - pi / 2) * radius;
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -731,16 +731,16 @@ class _ETicketScreenState extends State<ETicketScreen> {
               ),
               elevation: 2,
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.calendar_today, size: 20),
-                const SizedBox(width: 8),
+                Icon(Icons.calendar_today, size: 20),
+                SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     'Add to Calendar',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

@@ -311,8 +311,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> w
             radius: 40,
 
             backgroundImage: logoUrl.isNotEmpty ? NetworkImage(logoUrl) : null,
-            child: logoUrl.isEmpty ? Icon(Icons.business, size: 40, color: secondaryTextColor) : null,
             backgroundColor: theme.colorScheme.surface,
+            child: logoUrl.isEmpty ? Icon(Icons.business, size: 40, color: secondaryTextColor) : null,
           ),
           const SizedBox(width: 16),
           Expanded(

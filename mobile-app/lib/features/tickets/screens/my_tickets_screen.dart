@@ -741,7 +741,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     }
                     return colorScheme.onSurface.withValues(alpha: 0.5);
                   }),
-                )).toList(),
+                )),
                 const SizedBox(height: 16),
                 Text(
                   'Others',

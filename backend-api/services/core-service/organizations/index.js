@@ -1,19 +1,20 @@
 // Organizations module
-const prisma = require('../../../lib/database');
+const express = require("express");
+const prisma = require("../lib/database");
 
 module.exports = {
   // Get single organization by ID
   async getOrganizationById(id) {
     try {
-      return await prisma.organization.findUnique({ 
+      return await prisma.organization.findUnique({
         where: { organization_id: parseInt(id) },
         include: {
           user: {
             select: {
               user_id: true,
               name: true,
-              email: true
-            }
+              email: true,
+            },
           },
           events: {
             select: {
@@ -22,14 +23,14 @@ module.exports = {
               start_time: true,
               end_time: true,
               status: true,
-              capacity: true
+              capacity: true,
             },
-            orderBy: { start_time: 'asc' }
+            orderBy: { start_time: "asc" },
           },
           _count: {
-            select: { events: true }
-          }
-        }
+            select: { events: true },
+          },
+        },
       });
     } catch (error) {
       throw new Error(`Failed to fetch organization: ${error.message}`);
@@ -40,11 +41,11 @@ module.exports = {
   async getAllOrganizations(filters = {}) {
     try {
       const where = {};
-      
+
       if (filters.name) {
-        where.name = { contains: filters.name, mode: 'insensitive' };
+        where.name = { contains: filters.name, mode: "insensitive" };
       }
-      
+
       if (filters.user_id) {
         where.user_id = parseInt(filters.user_id);
       }
@@ -56,14 +57,14 @@ module.exports = {
             select: {
               user_id: true,
               name: true,
-              email: true
-            }
+              email: true,
+            },
           },
           _count: {
-            select: { events: true }
-          }
+            select: { events: true },
+          },
         },
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: "desc" },
       });
     } catch (error) {
       throw new Error(`Failed to fetch organizations: ${error.message}`);
@@ -81,17 +82,17 @@ module.exports = {
           logo_url: data.logo_url || null,
           contact_email: data.contact_email || null,
           contact_number: data.contact_number || null,
-          website_url: data.website_url || null
+          website_url: data.website_url || null,
         },
         include: {
           user: {
             select: {
               user_id: true,
               name: true,
-              email: true
-            }
-          }
-        }
+              email: true,
+            },
+          },
+        },
       });
     } catch (error) {
       throw new Error(`Failed to create organization: ${error.message}`);
@@ -113,13 +114,13 @@ module.exports = {
             select: {
               user_id: true,
               name: true,
-              email: true
-            }
+              email: true,
+            },
           },
           _count: {
-            select: { events: true }
-          }
-        }
+            select: { events: true },
+          },
+        },
       });
     } catch (error) {
       throw new Error(`Failed to update organization: ${error.message}`);
@@ -130,7 +131,7 @@ module.exports = {
   async deleteOrganization(id) {
     try {
       return await prisma.organization.delete({
-        where: { organization_id: parseInt(id) }
+        where: { organization_id: parseInt(id) },
       });
     } catch (error) {
       throw new Error(`Failed to delete organization: ${error.message}`);
@@ -149,11 +150,11 @@ module.exports = {
           organization: {
             select: {
               organization_id: true,
-              name: true
-            }
-          }
+              name: true,
+            },
+          },
         },
-        orderBy: { start_time: 'asc' }
+        orderBy: { start_time: "asc" },
       });
     } catch (error) {
       throw new Error(`Failed to fetch organization events: ${error.message}`);
@@ -166,22 +167,22 @@ module.exports = {
       return await prisma.organization.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { description: { contains: query, mode: 'insensitive' } }
-          ]
+            { name: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+          ],
         },
         include: {
           user: {
             select: {
               user_id: true,
-              name: true
-            }
+              name: true,
+            },
           },
           _count: {
-            select: { events: true }
-          }
+            select: { events: true },
+          },
         },
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: "desc" },
       });
     } catch (error) {
       throw new Error(`Failed to search organizations: ${error.message}`);
@@ -195,13 +196,13 @@ module.exports = {
         where: { user_id: parseInt(userId) },
         include: {
           _count: {
-            select: { events: true }
-          }
+            select: { events: true },
+          },
         },
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: "desc" },
       });
     } catch (error) {
       throw new Error(`Failed to fetch user organizations: ${error.message}`);
     }
-  }
+  },
 };
