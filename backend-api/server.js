@@ -76,16 +76,16 @@ app.options('*', (req, res) => {
 });
 
 // Routes
-const authRoutes = require("./routes/auth");
-const eventRoutes = require("./routes/events");
-const userRoutes = require("./routes/users");
-const organizationRoutes = require("./routes/organizations");
-const paymentRoutes = require("./routes/payments");
-const ticketRoutes = require("./routes/tickets");
-const seatLockRoutes = require("./routes/seatLocks");
-const queueRoutes = require("./routes/queueRoutes");
+const authRoutes = require("./services/core-service/routes/api");
+const eventRoutes = require("./services/core-service/routes/api");
+const userRoutes = require("./services/core-service/routes/api");
+const organizationRoutes = require("./services/core-service/routes/api");
+const paymentRoutes = require("./services/core-service/routes/api");
+const ticketRoutes = require("./services/core-service/routes/api");
+const seatLockRoutes = require("./services/core-service/routes/api");
+const queueRoutes = require("./services/core-service/routes/api");
 
-const analyticsRoutes = require("./routes/analytics");
+const analyticsRoutes = require("./services/core-service/routes/api");
 
 // Serve static files (for uploaded images)
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

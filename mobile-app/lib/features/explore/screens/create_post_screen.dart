@@ -309,11 +309,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildEventPickerModal() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -323,7 +326,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -333,19 +336,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Link to Event',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
+                    color: theme.textTheme.titleLarge?.color,
                   ),
                 ),
                 const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     'Cancel',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey,
+                    ),
                   ),
                 ),
               ],
@@ -396,11 +402,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                     )
                                   : null,
                               color: event.imageUrl.isEmpty
-                                  ? Colors.grey[300]
+                                  ? (isDarkMode ? Colors.grey[700] : Colors.grey[300])
                                   : null,
                             ),
                             child: event.imageUrl.isEmpty
-                                ? Icon(Icons.event, color: Colors.grey[600])
+                                ? Icon(Icons.event, color: isDarkMode ? Colors.grey[400] : Colors.grey[600])
                                 : null,
                           ),
                           title: Text(
@@ -409,12 +415,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               fontWeight: isSelected
                                   ? FontWeight.w600
                                   : FontWeight.w500,
+                              color: theme.textTheme.bodyLarge?.color,
                             ),
                           ),
                           subtitle: Text(
                             '${event.venue} • ${_formatEventDate(event.startDateTime)}',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                               fontSize: 12,
                             ),
                           ),
@@ -574,19 +581,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? theme.iconTheme.color),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
+        title: Text(
           'New Post',
           style: TextStyle(
-            color: Colors.black,
+            color: theme.appBarTheme.titleTextStyle?.color ?? theme.textTheme.titleLarge?.color,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -600,7 +610,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               style: TextButton.styleFrom(
                 backgroundColor: _canPost() && !_isLoading
                     ? const Color(0xFF32CD32)
-                    : Colors.grey[300],
+                    : (isDarkMode ? Colors.grey[700] : Colors.grey[300]),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -621,7 +631,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       style: TextStyle(
                         color: _canPost() && !_isLoading
                             ? Colors.white
-                            : Colors.grey,
+                            : (isDarkMode ? Colors.grey[400] : Colors.grey),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -674,6 +684,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildProfileSection() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -684,8 +697,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[300],
-              border: Border.all(color: Colors.grey[400]!, width: 1),
+              color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+              border: Border.all(
+                color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!, 
+                width: 1
+              ),
               image: _currentUser?.profileImageUrl != null
                   ? DecorationImage(
                       image: NetworkImage(_currentUser!.profileImageUrl!),
@@ -696,7 +712,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: _currentUser?.profileImageUrl == null
                 ? Icon(
                     Icons.person,
-                    color: Colors.grey[600],
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                     size: 24,
                   )
                 : null,
@@ -717,9 +733,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               ? _currentUser!.firstName
                               : 'User')
                       : 'Guest User', // Better fallback when user data isn't available
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
               ],
@@ -730,7 +747,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -739,14 +756,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 Icon(
                   Icons.public,
                   size: 16,
-                  color: Colors.grey[700],
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Public',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[700],
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -759,6 +776,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildContentInput() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
@@ -769,21 +789,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         decoration: InputDecoration(
           hintText: 'What\'s happening?',
           hintStyle: TextStyle(
-            color: Colors.grey[500],
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
             fontSize: 18,
           ),
           border: InputBorder.none,
           counterText: '', // Hide character counter
         ),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           height: 1.4,
+          color: theme.textTheme.bodyLarge?.color,
         ),
       ),
     );
   }
 
   Widget _buildEventSection() {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -795,7 +819,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(
+                  color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -804,7 +830,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     Icons.event,
                     color: _selectedEventId != null
                         ? const Color(0xFF32CD32)
-                        : Colors.grey[600],
+                        : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -815,8 +841,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           : 'Link to an event (optional)',
                       style: TextStyle(
                         color: _selectedEventId != null
-                            ? Colors.black
-                            : Colors.grey[600],
+                            ? theme.textTheme.bodyLarge?.color
+                            : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                         fontSize: 14,
                         fontWeight: _selectedEventId != null
                             ? FontWeight.w500
@@ -829,14 +855,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       onTap: _clearSelectedEvent,
                       child: Icon(
                         Icons.close,
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                         size: 18,
                       ),
                     )
                   else
                     Icon(
                       Icons.arrow_forward_ios,
-                      color: Colors.grey[400],
+                      color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
                       size: 16,
                     ),
                 ],

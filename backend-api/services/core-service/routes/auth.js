@@ -192,6 +192,17 @@ router.post("/login", async (req, res) => {
       password
     });
 
+    // Check if 2FA is required
+    if (result.requiresTwoFactor) {
+      console.log("[AUTH] 2FA required, returning 2FA response");
+      return res.status(200).json({
+        success: false,
+        requiresTwoFactor: true,
+        twoFactorMethod: result.twoFactorMethod || 'app',
+        message: result.message || "2FA required"
+      });
+    }
+
     console.log("[AUTH] Login successful for:", result.user.email);
 
     res.json({

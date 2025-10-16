@@ -46,6 +46,33 @@ class EmailService {
   }
 
   /**
+   * Send a generic email
+   */
+  async sendEmail({ to, subject, text, html }) {
+    if (!this.transporter) {
+      console.log("Email service not available, skipping email send")
+      return false
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: `"EventBn" <${process.env.EMAIL_USER}>`,
+        to: to,
+        subject: subject,
+        text: text,
+        html: html
+      })
+
+      console.log(`✅ Email sent successfully to ${to}`)
+      console.log(`📧 Message ID: ${info.messageId}`)
+      return true
+    } catch (error) {
+      console.error(`❌ Error sending email to ${to}:`, error)
+      throw error
+    }
+  }
+
+  /**
    * Generate QR code as base64 image
    */
   async generateQRCode(data) {

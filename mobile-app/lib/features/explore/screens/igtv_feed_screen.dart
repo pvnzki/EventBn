@@ -1017,26 +1017,25 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
         // User info
         Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  currentPost.userDisplayName.isNotEmpty
-                      ? currentPost.userDisplayName[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundImage: (currentPost.userAvatarUrl.isNotEmpty)
+                  ? NetworkImage(currentPost.userAvatarUrl)
+                  : null,
+              child: (currentPost.userAvatarUrl.isEmpty)
+                  ? Text(
+                      currentPost.userDisplayName.isNotEmpty
+                          ? currentPost.userDisplayName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+              onBackgroundImageError: (exception, stackTrace) => {},
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1310,20 +1309,16 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey[300],
-            ),
-            child: Center(
-              child: Text(
-                userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.grey[300],
+            // Comment data doesn't include avatar URLs currently
+            // This would require backend API update to include user avatar in comments
+            child: Text(
+              userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           ),

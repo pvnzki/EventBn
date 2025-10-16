@@ -25,30 +25,55 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        // Backend may return user under 'data' or 'user'. Handle both.
-        final token = data['token'];
-        final dynamic userPayload = data['data'] ?? data['user'];
-
-        if (token == null) {
-          print('❌ [AUTH_SERVICE] Login succeeded but token missing in response');
-          return {'success': false, 'message': 'Token missing in response'};
+      if (response.statusCode == 200) {
+        print('🔍 [AUTH_SERVICE] Response data: $data');
+        print('🔍 [AUTH_SERVICE] success: ${data['success']}');
+        print('🔍 [AUTH_SERVICE] requiresTwoFactor: ${data['requiresTwoFactor']}');
+        
+        // Check if 2FA is required (even if success is false)
+        if (data['requiresTwoFactor'] == true) {
+          print('🔐 [AUTH_SERVICE] Two-factor authentication required');
+          print('🔐 [AUTH_SERVICE] twoFactorMethod: ${data['twoFactorMethod']}');
+          return {
+            'success': false,
+            'requiresTwoFactor': true,
+            'twoFactorMethod': data['twoFactorMethod'] ?? 'app',
+            'message': data['message'] ?? '2FA required',
+            'email': email,
+            'password': password, // Temporarily store for 2FA verification
+          };
         }
+        
+        // Only check success=true for normal login
+        if (data['success'] == true) {
+          // Backend may return user under 'data' or 'user'. Handle both.
+          final token = data['token'];
+          final dynamic userPayload = data['data'] ?? data['user'];
 
-        if (userPayload == null || userPayload is! Map<String, dynamic>) {
-          print('❌ [AUTH_SERVICE] Login succeeded but user payload missing/invalid: $userPayload');
-          return {'success': false, 'message': 'User data missing in response'};
+          if (token == null) {
+            print('❌ [AUTH_SERVICE] Login succeeded but token missing in response');
+            return {'success': false, 'message': 'Token missing in response'};
+          }
+
+          if (userPayload == null || userPayload is! Map<String, dynamic>) {
+            print('❌ [AUTH_SERVICE] Login succeeded but user payload missing/invalid: $userPayload');
+            return {'success': false, 'message': 'User data missing in response'};
+          }
+
+          // Store token and user
+          await _storeToken(token);
+          final user = User.fromJson(Map<String, dynamic>.from(userPayload));
+          await _storeUser(user);
+
+          print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
+          return {'success': true, 'user': user, 'token': token};
+        } else {
+          print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
+          return {'success': false, 'message': data['message'] ?? 'Login failed'};
         }
-
-        // Store token and user
-        await _storeToken(token);
-        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
-        await _storeUser(user);
-
-        print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
-        return {'success': true, 'user': user, 'token': token};
       } else {
-        print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
+        print('❌ [AUTH_SERVICE] Non-200 response: ${response.statusCode}');
+        final data = jsonDecode(response.body);
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {

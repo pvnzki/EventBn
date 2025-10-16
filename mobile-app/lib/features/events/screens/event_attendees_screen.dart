@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/event_service.dart';
 
 class EventAttendeesScreen extends StatefulWidget {
   final String eventId;
@@ -13,8 +14,29 @@ class EventAttendeesScreen extends StatefulWidget {
 class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
   String selectedTab = 'All';
   final List<String> tabs = ['All', 'Friends', 'Following'];
+  final EventService _eventService = EventService();
+  
+  List<Map<String, dynamic>> attendees = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  final List<Map<String, dynamic>> attendees = [
+  String? _validateAvatarUrl(dynamic avatarUrl) {
+    if (avatarUrl == null || avatarUrl.toString().isEmpty) return null;
+    
+    final url = avatarUrl.toString();
+    try {
+      final uri = Uri.parse(url);
+      if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        return url;
+      }
+    } catch (e) {
+      print('⚠️ Invalid avatar URL: $url, error: $e');
+    }
+    return null;
+  }
+
+  // Fallback dummy data for when backend is unavailable
+  final List<Map<String, dynamic>> _fallbackAttendees = [
     {
       'name': 'Leatrice Handler',
       'avatar': 'https://i.pravatar.cc/100?img=1',
@@ -73,14 +95,101 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadAttendees();
+  }
+
+  Future<void> _loadAttendees() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      print('🔄 EventAttendeesScreen: Fetching attendees for event ${widget.eventId}');
+      final result = await _eventService.getEventAttendees(widget.eventId);
+      print('📦 EventAttendeesScreen: Received data: $result');
+      
+      // Process data outside of setState to avoid race conditions
+      List<Map<String, dynamic>> newAttendees;
+      
+      if (result.isNotEmpty) {
+        try {
+          final transformedList = <Map<String, dynamic>>[];
+          for (int i = 0; i < result.length; i++) {
+            final attendee = result[i];
+            if (attendee is Map) {
+              final transformedAttendee = {
+                'id': attendee['id']?.toString() ?? attendee['_id']?.toString() ?? '',
+                'name': attendee['username'] ?? attendee['name'] ?? 'Unknown User',
+                'avatar': _validateAvatarUrl(attendee['profilePicture'] ?? attendee['avatar']),
+                'isFollowing': attendee['isFollowing'] ?? false,
+                'isFriend': attendee['isFriend'] ?? false,
+                'mutualFriends': attendee['mutualFriends'] ?? 0,
+              };
+              transformedList.add(transformedAttendee);
+              print('✅ Transformed attendee $i: $transformedAttendee');
+            } else {
+              print('⚠️ Invalid attendee data at index $i: $attendee');
+              transformedList.add({
+                'id': '',
+                'name': 'Unknown User',
+                'avatar': '',
+                'isFollowing': false,
+                'isFriend': false,
+                'mutualFriends': 0,
+              });
+            }
+          }
+          newAttendees = transformedList;
+          print('✅ EventAttendeesScreen: Successfully transformed ${newAttendees.length} attendees');
+        } catch (e) {
+          print('❌ Error transforming attendees: $e');
+          newAttendees = List.from(_fallbackAttendees);
+        }
+      } else {
+        print('📦 EventAttendeesScreen: No attendees found, using fallback data');
+        newAttendees = List.from(_fallbackAttendees);
+      }
+
+      // Atomic state update
+      if (mounted) {
+        setState(() {
+          attendees = newAttendees;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading attendees: $e');
+      setState(() {
+        // Use fallback data when backend fails
+        attendees = List.from(_fallbackAttendees);
+        _isLoading = false;
+        _errorMessage = 'Unable to load attendees. Showing sample data.';
+      });
+    }
+  }
+
   List<Map<String, dynamic>> get filteredAttendees {
-    switch (selectedTab) {
-      case 'Friends':
-        return attendees.where((a) => a['isFriend'] == true).toList();
-      case 'Following':
-        return attendees.where((a) => a['isFollowing'] == true).toList();
-      default:
-        return attendees;
+    // Ensure attendees list is not null and has valid data
+    if (attendees.isEmpty) {
+      print('🔍 filteredAttendees: Empty attendees list, returning empty');
+      return <Map<String, dynamic>>[];
+    }
+    
+    try {
+      final filtered = switch (selectedTab) {
+        'Friends' => attendees.where((a) => a['isFriend'] == true).toList(),
+        'Following' => attendees.where((a) => a['isFollowing'] == true).toList(),
+        _ => List<Map<String, dynamic>>.from(attendees),
+      };
+      print('🔍 filteredAttendees: ${filtered.length} items for tab: $selectedTab');
+      return filtered;
+    } catch (e) {
+      print('❌ Error in filteredAttendees: $e');
+      return <Map<String, dynamic>>[];
     }
   }
 
@@ -152,7 +261,7 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
             height: 40,
             child: Stack(
               children: List.generate(
-                5,
+                attendees.length > 5 ? 5 : attendees.length,
                 (index) => Positioned(
                   left: index * 20.0,
                   child: Container(
@@ -164,11 +273,20 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
                         color: theme.scaffoldBackgroundColor,
                         width: 2,
                       ),
-                      image: DecorationImage(
-                        image: NetworkImage(attendees[index]['avatar']),
-                        fit: BoxFit.cover,
-                      ),
+                      image: attendees.isNotEmpty && index < attendees.length && attendees[index]['avatar'] != null
+                          ? DecorationImage(
+                              image: NetworkImage(attendees[index]['avatar']),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
+                    child: attendees.isEmpty || index >= attendees.length || attendees[index]['avatar'] == null
+                        ? Icon(
+                            Icons.person,
+                            color: theme.colorScheme.onPrimaryContainer,
+                            size: 20,
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -218,13 +336,93 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
   }
 
   Widget _buildAttendeesList(ThemeData theme) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 20),
-      itemCount: filteredAttendees.length,
-      itemBuilder: (context, index) {
-        final attendee = filteredAttendees[index];
-        return _buildAttendeeCard(attendee, theme);
-      },
+    // Show loading indicator
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // Show error message if present
+    if (_errorMessage != null) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 48,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAttendees,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show empty state
+    if (filteredAttendees.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No attendees found',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Be the first to join this event!',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show attendees list
+    return RefreshIndicator(
+      onRefresh: _loadAttendees,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 20),
+        itemCount: filteredAttendees.length,
+        itemBuilder: (context, index) {
+          print('🏗️ ListView.builder: index=$index, total=${filteredAttendees.length}');
+          if (index >= filteredAttendees.length) {
+            print('❌ Index out of bounds: $index >= ${filteredAttendees.length}');
+            return const SizedBox.shrink();
+          }
+          final attendee = filteredAttendees[index];
+          return _buildAttendeeCard(attendee, theme);
+        },
+      ),
     );
   }
 
@@ -243,7 +441,18 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundImage: NetworkImage(attendee['avatar']),
+            backgroundColor: theme.colorScheme.primaryContainer,
+            backgroundImage: (attendee['avatar'] != null && attendee['avatar'].isNotEmpty)
+                ? NetworkImage(attendee['avatar'])
+                : null,
+            child: (attendee['avatar'] == null || attendee['avatar'].isEmpty)
+                ? Icon(
+                    Icons.person,
+                    size: 24,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  )
+                : null,
+            onBackgroundImageError: (exception, stackTrace) => {},
           ),
           const SizedBox(width: 12),
           Expanded(

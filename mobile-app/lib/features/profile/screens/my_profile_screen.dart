@@ -9,6 +9,7 @@ import '../../auth/models/user_model.dart';
 import '../../auth/services/auth_service.dart';
 import '../../explore/services/explore_post_service.dart';
 import '../../explore/models/post_model.dart';
+import '../../auth/screens/security_settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -557,6 +558,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
+        margin: const EdgeInsets.only(
+          bottom: kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -625,6 +629,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
+        margin: const EdgeInsets.only(
+          bottom: kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -703,9 +710,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                   _buildSettingsOption(
                       context, Icons.security_outlined, 'Security', () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Security settings coming soon!')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SecuritySettingsScreen(),
+                      ),
                     );
                   }),
                   const SizedBox(height: 16),
@@ -1163,7 +1172,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom +
               kBottomNavigationBarHeight +
-              16, // Add space for bottom navbar
+              32, // Add more space for bottom navbar
         ),
         child: Container(
           decoration: BoxDecoration(
@@ -1236,7 +1245,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       builder: (context) => Container(
         margin: const EdgeInsets.only(
           bottom:
-              kBottomNavigationBarHeight + 16, // Add space for bottom navbar
+              kBottomNavigationBarHeight + 32, // Add more space for bottom navbar
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -1413,7 +1422,7 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.7,
@@ -1675,7 +1684,7 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.6,
@@ -1901,7 +1910,7 @@ class _CommunicationPreferencesModalState
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.6,

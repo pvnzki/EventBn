@@ -134,6 +134,20 @@ class AuthService {
         throw new Error("Invalid email or password");
       }
 
+      // Check if 2FA is enabled
+      console.log(`[AUTH] User 2FA status for ${user.email}: enabled=${user.two_factor_enabled}`);
+        // Only require 2FA for non-admin users
+        if (user.two_factor_enabled && user.role !== 'ADMIN') {
+          console.log(`[AUTH] 2FA required for user ${user.email}`);
+          return {
+            requiresTwoFactor: true,
+            twoFactorMethod: user.two_factor_method || 'app',
+            message: "2FA required",
+            user: null,
+            token: null
+          };
+        }
+
       // Update last login
       await prisma.user.update({
         where: { user_id: user.user_id },
