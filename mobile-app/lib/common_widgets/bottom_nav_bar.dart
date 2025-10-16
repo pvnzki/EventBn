@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'dart:ui';
+import '../features/auth/providers/auth_provider.dart';
 
 class BottomNavBar extends StatefulWidget {
   final Widget child;
@@ -17,7 +19,8 @@ class _BottomNavBarState extends State<BottomNavBar>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
-  final List<NavItem> _navItems = [
+  // Define navigation items for regular users
+  final List<NavItem> _regularNavItems = [
     NavItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home,
@@ -43,6 +46,21 @@ class _BottomNavBarState extends State<BottomNavBar>
       route: '/profile',
     ),
   ];
+
+  // Define navigation items for guest users - only events
+  final List<NavItem> _guestNavItems = [
+    NavItem(
+      icon: Icons.event_outlined,
+      activeIcon: Icons.event,
+      label: 'Events',
+      route: '/home',
+    ),
+  ];
+
+  // Get navigation items based on auth state
+  List<NavItem> _getNavItems(bool isGuestMode) {
+    return isGuestMode ? _guestNavItems : _regularNavItems;
+  }
 
   @override
   void initState() {
@@ -78,7 +96,9 @@ class _BottomNavBarState extends State<BottomNavBar>
       });
 
       // Navigate to the selected route
-      context.go(_navItems[index].route);
+      final authProvider = context.read<AuthProvider>();
+      final navItems = _getNavItems(authProvider.isGuestMode);
+      context.go(navItems[index].route);
     }
   }
 
@@ -86,6 +106,11 @@ class _BottomNavBarState extends State<BottomNavBar>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    
+    // Get auth state
+    final authProvider = context.watch<AuthProvider>();
+    final isGuestMode = authProvider.isGuestMode;
+    final navItems = _getNavItems(isGuestMode);
 
     // Get the current route more reliably
     final routerState =
@@ -94,11 +119,11 @@ class _BottomNavBarState extends State<BottomNavBar>
 
     // Debug: Print current location
     print('BottomNavBar - Current location: $currentLocation');
+    print('BottomNavBar - Guest mode: $isGuestMode');
     print(
         'BottomNavBar - Route matches: ${routerState.matches.map((m) => m.matchedLocation).toList()}');
 
     // Don't show bottom nav on event detail pages or other specific pages
-
     if (currentLocation.startsWith('/events/') ||
         currentLocation.startsWith('/checkout/') ||
         currentLocation.startsWith('/organizer/') ||
@@ -108,10 +133,16 @@ class _BottomNavBarState extends State<BottomNavBar>
       return widget.child;
     }
 
-    for (int i = 0; i < _navItems.length; i++) {
-      if (currentLocation.contains(_navItems[i].route)) {
-        _selectedIndex = i;
-        break;
+    // For guest mode, ensure we're always on the events page
+    if (isGuestMode) {
+      _selectedIndex = 0; // Always select the first (and only) tab for guests
+    } else {
+      // For regular users, find the current tab
+      for (int i = 0; i < navItems.length; i++) {
+        if (currentLocation.contains(navItems[i].route)) {
+          _selectedIndex = i;
+          break;
+        }
       }
     }
 
@@ -169,29 +200,37 @@ class _BottomNavBarState extends State<BottomNavBar>
                           color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNavItem(0), // Home
-                            _buildNavItem(1), // Search
-                            const SizedBox(width: 60), // Space for create button
-                            _buildNavItem(2), // Tickets
-                            _buildNavItem(3), // Profile
-                          ],
-                        ),
+                        child: isGuestMode
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildNavItem(0, navItems), // Events only for guests
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildNavItem(0, navItems), // Home
+                                  _buildNavItem(1, navItems), // Search
+                                  const SizedBox(width: 60), // Space for create button
+                                  _buildNavItem(2, navItems), // Tickets
+                                  _buildNavItem(3, navItems), // Profile
+                                ],
+                              ),
                       ),
                     ),
                   ),
                 ),
-                // Central create button that extends above (no clipping)
-                Positioned(
-                  top: -20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: _buildCreateButton(),
+                // Central create button that extends above (no clipping) - hidden for guests
+                if (!isGuestMode)
+                  Positioned(
+                    top: -20,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: _buildCreateButton(),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -200,10 +239,10 @@ class _BottomNavBarState extends State<BottomNavBar>
     );
   }
 
-  Widget _buildNavItem(int index) {
+  Widget _buildNavItem(int index, List<NavItem> navItems) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final item = _navItems[index];
+    final item = navItems[index];
     final isSelected = _selectedIndex == index;
 
     final selectedColor = isDark ? Colors.white : Colors.black;

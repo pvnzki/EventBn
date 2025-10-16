@@ -184,20 +184,24 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       final authService = AuthService();
       final token = await authService.getStoredToken();
 
-      if (token == null) {
-        print('❌ No auth token available for seat locking');
-        return false;
-      }
-
       final url =
           '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
 
+      // Prepare headers - include auth token if available (for registered users)
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+        print('🔒 API: Locking seat $seatId (authenticated user)');
+      } else {
+        print('🔒 API: Locking seat $seatId (guest mode)');
+      }
+
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -231,20 +235,24 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       final authService = AuthService();
       final token = await authService.getStoredToken();
 
-      if (token == null) {
-        print('❌ No auth token available for seat unlocking');
-        return false;
-      }
-
       final url =
           '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/seats/$seatId/lock';
 
+      // Prepare headers - include auth token if available (for registered users)
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+        print('🔓 API: Unlocking seat $seatId (authenticated user)');
+      } else {
+        print('🔓 API: Unlocking seat $seatId (guest mode)');
+      }
+
       final response = await http.delete(
         Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -309,10 +317,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   // Wrapper methods for individual seat operations
   Future<bool> _releaseSeatLock(String seatId) async {
     return await _unlockSeat(seatId);
-  }
-
-  Future<bool> _extendSeatLock(String seatId) async {
-    return await _extendSeatLocks([seatId]);
   }
 
   // ========== PAYMENT SEAT LOCKING ==========

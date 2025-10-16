@@ -10,12 +10,14 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticated = false;
+  bool _isGuestMode = false;
 
   // Getters
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isGuestMode => _isGuestMode;
 
   // Set loading state
   void _setLoading(bool loading) {
@@ -36,13 +38,20 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isAuthenticated = prefs.getBool('is_authenticated') ?? false;
+      final isGuestMode = prefs.getBool('is_guest_mode') ?? false;
       final userEmail = prefs.getString('user_email');
       final authToken = prefs.getString('auth_token');
 
       print(
-          '🔍 AuthProvider: isAuthenticated=$isAuthenticated, email=$userEmail, hasToken=${authToken != null}');
+          '🔍 AuthProvider: isAuthenticated=$isAuthenticated, isGuestMode=$isGuestMode, email=$userEmail, hasToken=${authToken != null}');
 
-      if (isAuthenticated && userEmail != null && authToken != null) {
+      // Check if in guest mode
+      if (isGuestMode && isAuthenticated) {
+        _isGuestMode = true;
+        _isAuthenticated = true;
+        _user = null;
+        print('✅ AuthProvider: Guest mode restored');
+      } else if (isAuthenticated && userEmail != null && authToken != null) {
         // Get the actual user data from the backend/token instead of creating from email hash
         print('🔍 AuthProvider: Getting user data from AuthService...');
         final user = await _authService.getCurrentUser();
@@ -174,10 +183,13 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_email');
+      await prefs.remove('auth_token');
       await prefs.setBool('is_authenticated', false);
+      await prefs.setBool('is_guest_mode', false);
 
       _user = null;
       _isAuthenticated = false;
+      _isGuestMode = false;
       _error = null;
       notifyListeners();
     } catch (e) {
@@ -257,5 +269,56 @@ class AuthProvider extends ChangeNotifier {
   void updateUser(User updatedUser) {
     _user = updatedUser;
     notifyListeners();
+  }
+
+  // Guest Mode functionality
+  Future<void> setGuestMode() async {
+    print('🔄 AuthProvider: Setting guest mode...');
+    _setLoading(true);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Set guest mode flags
+      _isGuestMode = true;
+      _isAuthenticated = true; // Allow access to app features
+      _user = null; // No user data in guest mode
+      
+      // Store guest mode state
+      await prefs.setBool('is_guest_mode', true);
+      await prefs.setBool('is_authenticated', true);
+      
+      _setError(null);
+      print('✅ AuthProvider: Guest mode activated successfully');
+      
+    } catch (e) {
+      print('❌ AuthProvider: Error setting guest mode: $e');
+      _setError('Failed to enter guest mode');
+      _isGuestMode = false;
+      _isAuthenticated = false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> exitGuestMode() async {
+    print('🔄 AuthProvider: Exiting guest mode...');
+    
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Clear guest mode state
+    _isGuestMode = false;
+    _isAuthenticated = false;
+    _user = null;
+    
+    // Clear stored state
+    await prefs.setBool('is_guest_mode', false);
+    await prefs.setBool('is_authenticated', false);
+    await prefs.remove('auth_token');
+    await prefs.remove('user_email');
+    
+    _setError(null);
+    notifyListeners();
+    print('✅ AuthProvider: Guest mode exited successfully');
   }
 }

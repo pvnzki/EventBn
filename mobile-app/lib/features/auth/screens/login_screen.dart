@@ -70,6 +70,45 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _handleGuestLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    try {
+      // Set guest mode in auth provider
+      await authProvider.setGuestMode();
+      
+      // Remove loading indicator
+      Navigator.of(context).pop();
+      
+      // Navigate to home/events page
+      context.go('/home');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Welcome! You\'re browsing as a guest.'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,6 +216,54 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: () => context.go('/register'),
                   child: const Text("Don't have an account? Sign up"),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Divider
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Guest Mode Button
+                OutlinedButton.icon(
+                  onPressed: _handleGuestLogin,
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text(
+                    'Continue as Guest',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.blue, width: 2),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Guest Mode Info
+                const Text(
+                  'Book tickets without creating an account. You\'ll need to provide billing details during checkout.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

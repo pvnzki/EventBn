@@ -45,6 +45,21 @@ model User {
   @@map("User")
 }
 
+model guest_user {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  email          String
+  Street         String
+  City           String
+  PostalCode     BigInt?  @map("Postal Code")
+  TelephoneNo    String   @map("Telephone No")
+  payment_id     String?  @db.Uuid
+  payment        payment? @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([id], map: "guest_user_id_key")
+  @@map("guest_user")
+}
+
 model Organization {
   organization_id Int      @id @default(autoincrement())
   user_id         Int
@@ -128,6 +143,7 @@ model payment {
   Event           Event             @relation(fields: [event_id], references: [event_id], onDelete: NoAction, onUpdate: NoAction)
   User            User              @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   ticket_purchase ticket_purchase[]
+  guest_users     guest_user[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

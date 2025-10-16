@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../profile/screens/edit_profile_screen.dart';
 import '../services/seat_lock_service.dart';
 
@@ -84,11 +86,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
   bool _paymentCompleted = false;
   PaymentUserProfile _userProfile = PaymentUserProfile.defaultProfile;
   bool _isLoadingProfile = true;
+  bool _isGuestMode = false;
+  bool _showBillingForm = false;
 
   // Current user information
   String _currentUserName = '';
   String _currentUserEmail = '';
   String _currentUserPhone = '';
+
+  // Guest billing form controllers
+  final _guestNameController = TextEditingController();
+  final _guestEmailController = TextEditingController();
+  final _guestPhoneController = TextEditingController();
+  final _billingAddressController = TextEditingController();
+  final _billingCityController = TextEditingController();
+  final _billingCountryController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -96,6 +109,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!_paymentCompleted) {
       _releaseSeatLocks();
     }
+    
+    // Dispose form controllers
+    _guestNameController.dispose();
+    _guestEmailController.dispose();
+    _guestPhoneController.dispose();
+    _billingAddressController.dispose();
+    _billingCityController.dispose();
+    _billingCountryController.dispose();
+    
     super.dispose();
   }
 
@@ -112,6 +134,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
       setState(() {
         _isLoadingProfile = true;
       });
+
+      // Check if in guest mode
+      final authProvider = context.read<AuthProvider>();
+      _isGuestMode = authProvider.isGuestMode;
+
+      if (_isGuestMode) {
+        // Guest mode - show billing form
+        setState(() {
+          _currentUserName = 'Guest User';
+          _currentUserEmail = '';
+          _currentUserPhone = '';
+          _userProfile = PaymentUserProfile.defaultProfile;
+          _showBillingForm = true;
+          _isLoadingProfile = false;
+        });
+        print('✅ Guest mode detected - billing form will be shown');
+        return;
+      }
 
       final currentUser = await _authService.getCurrentUser();
       if (currentUser != null) {
@@ -201,6 +241,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   /// Check if user profile is complete for payment processing
   Future<bool> _checkProfileCompletion() async {
     try {
+      // Guest users provide billing info in the form, so profile is considered complete
+      if (_isGuestMode) {
+        print('✅ Guest mode - profile completion bypassed');
+        return true;
+      }
+
       final currentUser = await _authService.getCurrentUser();
       if (currentUser == null) {
         print('❌ No current user found');
@@ -248,6 +294,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
   /// Navigate to profile completion or proceed with payment
   Future<void> _proceedWithPayment() async {
     print('🚀 Starting payment process...');
+    
+    // For guest users, validate the billing form first
+    if (_showBillingForm && !_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required billing information'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Update user profile from guest form if in guest mode
+    if (_showBillingForm) {
+      setState(() {
+        _currentUserName = _guestNameController.text.trim();
+        _currentUserEmail = _guestEmailController.text.trim();
+        _currentUserPhone = _guestPhoneController.text.trim();
+        _userProfile = PaymentUserProfile(
+          address: _billingAddressController.text.trim(),
+          city: _billingCityController.text.trim(),
+          country: _billingCountryController.text.trim(),
+          deliveryAddress: _billingAddressController.text.trim(),
+          deliveryCity: _billingCityController.text.trim(),
+          deliveryCountry: _billingCountryController.text.trim(),
+        );
+      });
+      print('✅ Guest billing information collected and applied');
+    }
+
     final isProfileComplete = await _checkProfileCompletion();
 
     if (!isProfileComplete) {
@@ -605,44 +681,197 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Confirm and Pay',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: theme.colorScheme.onSurface)),
+              const SizedBox(height: 24),
+              if (_showBillingForm) ...[
+                _buildGuestBillingForm(theme),
+                const SizedBox(height: 24),
+              ],
+              _buildSummary(theme),
+              const Spacer(),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28)),
+                  elevation: 4,
+                ),
+                onPressed: _isProcessingPayment ? null : _proceedWithPayment,
+                child: _isProcessingPayment
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Processing...'),
+                        ],
+                      )
+                    : const Text('Pay Now'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestBillingForm(ThemeData theme) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Confirm and Pay',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: theme.colorScheme.onSurface)),
-            const SizedBox(height: 24),
-            _buildSummary(theme),
-            const Spacer(),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28)),
-                elevation: 4,
+            Text(
+              'Billing Information',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: theme.colorScheme.onSurface,
               ),
-              onPressed: _isProcessingPayment ? null : _proceedWithPayment,
-              child: _isProcessingPayment
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text('Processing...'),
-                      ],
-                    )
-                  : const Text('Pay Now'),
+            ),
+            const SizedBox(height: 16),
+            
+            // Name field
+            TextFormField(
+              controller: _guestNameController,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your full name';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // Email field
+            TextFormField(
+              controller: _guestEmailController,
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your email address';
+                }
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  return 'Please enter a valid email address';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // Phone field
+            TextFormField(
+              controller: _guestPhoneController,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone),
+              ),
+              keyboardType: TextInputType.phone,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your phone number';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // Address field
+            TextFormField(
+              controller: _billingAddressController,
+              decoration: const InputDecoration(
+                labelText: 'Billing Address',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on),
+              ),
+              maxLines: 2,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your billing address';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // City and Country in a row
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _billingCityController,
+                    decoration: const InputDecoration(
+                      labelText: 'City',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_city),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your city';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _billingCountryController,
+                    decoration: const InputDecoration(
+                      labelText: 'Country',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.flag),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter your country';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Info text
+            Text(
+              'This information will be used for billing and ticket delivery.',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 12,
+              ),
             ),
           ],
         ),

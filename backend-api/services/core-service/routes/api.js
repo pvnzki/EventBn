@@ -45,6 +45,140 @@ const authenticateUser = (req, res, next) => {
   }
 };
 
+// Optional authentication middleware (allows both authenticated and guest access)
+const optionalAuthenticateUser = (req, res, next) => {
+  try {
+    console.log('🔍 Optional auth: Checking authorization header');
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log('⚠️ Optional auth: No token provided, proceeding as guest');
+      req.user = null;
+      req.userId = null;
+      req.isGuest = true;
+      return next();
+    }
+    
+    const token = authHeader.slice(7);
+    if (!process.env.JWT_SECRET) {
+      console.log('❌ Optional auth: JWT secret not configured');
+      req.user = null;
+      req.userId = null;
+      req.isGuest = true;
+      return next();
+    }
+    
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+      req.userId = decoded.userId || decoded.user_id || decoded.id;
+      req.isGuest = false;
+      console.log('✅ Optional auth: Valid token, user authenticated');
+      next();
+    } catch (jwtError) {
+      console.log('⚠️ Optional auth: Invalid token, proceeding as guest');
+      req.user = null;
+      req.userId = null;
+      req.isGuest = true;
+      next();
+    }
+  } catch (e) {
+    console.log('⚠️ Optional auth: Error occurred, proceeding as guest');
+    req.user = null;
+    req.userId = null;
+    req.isGuest = true;
+    next();
+  }
+};
+
+// Handle root path for mounted routes (when accessed via /api/events)
+router.get("/", async (req, res) => {
+  console.log('🔍 ROOT ROUTE HIT - This is likely the /api/events mount');
+  console.log('📋 Request headers:', req.headers);
+  console.log('🌐 Request path:', req.path);
+  console.log('🔍 Request method:', req.method);
+  
+  // Call the same logic as the events route
+  try {
+    const { page = 1, limit = 20, category, location } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build where clause for filtering
+    const where = {
+      status: "ACTIVE",
+    };
+
+    if (category && category !== "all") {
+      where.category = category;
+    }
+
+    if (location) {
+      where.OR = [
+        { location: { contains: location, mode: "insensitive" } },
+        { venue: { contains: location, mode: "insensitive" } },
+      ];
+    }
+
+    // Fetch events from database
+    const events = await prisma.event.findMany({
+      where,
+      orderBy: { start_time: "asc" },
+      skip,
+      take: limitNum,
+      select: {
+        event_id: true,
+        title: true,
+        description: true,
+        category: true,
+        venue: true,
+        location: true,
+        start_time: true,
+        end_time: true,
+        capacity: true,
+        cover_image_url: true,
+        other_images_url: true,
+        video_url: true,
+        status: true,
+        created_at: true,
+        organization: {
+          select: {
+            name: true,
+            logo_url: true,
+          },
+        },
+      },
+    });
+
+    // If no events found, use fallback
+    const finalEvents = events.length > 0 ? events : FALLBACK_EVENTS;
+
+    console.log('✅ ROOT ROUTE: Returning events:', finalEvents.length);
+    res.json({
+      success: true,
+      fallback: events.length === 0,
+      count: finalEvents.length,
+      // Preferred key for mobile client
+      data: finalEvents,
+      // Backward compatibility with earlier microservice shape
+      events: finalEvents,
+      service: "core-service",
+    });
+  } catch (error) {
+    console.error("[API] Error fetching events from root route:", error);
+    res.status(200).json({
+      success: true,
+      fallback: true,
+      data: FALLBACK_EVENTS,
+      events: FALLBACK_EVENTS,
+      service: "core-service",
+      warning: "Operating in fallback mode due to error",
+      error: error.message,
+    });
+  }
+});
+
 // Sample fallback events (used when DB or service layer unavailable)
 const FALLBACK_EVENTS = [
   {
@@ -353,11 +487,15 @@ router.post("/auth/register", async (req, res) => {
   }
 });
 
-// Public Events routes (no authentication required)
-// GET /events (public)
+// Public Events routes (supports both authenticated users and guests)
+// GET /events (public with optional authentication)
 // Mobile app expects: { success: true, data: [ ... ] }
 // Previously we returned { events: [...] }. We now return both for backward compatibility.
 router.get("/events", async (req, res) => {
+  console.log('🔍 EVENTS ROUTE HIT - Testing without auth middleware');
+  console.log('📋 Request headers:', req.headers);
+  console.log('🌐 Request path:', req.path);
+  console.log('🔍 Request method:', req.method);
   try {
     const { page = 1, limit = 20, category, location } = req.query;
     const pageNum = parseInt(page);
@@ -437,8 +575,8 @@ router.get("/events", async (req, res) => {
   }
 });
 
-// GET /events/:eventId (public)
-router.get("/events/:eventId", async (req, res) => {
+// GET /events/:eventId (public with optional authentication)
+router.get("/events/:eventId", optionalAuthenticateUser, async (req, res) => {
   try {
     const { eventId } = req.params;
     const eventIdNum = parseInt(eventId);
@@ -488,6 +626,66 @@ router.get("/events/:eventId", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] Error fetching event:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch event",
+      message: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+});
+
+// GET /:eventId - handles stripped path when mounted at /api/events (supports guests)
+router.get("/:eventId", optionalAuthenticateUser, async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const eventIdNum = parseInt(eventId);
+
+    if (isNaN(eventIdNum)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid event ID",
+        message: "Event ID must be a number",
+      });
+    }
+
+    // Fetch event from database
+    const event = await prisma.event.findUnique({
+      where: { event_id: eventIdNum },
+      include: {
+        organization: {
+          select: {
+            name: true,
+            logo_url: true,
+            contact_email: true,
+            contact_number: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        error: "Event not found",
+        message: `Event with ID ${eventId} not found`,
+      });
+    }
+
+    // Convert BigInt fields to numbers for JSON serialization
+    const eventData = {
+      ...event,
+      event_id: Number(event.event_id),
+    };
+
+    res.json({
+      success: true,
+      data: eventData,
+      event: eventData, // backward compatibility
+      service: "core-service",
+    });
+  } catch (error) {
+    console.error("[API] Error fetching event (stripped path):", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch event",
@@ -648,8 +846,8 @@ router.get("/events/category/:category", async (req, res) => {
   }
 });
 
-// GET /events/:eventId/attendees - placeholder (no attendees service wired yet)
-router.get("/events/:eventId/attendees", async (req, res) => {
+// GET /events/:eventId/attendees - placeholder (no attendees service wired yet) (supports guests)
+router.get("/events/:eventId/attendees", optionalAuthenticateUser, async (req, res) => {
   try {
     // Future: integrate attendance/tickets service
     res.json({
@@ -667,8 +865,27 @@ router.get("/events/:eventId/attendees", async (req, res) => {
   }
 });
 
-// GET /events/:eventId/seatmap - returns seat_map if present or empty list
-router.get("/events/:eventId/seatmap", async (req, res) => {
+// GET /:eventId/attendees - handles stripped path when mounted at /api/events (supports guests)
+router.get("/:eventId/attendees", optionalAuthenticateUser, async (req, res) => {
+  try {
+    // Future: integrate attendance/tickets service
+    res.json({
+      success: true,
+      data: [],
+      service: "core-service",
+      note: "Attendees endpoint stub (microservice mode)",
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch attendees",
+      message: e.message,
+    });
+  }
+});
+
+// GET /events/:eventId/seatmap - returns seat_map if present or empty list (supports guests)
+router.get("/events/:eventId/seatmap", optionalAuthenticateUser, async (req, res) => {
   try {
     const { eventId } = req.params;
     const eventIdNum = parseInt(eventId);
@@ -925,8 +1142,130 @@ router.get("/events/:eventId/seatmap", async (req, res) => {
   }
 });
 
-// GET /events/:eventId/booked-seats - DB-backed (ticket_purchase + payment status)
-router.get("/events/:eventId/booked-seats", async (req, res) => {
+// GET /:eventId/seatmap - handles stripped path when mounted at /api/events (supports guests)
+router.get("/:eventId/seatmap", optionalAuthenticateUser, async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const eventIdNum = parseInt(eventId);
+
+    if (isNaN(eventIdNum)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid event ID",
+        message: "Event ID must be a number",
+      });
+    }
+
+    // Fetch event directly from database
+    const event = await prisma.event.findUnique({
+      where: { event_id: eventIdNum },
+      select: {
+        event_id: true,
+        title: true,
+        seat_map: true,
+        ticket_types: true,
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        error: "Event not found",
+        message: `Event with ID ${eventId} not found`,
+      });
+    }
+
+    // Parse seat_map from JSON
+    let rawSeatMap = null;
+    if (event.seat_map) {
+      try {
+        rawSeatMap = typeof event.seat_map === 'string' 
+          ? JSON.parse(event.seat_map) 
+          : event.seat_map;
+      } catch (parseError) {
+        console.warn(`[SEATMAP] Failed to parse seat_map for event ${eventId}:`, parseError);
+      }
+    }
+
+    // Fetch booked seats for this event (from completed/pending payments)
+    const bookedSeats = await prisma.ticket_purchase.findMany({
+      where: {
+        event_id: eventIdNum,
+        payment: {
+          status: {
+            in: ["pending", "completed"],
+          },
+        },
+      },
+      select: {
+        seat_id: true,
+        seat_label: true,
+      },
+    });
+
+    let responsePayload;
+    if (rawSeatMap && Array.isArray(rawSeatMap)) {
+      // Custom seating mode - mark booked seats as unavailable
+      const bookedSeatIds = new Set(bookedSeats.map(s => String(s.seat_id)));
+      const bookedSeatLabels = new Set(bookedSeats.map(s => String(s.seat_label)));
+
+      responsePayload = {
+        hasCustomSeating: true,
+        layout: "theater",
+        layoutConfig: {},
+        seats: rawSeatMap.map((s, index) => {
+          const seatId = String(s.id || s.seat_id || index);
+          const seatLabel = String(s.label || s.seat_label || seatId);
+          
+          const isBooked = bookedSeatIds.has(seatId) || bookedSeatLabels.has(seatLabel);
+
+          return {
+            id: seatId,
+            label: seatLabel,
+            row: s.row || Math.floor(index / 10) + 1,
+            column: s.column || (index % 10) + 1,
+            status: isBooked ? "unavailable" : "available",
+            isAvailable: !isBooked,
+            isBooked: isBooked,
+            ticketType: s.ticketType || s.type || "General",
+            price: s.price || s.cost || 0,
+          };
+        }),
+        totalSeats: rawSeatMap.length,
+        availableSeats: rawSeatMap.length - bookedSeats.length,
+        bookedSeats: bookedSeats.length,
+      };
+    } else {
+      // No custom seating or fallback mode
+      const ticketTypes = event.ticket_types || {};
+      responsePayload = {
+        hasCustomSeating: false,
+        layout: "general",
+        layoutConfig: {},
+        seats: [],
+        ticketTypes: ticketTypes,
+        totalSeats: 0,
+        availableSeats: 0,
+        bookedSeats: bookedSeats.length,
+      };
+    }
+
+    res.json({
+      success: true,
+      data: responsePayload,
+      service: "core-service",
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch seatmap",
+      message: e.message,
+    });
+  }
+});
+
+// GET /events/:eventId/booked-seats - DB-backed (ticket_purchase + payment status) (supports guests)
+router.get("/events/:eventId/booked-seats", optionalAuthenticateUser, async (req, res) => {
   try {
     const { eventId } = req.params;
     const rows = await prisma.ticket_purchase.findMany({
@@ -952,6 +1291,169 @@ router.get("/events/:eventId/booked-seats", async (req, res) => {
       success: false,
       message: "Failed to fetch booked seats",
       error: e.message,
+    });
+  }
+});
+
+// GET /:eventId/booked-seats - handles stripped path when mounted at /api/events (supports guests)
+router.get("/:eventId/booked-seats", optionalAuthenticateUser, async (req, res) => {
+  console.log('💺 BOOKED-SEATS ROUTE HIT (stripped path) - eventId:', req.params.eventId);
+  console.log('👤 User:', req.user);
+  console.log('🚪 Is Guest:', req.isGuest);
+  try {
+    const { eventId } = req.params;
+    const rows = await prisma.ticket_purchase.findMany({
+      where: {
+        event_id: parseInt(eventId),
+        payment: { status: { in: ["pending", "completed"] } },
+      },
+      select: { seat_id: true, seat_label: true, purchase_date: true },
+    });
+    const data = rows.map((r) => ({
+      seat_id: r.seat_id,
+      seat_label: r.seat_label,
+      booked_at: r.purchase_date,
+    }));
+    res.json({
+      success: true,
+      data,
+      count: data.length,
+      service: "core-service",
+      note: "Booked seats endpoint (stripped path version)"
+    });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booked seats",
+      error: e.message,
+    });
+  }
+});
+
+// GET /seat-locks/events/:eventId/locks - get locked seats for event (supports guests)
+router.get("/seat-locks/events/:eventId/locks", optionalAuthenticateUser, async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!eventId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "eventId required" });
+    }
+    const locks = await seatLockService.getEventLockedSeats(eventId);
+    res.json({
+      success: true,
+      eventId,
+      locks: locks.map((lock) => ({
+        seatId: lock.seatId,
+        userId: lock.userId || null, // Don't expose userId for guests
+        ttl: lock.ttl,
+      })),
+      service: "core-service",
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
+  }
+});
+
+// POST /seat-locks/events/:eventId/seats/:seatId/lock - lock seat for guests and users
+router.post("/seat-locks/events/:eventId/seats/:seatId/lock", optionalAuthenticateUser, async (req, res) => {
+  try {
+    const { eventId, seatId } = req.params;
+    
+    // For guests, generate a temporary user ID based on session or IP
+    let userId;
+    if (req.isGuest) {
+      // Use a combination of IP and timestamp for guest users
+      const guestId = `guest_${req.ip || 'unknown'}_${Date.now()}`;
+      userId = guestId;
+    } else {
+      userId = String(req.userId);
+    }
+
+    console.log("[SEAT LOCK] Guest-friendly request:", {
+      eventId,
+      seatId,
+      userId,
+      isGuest: req.isGuest
+    });
+
+    const locked = await seatLockService.lockSeat(eventId, seatId, userId);
+    
+    if (locked) {
+      res.json({
+        success: true,
+        message: "Seat locked successfully",
+        lockInfo: { 
+          eventId, 
+          seatId, 
+          userId: req.isGuest ? null : userId, // Don't expose guest IDs
+          duration: "5 minutes" 
+        },
+      });
+    } else {
+      res.status(409).json({
+        success: false,
+        message: "Seat is already locked or unavailable",
+        eventId,
+        seatId,
+      });
+    }
+  } catch (err) {
+    console.error("[SEAT LOCK ERROR]", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to lock seat",
+      error: err.message,
+    });
+  }
+});
+
+// DELETE /seat-locks/events/:eventId/seats/:seatId/lock - release seat lock for guests and users
+router.delete("/seat-locks/events/:eventId/seats/:seatId/lock", optionalAuthenticateUser, async (req, res) => {
+  try {
+    const { eventId, seatId } = req.params;
+    
+    // For guests, we need to handle lock release differently since we don't have persistent user IDs
+    let userId;
+    if (req.isGuest) {
+      // For guests, try to release regardless of user ID (this is less secure but necessary for guest flow)
+      userId = null; // Let the service handle guest releases
+    } else {
+      userId = String(req.userId);
+    }
+
+    console.log("[SEAT UNLOCK] Guest-friendly request:", {
+      eventId,
+      seatId,
+      userId,
+      isGuest: req.isGuest
+    });
+
+    const released = await seatLockService.releaseLock(eventId, seatId, userId);
+    
+    if (released) {
+      res.json({
+        success: true,
+        message: "Lock released successfully",
+        eventId,
+        seatId,
+      });
+    } else {
+      res.status(403).json({
+        success: false,
+        message: "Cannot release lock - lock not found or not owned by user",
+        eventId,
+        seatId,
+      });
+    }
+  } catch (err) {
+    console.error("[SEAT UNLOCK ERROR]", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to release lock",
+      error: err.message,
     });
   }
 });
@@ -1367,7 +1869,7 @@ router.delete(
 );
 
 // GET all locks for an event (public list)
-router.get("/seat-locks/events/:eventId/locks", async (req, res) => {
+router.get("/seat-locks/events/:eventId/locks", optionalAuthenticateUser, async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!eventId) {
@@ -1782,6 +2284,280 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to create payment record",
+      message: error.message,
+    });
+  }
+});
+
+// POST /guest-payments - Guest payment endpoint
+router.post("/guest-payments", optionalAuthenticateUser, express.json(), async (req, res) => {
+  try {
+    const {
+      event_id,
+      selected_seats,
+      selectedSeatData,
+      payment_method = "card",
+      guest_info,
+    } = req.body || {};
+
+    console.log(
+      `[GUEST_PAYMENT] Creating guest payment for event ${event_id}`
+    );
+    console.log(`[GUEST_PAYMENT] Selected seats: ${JSON.stringify(selected_seats)}`);
+    console.log(`[GUEST_PAYMENT] Guest info: ${JSON.stringify(guest_info)}`);
+
+    if (
+      !event_id ||
+      !Array.isArray(selected_seats) ||
+      selected_seats.length === 0 ||
+      !guest_info ||
+      !guest_info.email ||
+      !guest_info.name
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "event_id, selected_seats[], and guest_info (name, email) required",
+        message: "event_id, selected_seats[], and guest_info (name, email) required",
+      });
+    }
+
+    // Fetch event & current booked seats
+    const event = await prisma.event.findUnique({
+      where: { event_id: parseInt(event_id) },
+      select: { event_id: true, seat_map: true, title: true },
+    });
+    if (!event)
+      return res.status(404).json({
+        success: false,
+        error: "Event not found",
+        message: "Event not found",
+      });
+
+    // Check for existing booked seats
+    const existingPurchases = await prisma.ticket_purchase.findMany({
+      where: {
+        event_id: event.event_id,
+        payment: { status: { in: ["pending", "completed"] } },
+      },
+      select: { seat_id: true, seat_label: true },
+    });
+
+    const takenSeats = new Set(
+      existingPurchases.map((t) => String(t.seat_id || t.seat_label))
+    );
+    const conflicts = selected_seats.filter((s) => takenSeats.has(String(s)));
+    if (conflicts.length) {
+      return res.status(409).json({
+        success: false,
+        error: "Seat(s) already booked: " + conflicts.join(","),
+        message: "Seat(s) already booked: " + conflicts.join(","),
+      });
+    }
+
+    // Parse seat data and calculate total price
+    let totalCents = 0;
+    const ticketRows = selected_seats.map((seatIdOrLabel) => {
+      const seatInfo = selectedSeatData?.find(
+        (s) => String(s.id) === String(seatIdOrLabel) || String(s.label) === String(seatIdOrLabel)
+      );
+      const priceCents = seatInfo?.price_cents
+        ? parseInt(seatInfo.price_cents)
+        : seatInfo?.price
+        ? Math.round(parseFloat(seatInfo.price) * 100)
+        : 1000;
+      totalCents += priceCents;
+
+      const displayLabel =
+        seatInfo?.label || seatInfo?.seat_label || String(seatIdOrLabel);
+
+      return {
+        seatIdOrLabel,
+        displayLabel,
+        seatInfo,
+        priceCents,
+      };
+    });
+
+    // Persist inside transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Re-check seats inside transaction for race condition
+      const concurrent = await tx.ticket_purchase.findMany({
+        where: {
+          event_id: event.event_id,
+          payment: { status: { in: ["pending", "completed"] } },
+        },
+        select: { seat_id: true, seat_label: true },
+      });
+      const takenNow = new Set(
+        concurrent.map((t) => String(t.seat_id || t.seat_label))
+      );
+      const conflictsNow = selected_seats.filter((s) =>
+        takenNow.has(String(s))
+      );
+      if (conflictsNow.length) {
+        throw new Error(
+          "Seat(s) just booked by another user: " + conflictsNow.join(",")
+        );
+      }
+
+      // Create guest user record
+      const guestUser = await tx.guest_user.create({
+        data: {
+          guest_id: "guest_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+          name: guest_info.name,
+          email: guest_info.email,
+          street: guest_info.street || null,
+          city: guest_info.city || null,
+          postal_code: guest_info.postal_code || guest_info.postalCode || null,
+          telephone_no: guest_info.telephone_no || guest_info.phone || null,
+        },
+      });
+
+      // Create payment record
+      const payment = await tx.payment.create({
+        data: {
+          user_id: null, // No user_id for guest payments
+          event_id: event.event_id,
+          amount: (totalCents / 100).toFixed(2),
+          status: "completed",
+          payment_method,
+          transaction_ref: "GTX-" + Date.now(),
+          guest_users: {
+            connect: { guest_id: guestUser.guest_id }
+          }
+        },
+      });
+
+      // Create ticket purchases
+      const createdTickets = [];
+      for (const row of ticketRows) {
+        const seatIdParsed = row.seatInfo?.id
+          ? parseInt(row.seatInfo.id)
+          : isNaN(parseInt(row.seatIdOrLabel))
+          ? null
+          : parseInt(row.seatIdOrLabel);
+
+        console.log(
+          `[GUEST_TICKET_CREATE] Creating ticket for seat: ${row.seatIdOrLabel}, label: ${row.displayLabel}, parsed ID: ${seatIdParsed}`
+        );
+
+        const ticket = await tx.ticket_purchase.create({
+          data: {
+            event_id: event.event_id,
+            user_id: null, // No user_id for guest tickets
+            payment_id: payment.payment_id,
+            seat_id: seatIdParsed,
+            seat_label: row.displayLabel,
+            purchase_date: new Date(),
+            price: BigInt(row.priceCents),
+            attended: false,
+            qr_code: "GQR-" + Math.random().toString(36).slice(2, 10),
+          },
+        });
+        createdTickets.push(ticket);
+      }
+
+      // Update seat_map JSON if exists, marking seats as booked
+      if (event.seat_map) {
+        let seatMapObj = event.seat_map;
+        seatMapObj = markSeatsBooked(seatMapObj, selected_seats);
+        await tx.event.update({
+          where: { event_id: event.event_id },
+          data: { seat_map: seatMapObj },
+        });
+      }
+
+      return { payment, tickets: createdTickets, guestUser };
+    });
+
+    // Enrich tickets with event info
+    const eventInfo = await prisma.event.findUnique({
+      where: { event_id: event.event_id },
+      select: {
+        title: true,
+        cover_image_url: true,
+        start_time: true,
+        venue: true,
+        location: true,
+      },
+    });
+
+    // Best-effort release of locks for guest payment
+    if (event.seat_map) {
+      const guestId = result.guestUser.guest_id;
+      for (const seatId of selected_seats) {
+        seatLockService
+          .releaseLock(
+            String(event.event_id),
+            String(seatId),
+            guestId
+          )
+          .catch(() => {});
+      }
+    }
+
+    // Send email with tickets after successful payment
+    console.log('📧 [GUEST_EMAIL] Starting guest email sending process for payment:', result.payment.payment_id);
+    try {
+      if (result.guestUser.email && result.tickets.length > 0) {
+        // Prepare ticket data for email
+        const ticketsForEmail = result.tickets.map(ticket => ({
+          user_name: result.guestUser.name,
+          user_email: result.guestUser.email,
+          event_title: eventInfo.title,
+          event_venue: eventInfo.venue,
+          event_location: eventInfo.location,
+          event_start_time: eventInfo.start_time,
+          seat_label: ticket.seat_label,
+          price: Number(ticket.price),
+          qr_code: ticket.qr_code,
+          payment_id: result.payment.payment_id,
+          purchase_date: ticket.purchase_date
+        }));
+
+        console.log(`📧 [GUEST_EMAIL] Preparing to send email to: ${result.guestUser.email}`);
+        console.log(`📧 [GUEST_EMAIL] Number of tickets: ${ticketsForEmail.length}`);
+        
+        // Send email based on number of tickets
+        if (ticketsForEmail.length === 1) {
+          console.log('📧 [GUEST_EMAIL] Sending single ticket email...');
+          await emailService.sendTicketEmail(ticketsForEmail[0], result.guestUser.email);
+          console.log(`✅ Guest single ticket email sent to ${result.guestUser.email}`);
+        } else {
+          console.log('📧 [GUEST_EMAIL] Sending multiple tickets email...');
+          await emailService.sendMultipleTicketsEmail(ticketsForEmail, result.guestUser.email);
+          console.log(`✅ Guest multiple tickets email sent to ${result.guestUser.email} (${ticketsForEmail.length} tickets)`);
+        }
+      } else {
+        console.log('📧 [GUEST_EMAIL] No guest email found or no tickets created');
+      }
+    } catch (emailError) {
+      console.error('❌ [GUEST_EMAIL] Error sending guest ticket email:', emailError);
+      console.error('❌ [GUEST_EMAIL] Full error stack:', emailError.stack);
+      // Don't fail the payment if email fails - just log it
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Guest payment record created successfully",
+      payment: result.payment,
+      guest_user: result.guestUser,
+      tickets: result.tickets.map((t) => ({
+        ...t,
+        price: Number(t.price),
+        event: eventInfo,
+      })),
+    });
+  } catch (error) {
+    if (error.message && error.message.startsWith("Seat(s) just booked")) {
+      return res
+        .status(409)
+        .json({ success: false, error: error.message, message: error.message });
+    }
+    console.error("[GUEST_PAYMENT] Error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to create guest payment record",
       message: error.message,
     });
   }
