@@ -1,23 +1,23 @@
-const nodemailer = require("nodemailer")
-const QRCode = require("qrcode")
-const puppeteer = require("puppeteer")
-const path = require("path")
-const fs = require("fs").promises
+const nodemailer = require("nodemailer");
+const QRCode = require("qrcode");
+const puppeteer = require("puppeteer");
+const path = require("path");
+const fs = require("fs").promises;
 
 class EmailService {
   constructor() {
-    this.transporter = null
-    this.init()
+    this.transporter = null;
+    this.init();
   }
 
   async init() {
     try {
       // Check if email credentials are available
       if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.log("⚠️ Email credentials not found in environment variables")
-        console.log("📧 Email notifications will be disabled")
-        console.log("💡 Add EMAIL_USER and EMAIL_PASS to your .env file")
-        return
+        console.log("⚠️ Email credentials not found in environment variables");
+        console.log("📧 Email notifications will be disabled");
+        console.log("💡 Add EMAIL_USER and EMAIL_PASS to your .env file");
+        return;
       }
 
       // Create transporter
@@ -32,16 +32,16 @@ class EmailService {
         tls: {
           rejectUnauthorized: false,
         },
-      })
+      });
 
       // Verify connection
-      await this.transporter.verify()
-      console.log("✅ Email service initialized successfully")
-      console.log(`📧 Using email: ${process.env.EMAIL_USER}`)
+      await this.transporter.verify();
+      console.log("✅ Email service initialized successfully");
+      console.log(`📧 Using email: ${process.env.EMAIL_USER}`);
     } catch (error) {
-      console.error("❌ Email service initialization failed:", error.message)
-      console.log("📧 Email notifications will be disabled")
-      this.transporter = null
+      console.error("❌ Email service initialization failed:", error.message);
+      console.log("📧 Email notifications will be disabled");
+      this.transporter = null;
     }
   }
 
@@ -50,8 +50,8 @@ class EmailService {
    */
   async sendEmail({ to, subject, text, html }) {
     if (!this.transporter) {
-      console.log("Email service not available, skipping email send")
-      return false
+      console.log("Email service not available, skipping email send");
+      return false;
     }
 
     try {
@@ -60,15 +60,15 @@ class EmailService {
         to: to,
         subject: subject,
         text: text,
-        html: html
-      })
+        html: html,
+      });
 
-      console.log(`✅ Email sent successfully to ${to}`)
-      console.log(`📧 Message ID: ${info.messageId}`)
-      return true
+      console.log(`✅ Email sent successfully to ${to}`);
+      console.log(`📧 Message ID: ${info.messageId}`);
+      return true;
     } catch (error) {
-      console.error(`❌ Error sending email to ${to}:`, error)
-      throw error
+      console.error(`❌ Error sending email to ${to}:`, error);
+      throw error;
     }
   }
 
@@ -84,11 +84,11 @@ class EmailService {
           dark: "#000000",
           light: "#FFFFFF",
         },
-      })
-      return qrCodeDataURL
+      });
+      return qrCodeDataURL;
     } catch (error) {
-      console.error("Error generating QR code:", error)
-      return null
+      console.error("Error generating QR code:", error);
+      return null;
     }
   }
 
@@ -97,14 +97,19 @@ class EmailService {
    */
   async getLogoBase64() {
     try {
-      const logoPath = path.join(__dirname, "../assets/images/White icon logo transparent.png")
-      const logoBuffer = await fs.readFile(logoPath)
-      const logoBase64 = `data:image/png;base64,${logoBuffer.toString("base64")}`
-      return logoBase64
+      const logoPath = path.join(
+        __dirname,
+        "../assets/images/White icon logo transparent.png"
+      );
+      const logoBuffer = await fs.readFile(logoPath);
+      const logoBase64 = `data:image/png;base64,${logoBuffer.toString(
+        "base64"
+      )}`;
+      return logoBase64;
     } catch (error) {
-      console.error("Error loading logo:", error)
-      console.log("Logo not found, continuing without logo")
-      return null
+      console.error("Error loading logo:", error);
+      console.log("Logo not found, continuing without logo");
+      return null;
     }
   }
 
@@ -112,29 +117,29 @@ class EmailService {
    * Generate PDF ticket using Puppeteer
    */
   async generateTicketPDF(ticketData) {
-    let browser = null
+    let browser = null;
     try {
       // Generate QR code
-      const qrCodeImage = await this.generateQRCode(ticketData.qr_code)
+      const qrCodeImage = await this.generateQRCode(ticketData.qr_code);
 
       // Get logo base64
-      const logoImage = await this.getLogoBase64()
+      const logoImage = await this.getLogoBase64();
 
       // Create HTML template for the ticket
       const html = await this.createTicketHTML({
         ...ticketData,
         qrCodeImage,
         logoImage,
-      })
+      });
 
       // Launch puppeteer
       browser = await puppeteer.launch({
         headless: "new",
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      })
+      });
 
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: "networkidle0" })
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
 
       // Generate PDF
       const pdfBuffer = await page.pdf({
@@ -146,15 +151,15 @@ class EmailService {
           left: "10px",
         },
         printBackground: true,
-      })
+      });
 
-      return pdfBuffer
+      return pdfBuffer;
     } catch (error) {
-      console.error("Error generating PDF:", error)
-      throw error
+      console.error("Error generating PDF:", error);
+      throw error;
     } finally {
       if (browser) {
-        await browser.close()
+        await browser.close();
       }
     }
   }
@@ -177,11 +182,11 @@ class EmailService {
       logoImage,
       payment_id,
       purchase_date,
-    } = data
+    } = data;
 
     // Format date and time
-    const eventDate = new Date(event_start_time)
-    const purchaseDate = new Date(purchase_date)
+    const eventDate = new Date(event_start_time);
+    const purchaseDate = new Date(purchase_date);
 
     const formattedEventDate = eventDate.toLocaleString("en-US", {
       weekday: "long",
@@ -190,7 +195,7 @@ class EmailService {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
+    });
 
     const formattedPurchaseDate = purchaseDate.toLocaleString("en-US", {
       year: "numeric",
@@ -198,7 +203,7 @@ class EmailService {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
+    });
 
     return `
 <!DOCTYPE html>
@@ -388,7 +393,11 @@ class EmailService {
     <div class="ticket-container">
         <div class="ticket-header">
             <div class="logo-container">
-                ${logoImage ? `<img src="${logoImage}" alt="EventBn Logo" class="logo-image">` : ""}
+                ${
+                  logoImage
+                    ? `<img src="${logoImage}" alt="EventBn Logo" class="logo-image">`
+                    : ""
+                }
                 <div class="logo-text">EVENTBN</div>
             </div>
             <div class="ticket-title">Electronic Ticket</div>
@@ -412,11 +421,16 @@ class EmailService {
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Amount Paid</span>
-                    <span class="detail-value price">LKR ${(price / 100).toFixed(2)}</span>
+                    <span class="detail-value price">LKR ${(
+                      price / 100
+                    ).toFixed(2)}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Reference</span>
-                    <span class="detail-value">${payment_id.substring(0, 12)}</span>
+                    <span class="detail-value">${payment_id.substring(
+                      0,
+                      12
+                    )}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Venue</span>
@@ -424,22 +438,41 @@ class EmailService {
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Date</span>
-                    <span class="detail-value">${eventDate.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+                    <span class="detail-value">${eventDate.toLocaleDateString(
+                      "en-GB",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Time</span>
-                    <span class="detail-value">${eventDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span class="detail-value">${eventDate.toLocaleTimeString(
+                      "en-GB",
+                      { hour: "2-digit", minute: "2-digit" }
+                    )}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Purchased</span>
-                    <span class="detail-value">${purchaseDate.toLocaleDateString("en-GB")}</span>
+                    <span class="detail-value">${purchaseDate.toLocaleDateString(
+                      "en-GB"
+                    )}</span>
                 </div>
             </div>
             
             <div class="qr-section">
                 <div class="qr-title">Scan for Entry</div>
-                ${qrCodeImage ? `<img src="${qrCodeImage}" alt="QR Code" class="qr-code" width="160" height="160">` : ""}
-                <div class="ticket-id">Ticket ID: ${qr_code.substring(qr_code.lastIndexOf("_") + 1)}</div>
+                ${
+                  qrCodeImage
+                    ? `<img src="${qrCodeImage}" alt="QR Code" class="qr-code" width="160" height="160">`
+                    : ""
+                }
+                <div class="ticket-id">Ticket ID: ${qr_code.substring(
+                  qr_code.lastIndexOf("_") + 1
+                )}</div>
             </div>
             
             <div class="ticket-footer">
@@ -450,7 +483,7 @@ class EmailService {
         </div>
     </div>
 </body>
-</html>`
+</html>`;
   }
 
   /**
@@ -458,16 +491,16 @@ class EmailService {
    */
   async sendTicketEmail(ticketData, userEmail) {
     if (!this.transporter) {
-      console.log("Email service not available, skipping email send")
-      return false
+      console.log("Email service not available, skipping email send");
+      return false;
     }
 
     try {
       // Generate PDF
-      const pdfBuffer = await this.generateTicketPDF(ticketData)
+      const pdfBuffer = await this.generateTicketPDF(ticketData);
 
       // Email content
-      const subject = `🎫 Your EventBn Ticket - ${ticketData.event_title}`
+      const subject = `🎫 Your EventBn Ticket - ${ticketData.event_title}`;
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -478,12 +511,16 @@ class EmailService {
           <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none;">
             <h2 style="color: #333;">Hello ${ticketData.user_name}!</h2>
             
-            <p>Thank you for booking with EventBn! Your ticket for <strong>${ticketData.event_title}</strong> has been confirmed.</p>
+            <p>Thank you for booking with EventBn! Your ticket for <strong>${
+              ticketData.event_title
+            }</strong> has been confirmed.</p>
             
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #333; margin-top: 0;">Event Details:</h3>
               <p><strong>Event:</strong> ${ticketData.event_title}</p>
-              <p><strong>Date & Time:</strong> ${new Date(ticketData.event_start_time).toLocaleString()}</p>
+              <p><strong>Date & Time:</strong> ${new Date(
+                ticketData.event_start_time
+              ).toLocaleString()}</p>
               <p><strong>Venue:</strong> ${ticketData.event_venue}</p>
               <p><strong>Location:</strong> ${ticketData.event_location}</p>
               <p><strong>Seat/Ticket:</strong> ${ticketData.seat_label}</p>
@@ -491,7 +528,9 @@ class EmailService {
             
             <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin: 20px 0;">
               <p style="margin: 0; color: #155724;"><strong>✅ Payment Confirmed</strong></p>
-              <p style="margin: 5px 0 0; color: #155724;">Amount: Rs. ${(ticketData.price / 100).toFixed(2)}</p>
+              <p style="margin: 5px 0 0; color: #155724;">Amount: Rs. ${(
+                ticketData.price / 100
+              ).toFixed(2)}</p>
             </div>
             
             <p><strong>📎 Your e-ticket is attached as a PDF.</strong> Please:</p>
@@ -513,7 +552,7 @@ class EmailService {
             <p>For support: support@eventbn.com</p>
           </div>
         </div>
-      `
+      `;
 
       // Send email
       const info = await this.transporter.sendMail({
@@ -528,13 +567,13 @@ class EmailService {
             contentType: "application/pdf",
           },
         ],
-      })
+      });
 
-      console.log("✅ Ticket email sent successfully:", info.messageId)
-      return true
+      console.log("✅ Ticket email sent successfully:", info.messageId);
+      return true;
     } catch (error) {
-      console.error("❌ Error sending ticket email:", error)
-      return false
+      console.error("❌ Error sending ticket email:", error);
+      return false;
     }
   }
 
@@ -543,36 +582,43 @@ class EmailService {
    */
   async sendMultipleTicketsEmail(ticketsData, userEmail) {
     if (!this.transporter || !ticketsData || ticketsData.length === 0) {
-      console.log("Email service not available or no tickets data, skipping email send")
-      return false
+      console.log(
+        "Email service not available or no tickets data, skipping email send"
+      );
+      return false;
     }
 
     try {
-      const firstTicket = ticketsData[0]
-      const subject = `🎫 Your EventBn Tickets - ${firstTicket.event_title} (${ticketsData.length} tickets)`
+      const firstTicket = ticketsData[0];
+      const subject = `🎫 Your EventBn Tickets - ${firstTicket.event_title} (${ticketsData.length} tickets)`;
 
       // Generate PDFs for all tickets
-      const attachments = []
+      const attachments = [];
       for (let i = 0; i < ticketsData.length; i++) {
-        const ticketData = ticketsData[i]
-        const pdfBuffer = await this.generateTicketPDF(ticketData)
+        const ticketData = ticketsData[i];
+        const pdfBuffer = await this.generateTicketPDF(ticketData);
         attachments.push({
           filename: `eventbn-ticket-${i + 1}-${ticketData.qr_code}.pdf`,
           content: pdfBuffer,
           contentType: "application/pdf",
-        })
+        });
       }
 
       // Create email content
       const ticketsList = ticketsData
         .map(
           (ticket, index) => `
-        <li><strong>Ticket ${index + 1}:</strong> ${ticket.seat_label} - Rs. ${(ticket.price / 100).toFixed(2)}</li>
-      `,
+        <li><strong>Ticket ${index + 1}:</strong> ${ticket.seat_label} - Rs. ${(
+            ticket.price / 100
+          ).toFixed(2)}</li>
+      `
         )
-        .join("")
+        .join("");
 
-      const totalAmount = ticketsData.reduce((sum, ticket) => sum + ticket.price, 0)
+      const totalAmount = ticketsData.reduce(
+        (sum, ticket) => sum + ticket.price,
+        0
+      );
 
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -584,12 +630,18 @@ class EmailService {
           <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none;">
             <h2 style="color: #333;">Hello ${firstTicket.user_name}!</h2>
             
-            <p>Thank you for booking with EventBn! Your ${ticketsData.length} ticket(s) for <strong>${firstTicket.event_title}</strong> have been confirmed.</p>
+            <p>Thank you for booking with EventBn! Your ${
+              ticketsData.length
+            } ticket(s) for <strong>${
+        firstTicket.event_title
+      }</strong> have been confirmed.</p>
             
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #333; margin-top: 0;">Event Details:</h3>
               <p><strong>Event:</strong> ${firstTicket.event_title}</p>
-              <p><strong>Date & Time:</strong> ${new Date(firstTicket.event_start_time).toLocaleString()}</p>
+              <p><strong>Date & Time:</strong> ${new Date(
+                firstTicket.event_start_time
+              ).toLocaleString()}</p>
               <p><strong>Venue:</strong> ${firstTicket.event_venue}</p>
               <p><strong>Location:</strong> ${firstTicket.event_location}</p>
             </div>
@@ -603,7 +655,9 @@ class EmailService {
             
             <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin: 20px 0;">
               <p style="margin: 0; color: #155724;"><strong>✅ Payment Confirmed</strong></p>
-              <p style="margin: 5px 0 0; color: #155724;">Total Amount: Rs. ${(totalAmount / 100).toFixed(2)}</p>
+              <p style="margin: 5px 0 0; color: #155724;">Total Amount: Rs. ${(
+                totalAmount / 100
+              ).toFixed(2)}</p>
             </div>
             
             <p><strong>📎 Your e-tickets are attached as individual PDF files.</strong> Please:</p>
@@ -626,7 +680,7 @@ class EmailService {
             <p>For support: support@eventbn.com</p>
           </div>
         </div>
-      `
+      `;
 
       // Send email with all ticket attachments
       const info = await this.transporter.sendMail({
@@ -635,15 +689,18 @@ class EmailService {
         subject: subject,
         html: htmlContent,
         attachments: attachments,
-      })
+      });
 
-      console.log(`✅ Multiple tickets email sent successfully (${ticketsData.length} tickets):`, info.messageId)
-      return true
+      console.log(
+        `✅ Multiple tickets email sent successfully (${ticketsData.length} tickets):`,
+        info.messageId
+      );
+      return true;
     } catch (error) {
-      console.error("❌ Error sending multiple tickets email:", error)
-      return false
+      console.error("❌ Error sending multiple tickets email:", error);
+      return false;
     }
   }
 }
 
-module.exports = new EmailService()
+module.exports = new EmailService();
