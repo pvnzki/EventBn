@@ -18,8 +18,8 @@ describe('Organizer - Events listing', () => {
   cy.get('input[placeholder="Search events..."]').type('tech');
     cy.contains(/tech summit/i).should('be.visible');
 
-    // Status filter (selects All to keep list visible)
+    // Category filter (select 'All Categories' to keep list visible)
     cy.get('[role="combobox"]').eq(0).click();
-    cy.contains('div[role="option"]','All Status').click({ force: true });
+    cy.contains('div[role="option"]','All Categories').click({ force: true });
   });
 });

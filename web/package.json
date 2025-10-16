@@ -6,7 +6,14 @@
     "build": "next build",
     "dev": "next dev -p 5000",
     "lint": "next lint",
-    "start": "next start -p 5000"
+    "start": "next start -p 5000",
+    "cypress:run": "cypress run --browser chrome",
+  "report:merge": "mochawesome-merge cypress/reports/mochawesome/mochawesome_*.json > cypress/reports/mochawesome/mochawesome.json",
+    "report:generate": "marge cypress/reports/mochawesome/mochawesome.json --reportDir cypress/reports/mochawesome --inline --charts",
+    "test:e2e": "npm run cypress:run",
+    "test:e2e:report": "npm run cypress:run & npm run report:merge & npm run report:generate",
+    "test:e2e:report:smoke": "cypress run --browser chrome --spec cypress/e2e/00-smoke.cy.ts && npm run report:merge && npm run report:generate",
+    "test:e2e:start-and-run": "start-server-and-test dev http://localhost:5000 test:e2e:report"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -70,7 +77,10 @@
     "axe-core": "^4.10.0",
     "cypress": "^13.15.0",
     "cypress-axe": "^1.6.0",
-    "@browserstack/cypress-cli": "^1.23.1",
+    "browserstack-cypress-cli": "^1.34.0",
+    "mochawesome": "^7.1.3",
+    "mochawesome-merge": "^4.3.0",
+    "mochawesome-report-generator": "^6.2.0",
     "postcss": "^8.5",
     "start-server-and-test": "^2.0.8",
     "tailwindcss": "^3.4.17",

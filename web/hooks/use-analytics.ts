@@ -6,37 +6,51 @@ export interface DashboardOverview {
   totalRevenue: number;
   ticketsSold: number;
   conversionRate: number;
-  pageViews: number;
-  totalPayments: number;
   totalEvents: number;
+  totalAttendees: number;
+  avgTicketPrice: number;
+  revenueGrowth: number;
+  attendeeGrowth: number;
+  attendanceRate: number;
+  totalCapacity?: number;
+  activeEvents?: number;
+  currentPeriodTickets?: number;
+  currentPeriodRevenue?: number;
 }
 
 export interface RevenueData {
   month: string;
   revenue: number;
-  tickets: number;
-  events: number;
 }
 
 export interface CategoryData {
-  name: string;
-  value: number;
-  color: string;
+  category: string;
+  count: number;
+  name?: string; // For frontend compatibility
+  value?: number; // For frontend compatibility
+  color?: string;
 }
 
 export interface AttendeeData {
-  day: string;
-  attendees: number;
+  date: string;
+  count: number;
+  day?: string; // For frontend compatibility
+  attendees?: number; // For frontend compatibility
 }
 
 export interface TopEvent {
+  event_id: number;
   name: string;
+  title: string;
+  start_time: string;
+  venue: string;
   attendees: number;
+  ticketsSold: number;
   revenue: number;
   conversion: number;
 }
 
-export const useAnalytics = (timeRange: string = '6months') => {
+export const useAnalytics = (timeRange: string = '6months', isAdmin: boolean = false, organizerId?: number) => {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
@@ -49,8 +63,8 @@ export const useAnalytics = (timeRange: string = '6months') => {
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch all analytics data
+      let base = `${API_BASE_URL}/api/analytics`;
+      let prefix = isAdmin ? '/platform/dashboard' : `/organizer/${organizerId}/dashboard`;
       const [
         overviewRes,
         revenueRes,
@@ -58,19 +72,15 @@ export const useAnalytics = (timeRange: string = '6months') => {
         attendeesRes,
         topEventsRes
       ] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/analytics/dashboard/overview?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/dashboard/revenue-trend?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/dashboard/categories`),
-        fetch(`${API_BASE_URL}/api/analytics/dashboard/daily-attendees`),
-        fetch(`${API_BASE_URL}/api/analytics/dashboard/top-events?limit=5`)
+        fetch(`${base}${prefix}/overview?timeRange=${timeRange}`),
+        fetch(`${base}${prefix}/revenue-trend?timeRange=${timeRange}`),
+        fetch(`${base}${prefix}/categories`),
+        fetch(`${base}${prefix}/daily-attendees`),
+        fetch(`${base}${prefix}/top-events?limit=5`)
       ]);
-
-      // Check if all requests were successful
       if (!overviewRes.ok || !revenueRes.ok || !categoriesRes.ok || !attendeesRes.ok || !topEventsRes.ok) {
         throw new Error('Failed to fetch analytics data');
       }
-
-      // Parse responses
       const [
         overviewData,
         revenueData,
@@ -84,14 +94,11 @@ export const useAnalytics = (timeRange: string = '6months') => {
         attendeesRes.json(),
         topEventsRes.json()
       ]);
-
-      // Update state
       if (overviewData.success) setOverview(overviewData.data);
       if (revenueData.success) setRevenueData(revenueData.data);
       if (categoriesData.success) setCategoryData(categoriesData.data);
       if (attendeesData.success) setAttendeeData(attendeesData.data);
       if (topEventsData.success) setTopEvents(topEventsData.data);
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Analytics fetch error:', err);
@@ -102,7 +109,7 @@ export const useAnalytics = (timeRange: string = '6months') => {
 
   useEffect(() => {
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, isAdmin, organizerId]);
 
   const refetch = () => {
     fetchData();

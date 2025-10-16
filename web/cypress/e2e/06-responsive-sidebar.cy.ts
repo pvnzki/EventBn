@@ -7,15 +7,15 @@ describe('Responsive sidebar behavior', () => {
       win.localStorage.setItem('user', JSON.stringify({ role: 'ORGANIZER', name: 'Org', organization_id: 1 }));
     });
     // stub network calls used by dashboard
-    cy.intercept('GET', 'http://localhost:3000/api/analytics/organizer/*/dashboard/overview', {
+    cy.intercept('GET', '**/api/analytics/organizer/*/dashboard/overview', {
       statusCode: 200,
       body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },
     }).as('overview');
-    cy.intercept('GET', 'http://localhost:3000/api/analytics/organizer/*/dashboard/revenue-trend', {
+    cy.intercept('GET', '**/api/analytics/organizer/*/dashboard/revenue-trend', {
       statusCode: 200,
       body: { success: true, data: [] },
     }).as('trend');
-    cy.intercept('GET', 'http://localhost:3000/api/events', {
+    cy.intercept('GET', '**/api/events', {
       statusCode: 200,
       body: { success: true, data: [] },
     }).as('events');

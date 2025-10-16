@@ -1,0 +1,144 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 3,
+    "passes": 3,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-10-12T14:37:39.368Z",
+    "end": "2025-10-12T14:37:41.556Z",
+    "duration": 2188,
+    "testsRegistered": 3,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "9e146c6b-2854-4a62-b066-5becad5e2d87",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 777,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "9f13d471-37f7-45f0-adf2-ba8bfd68adc2",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 651,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "3ec2f050-9cbc-47dc-96b3-5ae198da3ab1",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 654,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "f70b4acd-2453-4f18-a943-1bd13ca0b1d5",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9f13d471-37f7-45f0-adf2-ba8bfd68adc2",
+            "3ec2f050-9cbc-47dc-96b3-5ae198da3ab1",
+            "f70b4acd-2453-4f18-a943-1bd13ca0b1d5"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2082,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

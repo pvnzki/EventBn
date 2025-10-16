@@ -1221,10 +1221,113 @@ router.delete("/events/:id", authenticateUser, async (req, res) => {
 // Mount tickets routes - COMMENTED OUT: tickets.js has wrong auth import
 // router.use("/tickets", ticketsRoutes);
 
+// TEST ENDPOINT - Remove after debugging
+router.get("/tickets/test-events-tickets/:userId", async (req, res) => {
+  try {
+    const user_id = parseInt(req.params.userId);
+    console.log('DEBUG: Testing with user_id:', user_id);
+
+    // Get all events for this user
+    const events = await prisma.event.findMany({
+      where: {
+        organization: {
+          user_id: user_id
+        }
+      },
+      select: {
+        event_id: true,
+        title: true,
+        description: true,
+        start_time: true,
+        end_time: true,
+        venue: true,
+        location: true,
+        cover_image_url: true,
+        capacity: true,
+        category: true,
+        ticket_types: true,
+      }
+    });
+
+    console.log('DEBUG: Found events for user', user_id, ':', events.length);
+    events.forEach(event => {
+      console.log('DEBUG: Event', event.event_id, 'title:', `"${event.title}"`);
+    });
+
+    res.json({
+      success: true,
+      message: 'Test endpoint',
+      user_id: user_id,
+      events: events,
+      eventsCount: events.length,
+    });
+  } catch (error) {
+    console.error("Error in test endpoint:", error);
+    res.status(500).json({
+      success: false,
+      message: "Test endpoint error",
+      error: error.message,
+    });
+  }
+});
+
+// TEST ENDPOINT 2 - Check all events
+router.get("/tickets/test-all-events", async (req, res) => {
+  try {
+    console.log('DEBUG: Getting all events...');
+
+    // Get all events
+    const allEvents = await prisma.event.findMany({
+      select: {
+        event_id: true,
+        title: true,
+        organization_id: true,
+      }
+    });
+
+    // Get all organizations
+    const allOrgs = await prisma.organization.findMany({
+      select: {
+        organization_id: true,
+        user_id: true,
+        name: true,
+      }
+    });
+
+    console.log('DEBUG: Total events:', allEvents.length);
+    console.log('DEBUG: Total organizations:', allOrgs.length);
+    
+    allEvents.forEach(event => {
+      console.log('DEBUG: Event', event.event_id, 'title:', `"${event.title}"`, 'org:', event.organization_id);
+    });
+
+    allOrgs.forEach(org => {
+      console.log('DEBUG: Org', org.organization_id, 'name:', `"${org.name}"`, 'user:', org.user_id);
+    });
+
+    res.json({
+      success: true,
+      message: 'All events test endpoint',
+      allEvents: allEvents,
+      allOrgs: allOrgs,
+      eventsCount: allEvents.length,
+      orgsCount: allOrgs.length,
+    });
+  } catch (error) {
+    console.error("Error in all events test endpoint:", error);
+    res.status(500).json({
+      success: false,
+      message: "All events test endpoint error",
+      error: error.message,
+    });
+  }
+});
+
 // Add tickets route directly here
 router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
   try {
     const user_id = req.userId;
+    console.log('DEBUG: Getting tickets for user_id:', user_id);
 
     // Get all tickets for events owned by user's organizations
     const ticketsData = await prisma.ticket_purchase.findMany({
@@ -1331,8 +1434,61 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
       byStatus[status] = (byStatus[status] || 0) + 1;
     });
 
-    // Convert eventTicketsMap to array
-    const ticketsByEvent = Object.values(eventTicketsMap);
+    // Convert eventTicketsMap to array and include all events (even those with no tickets)
+    const ticketsByEvent = [];
+    
+    // First, add all events with tickets
+    Object.values(eventTicketsMap).forEach(eventData => {
+      ticketsByEvent.push({
+        event_id: eventData.event.event_id,
+        title: eventData.event.title,
+        description: eventData.event.description,
+        start_time: eventData.event.start_time,
+        end_time: eventData.event.end_time,
+        venue: eventData.event.venue,
+        location: eventData.event.location,
+        cover_image_url: eventData.event.cover_image_url,
+        capacity: eventData.event.capacity,
+        category: eventData.event.category,
+        ticket_types: eventData.event.ticket_types,
+        tickets: eventData.tickets,
+        ticketCount: eventData.ticketCount,
+        attendedCount: eventData.attendedCount,
+        eventRevenue: eventData.eventRevenue,
+        averageTicketPrice: eventData.ticketCount > 0 ? (eventData.eventRevenue / eventData.ticketCount) : 0,
+        attendanceRate: eventData.ticketCount > 0 ? (eventData.attendedCount / eventData.ticketCount * 100) : 0
+      });
+    });
+    
+    // Then, add events with no tickets sold
+    events.forEach(event => {
+      if (!eventTicketsMap[event.event_id]) {
+        ticketsByEvent.push({
+          event_id: event.event_id,
+          title: event.title,
+          description: event.description,
+          start_time: event.start_time,
+          end_time: event.end_time,
+          venue: event.venue,
+          location: event.location,
+          cover_image_url: event.cover_image_url,
+          capacity: event.capacity,
+          category: event.category,
+          ticket_types: event.ticket_types,
+          tickets: [],
+          ticketCount: 0,
+          attendedCount: 0,
+          eventRevenue: 0,
+          averageTicketPrice: 0,
+          attendanceRate: 0
+        });
+      }
+    });
+
+    console.log('DEBUG: Final ticketsByEvent count:', ticketsByEvent.length);
+    ticketsByEvent.forEach(event => {
+      console.log('DEBUG: Event in response', event.event_id, 'title:', `"${event.title}"`);
+    });
 
     const statistics = {
       totalTicketsSold: normalizedTickets.length,

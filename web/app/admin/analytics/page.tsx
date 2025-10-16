@@ -47,6 +47,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { useAdminAnalytics } from "@/hooks/use-admin-analytics";
 
 interface User {
   role: "admin" | "organizer";
@@ -57,6 +58,31 @@ export default function AnalyticsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [timeRange, setTimeRange] = useState("6months");
 
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  // Only fetch analytics if user is loaded and is admin
+  const isAdmin = user?.role === "admin";
+
+  // Mirror organizer analytics flow: wait for user, require admin, then fetch platform-wide analytics
+  if (user && !isAdmin) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 p-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-2xl font-semibold">Access denied</h2>
+            <p className="mt-2 text-gray-600">You must be an admin to view platform analytics.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const {
     overview,
     revenueData,
@@ -66,16 +92,23 @@ export default function AnalyticsPage() {
     loading,
     error,
     refetch,
-  } = useAnalytics(timeRange);
+  } = useAdminAnalytics(!!isAdmin, timeRange);
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
-
-  const isAdmin = user?.role === "admin";
+  if (!user) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Loading user data...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -171,11 +204,9 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {overview ? formatCurrency(overview.totalRevenue) : "$0"}
-                </div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {overview?.totalPayments || 0} payments completed
+                  {overview
+                    ? formatCurrency(overview.totalRevenue)
+                    : "No revenue yet"}
                 </div>
               </CardContent>
             </Card>
@@ -189,11 +220,15 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {overview ? formatNumber(overview.ticketsSold) : "0"}
+                  {overview
+                    ? formatNumber(overview.ticketsSold)
+                    : "No tickets sold"}
                 </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  Across {overview?.totalEvents || 0} events
+                  {overview
+                    ? `Across ${overview.totalEvents} events`
+                    : "No events found"}
                 </div>
               </CardContent>
             </Card>
@@ -207,7 +242,9 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {overview ? `${overview.conversionRate.toFixed(1)}%` : "0%"}
+                  {overview
+                    ? `${overview.conversionRate.toFixed(1)}%`
+                    : "No conversion yet"}
                 </div>
                 <div className="flex items-center text-xs text-gray-600">
                   <Target className="h-3 w-3 mr-1" />
@@ -225,11 +262,13 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {overview ? formatNumber(overview.pageViews) : "0"}
+                  {overview
+                    ? formatNumber(overview.totalAttendees)
+                    : "No attendees yet"}
                 </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  Search activities tracked
+                  Attendees tracked
                 </div>
               </CardContent>
             </Card>
@@ -302,20 +341,15 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 {categoryData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      conferences: { label: "Conferences", color: "#8884d8" },
-                      workshops: { label: "Workshops", color: "#82ca9d" },
-                      concerts: { label: "Concerts", color: "#ffc658" },
-                      sports: { label: "Sports", color: "#ff7300" },
-                      others: { label: "Others", color: "#00ff00" },
-                    }}
-                    className="h-[300px]"
-                  >
+                  <ChartContainer config={{}} className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={categoryData}
+                          data={categoryData.map((cat) => ({
+                            name: cat.name || cat.category,
+                            value: cat.value ?? cat.count,
+                            color: cat.color,
+                          }))}
                           cx="50%"
                           cy="50%"
                           outerRadius={80}
@@ -353,17 +387,14 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 {attendeeData.length > 0 ? (
-                  <ChartContainer
-                    config={{
-                      attendees: {
-                        label: "Attendees",
-                        color: "hsl(var(--chart-3))",
-                      },
-                    }}
-                    className="h-[300px]"
-                  >
+                  <ChartContainer config={{}} className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={attendeeData}>
+                      <BarChart
+                        data={attendeeData.map((a) => ({
+                          day: a.day ?? a.date,
+                          attendees: a.attendees ?? a.count,
+                        }))}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="day" />
                         <YAxis />
@@ -449,7 +480,7 @@ export default function AnalyticsPage() {
                     </h4>
                   </div>
                   <p className="text-sm text-green-700">
-                    {overview && overview.totalRevenue > 0
+                    {overview
                       ? `Total revenue of ${formatCurrency(
                           overview.totalRevenue
                         )} across ${overview.totalEvents} events.`
@@ -465,7 +496,7 @@ export default function AnalyticsPage() {
                     </h4>
                   </div>
                   <p className="text-sm text-blue-700">
-                    {overview && overview.ticketsSold > 0
+                    {overview
                       ? `${formatNumber(
                           overview.ticketsSold
                         )} tickets sold with ${overview.conversionRate.toFixed(
@@ -493,6 +524,26 @@ export default function AnalyticsPage() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          {/* Debug: raw data (temporary) */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Debug: Raw Analytics JSON</CardTitle>
+              <CardDescription>Temporary - remove in production</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs overflow-auto max-h-64">
+{JSON.stringify({ overview, revenueData, categoryData, attendeeData, topEvents }, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Debug: User</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="text-xs">{JSON.stringify({ user, isAdmin }, null, 2)}</pre>
             </CardContent>
           </Card>
         </div>

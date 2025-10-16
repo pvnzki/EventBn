@@ -39,7 +39,6 @@ import {
   DollarSign,
   Users,
   TrendingUp,
-  Download,
   Mail,
   Calendar,
   MapPin,
@@ -49,6 +48,16 @@ import {
   Check,
   X,
   RefreshCw,
+  ArrowLeft,
+  BarChart3,
+  PieChart,
+  Target,
+  Clock,
+  Star,
+  Filter,
+  ArrowUpRight,
+  TrendingDown,
+  Activity,
 } from "lucide-react";
 
 interface User {
@@ -97,11 +106,53 @@ interface TicketPurchase {
 }
 
 interface EventWithTickets {
-  event: EventData;
+  event_id: number;
+  title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  venue: string;
+  location: string;
+  cover_image_url?: string;
+  capacity: number;
+  category: string;
+  ticket_types: TicketType[];
   tickets: TicketPurchase[];
   ticketCount: number;
-  eventRevenue: number;
   attendedCount: number;
+  eventRevenue: number;
+  ticketCategoryBreakdown: TicketCategoryData[];
+  averageTicketPrice: number;
+  attendanceRate: number;
+}
+
+interface TicketType {
+  name: string;
+  price: number;
+  description: string;
+}
+
+interface TicketCategoryData {
+  name: string;
+  price: number;
+  description: string;
+  ticketsSold: number;
+  revenue: number;
+  attendedCount: number;
+}
+
+interface RevenueByCategory {
+  category: string;
+  revenue: number;
+  ticketsSold: number;
+  eventsCount: number;
+}
+
+interface TopSellingEvent {
+  event_id: number;
+  title: string;
+  ticketsSold: number;
+  revenue: number;
 }
 
 interface Statistics {
@@ -109,6 +160,15 @@ interface Statistics {
   totalRevenue: number;
   totalEvents: number;
   averageTicketPrice: number;
+  totalAttended: number;
+  attendanceRate: number;
+  recentSales: {
+    ticketsSold: number;
+    revenue: number;
+    period: string;
+  };
+  revenueByCategory: RevenueByCategory[];
+  topSellingEvents: TopSellingEvent[];
 }
 
 interface ApiResponse {
@@ -129,6 +189,15 @@ export default function TicketsPage() {
     totalRevenue: 0,
     totalEvents: 0,
     averageTicketPrice: 0,
+    totalAttended: 0,
+    attendanceRate: 0,
+    recentSales: {
+      ticketsSold: 0,
+      revenue: 0,
+      period: "30 days",
+    },
+    revenueByCategory: [],
+    topSellingEvents: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +205,12 @@ export default function TicketsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [eventFilter, setEventFilter] = useState("all");
   const [attendanceFilter, setAttendanceFilter] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState<EventWithTickets | null>(
+    null
+  );
+  const [viewMode, setViewMode] = useState<"overview" | "event-details">(
+    "overview"
+  );
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -173,8 +248,27 @@ export default function TicketsPage() {
       }
 
       const data: ApiResponse = await response.json();
+      console.log("API Response Data:", data);
 
       if (data.success) {
+        console.log("Tickets:", data.tickets);
+        console.log("TicketsByEvent:", data.ticketsByEvent);
+        console.log("Statistics:", data.statistics);
+
+        // Debug event titles specifically
+        if (data.ticketsByEvent) {
+          console.log("Event titles debug:");
+          data.ticketsByEvent.forEach((event, index) => {
+            console.log(`Event ${index}:`, {
+              event_id: event.event_id,
+              title: event.title,
+              hasTitle: !!event.title,
+              titleType: typeof event.title,
+              titleLength: event.title ? event.title.length : 0,
+            });
+          });
+        }
+
         setTickets(data.tickets);
         setTicketsByEvent(data.ticketsByEvent);
         setStatistics(data.statistics);
@@ -224,7 +318,13 @@ export default function TicketsPage() {
 
   const isAdmin = user?.role === "admin";
 
-  const filteredTickets = tickets.filter((ticket) => {
+  // Determine which tickets to show based on view mode
+  const ticketsToFilter =
+    viewMode === "event-details" && selectedEvent
+      ? selectedEvent.tickets
+      : tickets;
+
+  const filteredTickets = ticketsToFilter.filter((ticket) => {
     const matchesSearch =
       ticket.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,7 +336,9 @@ export default function TicketsPage() {
       statusFilter === "all" || ticket.payment?.status === statusFilter;
 
     const matchesEvent =
-      eventFilter === "all" || ticket.event?.title === eventFilter;
+      eventFilter === "all" ||
+      viewMode === "event-details" || // Don't filter by event in event details view
+      ticket.event?.title === eventFilter;
 
     const matchesAttendance =
       attendanceFilter === "all" ||
@@ -245,13 +347,6 @@ export default function TicketsPage() {
 
     return matchesSearch && matchesStatus && matchesEvent && matchesAttendance;
   });
-
-  const uniqueEvents = [
-    ...new Set(tickets.map((ticket) => ticket.event?.title).filter(Boolean)),
-  ];
-  const uniqueStatuses = [
-    ...new Set(tickets.map((ticket) => ticket.payment?.status).filter(Boolean)),
-  ];
 
   if (loading) {
     return (
@@ -304,94 +399,495 @@ export default function TicketsPage() {
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Ticket Management
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {isAdmin
-                  ? "Manage all tickets across the platform"
-                  : "Manage tickets for your events"}
-              </p>
+            <div className="flex items-center">
+              {viewMode === "event-details" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setViewMode("overview");
+                    setSelectedEvent(null);
+                  }}
+                  className="mr-4"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Overview
+                </Button>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {viewMode === "overview"
+                    ? "Ticket Management"
+                    : `${selectedEvent?.title} - Tickets`}
+                </h1>
+                <p className="text-gray-600 mt-2">
+                  {viewMode === "overview"
+                    ? isAdmin
+                      ? "Manage all tickets across the platform"
+                      : "Manage tickets for your events"
+                    : `Detailed view for ${selectedEvent?.title}`}
+                </p>
+              </div>
             </div>
-            <Button onClick={refreshData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Data
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={refreshData}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Data
+              </Button>
+            </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Revenue
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${statistics.totalRevenue.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  From {statistics.totalTicketsSold} tickets
-                </p>
-              </CardContent>
-            </Card>
+          {viewMode === "overview" ? (
+            <>
+              {/* Enhanced Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Revenue
+                    </CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ${statistics.totalRevenue.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      From {statistics.totalTicketsSold} tickets
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Tickets Sold
-                </CardTitle>
-                <Ticket className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {statistics.totalTicketsSold}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Across {statistics.totalEvents} events
-                </p>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Tickets Sold
+                    </CardTitle>
+                    <Ticket className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {statistics.totalTicketsSold}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Across {statistics.totalEvents} events
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Events
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {statistics.totalEvents}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Events with tickets sold
-                </p>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Attendance Rate
+                    </CardTitle>
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {(statistics.attendanceRate || 0).toFixed(1)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {statistics.totalAttended || 0} of{" "}
+                      {statistics.totalTicketsSold || 0} attended
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg Ticket Price
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${statistics.averageTicketPrice.toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average per ticket
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Recent Sales
+                    </CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ${(statistics.recentSales?.revenue || 0).toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {statistics.recentSales?.ticketsSold || 0} tickets in{" "}
+                      {statistics.recentSales?.period || "30 days"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Filters */}
+              {/* Revenue by Category */}
+              {statistics.revenueByCategory &&
+                statistics.revenueByCategory.length > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <PieChart className="h-5 w-5 mr-2" />
+                          Revenue by Category
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {(statistics.revenueByCategory || []).map(
+                            (category, index) => (
+                              <div
+                                key={category.category}
+                                className="flex items-center justify-between"
+                              >
+                                <div className="flex items-center">
+                                  <div
+                                    className="w-3 h-3 rounded-full mr-3"
+                                    style={{
+                                      backgroundColor: `hsl(${
+                                        index * 45
+                                      }, 70%, 50%)`,
+                                    }}
+                                  />
+                                  <div>
+                                    <p className="font-medium">
+                                      {category.category}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {category.ticketsSold} tickets,{" "}
+                                      {category.eventsCount} events
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">
+                                    ${category.revenue.toLocaleString()}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {(
+                                      ((category.revenue || 0) /
+                                        (statistics.totalRevenue || 1)) *
+                                      100
+                                    ).toFixed(1)}
+                                    %
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Star className="h-5 w-5 mr-2" />
+                          Top Selling Events
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {(statistics.topSellingEvents || []).map(
+                            (event, index) => (
+                              <div
+                                key={event.event_id}
+                                className="flex items-center justify-between"
+                              >
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <span className="text-blue-600 font-bold text-sm">
+                                      {index + 1}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{event.title}</p>
+                                    <p className="text-sm text-gray-500">
+                                      {event.ticketsSold} tickets sold
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold">
+                                    ${event.revenue.toLocaleString()}
+                                  </p>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const eventData = ticketsByEvent.find(
+                                        (e) => e.event_id === event.event_id
+                                      );
+                                      if (eventData) {
+                                        setSelectedEvent(eventData);
+                                        setViewMode("event-details");
+                                      }
+                                    }}
+                                  >
+                                    View Details
+                                  </Button>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+              {/* Events Overview */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BarChart3 className="h-5 w-5 mr-2" />
+                    Events Overview ({ticketsByEvent?.length || 0} events)
+                  </CardTitle>
+                  <CardDescription>
+                    Click on any event to view detailed ticket information
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {ticketsByEvent && ticketsByEvent.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {ticketsByEvent.map((eventData) => (
+                        <Card
+                          key={eventData.event_id}
+                          className="cursor-pointer hover:shadow-lg transition-shadow"
+                          onClick={() => {
+                            setSelectedEvent(eventData);
+                            setViewMode("event-details");
+                          }}
+                        >
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">
+                                  {eventData.title && eventData.title.trim()
+                                    ? eventData.title
+                                    : "Untitled Event"}
+                                </CardTitle>
+                                {/* Debug info - remove after fixing */}
+                                {process.env.NODE_ENV === "development" && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    Debug: title="{eventData.title}", type=
+                                    {typeof eventData.title}, id=
+                                    {eventData.event_id}
+                                  </div>
+                                )}
+                                <CardDescription className="mt-1 flex items-center">
+                                  <Calendar className="h-4 w-4 mr-1" />
+                                  {eventData.start_time
+                                    ? new Date(
+                                        eventData.start_time
+                                      ).toLocaleDateString()
+                                    : "Date TBD"}
+                                </CardDescription>
+                              </div>
+                              <ArrowUpRight className="h-4 w-4 text-gray-400" />
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">
+                                  Tickets Sold:
+                                </span>
+                                <span className="font-medium">
+                                  {eventData.ticketCount || 0}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">
+                                  Revenue:
+                                </span>
+                                <span className="font-medium">
+                                  $
+                                  {(
+                                    eventData.eventRevenue || 0
+                                  ).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">
+                                  Attendance:
+                                </span>
+                                <span className="font-medium">
+                                  {(eventData.attendanceRate || 0).toFixed(1)}%
+                                </span>
+                              </div>
+                              {eventData.ticketCategoryBreakdown &&
+                                eventData.ticketCategoryBreakdown.length >
+                                  0 && (
+                                  <div className="mt-3 pt-3 border-t">
+                                    <p className="text-sm font-medium mb-2">
+                                      Ticket Categories:
+                                    </p>
+                                    {eventData.ticketCategoryBreakdown
+                                      .slice(0, 2)
+                                      .map((category) => (
+                                        <div
+                                          key={category.name}
+                                          className="flex justify-between text-xs"
+                                        >
+                                          <span>{category.name}:</span>
+                                          <span>
+                                            {category.ticketsSold} sold
+                                          </span>
+                                        </div>
+                                      ))}
+                                    {eventData.ticketCategoryBreakdown.length >
+                                      2 && (
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        +
+                                        {eventData.ticketCategoryBreakdown
+                                          .length - 2}{" "}
+                                        more categories
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No Events Found
+                      </h3>
+                      <p className="text-gray-600">
+                        {loading
+                          ? "Loading events..."
+                          : "You haven't created any events yet or there are no ticket sales to display."}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            selectedEvent && (
+              <>
+                {/* Event Details View */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Event Revenue
+                      </CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        ${selectedEvent.eventRevenue.toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        From {selectedEvent.ticketCount} tickets
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Attendance Rate
+                      </CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(selectedEvent.attendanceRate || 0).toFixed(1)}%
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedEvent.attendedCount || 0} of{" "}
+                        {selectedEvent.ticketCount || 0} attended
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Avg Ticket Price
+                      </CardTitle>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        ${(selectedEvent.averageTicketPrice || 0).toFixed(2)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Average price per ticket
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ticket Categories Breakdown */}
+                {selectedEvent.ticketCategoryBreakdown &&
+                  selectedEvent.ticketCategoryBreakdown.length > 0 && (
+                    <Card className="mb-6">
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <PieChart className="h-5 w-5 mr-2" />
+                          Ticket Categories Performance
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {(selectedEvent.ticketCategoryBreakdown || []).map(
+                            (category) => (
+                              <Card
+                                key={category.name}
+                                className="border-l-4 border-l-blue-500"
+                              >
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-lg">
+                                    {category.name}
+                                  </CardTitle>
+                                  <CardDescription className="text-lg font-bold text-green-600">
+                                    ${(category.price || 0).toFixed(2)}
+                                  </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                      <span className="text-sm text-gray-600">
+                                        Sold:
+                                      </span>
+                                      <span className="font-medium">
+                                        {category.ticketsSold}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-sm text-gray-600">
+                                        Revenue:
+                                      </span>
+                                      <span className="font-medium">
+                                        ${category.revenue.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-sm text-gray-600">
+                                        Attended:
+                                      </span>
+                                      <span className="font-medium">
+                                        {category.attendedCount}
+                                      </span>
+                                    </div>
+                                    {category.description && (
+                                      <p className="text-xs text-gray-500 mt-2">
+                                        {category.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+              </>
+            )
+          )}
+
+          {/* Filters - Show only in overview mode or when viewing event details */}
           <Card className="mb-6">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -406,30 +902,33 @@ export default function TicketsPage() {
                     />
                   </div>
                 </div>
-                <Select value={eventFilter} onValueChange={setEventFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by event" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Events</SelectItem>
-                    {uniqueEvents.map((event) => (
-                      <SelectItem key={event} value={event}>
-                        {event}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {viewMode === "overview" && (
+                  <Select value={eventFilter} onValueChange={setEventFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by event" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Events</SelectItem>
+                      {ticketsByEvent.map((eventData) => (
+                        <SelectItem
+                          key={eventData.event_id}
+                          value={eventData.title}
+                        >
+                          {eventData.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    {uniqueStatuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select
@@ -583,16 +1082,6 @@ export default function TicketsPage() {
                         </Button>
                       )}
                     </div>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-1" />
-                        Export
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Mail className="h-4 w-4 mr-1" />
-                        Email Customer
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -613,6 +1102,8 @@ export default function TicketsPage() {
                   eventFilter !== "all" ||
                   attendanceFilter !== "all"
                     ? "Try adjusting your filters to see more tickets."
+                    : viewMode === "event-details"
+                    ? "No tickets have been sold for this event yet."
                     : "No tickets have been sold for your events yet."}
                 </p>
               </CardContent>

@@ -235,7 +235,11 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="flex items-center text-xs text-green-600">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  {overview?.totalPayments || 0} payments completed
+                  {overview?.revenueGrowth
+                    ? `${
+                        overview.revenueGrowth > 0 ? "+" : ""
+                      }${overview.revenueGrowth.toFixed(1)}% growth`
+                    : "No growth data"}
                 </div>
               </CardContent>
             </Card>
@@ -251,9 +255,10 @@ export default function AnalyticsPage() {
                 <div className="text-2xl font-bold">
                   {overview ? formatNumber(overview.ticketsSold) : "0"}
                 </div>
-                <div className="flex items-center text-xs text-green-600">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Across {overview?.totalEvents || 0} events
+                <div className="flex items-center text-xs text-blue-600">
+                  <Users className="h-3 w-3 mr-1" />
+                  {overview?.totalAttendees || 0} attended (
+                  {overview?.attendanceRate?.toFixed(1) || 0}%)
                 </div>
               </CardContent>
             </Card>
@@ -271,7 +276,8 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="flex items-center text-xs text-gray-600">
                   <Target className="h-3 w-3 mr-1" />
-                  Tickets per event average
+                  Average: ${overview?.avgTicketPrice?.toFixed(2) || "0"} per
+                  ticket
                 </div>
               </CardContent>
             </Card>
@@ -549,7 +555,7 @@ export default function AnalyticsPage() {
                           categoryData[0]?.name || "Unknown"
                         } is your top category with ${
                           categoryData[0]?.value || 0
-                        }% of your events.`
+                        } events.`
                       : "Create events with different categories to see which types perform best."}
                   </p>
                 </div>

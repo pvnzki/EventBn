@@ -14,12 +14,24 @@ describe('UI elements on Login page', () => {
     // Button exists and is enabled
   cy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');
 
-    // Error message appears on invalid credentials (no backend required)
-  cy.get('#email').type('invalid@example.com');
-  cy.get('#password').type('wrongpass');
-  cy.contains('button', /sign in/i).click();
+    // Stub backend login to simulate successful ORGANIZER auth
+  cy.intercept('POST', '**/api/auth/login', {
+    statusCode: 200,
+    body: {
+      success: true,
+      token: 'test-token',
+      data: { role: 'ORGANIZER', name: 'Organizer Test', email: 'organizer@example.com' }
+    }
+  }).as('login');
 
-    // Either app shows a destructive Alert or inline error text
-    cy.contains(/something went wrong|login failed/i).should('be.visible');
+    // Submitting valid credentials shows loading state then redirects to organizer dashboard
+  cy.get('#email').clear().type('organizer@example.com');
+  cy.get('#password').clear().type('any-password');
+  cy.contains('button', /sign in/i).click();
+  // Button changes to "Signing in..." and becomes disabled during submission
+  cy.contains('button', /signing in/i).should('exist').and('be.disabled');
+  cy.wait('@login');
+  // After simulated auth, user is redirected to organizer dashboard
+  cy.url({ timeout: 10000 }).should('include', '/organizer/dashboard');
   });
 });
