@@ -49,34 +49,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAnalytics } from "@/hooks/use-admin-analytics";
 
-const monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+// helper month names removed (not needed)
 
 const AdminDashboardPage = () => {
   const router = useRouter();
   type User = { role: string } | null;
   const [user, setUser] = useState<User>(null);
-  type AnalyticsData = {
-    totalRevenue: number;
-    ticketsSold: number;
-    conversionRate: number;
-    pageViews: number;
-    totalPayments: number;
-    totalEvents: number;
-  };
+  // analytics data removed - dashboard uses event-based counts
   type Event = {
     event_id: number;
     organization_id: number | null;
@@ -97,15 +78,9 @@ const AdminDashboardPage = () => {
     organization?: { name: string; organization_id: number; logo_url: string };
   };
 
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
-    null
-  );
+  // chart data state for revenue trend charts
   const [chartData, setChartData] = useState<
-    {
-      month: string;
-      revenue: number;
-      events: number;
-    }[]
+    { month: string; revenue: number; events: number }[]
   >([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -127,72 +102,45 @@ const AdminDashboardPage = () => {
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-
-    // Fetch events first, then calculate analytics from events data
+    // Fetch events list for Recent Events panel (separate from analytics)
     fetch("http://localhost:3001/api/events", { headers })
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
           setEvents(response.data);
-
-          // Calculate basic analytics from events
-          const totalEvents = response.data.length;
-          const activeEvents = response.data.filter(
-            (e: Event) => e.status === "ACTIVE"
-          ).length;
-
-          // Set basic analytics data
-          setAnalyticsData({
-            totalRevenue: 0, // Would need payment data
-            ticketsSold: 0, // Would need ticket purchase data
-            conversionRate: 0,
-            pageViews: 0,
-            totalPayments: 0,
-            totalEvents: totalEvents,
-          });
-
-          // Generate dummy chart data grouped by month
-          const monthlyData: {
-            [key: string]: { revenue: number; events: number };
-          } = {};
-
-          response.data.forEach((event: Event) => {
-            const date = new Date(event.created_at);
-            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-            const monthName = monthNames[date.getMonth()];
-
-            if (!monthlyData[monthKey]) {
-              monthlyData[monthKey] = { revenue: 0, events: 0 };
-            }
-            monthlyData[monthKey].events += 1;
-          });
-
-          // Convert to array format for chart
-          const chartDataArray = Object.keys(monthlyData)
-            .sort()
-            .slice(-6) // Last 6 months
-            .map((key) => {
-              const [year, month] = key.split("-");
-              return {
-                month: monthNames[parseInt(month)],
-                revenue: monthlyData[key].revenue,
-                events: monthlyData[key].events,
-              };
-            });
-
-          setChartData(
-            chartDataArray.length > 0
-              ? chartDataArray
-              : [
-                  { month: "Jan", revenue: 0, events: 0 },
-                  { month: "Feb", revenue: 0, events: 0 },
-                  { month: "Mar", revenue: 0, events: 0 },
-                ]
-          );
         }
       })
       .catch((err) => console.error("Error fetching events:", err));
   }, []);
+
+  // use admin analytics hook to fetch platform-level analytics (tickets, revenue, conversion)
+  const {
+    overview,
+    revenueData,
+    topEvents,
+    loading: analyticsLoading,
+  } = useAdminAnalytics(true, "6months");
+
+  // Map revenueData into chartData format expected by recharts
+  useEffect(() => {
+    if (revenueData && revenueData.length > 0) {
+      const mapped = revenueData
+        .slice(-6)
+        .map((r: any) => ({
+          month: r.month,
+          revenue: r.revenue,
+          events: r.events,
+        }))
+        .map((item: any) => ({
+          month: item.month,
+          revenue: item.revenue || 0,
+          events: item.events || 0,
+        }));
+      setChartData(
+        mapped.length ? mapped : [{ month: "Jan", revenue: 0, events: 0 }]
+      );
+    }
+  }, [revenueData]);
 
   const handleDeleteEvent = async (event: Event) => {
     try {
@@ -340,12 +288,20 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const recentData = analyticsData || {
-    totalEvents: 0,
-    ticketsSold: 0,
-    totalRevenue: 0,
-    conversionRate: 0,
-  };
+  // derive simple summary data from analytics overview when available, otherwise from events
+  const recentData = overview
+    ? {
+        totalEvents: overview.totalEvents || events.length,
+        ticketsSold: overview.ticketsSold || 0,
+        totalRevenue: overview.totalRevenue || 0,
+        conversionRate: overview.conversionRate || 0,
+      }
+    : {
+        totalEvents: events.length,
+        ticketsSold: 0,
+        totalRevenue: 0,
+        conversionRate: 0,
+      };
 
   // For now, we'll show current data without comparison since dashboard overview gives us current totals
   // In a real app, you'd want to implement historical comparison
@@ -545,10 +501,8 @@ const AdminDashboardPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Latest events across the platform
-              </CardDescription>
+              <CardTitle>All Events</CardTitle>
+              <CardDescription>All events across the platform</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
