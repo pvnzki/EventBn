@@ -75,7 +75,11 @@ const monthNames = [
 
 const AdminDashboardPage = () => {
   const router = useRouter();
-  type User = { role: string; organization_id?: number } | null;
+  type User = {
+    role: string;
+    user_id?: number;
+    organization_id?: number;
+  } | null;
   const [user, setUser] = useState<User>(null);
   type AnalyticsData = {
     totalRevenue: number;
@@ -149,41 +153,61 @@ const AdminDashboardPage = () => {
             headers["Authorization"] = `Bearer ${token}`;
           }
 
-          // Try to get user's organization
+          // Try to get user's organization. Backend returns { success: true, data: organization }
+          const userIdForOrg =
+            parsedUser.user_id || parsedUser.id || parsedUser.userId;
           fetch(
-            `http://localhost:3001/api/organizations/user/${parsedUser.id}`,
+            `http://localhost:3001/api/organizations/user/${userIdForOrg}`,
             {
               headers,
             }
           )
-            .then((res) => {
+            .then(async (res) => {
               console.log("Organization API response status:", res.status);
-              return res.json();
+              // If the backend explicitly returns 404 for no organization, treat as not linked
+              if (res.status === 404) {
+                return { success: false, data: null, status: 404 };
+              }
+              try {
+                return await res.json();
+              } catch (e) {
+                console.error("Failed to parse organization response JSON:", e);
+                return { success: false, data: null };
+              }
             })
             .then((orgResponse) => {
               console.log("Organization API response:", orgResponse);
-              if (orgResponse && orgResponse.organization_id) {
-                const updatedUser = {
-                  ...parsedUser,
-                  organization_id: orgResponse.organization_id,
-                };
-                console.log("Updated user with organization_id:", updatedUser);
-                setUser(updatedUser);
-                // Update localStorage with the complete user data
-                localStorage.setItem("user", JSON.stringify(updatedUser));
-                toast({
-                  title: "Organization Found",
-                  description: `Linked to organization: ${orgResponse.name}`,
-                });
-              } else {
-                setUser(parsedUser);
-                toast({
-                  title: "No Organization Found",
-                  description:
-                    "Your account is not associated with an organization. Please contact support or create one.",
-                  variant: "destructive",
-                });
+              // Check the expected shape: { success: true, data: organization }
+              if (orgResponse && orgResponse.success && orgResponse.data) {
+                const org = orgResponse.data;
+                if (org.organization_id) {
+                  const updatedUser = {
+                    ...parsedUser,
+                    organization_id: org.organization_id,
+                  };
+                  console.log(
+                    "Updated user with organization_id:",
+                    updatedUser
+                  );
+                  setUser(updatedUser);
+                  // Update localStorage with the complete user data
+                  localStorage.setItem("user", JSON.stringify(updatedUser));
+                  toast({
+                    title: "Organization Found",
+                    description: `Linked to organization: ${org.name}`,
+                  });
+                  return;
+                }
               }
+
+              // No organization found for this user
+              setUser(parsedUser);
+              toast({
+                title: "No Organization Found",
+                description:
+                  "Your account is not associated with an organization. Please contact support or create one.",
+                variant: "destructive",
+              });
             })
             .catch((err) => {
               console.error("Error fetching organization:", err);
@@ -345,7 +369,7 @@ const AdminDashboardPage = () => {
   }, [user]);
 
   useEffect(() => {
-    console.log("Fetching events, user:", user);
+    console.log("Fetching events for organizer dashboard, user:", user);
 
     // Only fetch events if user is loaded
     if (!user) {
@@ -353,51 +377,75 @@ const AdminDashboardPage = () => {
       return;
     }
 
-    fetch("http://localhost:3001/api/events")
-      .then((res) => {
-        console.log("Events API response status:", res.status);
-        return res.json();
-      })
-      .then((response) => {
-        console.log("Events API response:", response);
-        if (response.success) {
-          if (user?.organization_id) {
-            // Filter events to only include those matching the user's organization_id
-            const filteredEvents = response.data.filter(
-              (event: Event) => event.organization_id === user.organization_id
+    // If the user is linked to an organization, request only that organization's events
+    if (user.organization_id) {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // Prefer organization-specific endpoint which returns upcoming and past events
+      const orgEventsUrl = `http://localhost:3001/api/organizations/${user.organization_id}/events`;
+      console.log("Requesting org events URL:", orgEventsUrl);
+      fetch(orgEventsUrl, { headers })
+        .then((res) => {
+          console.log("Org events response status:", res.status);
+          return res.json();
+        })
+        .then((response) => {
+          console.log("Org events response:", response);
+          // The organizations route returns { upcomingEvents, pastEvents }
+          if (response) {
+            const upcoming = Array.isArray(response.upcomingEvents)
+              ? response.upcomingEvents
+              : response.upcomingEvents || [];
+            const past = Array.isArray(response.pastEvents)
+              ? response.pastEvents
+              : response.pastEvents || [];
+            const combined = [...upcoming, ...past];
+            setEvents(
+              combined.sort(
+                (a, b) =>
+                  new Date(a.start_time).getTime() -
+                  new Date(b.start_time).getTime()
+              )
             );
-            console.log("Filtered events for organization:", filteredEvents);
-            setEvents(filteredEvents);
           } else {
-            // If no organization_id, show all events as fallback
-            console.log("No organization_id, showing all events as fallback");
-            setEvents(response.data);
-            if (user?.role === "ORGANIZER") {
-              toast({
-                title: "Organization Missing",
-                description:
-                  "Showing all events. Your account needs to be linked to an organization.",
-                variant: "destructive",
-              });
-            }
+            console.error(
+              "Org events API returned unexpected response:",
+              response
+            );
+            toast({
+              title: "Events Loading Error",
+              description: "Failed to load events data for your organization.",
+              variant: "destructive",
+            });
           }
-        } else {
-          console.error("Events API returned error:", response);
+        })
+        .catch((err) => {
+          console.error("Error fetching org events:", err);
           toast({
-            title: "Events Loading Error",
-            description: "Failed to load events data.",
+            title: "Network Error",
+            description: "Unable to connect to events service.",
             variant: "destructive",
           });
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching events:", err);
+        });
+    } else {
+      // Organizer has no organization linked: do not show other organizations' events
+      console.log("User has no organization_id; clearing events list");
+      setEvents([]);
+      if (user.role === "ORGANIZER") {
         toast({
-          title: "Network Error",
-          description: "Unable to connect to events service.",
+          title: "Organization Missing",
+          description:
+            "Your account is not associated with an organization. No events to display.",
           variant: "destructive",
         });
-      });
+      }
+    }
   }, [user]); // Add user as a dependency to refetch events when user data changes
 
   const handleDeleteEvent = async (event: Event) => {

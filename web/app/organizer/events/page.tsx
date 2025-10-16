@@ -95,43 +95,112 @@ export default function AdminEventsPage() {
   }, [toast]);
 
   useEffect(() => {
-    if (!user || !user.organization_id) {
+    // Load user and organization if needed, then fetch only organization events
+    if (!user) {
       setIsLoading(false);
       return;
     }
 
-    // Fetch events and filter by user's organization_id
-    fetch("http://localhost:3001/api/events")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((response) => {
-        if (response.success && Array.isArray(response.data)) {
-          const filteredEvents = response.data.filter(
-            (event: Event) => event.organization_id === user.organization_id
-          );
-          setEvents(filteredEvents);
-        } else {
-          console.error("Failed to fetch events:", response);
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const fetchEventsForOrg = (orgId: number) => {
+      const orgEventsUrl = `http://localhost:3001/api/organizations/${orgId}/events`;
+      console.log("Requesting org events URL:", orgEventsUrl);
+      fetch(orgEventsUrl, { headers })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+        })
+        .then((response) => {
+          // organizations/:id/events returns { upcomingEvents, pastEvents }
+          if (response) {
+            const upcoming = Array.isArray(response.upcomingEvents)
+              ? response.upcomingEvents
+              : response.upcomingEvents || [];
+            const past = Array.isArray(response.pastEvents)
+              ? response.pastEvents
+              : response.pastEvents || [];
+            const combined = [...upcoming, ...past];
+            setEvents(
+              combined.sort(
+                (a, b) =>
+                  new Date(a.start_time).getTime() -
+                  new Date(b.start_time).getTime()
+              )
+            );
+          } else {
+            console.error("Failed to fetch org events:", response);
+            toast({
+              title: "Error",
+              description: "Failed to fetch events",
+              variant: "destructive",
+            });
+          }
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.error("Error fetching events:", err);
           toast({
             title: "Error",
-            description: "Failed to fetch events",
+            description: "Error fetching events",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+        });
+    };
+
+    if (user.organization_id) {
+      fetchEventsForOrg(user.organization_id);
+      return;
+    }
+
+    // If organization_id missing, try to fetch the organization for this user
+    const userId = (user as any).user_id || (user as any).id || null;
+    if (!userId) {
+      // No user id available; nothing to show
+      setEvents([]);
+      setIsLoading(false);
+      return;
+    }
+
+    fetch(`http://localhost:3001/api/organizations/user/${userId}`, {
+      headers,
+    })
+      .then(async (res) => {
+        if (res.status === 404) return { success: false, data: null };
+        return res.json();
+      })
+      .then((orgResponse) => {
+        if (orgResponse && orgResponse.success && orgResponse.data) {
+          const orgId = orgResponse.data.organization_id;
+          // update local user and storage so future flows can use it
+          const updatedUser = { ...(user as any), organization_id: orgId };
+          setUser(updatedUser as User);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          fetchEventsForOrg(orgId);
+        } else {
+          // No organization for this user - show none
+          setEvents([]);
+          setIsLoading(false);
+          toast({
+            title: "Organization Missing",
+            description:
+              "Your organizer account is not linked to an organization. Create or join an organization to manage events.",
             variant: "destructive",
           });
         }
-        setIsLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching events:", err);
+        console.error("Error fetching organization:", err);
+        setEvents([]);
+        setIsLoading(false);
         toast({
-          title: "Error",
-          description: "Error fetching events",
+          title: "Organization Error",
+          description: "Unable to load organization data.",
           variant: "destructive",
         });
-        setIsLoading(false);
       });
   }, [user, toast]);
 
