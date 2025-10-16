@@ -57,7 +57,8 @@ interface User {
 
 export default function AnalyticsPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [timeRange, setTimeRange] = useState("6months");
+  // Fixed time range for organizer analytics
+  const FIXED_TIME_RANGE = "6months";
 
   // First fetch organization data using user ID
   const {
@@ -67,7 +68,7 @@ export default function AnalyticsPage() {
     refetch: refetchOrg,
   } = useOrganization(user?.user_id || null);
 
-  // Then fetch analytics using organization ID
+  // Then fetch analytics using organization ID (fixed time range)
   const {
     overview,
     revenueData,
@@ -77,7 +78,10 @@ export default function AnalyticsPage() {
     loading: analyticsLoading,
     error: analyticsError,
     refetch: refetchAnalytics,
-  } = useOrganizerAnalytics(organization?.organization_id || 0, timeRange);
+  } = useOrganizerAnalytics(
+    organization?.organization_id || 0,
+    FIXED_TIME_RANGE
+  );
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -206,18 +210,7 @@ export default function AnalyticsPage() {
                   : "Your event performance and insights"}
               </p>
             </div>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7days">Last 7 days</SelectItem>
-                <SelectItem value="30days">Last 30 days</SelectItem>
-                <SelectItem value="3months">Last 3 months</SelectItem>
-                <SelectItem value="6months">Last 6 months</SelectItem>
-                <SelectItem value="1year">Last year</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Time range selection removed for organizers; using fixed 6 months */}
           </div>
 
           {/* Key Metrics */}

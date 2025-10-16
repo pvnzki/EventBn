@@ -47,7 +47,14 @@ export const useOrganization = (userId: number | null) => {
         }
       } else {
         const data = await response.json();
-        setOrganization(data);
+        // Backend returns { success: true, data: organization }
+        // Normalize to the organization object for consumers
+        if (data && data.success && data.data) {
+          setOrganization(data.data);
+        } else {
+          // Fallback: if backend returned raw organization, use it
+          setOrganization(data);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
