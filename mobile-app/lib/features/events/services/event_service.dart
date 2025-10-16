@@ -46,9 +46,15 @@ class EventService {
   // Get event attendees
   Future<List<dynamic>> getEventAttendees(String eventId) async {
     try {
+      final token = await _authService.getStoredToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      
       final response = await http.get(
         Uri.parse('$baseUrl/api/events/$eventId/attendees'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
