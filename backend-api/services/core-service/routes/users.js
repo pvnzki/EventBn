@@ -65,8 +65,37 @@ router.post("/", async (req, res) => {
 // Update user (basic update without file upload)
 router.put("/:id", async (req, res) => {
   try {
+    console.log(`🔄 [USER UPDATE] Updating user ${req.params.id}`);
+    console.log(`🔍 [USER UPDATE] Request body:`, JSON.stringify(req.body, null, 2));
+    console.log(`🔍 [USER UPDATE] User ID from token:`, req.userId);
+    console.log(`🔍 [USER UPDATE] Raw request headers:`, req.headers.authorization?.slice(0, 20) + '...');
+
+    // Ensure user can only update their own profile
+    if (req.userId && req.params.id !== req.userId.toString()) {
+      console.log(`❌ [USER UPDATE] Authorization failed: ${req.userId} trying to update ${req.params.id}`);
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own profile",
+      });
+    }
+
     const updateData = { ...req.body };
+    
+    console.log(`🔍 [USER UPDATE] Processing update data:`, {
+      phone_number: updateData.phone_number,
+      date_of_birth: updateData.date_of_birth,
+      billing_address: updateData.billing_address,
+      fieldsCount: Object.keys(updateData).length
+    });
+
     const user = await usersService.updateUser(req.params.id, updateData);
+    
+    console.log(`✅ [USER UPDATE] User updated successfully:`, {
+      user_id: user.user_id,
+      phone_number: user.phone_number,
+      date_of_birth: user.date_of_birth,
+      billing_address: user.billing_address
+    });
 
     res.json({
       success: true,
@@ -74,6 +103,7 @@ router.put("/:id", async (req, res) => {
       data: user,
     });
   } catch (error) {
+    console.error(`❌ [USER UPDATE] Error updating user ${req.params.id}:`, error.message);
     res.status(400).json({
       success: false,
       message: error.message,

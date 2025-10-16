@@ -64,6 +64,16 @@ class User {
     String firstName = nameParts.isNotEmpty ? nameParts.first : '';
     String lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
 
+    DateTime? parsedDob;
+    final dobRaw = json['date_of_birth'];
+    if (dobRaw != null && dobRaw is String && dobRaw.trim().isNotEmpty) {
+      try {
+        parsedDob = DateTime.parse(dobRaw);
+      } catch (_) {
+        parsedDob = null;
+      }
+    }
+
     return User(
       id: json['user_id']?.toString() ?? json['id']?.toString() ?? '',
       firstName: firstName,
@@ -81,15 +91,13 @@ class User {
           : (json['updatedAt'] != null
               ? DateTime.parse(json['updatedAt'])
               : DateTime.now()),
-      billingAddress: json['billing_address'],
-      billingCity: json['billing_city'],
-      billingState: json['billing_state'],
-      billingCountry: json['billing_country'],
-      billingPostalCode: json['billing_postal_code'],
+      billingAddress: json['billing_address'] ?? '',
+      billingCity: json['billing_city'] ?? '',
+      billingState: json['billing_state'] ?? '',
+      billingCountry: json['billing_country'] ?? '',
+      billingPostalCode: json['billing_postal_code'] ?? '',
       profileCompleted: json['profile_completed'] ?? false,
-      dateOfBirth: json['date_of_birth'] != null
-          ? DateTime.parse(json['date_of_birth'])
-          : null,
+      dateOfBirth: parsedDob,
       emergencyContactName: json['emergency_contact_name'],
       emergencyContactPhone: json['emergency_contact_phone'],
       emergencyContactRelationship: json['emergency_contact_relationship'],

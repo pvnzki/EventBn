@@ -231,14 +231,45 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Get current user
+// Get current user (complete profile data from database)
 router.get("/me", authenticateToken, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user.user_id || req.user.id;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID not found in token",
+      });
+    }
+
+    console.log(`🔍 [AUTH /me] Fetching complete user data for ID: ${userId}`);
+
+    // Fetch complete user data from database instead of just returning JWT payload
+    const usersService = require("../users");
+    const completeUser = await usersService.getUserById(userId);
+
+    if (!completeUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(`✅ [AUTH /me] Retrieved complete user data:`, {
+      user_id: completeUser.user_id,
+      phone_number: completeUser.phone_number,
+      date_of_birth: completeUser.date_of_birth,
+      billing_address: completeUser.billing_address,
+      fieldsCount: Object.keys(completeUser).length
+    });
+
     res.json({
       success: true,
-      user: req.user,
+      user: completeUser,
     });
   } catch (error) {
+    console.error(`❌ [AUTH /me] Error fetching user data:`, error.message);
     res.status(500).json({
       success: false,
       message: error.message,

@@ -160,18 +160,21 @@ class AuthService {
         }
       }
 
+      // **CRITICAL FIX**: Fetch complete user data with all extended profile fields
+      const usersService = require("../users");
+      const completeUser = await usersService.getUserById(user.user_id);
+      
+      console.log("🔍 [AUTH LOGIN] Complete user data fetched:", {
+        user_id: completeUser.user_id,
+        phone_number: completeUser.phone_number,
+        date_of_birth: completeUser.date_of_birth,
+        billing_address: completeUser.billing_address,
+        fieldsCount: Object.keys(completeUser).length
+      });
+
       return {
         user: {
-          user_id: user.user_id,
-          name: user.name,
-          email: user.email,
-          phone_number: user.phone_number,
-          profile_picture: user.profile_picture,
-          is_active: user.is_active,
-          is_email_verified: user.is_email_verified,
-          role: user.role,
-          created_at: user.created_at,
-          updated_at: user.updated_at,
+          ...completeUser,
           ...(organization_id && { organization_id }),
         },
         token,

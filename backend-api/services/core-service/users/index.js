@@ -19,7 +19,22 @@ module.exports = {
           is_active: true,
           is_email_verified: true,
           role: true,
+          // Extended profile fields
+          billing_address: true,
+          billing_city: true,
+          billing_state: true,
+          billing_country: true,
+          billing_postal_code: true,
+          profile_completed: true,
+          date_of_birth: true,
+          emergency_contact_name: true,
+          emergency_contact_phone: true,
+          emergency_contact_relationship: true,
+          marketing_emails_enabled: true,
+          event_notifications_enabled: true,
+          sms_notifications_enabled: true,
           created_at: true,
+          updated_at: true,
         },
       });
     } catch (error) {
@@ -32,6 +47,33 @@ module.exports = {
     try {
       return await prisma.user.findUnique({
         where: { email: email.toLowerCase() },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          profile_picture: true,
+          password_hash: true, // needed for auth
+          is_active: true,
+          is_email_verified: true,
+          role: true,
+          // Extended profile fields
+          billing_address: true,
+          billing_city: true,
+          billing_state: true,
+          billing_country: true,
+          billing_postal_code: true,
+          profile_completed: true,
+          date_of_birth: true,
+          emergency_contact_name: true,
+          emergency_contact_phone: true,
+          emergency_contact_relationship: true,
+          marketing_emails_enabled: true,
+          event_notifications_enabled: true,
+          sms_notifications_enabled: true,
+          created_at: true,
+          updated_at: true,
+        },
       });
     } catch (error) {
       throw new Error(`Failed to fetch user by email: ${error.message}`);
@@ -149,6 +191,32 @@ module.exports = {
         updateData.email = updateData.email.toLowerCase();
       }
 
+      // **CRITICAL FIX**: Convert date string to proper Date object for Prisma
+      if (updateData.date_of_birth) {
+        try {
+          updateData.date_of_birth = new Date(updateData.date_of_birth);
+          console.log(`🔍 [UPDATE_USER] Parsed date_of_birth:`, updateData.date_of_birth);
+        } catch (dateError) {
+          console.error(`❌ [UPDATE_USER] Invalid date format for date_of_birth:`, updateData.date_of_birth);
+          delete updateData.date_of_birth; // Remove invalid date
+        }
+      }
+
+      // **FIX**: Remove null values to prevent overwriting existing data
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === null || updateData[key] === undefined) {
+          console.log(`🗑️ [UPDATE_USER] Removing null field: ${key}`);
+          delete updateData[key];
+        }
+      });
+
+      console.log(`🔍 [UPDATE_USER] Final update data:`, {
+        fieldsCount: Object.keys(updateData).length,
+        hasDateOfBirth: !!updateData.date_of_birth,
+        hasPhoneNumber: !!updateData.phone_number,
+        hasBillingAddress: !!updateData.billing_address
+      });
+
       // Hash new password if provided
       if (data.password) {
         const saltRounds = 12;
@@ -168,6 +236,21 @@ module.exports = {
           is_active: true,
           is_email_verified: true,
           role: true,
+          // Extended profile fields
+          billing_address: true,
+          billing_city: true,
+          billing_state: true,
+          billing_country: true,
+          billing_postal_code: true,
+          profile_completed: true,
+          date_of_birth: true,
+          emergency_contact_name: true,
+          emergency_contact_phone: true,
+          emergency_contact_relationship: true,
+          marketing_emails_enabled: true,
+          event_notifications_enabled: true,
+          sms_notifications_enabled: true,
+          created_at: true,
           updated_at: true,
         },
       });
