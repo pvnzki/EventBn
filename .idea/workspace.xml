@@ -4,9 +4,13 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-
     <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat-consistency.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,21 +31,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-
-    "git-widget-placeholder": "himadree",
-
-    "last_opened_file_path": "C:/Users/asank/Desktop/EventBn-main"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;payment-email&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/asank/Desktop/EventBn Email/EventBn&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;device.mirroring&quot;
   }
-}]]></component>
+}</component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="" />

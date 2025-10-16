@@ -156,6 +156,10 @@ const apiRoutes = require("./routes/api");
 const authRoutes = require("./routes/auth");
 const internalRoutes = require("./routes/internal");
 
+// Initialize email service
+const emailService = require("./email");
+console.log("📧 Email service imported and will be initialized...");
+
 // Health check - Always returns 200 for service readiness (no DB check for testing)
 app.get("/health", (req, res) => {
   console.log("[CORE-SERVICE] Health check requested");
