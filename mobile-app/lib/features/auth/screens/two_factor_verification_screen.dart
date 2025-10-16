@@ -5,7 +5,7 @@ import '../services/two_factor_service.dart';
 class TwoFactorVerificationScreen extends StatefulWidget {
   final String email;
   final String password;
-  
+
   const TwoFactorVerificationScreen({
     super.key,
     required this.email,
@@ -13,10 +13,12 @@ class TwoFactorVerificationScreen extends StatefulWidget {
   });
 
   @override
-  State<TwoFactorVerificationScreen> createState() => _TwoFactorVerificationScreenState();
+  State<TwoFactorVerificationScreen> createState() =>
+      _TwoFactorVerificationScreenState();
 }
 
-class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScreen> {
+class _TwoFactorVerificationScreenState
+    extends State<TwoFactorVerificationScreen> {
   final TwoFactorService _twoFactorService = TwoFactorService();
   final TextEditingController _codeController = TextEditingController();
   bool _isLoading = false;
@@ -59,7 +61,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Two-Factor Authentication'),
@@ -71,16 +73,16 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 32),
-            
+
             // Icon
             Icon(
               Icons.security,
               size: 80,
               color: theme.primaryColor,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Title
             const Text(
               'Enter Verification Code',
@@ -90,9 +92,9 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Description
             Text(
               'Please enter the 6-digit code from your authenticator app to complete the login process.',
@@ -102,9 +104,9 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Code Input
             TextField(
               controller: _codeController,
@@ -127,9 +129,9 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                 }
               },
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Verify Button
             ElevatedButton(
               onPressed: _isLoading ? null : _verifyAndLogin,
@@ -147,9 +149,9 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                       style: TextStyle(fontSize: 16),
                     ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Help text
             TextButton(
               onPressed: () {

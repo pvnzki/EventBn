@@ -28,7 +28,8 @@ class TwoFactorService {
         },
       );
 
-      print('📦 [2FA_SERVICE] QR generation response status: ${response.statusCode}');
+      print(
+          '📦 [2FA_SERVICE] QR generation response status: ${response.statusCode}');
       print('📦 [2FA_SERVICE] QR generation response body: ${response.body}');
 
       final data = jsonDecode(response.body);
@@ -43,7 +44,10 @@ class TwoFactorService {
         };
       } else {
         print('❌ [2FA_SERVICE] QR generation failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Failed to generate 2FA'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to generate 2FA'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error generating QR code: $e');
@@ -62,7 +66,8 @@ class TwoFactorService {
 
       final url = '$baseUrl${Constants.authEndpoint}/2fa/verify';
       print('🔄 [2FA_SERVICE] Verifying 2FA setup with: $url');
-      print('📝 [2FA_SERVICE] Token: ${token.substring(0, 2)}***${token.substring(token.length - 2)}');
+      print(
+          '📝 [2FA_SERVICE] Token: ${token.substring(0, 2)}***${token.substring(token.length - 2)}');
 
       final response = await http.post(
         Uri.parse(url),
@@ -73,7 +78,8 @@ class TwoFactorService {
         body: jsonEncode({'token': token}),
       );
 
-      print('📦 [2FA_SERVICE] Verification response status: ${response.statusCode}');
+      print(
+          '📦 [2FA_SERVICE] Verification response status: ${response.statusCode}');
       print('📦 [2FA_SERVICE] Verification response body: ${response.body}');
 
       final data = jsonDecode(response.body);
@@ -86,7 +92,10 @@ class TwoFactorService {
         };
       } else {
         print('❌ [2FA_SERVICE] 2FA verification failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Invalid verification code'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Invalid verification code'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error verifying 2FA setup: $e');
@@ -125,7 +134,10 @@ class TwoFactorService {
         return {'success': true};
       } else {
         print('❌ [2FA_SERVICE] 2FA disable failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Failed to disable 2FA'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to disable 2FA'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error disabling 2FA: $e');
@@ -134,12 +146,14 @@ class TwoFactorService {
   }
 
   // Verify 2FA token during login (app-based)
-  Future<Map<String, dynamic>> verifyTwoFactorLogin(String email, String password, String twoFactorCode) async {
+  Future<Map<String, dynamic>> verifyTwoFactorLogin(
+      String email, String password, String twoFactorCode) async {
     try {
       final url = '$baseUrl${Constants.authEndpoint}/login/2fa';
       print('🔄 [2FA_SERVICE] Logging in with 2FA to: $url');
       print('📝 [2FA_SERVICE] Email: $email');
-      print('📝 [2FA_SERVICE] 2FA Code: ${twoFactorCode.substring(0, 2)}***${twoFactorCode.substring(twoFactorCode.length - 2)}');
+      print(
+          '📝 [2FA_SERVICE] 2FA Code: ${twoFactorCode.substring(0, 2)}***${twoFactorCode.substring(twoFactorCode.length - 2)}');
 
       final response = await http.post(
         Uri.parse(url),
@@ -158,7 +172,7 @@ class TwoFactorService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         print('✅ [2FA_SERVICE] 2FA login successful');
-        
+
         return {
           'success': true,
           'user': data['data'] ?? data['user'],
@@ -175,7 +189,8 @@ class TwoFactorService {
   }
 
   // Send email OTP for 2FA
-  Future<Map<String, dynamic>> sendEmailOTP(String email, String password) async {
+  Future<Map<String, dynamic>> sendEmailOTP(
+      String email, String password) async {
     try {
       final url = '$baseUrl${Constants.authEndpoint}/2fa/send-email-otp';
       print('🔄 [2FA_SERVICE] Sending email OTP to: $url');
@@ -190,7 +205,8 @@ class TwoFactorService {
         }),
       );
 
-      print('📦 [2FA_SERVICE] Email OTP response status: ${response.statusCode}');
+      print(
+          '📦 [2FA_SERVICE] Email OTP response status: ${response.statusCode}');
       print('📦 [2FA_SERVICE] Email OTP response body: ${response.body}');
 
       final data = jsonDecode(response.body);
@@ -205,7 +221,10 @@ class TwoFactorService {
         };
       } else {
         print('❌ [2FA_SERVICE] Email OTP failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Failed to send OTP'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to send OTP'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error sending email OTP: $e');
@@ -214,12 +233,14 @@ class TwoFactorService {
   }
 
   // Verify email OTP for 2FA login
-  Future<Map<String, dynamic>> verifyEmailOTP(String email, String password, String otp) async {
+  Future<Map<String, dynamic>> verifyEmailOTP(
+      String email, String password, String otp) async {
     try {
       final url = '$baseUrl${Constants.authEndpoint}/2fa/verify-email-otp';
       print('🔄 [2FA_SERVICE] Verifying email OTP to: $url');
       print('📝 [2FA_SERVICE] Email: $email');
-      print('📝 [2FA_SERVICE] OTP: ${otp.substring(0, 2)}***${otp.substring(otp.length - 2)}');
+      print(
+          '📝 [2FA_SERVICE] OTP: ${otp.substring(0, 2)}***${otp.substring(otp.length - 2)}');
 
       final response = await http.post(
         Uri.parse(url),
@@ -231,21 +252,24 @@ class TwoFactorService {
         }),
       );
 
-      print('📦 [2FA_SERVICE] Email OTP verification response status: ${response.statusCode}');
-      print('📦 [2FA_SERVICE] Email OTP verification response body: ${response.body}');
+      print(
+          '📦 [2FA_SERVICE] Email OTP verification response status: ${response.statusCode}');
+      print(
+          '📦 [2FA_SERVICE] Email OTP verification response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         print('✅ [2FA_SERVICE] Email OTP verification successful');
-        
+
         return {
           'success': true,
           'user': data['data'] ?? data['user'],
           'token': data['token'],
         };
       } else {
-        print('❌ [2FA_SERVICE] Email OTP verification failed: ${data['message']}');
+        print(
+            '❌ [2FA_SERVICE] Email OTP verification failed: ${data['message']}');
         return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
       }
     } catch (e) {
@@ -268,7 +292,7 @@ class TwoFactorService {
 
       final url = '$baseUrl${Constants.authEndpoint}/change-password';
       print('🔄 [2FA_SERVICE] Making password change request to: $url');
-      
+
       final response = await http.post(
         Uri.parse(url),
         headers: {
@@ -291,7 +315,10 @@ class TwoFactorService {
         return {'success': true};
       } else {
         print('❌ [2FA_SERVICE] Password change failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Failed to change password'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to change password'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error changing password: $e');
@@ -319,8 +346,10 @@ class TwoFactorService {
         },
       );
 
-      print('📦 [2FA_SERVICE] Security settings response status: ${response.statusCode}');
-      print('📦 [2FA_SERVICE] Security settings response body: ${response.body}');
+      print(
+          '📦 [2FA_SERVICE] Security settings response status: ${response.statusCode}');
+      print(
+          '📦 [2FA_SERVICE] Security settings response body: ${response.body}');
 
       final data = jsonDecode(response.body);
 
@@ -333,7 +362,10 @@ class TwoFactorService {
         };
       } else {
         print('❌ [2FA_SERVICE] Security settings failed: ${data['message']}');
-        return {'success': false, 'message': data['message'] ?? 'Failed to fetch security settings'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to fetch security settings'
+        };
       }
     } catch (e) {
       print('❌ [2FA_SERVICE] Error fetching security settings: $e');

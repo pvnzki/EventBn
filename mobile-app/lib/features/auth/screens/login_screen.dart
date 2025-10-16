@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         // Remove loading indicator
         Navigator.of(context).pop();
-        
+
         if (result['success'] == true) {
           context.go('/home');
           ScaffoldMessenger.of(context).showSnackBar(
@@ -61,7 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? authProvider.error ?? 'Login failed'),
+              content: Text(
+                  result['message'] ?? authProvider.error ?? 'Login failed'),
               backgroundColor: Colors.red,
             ),
           );

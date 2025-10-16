@@ -311,7 +311,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildEventPickerModal() {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
@@ -402,11 +402,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                     )
                                   : null,
                               color: event.imageUrl.isEmpty
-                                  ? (isDarkMode ? Colors.grey[700] : Colors.grey[300])
+                                  ? (isDarkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[300])
                                   : null,
                             ),
                             child: event.imageUrl.isEmpty
-                                ? Icon(Icons.event, color: isDarkMode ? Colors.grey[400] : Colors.grey[600])
+                                ? Icon(Icons.event,
+                                    color: isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600])
                                 : null,
                           ),
                           title: Text(
@@ -421,7 +426,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           subtitle: Text(
                             '${event.venue} • ${_formatEventDate(event.startDateTime)}',
                             style: TextStyle(
-                              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
                               fontSize: 12,
                             ),
                           ),
@@ -583,20 +590,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
+        backgroundColor:
+            theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor ?? theme.iconTheme.color),
+          icon: Icon(Icons.arrow_back,
+              color:
+                  theme.appBarTheme.foregroundColor ?? theme.iconTheme.color),
           onPressed: () => context.pop(),
         ),
         title: Text(
           'New Post',
           style: TextStyle(
-            color: theme.appBarTheme.titleTextStyle?.color ?? theme.textTheme.titleLarge?.color,
+            color: theme.appBarTheme.titleTextStyle?.color ??
+                theme.textTheme.titleLarge?.color,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -686,7 +697,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildProfileSection() {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -699,9 +710,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               shape: BoxShape.circle,
               color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
               border: Border.all(
-                color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!, 
-                width: 1
-              ),
+                  color: isDarkMode ? Colors.grey[600]! : Colors.grey[400]!,
+                  width: 1),
               image: _currentUser?.profileImageUrl != null
                   ? DecorationImage(
                       image: NetworkImage(_currentUser!.profileImageUrl!),
@@ -778,7 +788,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildContentInput() {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
@@ -807,7 +817,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildEventSection() {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -820,8 +830,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!
-                ),
+                    color: isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -842,7 +851,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       style: TextStyle(
                         color: _selectedEventId != null
                             ? theme.textTheme.bodyLarge?.color
-                            : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                            : (isDarkMode
+                                ? Colors.grey[400]
+                                : Colors.grey[600]),
                         fontSize: 14,
                         fontWeight: _selectedEventId != null
                             ? FontWeight.w500

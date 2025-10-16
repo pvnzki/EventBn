@@ -559,7 +559,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       isScrollControlled: true,
       builder: (context) => Container(
         margin: const EdgeInsets.only(
-          bottom: kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+          bottom:
+              kBottomNavigationBarHeight + 32, // Add space for bottom navbar
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -630,7 +631,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       isScrollControlled: true,
       builder: (context) => Container(
         margin: const EdgeInsets.only(
-          bottom: kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+          bottom:
+              kBottomNavigationBarHeight + 32, // Add space for bottom navbar
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -1244,8 +1246,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       useSafeArea: true,
       builder: (context) => Container(
         margin: const EdgeInsets.only(
-          bottom:
-              kBottomNavigationBarHeight + 32, // Add more space for bottom navbar
+          bottom: kBottomNavigationBarHeight +
+              32, // Add more space for bottom navbar
         ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -1422,7 +1424,9 @@ class _BillingAddressModalState extends State<_BillingAddressModal> {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.7,
@@ -1684,7 +1688,9 @@ class _EmergencyContactModalState extends State<_EmergencyContactModal> {
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.6,
@@ -1910,7 +1916,9 @@ class _CommunicationPreferencesModalState
   Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + kBottomNavigationBarHeight + 32,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
       ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.6,

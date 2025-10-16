@@ -186,7 +186,7 @@ router.post("/auth/login", async (req, res) => {
     const bcrypt = require("bcrypt");
 
     console.log(`[AUTH] Querying user data for: ${email}`);
-    
+
     let user;
     try {
       user = await prisma.user.findUnique({
@@ -221,15 +221,17 @@ router.post("/auth/login", async (req, res) => {
       });
       console.log(`[AUTH] Fallback query successful`);
     }
-    
-    console.log(`[AUTH] User found: ${user ? 'YES' : 'NO'}`);
+
+    console.log(`[AUTH] User found: ${user ? "YES" : "NO"}`);
     if (user) {
-      console.log(`[AUTH] User data: ${JSON.stringify({
-        user_id: user.user_id,
-        email: user.email,
-        two_factor_enabled: user.two_factor_enabled,
-        two_factor_method: user.two_factor_method || 'app'
-      })}`);
+      console.log(
+        `[AUTH] User data: ${JSON.stringify({
+          user_id: user.user_id,
+          email: user.email,
+          two_factor_enabled: user.two_factor_enabled,
+          two_factor_method: user.two_factor_method || "app",
+        })}`
+      );
     }
 
     if (!user) {
@@ -258,18 +260,20 @@ router.post("/auth/login", async (req, res) => {
     }
 
     // Check if 2FA is enabled
-    console.log(`[AUTH] User 2FA status for ${user.email}: enabled=${user.two_factor_enabled}`);
-    
+    console.log(
+      `[AUTH] User 2FA status for ${user.email}: enabled=${user.two_factor_enabled}`
+    );
+
     if (user.two_factor_enabled) {
       console.log(`[AUTH] 2FA required for user ${user.email}`);
       return res.status(200).json({
         success: false,
         requiresTwoFactor: true,
-        twoFactorMethod: 'app', // Default to app method
+        twoFactorMethod: "app", // Default to app method
         message: "2FA required",
       });
     }
-    
+
     console.log(`[AUTH] 2FA not enabled, proceeding with normal login`);
 
     // Generate JWT token
@@ -374,9 +378,9 @@ router.post("/auth/login/2fa", async (req, res) => {
     // Verify 2FA code
     const verified = speakeasy.totp.verify({
       secret: user.two_factor_secret,
-      encoding: 'base32',
+      encoding: "base32",
       token: twoFactorCode,
-      window: 2
+      window: 2,
     });
 
     if (!verified) {
@@ -386,57 +390,60 @@ router.post("/auth/login/2fa", async (req, res) => {
         message: "Invalid 2FA code",
       });
     }
-      // Check 2FA method
-      if (user.two_factor_method === 'app') {
-        if (!user.two_factor_secret) {
-          return res.status(400).json({
-            success: false,
-            error: "2FA app not set up",
-            message: "2FA app not set up",
-          });
-        }
-        // Verify TOTP
-        const verified = speakeasy.totp.verify({
-          secret: user.two_factor_secret,
-          encoding: 'base32',
-          token: twoFactorCode,
-          window: 2
-        });
-        if (!verified) {
-          return res.status(400).json({
-            success: false,
-            error: "Invalid 2FA code",
-            message: "Invalid 2FA code",
-          });
-        }
-      } else if (user.two_factor_method === 'email') {
-        // Verify email OTP
-        if (!user.email_otp_code || user.email_otp_code !== twoFactorCode) {
-          return res.status(400).json({
-            success: false,
-            error: "Invalid OTP",
-            message: "Invalid OTP",
-          });
-        }
-        if (!user.email_otp_expires_at || new Date() > user.email_otp_expires_at) {
-          return res.status(400).json({
-            success: false,
-            error: "OTP expired",
-            message: "OTP expired",
-          });
-        }
-        // Optionally clear OTP after use
-        await prisma.user.update({
-          where: { user_id: user.user_id },
-          data: { email_otp_code: null, email_otp_expires_at: null }
-        });
-      } else {
+    // Check 2FA method
+    if (user.two_factor_method === "app") {
+      if (!user.two_factor_secret) {
         return res.status(400).json({
           success: false,
-          error: "Unknown 2FA method",
-          message: "Unknown 2FA method",
+          error: "2FA app not set up",
+          message: "2FA app not set up",
         });
       }
+      // Verify TOTP
+      const verified = speakeasy.totp.verify({
+        secret: user.two_factor_secret,
+        encoding: "base32",
+        token: twoFactorCode,
+        window: 2,
+      });
+      if (!verified) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid 2FA code",
+          message: "Invalid 2FA code",
+        });
+      }
+    } else if (user.two_factor_method === "email") {
+      // Verify email OTP
+      if (!user.email_otp_code || user.email_otp_code !== twoFactorCode) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid OTP",
+          message: "Invalid OTP",
+        });
+      }
+      if (
+        !user.email_otp_expires_at ||
+        new Date() > user.email_otp_expires_at
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "OTP expired",
+          message: "OTP expired",
+        });
+      }
+      // Optionally clear OTP after use
+      await prisma.user.update({
+        where: { user_id: user.user_id },
+        data: { email_otp_code: null, email_otp_expires_at: null },
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Unknown 2FA method",
+        message: "Unknown 2FA method",
+      });
+    }
 
     // Generate JWT token
     const tokenPayload = {
@@ -469,10 +476,10 @@ router.post("/auth/login/2fa", async (req, res) => {
     });
   } catch (error) {
     console.error("[API] 2FA Login error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: "Login failed", 
-      message: error.message 
+    res.status(500).json({
+      success: false,
+      error: "Login failed",
+      message: error.message,
     });
   }
 });
@@ -584,24 +591,26 @@ router.post("/auth/2fa/generate", authenticateUser, async (req, res) => {
     // Generate TOTP secret
     const secret = speakeasy.generateSecret({
       name: `EventBn (${req.user.email})`,
-      issuer: 'EventBn'
+      issuer: "EventBn",
     });
 
     // Generate backup codes
     const backupCodes = [];
     for (let i = 0; i < 10; i++) {
-      backupCodes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
+      backupCodes.push(
+        Math.random().toString(36).substring(2, 10).toUpperCase()
+      );
     }
 
     // Enable 2FA immediately
     await prisma.user.update({
       where: { user_id: userId },
-      data: { 
+      data: {
         two_factor_secret: secret.base32,
         two_factor_enabled: true, // Enable immediately
-        two_factor_method: 'app',
-        two_factor_backup_codes: JSON.stringify(backupCodes)
-      }
+        two_factor_method: "app",
+        two_factor_backup_codes: JSON.stringify(backupCodes),
+      },
     });
 
     // Generate QR code URL
@@ -611,7 +620,7 @@ router.post("/auth/2fa/generate", authenticateUser, async (req, res) => {
       success: true,
       qrCode: qrCodeUrl,
       secret: secret.base32,
-      backupCodes: backupCodes
+      backupCodes: backupCodes,
     });
   } catch (error) {
     console.error("[API] 2FA Setup error:", error);
@@ -624,14 +633,14 @@ router.post("/auth/2fa/verify", authenticateUser, async (req, res) => {
   try {
     const userId = req.userId;
     const { token } = req.body;
-    
+
     if (!userId || !token) {
       return res.status(400).json({ success: false, error: "Token required" });
     }
 
     const user = await prisma.user.findUnique({
       where: { user_id: userId },
-      select: { two_factor_secret: true, two_factor_enabled: true }
+      select: { two_factor_secret: true, two_factor_enabled: true },
     });
 
     if (!user?.two_factor_secret) {
@@ -640,16 +649,16 @@ router.post("/auth/2fa/verify", authenticateUser, async (req, res) => {
 
     const verified = speakeasy.totp.verify({
       secret: user.two_factor_secret,
-      encoding: 'base32',
+      encoding: "base32",
       token: token,
-      window: 2
+      window: 2,
     });
 
     if (verified) {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Token verified successfully",
-        alreadyEnabled: user.two_factor_enabled
+        alreadyEnabled: user.two_factor_enabled,
       });
     } else {
       res.status(400).json({ success: false, error: "Invalid token" });
@@ -664,35 +673,39 @@ router.post("/auth/2fa/disable", authenticateUser, async (req, res) => {
   try {
     const userId = req.userId;
     const { password } = req.body;
-    
+
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     if (!password) {
-      return res.status(400).json({ success: false, message: "Password required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Password required" });
     }
 
     // Verify password before disabling 2FA
     const user = await prisma.user.findUnique({
       where: { user_id: userId },
-      select: { password_hash: true }
+      select: { password_hash: true },
     });
 
     const bcrypt = require("bcrypt");
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    
+
     if (!isPasswordValid) {
-      return res.status(400).json({ success: false, message: "Invalid password" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid password" });
     }
 
     await prisma.user.update({
       where: { user_id: userId },
-      data: { 
+      data: {
         two_factor_enabled: false,
         two_factor_secret: null,
-        two_factor_backup_codes: null
-      }
+        two_factor_backup_codes: null,
+      },
     });
 
     res.json({ success: true, message: "2FA disabled successfully" });
@@ -706,33 +719,39 @@ router.post("/auth/2fa/disable", authenticateUser, async (req, res) => {
 router.get("/auth/security-settings", authenticateUser, async (req, res) => {
   try {
     const userId = req.userId;
-    
+
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const user = await prisma.user.findUnique({
       where: { user_id: userId },
-      select: { 
+      select: {
         two_factor_enabled: true,
         two_factor_method: true,
-        updated_at: true
-      }
+        updated_at: true,
+      },
     });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     res.json({
       success: true,
       twoFactorEnabled: user.two_factor_enabled || false,
-      twoFactorMethod: user.two_factor_method || 'app',
-      lastPasswordChange: user.updated_at ? user.updated_at.toISOString() : null
+      twoFactorMethod: user.two_factor_method || "app",
+      lastPasswordChange: user.updated_at
+        ? user.updated_at.toISOString()
+        : null,
     });
   } catch (error) {
     console.error("[API] Security settings error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch security settings" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch security settings" });
   }
 });
 
@@ -740,9 +759,11 @@ router.get("/auth/security-settings", authenticateUser, async (req, res) => {
 router.post("/auth/2fa/send-email-otp", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email and password required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password required" });
     }
 
     // Verify user credentials first
@@ -755,17 +776,21 @@ router.post("/auth/2fa/send-email-otp", async (req, res) => {
         email: true,
         password_hash: true,
         two_factor_enabled: true,
-        two_factor_method: true
-      }
+        two_factor_method: true,
+      },
     });
 
     if (!user || !user.two_factor_enabled) {
-      return res.status(400).json({ success: false, message: "2FA not enabled for this user" });
+      return res
+        .status(400)
+        .json({ success: false, message: "2FA not enabled for this user" });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     // Generate 6-digit OTP
@@ -777,8 +802,8 @@ router.post("/auth/2fa/send-email-otp", async (req, res) => {
       where: { user_id: user.user_id },
       data: {
         email_otp_code: otp,
-        email_otp_expires_at: expiryTime
-      }
+        email_otp_expires_at: expiryTime,
+      },
     });
 
     // Send email with OTP
@@ -786,11 +811,13 @@ router.post("/auth/2fa/send-email-otp", async (req, res) => {
       await emailService.sendEmail({
         to: user.email,
         subject: "Your EventBn 2FA OTP",
-        text: `Your OTP code is: ${otp}. It expires in 5 minutes.`
+        text: `Your OTP code is: ${otp}. It expires in 5 minutes.`,
       });
     } catch (err) {
       console.error("[2FA] Failed to send OTP email:", err);
-      return res.status(500).json({ success: false, message: "Failed to send OTP email" });
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to send OTP email" });
     }
     console.log(`[2FA] Email OTP for ${email}: ${otp}`); // For debugging
 
@@ -798,7 +825,7 @@ router.post("/auth/2fa/send-email-otp", async (req, res) => {
       success: true,
       message: "OTP sent to your email address",
       // In development, return OTP for testing
-      ...(process.env.NODE_ENV === 'development' && { otp: otp })
+      ...(process.env.NODE_ENV === "development" && { otp: otp }),
     });
   } catch (error) {
     console.error("[API] Send email OTP error:", error);
@@ -810,9 +837,11 @@ router.post("/auth/2fa/send-email-otp", async (req, res) => {
 router.post("/auth/2fa/verify-email-otp", async (req, res) => {
   try {
     const { email, password, otp } = req.body;
-    
+
     if (!email || !password || !otp) {
-      return res.status(400).json({ success: false, message: "Email, password, and OTP required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email, password, and OTP required" });
     }
 
     // Verify user and OTP
@@ -828,17 +857,21 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
         email_otp_code: true,
         email_otp_expires_at: true,
         role: true,
-        profile_picture: true
-      }
+        profile_picture: true,
+      },
     });
 
     if (!user || !user.two_factor_enabled) {
-      return res.status(400).json({ success: false, message: "Invalid request" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid request" });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     // Check OTP
@@ -848,7 +881,9 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
 
     // Check OTP expiry
     if (!user.email_otp_expires_at || new Date() > user.email_otp_expires_at) {
-      return res.status(400).json({ success: false, message: "OTP has expired" });
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP has expired" });
     }
 
     // Clear OTP after successful verification
@@ -856,8 +891,8 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
       where: { user_id: user.user_id },
       data: {
         email_otp_code: null,
-        email_otp_expires_at: null
-      }
+        email_otp_expires_at: null,
+      },
     });
 
     // Generate JWT token
@@ -887,7 +922,7 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
       message: "Login successful",
       token: token,
       user: userData,
-      data: userData
+      data: userData,
     });
   } catch (error) {
     console.error("[API] Verify email OTP error:", error);
@@ -900,20 +935,26 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
     console.log("[API] 🔄 Password change request received");
     console.log("[API] 📦 Raw request body:", req.body);
     console.log("[API] 📋 Request headers:", req.headers);
-    
+
     // Use the standardized userId from middleware
     const userId = req.userId;
     const { currentPassword, newPassword } = req.body;
-    
+
     console.log("[API] 👤 User ID:", userId);
-    console.log("[API] 📝 Extracted currentPassword:", currentPassword ? "***PROVIDED***" : "MISSING");
-    console.log("[API] 📝 Extracted newPassword:", newPassword ? "***PROVIDED***" : "MISSING");
-    
+    console.log(
+      "[API] 📝 Extracted currentPassword:",
+      currentPassword ? "***PROVIDED***" : "MISSING"
+    );
+    console.log(
+      "[API] 📝 Extracted newPassword:",
+      newPassword ? "***PROVIDED***" : "MISSING"
+    );
+
     if (!userId || !currentPassword || !newPassword) {
       console.log("[API] ❌ Missing required fields");
-      return res.status(400).json({ 
-        success: false, 
-        error: "Current password and new password are required" 
+      return res.status(400).json({
+        success: false,
+        error: "Current password and new password are required",
       });
     }
 
@@ -921,7 +962,7 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
     console.log("[API] 🔍 Looking up user in database");
     const user = await prisma.user.findUnique({
       where: { user_id: userId },
-      select: { password_hash: true }
+      select: { password_hash: true },
     });
 
     if (!user) {
@@ -931,11 +972,16 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
 
     console.log("[API] 🔐 Verifying current password");
     const bcrypt = require("bcrypt");
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
-    
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
+
     if (!isCurrentPasswordValid) {
       console.log("[API] ❌ Current password is incorrect");
-      return res.status(400).json({ success: false, error: "Current password is incorrect" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Current password is incorrect" });
     }
 
     // Hash new password
@@ -947,7 +993,7 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
     console.log("[API] 💾 Updating password in database");
     await prisma.user.update({
       where: { user_id: userId },
-      data: { password_hash: newPasswordHash }
+      data: { password_hash: newPasswordHash },
     });
 
     console.log("[API] ✅ Password changed successfully");
@@ -1276,21 +1322,25 @@ router.get("/events/:eventId/attendees", async (req, res) => {
             name: true,
             email: true,
             profile_picture: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        purchase_date: 'desc'
-      }
+        purchase_date: "desc",
+      },
     });
 
     // Transform the data to match frontend expectations
     const transformedAttendees = attendees.map((ticket) => ({
       id: ticket.User.user_id.toString(),
-      username: ticket.User.name || 'Unknown User',
-      name: ticket.User.name || 'Unknown User',
-      avatar: ticket.User.profile_picture || `https://i.pravatar.cc/100?u=${ticket.User.user_id}`,
-      profilePicture: ticket.User.profile_picture || `https://i.pravatar.cc/100?u=${ticket.User.user_id}`,
+      username: ticket.User.name || "Unknown User",
+      name: ticket.User.name || "Unknown User",
+      avatar:
+        ticket.User.profile_picture ||
+        `https://i.pravatar.cc/100?u=${ticket.User.user_id}`,
+      profilePicture:
+        ticket.User.profile_picture ||
+        `https://i.pravatar.cc/100?u=${ticket.User.user_id}`,
       email: ticket.User.email,
       ticketId: ticket.ticket_id,
       seatLabel: ticket.seat_label,
@@ -1298,13 +1348,13 @@ router.get("/events/:eventId/attendees", async (req, res) => {
       purchaseDate: ticket.purchase_date,
       // Mock social data (would come from a separate social service in real app)
       isFollowing: Math.random() > 0.7, // 30% chance
-      isFriend: Math.random() > 0.8,    // 20% chance
-      mutualFriends: Math.floor(Math.random() * 20)
+      isFriend: Math.random() > 0.8, // 20% chance
+      mutualFriends: Math.floor(Math.random() * 20),
     }));
 
     // Remove duplicates by user_id (in case user bought multiple tickets)
     const uniqueAttendees = transformedAttendees.reduce((acc, current) => {
-      const existing = acc.find(item => item.id === current.id);
+      const existing = acc.find((item) => item.id === current.id);
       if (!existing) {
         acc.push(current);
       }
@@ -1315,60 +1365,60 @@ router.get("/events/:eventId/attendees", async (req, res) => {
     if (uniqueAttendees.length === 0) {
       const sampleAttendees = [
         {
-          id: '101',
-          username: 'Alex Johnson',
-          name: 'Alex Johnson',
-          avatar: 'https://i.pravatar.cc/100?u=101',
-          profilePicture: 'https://i.pravatar.cc/100?u=101',
-          email: 'alex@example.com',
+          id: "101",
+          username: "Alex Johnson",
+          name: "Alex Johnson",
+          avatar: "https://i.pravatar.cc/100?u=101",
+          profilePicture: "https://i.pravatar.cc/100?u=101",
+          email: "alex@example.com",
           isFollowing: false,
           isFriend: false,
-          mutualFriends: 5
+          mutualFriends: 5,
         },
         {
-          id: '102',
-          username: 'Sarah Wilson',
-          name: 'Sarah Wilson',
-          avatar: 'https://i.pravatar.cc/100?u=102',
-          profilePicture: 'https://i.pravatar.cc/100?u=102',
-          email: 'sarah@example.com',
+          id: "102",
+          username: "Sarah Wilson",
+          name: "Sarah Wilson",
+          avatar: "https://i.pravatar.cc/100?u=102",
+          profilePicture: "https://i.pravatar.cc/100?u=102",
+          email: "sarah@example.com",
           isFollowing: true,
           isFriend: true,
-          mutualFriends: 12
+          mutualFriends: 12,
         },
         {
-          id: '103',
-          username: 'Mike Chen',
-          name: 'Mike Chen',
-          avatar: 'https://i.pravatar.cc/100?u=103',
-          profilePicture: 'https://i.pravatar.cc/100?u=103',
-          email: 'mike@example.com',
+          id: "103",
+          username: "Mike Chen",
+          name: "Mike Chen",
+          avatar: "https://i.pravatar.cc/100?u=103",
+          profilePicture: "https://i.pravatar.cc/100?u=103",
+          email: "mike@example.com",
           isFollowing: false,
           isFriend: false,
-          mutualFriends: 3
+          mutualFriends: 3,
         },
         {
-          id: '104',
-          username: 'Emma Davis',
-          name: 'Emma Davis',
-          avatar: 'https://i.pravatar.cc/100?u=104',
-          profilePicture: 'https://i.pravatar.cc/100?u=104',
-          email: 'emma@example.com',
+          id: "104",
+          username: "Emma Davis",
+          name: "Emma Davis",
+          avatar: "https://i.pravatar.cc/100?u=104",
+          profilePicture: "https://i.pravatar.cc/100?u=104",
+          email: "emma@example.com",
           isFollowing: true,
           isFriend: false,
-          mutualFriends: 8
+          mutualFriends: 8,
         },
         {
-          id: '105',
-          username: 'John Smith',
-          name: 'John Smith',
-          avatar: 'https://i.pravatar.cc/100?u=105',
-          profilePicture: 'https://i.pravatar.cc/100?u=105',
-          email: 'john@example.com',
+          id: "105",
+          username: "John Smith",
+          name: "John Smith",
+          avatar: "https://i.pravatar.cc/100?u=105",
+          profilePicture: "https://i.pravatar.cc/100?u=105",
+          email: "john@example.com",
           isFollowing: false,
           isFriend: true,
-          mutualFriends: 15
-        }
+          mutualFriends: 15,
+        },
       ];
 
       res.json({
@@ -1389,39 +1439,39 @@ router.get("/events/:eventId/attendees", async (req, res) => {
     }
   } catch (e) {
     console.error("[API] Error fetching attendees:", e);
-    
+
     // Fallback to sample data if database query fails
     const sampleAttendees = [
       {
-        id: '1',
-        username: 'Alex Johnson',
-        name: 'Alex Johnson',
-        avatar: 'https://i.pravatar.cc/100?img=1',
-        profilePicture: 'https://i.pravatar.cc/100?img=1',
+        id: "1",
+        username: "Alex Johnson",
+        name: "Alex Johnson",
+        avatar: "https://i.pravatar.cc/100?img=1",
+        profilePicture: "https://i.pravatar.cc/100?img=1",
         isFollowing: false,
         isFriend: false,
-        mutualFriends: 5
+        mutualFriends: 5,
       },
       {
-        id: '2',
-        username: 'Sarah Wilson',
-        name: 'Sarah Wilson', 
-        avatar: 'https://i.pravatar.cc/100?img=2',
-        profilePicture: 'https://i.pravatar.cc/100?img=2',
+        id: "2",
+        username: "Sarah Wilson",
+        name: "Sarah Wilson",
+        avatar: "https://i.pravatar.cc/100?img=2",
+        profilePicture: "https://i.pravatar.cc/100?img=2",
         isFollowing: true,
         isFriend: true,
-        mutualFriends: 12
+        mutualFriends: 12,
       },
       {
-        id: '3',
-        username: 'Mike Chen',
-        name: 'Mike Chen',
-        avatar: 'https://i.pravatar.cc/100?img=3',
-        profilePicture: 'https://i.pravatar.cc/100?img=3',
+        id: "3",
+        username: "Mike Chen",
+        name: "Mike Chen",
+        avatar: "https://i.pravatar.cc/100?img=3",
+        profilePicture: "https://i.pravatar.cc/100?img=3",
         isFollowing: false,
         isFriend: false,
-        mutualFriends: 3
-      }
+        mutualFriends: 3,
+      },
     ];
 
     res.json({
@@ -2480,7 +2530,10 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
     }
 
     // Send email with tickets after successful payment and ticket creation
-    console.log('📧 [EMAIL] Starting email sending process for payment:', result.payment.payment_id);
+    console.log(
+      "📧 [EMAIL] Starting email sending process for payment:",
+      result.payment.payment_id
+    );
     try {
       // Get user info for email
       const userInfo = await prisma.user.findUnique({
@@ -2490,7 +2543,7 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
 
       if (userInfo && userInfo.email && result.tickets.length > 0) {
         // Prepare ticket data for email
-        const ticketsForEmail = result.tickets.map(ticket => ({
+        const ticketsForEmail = result.tickets.map((ticket) => ({
           user_name: userInfo.name,
           user_email: userInfo.email,
           event_title: eventInfo.title,
@@ -2501,30 +2554,38 @@ router.post("/payments", authenticateUser, express.json(), async (req, res) => {
           price: Number(ticket.price), // Convert BigInt to number
           qr_code: ticket.qr_code,
           payment_id: result.payment.payment_id,
-          purchase_date: ticket.purchase_date
+          purchase_date: ticket.purchase_date,
         }));
 
         console.log(`📧 [EMAIL] Preparing to send email to: ${userInfo.email}`);
         console.log(`📧 [EMAIL] Number of tickets: ${ticketsForEmail.length}`);
-        
+
         // Send email based on number of tickets
         if (ticketsForEmail.length === 1) {
           // Single ticket
-          console.log('📧 [EMAIL] Sending single ticket email...');
-          await emailService.sendTicketEmail(ticketsForEmail[0], userInfo.email);
+          console.log("📧 [EMAIL] Sending single ticket email...");
+          await emailService.sendTicketEmail(
+            ticketsForEmail[0],
+            userInfo.email
+          );
           console.log(`✅ Single ticket email sent to ${userInfo.email}`);
         } else {
           // Multiple tickets
-          console.log('📧 [EMAIL] Sending multiple tickets email...');
-          await emailService.sendMultipleTicketsEmail(ticketsForEmail, userInfo.email);
-          console.log(`✅ Multiple tickets email sent to ${userInfo.email} (${ticketsForEmail.length} tickets)`);
+          console.log("📧 [EMAIL] Sending multiple tickets email...");
+          await emailService.sendMultipleTicketsEmail(
+            ticketsForEmail,
+            userInfo.email
+          );
+          console.log(
+            `✅ Multiple tickets email sent to ${userInfo.email} (${ticketsForEmail.length} tickets)`
+          );
         }
       } else {
-        console.log('📧 [EMAIL] No user email found or no tickets created');
+        console.log("📧 [EMAIL] No user email found or no tickets created");
       }
     } catch (emailError) {
-      console.error('❌ [EMAIL] Error sending ticket email:', emailError);
-      console.error('❌ [EMAIL] Full error stack:', emailError.stack);
+      console.error("❌ [EMAIL] Error sending ticket email:", emailError);
+      console.error("❌ [EMAIL] Full error stack:", emailError.stack);
       // Don't fail the payment if email fails - just log it
     }
 

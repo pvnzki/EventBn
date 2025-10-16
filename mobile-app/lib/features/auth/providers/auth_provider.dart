@@ -135,7 +135,10 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _setError(e.toString().replaceAll('Exception: ', ''));
       _setLoading(false);
-      return {'success': false, 'message': e.toString().replaceAll('Exception: ', '')};
+      return {
+        'success': false,
+        'message': e.toString().replaceAll('Exception: ', '')
+      };
     }
   }
 
@@ -176,7 +179,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       print('🔄 [AUTH_PROVIDER] Registering user: $email');
-      
+
       final result = await _authService.register(
         name: name,
         email: email,

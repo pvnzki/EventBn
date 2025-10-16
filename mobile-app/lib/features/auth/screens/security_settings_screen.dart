@@ -35,26 +35,31 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Failed to load settings')),
+          SnackBar(
+              content: Text(result['message'] ?? 'Failed to load settings')),
         );
       }
     }
   }
 
   void _showTwoFactorSetup() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const TwoFactorSetupScreen(),
-      ),
-    ).then((_) => _loadSecuritySettings());
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => const TwoFactorSetupScreen(),
+          ),
+        )
+        .then((_) => _loadSecuritySettings());
   }
 
   void _showTwoFactorDisable() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const TwoFactorDisableScreen(),
-      ),
-    ).then((_) => _loadSecuritySettings());
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => const TwoFactorDisableScreen(),
+          ),
+        )
+        .then((_) => _loadSecuritySettings());
   }
 
   void _showChangePassword() {
@@ -68,7 +73,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Security Settings'),
@@ -88,7 +93,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.security_outlined, color: theme.primaryColor),
+                            Icon(Icons.security_outlined,
+                                color: theme.primaryColor),
                             const SizedBox(width: 12),
                             const Expanded(
                               child: Text(
@@ -117,7 +123,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                               ? 'Two-factor authentication is enabled for added security.'
                               : 'Add an extra layer of security to your account.',
                           style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -125,9 +132,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password Section
                 Card(
                   child: Padding(
@@ -160,7 +167,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                               ? 'Last changed: ${_formatDate(_lastPasswordChange!)}'
                               : 'Change your password regularly for better security.',
                           style: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                            color: theme.textTheme.bodyMedium?.color
+                                ?.withOpacity(0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -168,9 +176,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Security Tips
                 Card(
                   color: theme.primaryColor.withOpacity(0.1),
@@ -181,7 +189,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.lightbulb_outline, color: theme.primaryColor),
+                            Icon(Icons.lightbulb_outline,
+                                color: theme.primaryColor),
                             const SizedBox(width: 8),
                             const Text(
                               'Security Tips',
@@ -193,7 +202,8 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text('• Enable two-factor authentication for better security'),
+                        const Text(
+                            '• Enable two-factor authentication for better security'),
                         const SizedBox(height: 4),
                         const Text('• Use a strong, unique password'),
                         const SizedBox(height: 4),
@@ -214,7 +224,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       final date = DateTime.parse(dateString);
       final now = DateTime.now();
       final difference = now.difference(date);
-      
+
       if (difference.inDays > 0) {
         return '${difference.inDays} days ago';
       } else if (difference.inHours > 0) {
@@ -252,9 +262,9 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
 
   Future<void> _generateQRCode() async {
     setState(() => _isLoading = true);
-    
+
     final result = await _twoFactorService.generateTwoFactorQR();
-    
+
     if (result['success']) {
       setState(() {
         _qrCode = result['qrCode'];
@@ -262,7 +272,7 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
         _backupCodes = List<String>.from(result['backupCodes'] ?? []);
         _isLoading = false;
       });
-      
+
       // Show backup codes immediately since 2FA is now enabled
       if (_backupCodes != null && _backupCodes!.isNotEmpty) {
         _showBackupCodes(_backupCodes!);
@@ -271,14 +281,13 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Failed to generate QR code')),
+          SnackBar(
+              content: Text(result['message'] ?? 'Failed to generate QR code')),
         );
         Navigator.of(context).pop();
       }
     }
   }
-
-
 
   void _showBackupCodes(List<String> codes) {
     showDialog(
@@ -290,7 +299,8 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device.'),
+            const Text(
+                'Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device.'),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -299,12 +309,13 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
-                children: codes.map((code) => 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(code, style: const TextStyle(fontFamily: 'monospace')),
-                  )
-                ).toList(),
+                children: codes
+                    .map((code) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(code,
+                              style: const TextStyle(fontFamily: 'monospace')),
+                        ))
+                    .toList(),
               ),
             ),
           ],
@@ -315,7 +326,8 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
               Navigator.of(context).pop(); // Close dialog
               Navigator.of(context).pop(true); // Return to security settings
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Two-factor authentication enabled!')),
+                const SnackBar(
+                    content: Text('Two-factor authentication enabled!')),
               );
             },
             child: const Text('I\'ve Saved Them'),
@@ -332,7 +344,7 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {    
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Setup Two-Factor Authentication'),
@@ -349,19 +361,17 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Install Google Authenticator, Authy, or another TOTP authenticator app on your phone.'),
-                  
+                  const Text(
+                      'Install Google Authenticator, Authy, or another TOTP authenticator app on your phone.'),
                   const SizedBox(height: 24),
-                  
                   const Text(
                     'Step 2: Scan QR Code',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Open your authenticator app and scan this QR code:'),
-                  
+                  const Text(
+                      'Open your authenticator app and scan this QR code:'),
                   const SizedBox(height: 16),
-                  
                   if (_qrCode != null)
                     Center(
                       child: Container(
@@ -399,18 +409,15 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
                         ),
                       ),
                     ),
-                  
                   const SizedBox(height: 24),
-                  
                   const Text(
                     'Step 3: You\'re All Set!',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Two-factor authentication has been enabled successfully. Your backup codes will be shown next for safekeeping.'),
-                  
+                  const Text(
+                      'Two-factor authentication has been enabled successfully. Your backup codes will be shown next for safekeeping.'),
                   const SizedBox(height: 24),
-                  
                   ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(true),
                     style: ElevatedButton.styleFrom(
@@ -448,11 +455,12 @@ class _TwoFactorDisableScreenState extends State<TwoFactorDisableScreen> {
     }
 
     setState(() => _isLoading = true);
-    
-    final result = await _twoFactorService.disableTwoFactor(_passwordController.text);
-    
+
+    final result =
+        await _twoFactorService.disableTwoFactor(_passwordController.text);
+
     setState(() => _isLoading = false);
-    
+
     if (result['success']) {
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -506,8 +514,11 @@ class _TwoFactorDisableScreenState extends State<TwoFactorDisableScreen> {
                 labelText: 'Current Password',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility
+                      : Icons.visibility_off),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ),
@@ -522,7 +533,8 @@ class _TwoFactorDisableScreenState extends State<TwoFactorDisableScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Disable Two-Factor Authentication'),
             ),
@@ -544,9 +556,11 @@ class ChangePasswordScreen extends StatefulWidget {
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TwoFactorService _twoFactorService = TwoFactorService();
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isLoading = false;
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
@@ -556,14 +570,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    
+
     final result = await _twoFactorService.changePassword(
       currentPassword: _currentPasswordController.text,
       newPassword: _newPasswordController.text,
     );
-    
+
     setState(() => _isLoading = false);
-    
+
     if (result['success']) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -571,7 +585,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? 'Failed to change password')),
+        SnackBar(
+            content: Text(result['message'] ?? 'Failed to change password')),
       );
     }
   }
@@ -624,14 +639,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   labelText: 'Current Password',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
+                    icon: Icon(_obscureCurrentPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () => setState(() =>
+                        _obscureCurrentPassword = !_obscureCurrentPassword),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // New Password
               TextFormField(
                 controller: _newPasswordController,
@@ -641,14 +659,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   labelText: 'New Password',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureNewPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                    icon: Icon(_obscureNewPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () => setState(
+                        () => _obscureNewPassword = !_obscureNewPassword),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Confirm Password
               TextFormField(
                 controller: _confirmPasswordController,
@@ -666,14 +687,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   labelText: 'Confirm New Password',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    icon: Icon(_obscureConfirmPassword
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () => setState(() =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Password Requirements
               Card(
                 color: Colors.blue.withOpacity(0.1),
@@ -695,9 +719,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               ElevatedButton(
                 onPressed: _isLoading ? null : _changePassword,
                 child: _isLoading

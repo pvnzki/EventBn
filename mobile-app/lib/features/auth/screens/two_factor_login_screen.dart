@@ -50,7 +50,7 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
 
     try {
       Map<String, dynamic> result;
-      
+
       if (_useEmailOTP) {
         result = await _twoFactorService.verifyEmailOTP(
           widget.email,
@@ -73,7 +73,7 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
         // Complete the login process
         final authProvider = context.read<AuthProvider>();
         await authProvider.completeTwoFactorLogin(result);
-        
+
         context.go('/home');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -93,7 +93,7 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -146,7 +146,7 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
         _isLoading = false;
         _useEmailOTP = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -159,7 +159,7 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Two-Factor Authentication'),
@@ -179,9 +179,9 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
               size: 80,
               color: theme.primaryColor,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             Text(
               'Enter Verification Code',
               style: theme.textTheme.headlineMedium?.copyWith(
@@ -189,13 +189,13 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             Text(
-              _useEmailOTP 
-                ? 'Please enter the 6-digit code sent to your email address.'
-                : 'Please enter the 6-digit code from your authenticator app to complete your login.',
+              _useEmailOTP
+                  ? 'Please enter the 6-digit code sent to your email address.'
+                  : 'Please enter the 6-digit code from your authenticator app to complete your login.',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: Colors.grey[600],
               ),
@@ -222,9 +222,9 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 32),
-            
+
             TextField(
               controller: _codeController,
               keyboardType: TextInputType.number,
@@ -249,9 +249,9 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
                 }
               },
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             ElevatedButton(
               onPressed: _isLoading ? null : _handleVerification,
               style: ElevatedButton.styleFrom(
@@ -268,10 +268,11 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
                     )
                   : const Text(
                       'Verify & Login',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
-            
+
             const SizedBox(height: 24),
 
             // Alternative method button
@@ -301,13 +302,13 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
                   ),
                 ),
               ),
-            
+
             const SizedBox(height: 16),
-            
+
             Text(
               _useEmailOTP
-                ? 'Check your email for the verification code. It may take a few minutes to arrive.'
-                : 'Having trouble? Make sure your device time is correct and your authenticator app is up to date.',
+                  ? 'Check your email for the verification code. It may take a few minutes to arrive.'
+                  : 'Having trouble? Make sure your device time is correct and your authenticator app is up to date.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.grey[500],
               ),

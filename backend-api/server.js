@@ -26,11 +26,11 @@ let corsOptions = {};
 
 if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
   // Development & Test → allow all origins
-  corsOptions = { 
-    origin: true, 
+  corsOptions = {
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization"],
   };
 } else {
   // Production → only allow origins from .env
@@ -63,15 +63,19 @@ if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
 app.use(cors(corsOptions));
 
 // Explicit preflight handling (some environments need this when custom headers appear later)
-app.options('*', (req, res) => {
+app.options("*", (req, res) => {
   // Mirror the request origin in dev/test when origin: true was used
-  if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && req.headers.origin) {
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
+  if (
+    (process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test") &&
+    req.headers.origin
+  ) {
+    res.header("Access-Control-Allow-Origin", req.headers.origin);
   }
-  res.header('Vary', 'Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header("Vary", "Origin");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   return res.sendStatus(204);
 });
 
@@ -111,7 +115,7 @@ app.get("/health", async (req, res) => {
       environment: process.env.NODE_ENV,
       uptime: process.uptime(),
       database: "Connected",
-      redis: "Connected"
+      redis: "Connected",
     });
   } catch (error) {
     res.status(500).json({
@@ -170,20 +174,23 @@ app.get("/api/services/post/health", async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  
+
   // Handle JSON parsing errors
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid JSON format',
-      code: 'INVALID_JSON'
+      message: "Invalid JSON format",
+      code: "INVALID_JSON",
     });
   }
-  
+
   res.status(500).json({
     success: false,
-    message: process.env.NODE_ENV === "development" ? err.message : "Internal Server Error",
-    code: 'SERVER_ERROR'
+    message:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Internal Server Error",
+    code: "SERVER_ERROR",
   });
 });
 
@@ -204,7 +211,7 @@ const startServer = async () => {
   try {
     // Connect to Redis
     await connectRedis();
-    
+
     // Start the server
     app.listen(PORT, HOST, () => {
       console.log(`
@@ -222,7 +229,7 @@ const startServer = async () => {
 `);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };

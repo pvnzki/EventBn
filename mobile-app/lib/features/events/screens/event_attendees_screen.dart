@@ -15,14 +15,14 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
   String selectedTab = 'All';
   final List<String> tabs = ['All', 'Friends', 'Following'];
   final EventService _eventService = EventService();
-  
+
   List<Map<String, dynamic>> attendees = [];
   bool _isLoading = true;
   String? _errorMessage;
 
   String? _validateAvatarUrl(dynamic avatarUrl) {
     if (avatarUrl == null || avatarUrl.toString().isEmpty) return null;
-    
+
     final url = avatarUrl.toString();
     try {
       final uri = Uri.parse(url);
@@ -108,13 +108,14 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
         _errorMessage = null;
       });
 
-      print('🔄 EventAttendeesScreen: Fetching attendees for event ${widget.eventId}');
+      print(
+          '🔄 EventAttendeesScreen: Fetching attendees for event ${widget.eventId}');
       final result = await _eventService.getEventAttendees(widget.eventId);
       print('📦 EventAttendeesScreen: Received data: $result');
-      
+
       // Process data outside of setState to avoid race conditions
       List<Map<String, dynamic>> newAttendees;
-      
+
       if (result.isNotEmpty) {
         try {
           final transformedList = <Map<String, dynamic>>[];
@@ -122,9 +123,13 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
             final attendee = result[i];
             if (attendee is Map) {
               final transformedAttendee = {
-                'id': attendee['id']?.toString() ?? attendee['_id']?.toString() ?? '',
-                'name': attendee['username'] ?? attendee['name'] ?? 'Unknown User',
-                'avatar': _validateAvatarUrl(attendee['profilePicture'] ?? attendee['avatar']),
+                'id': attendee['id']?.toString() ??
+                    attendee['_id']?.toString() ??
+                    '',
+                'name':
+                    attendee['username'] ?? attendee['name'] ?? 'Unknown User',
+                'avatar': _validateAvatarUrl(
+                    attendee['profilePicture'] ?? attendee['avatar']),
                 'isFollowing': attendee['isFollowing'] ?? false,
                 'isFriend': attendee['isFriend'] ?? false,
                 'mutualFriends': attendee['mutualFriends'] ?? 0,
@@ -144,13 +149,15 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
             }
           }
           newAttendees = transformedList;
-          print('✅ EventAttendeesScreen: Successfully transformed ${newAttendees.length} attendees');
+          print(
+              '✅ EventAttendeesScreen: Successfully transformed ${newAttendees.length} attendees');
         } catch (e) {
           print('❌ Error transforming attendees: $e');
           newAttendees = List.from(_fallbackAttendees);
         }
       } else {
-        print('📦 EventAttendeesScreen: No attendees found, using fallback data');
+        print(
+            '📦 EventAttendeesScreen: No attendees found, using fallback data');
         newAttendees = List.from(_fallbackAttendees);
       }
 
@@ -178,14 +185,16 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
       print('🔍 filteredAttendees: Empty attendees list, returning empty');
       return <Map<String, dynamic>>[];
     }
-    
+
     try {
       final filtered = switch (selectedTab) {
         'Friends' => attendees.where((a) => a['isFriend'] == true).toList(),
-        'Following' => attendees.where((a) => a['isFollowing'] == true).toList(),
+        'Following' =>
+          attendees.where((a) => a['isFollowing'] == true).toList(),
         _ => List<Map<String, dynamic>>.from(attendees),
       };
-      print('🔍 filteredAttendees: ${filtered.length} items for tab: $selectedTab');
+      print(
+          '🔍 filteredAttendees: ${filtered.length} items for tab: $selectedTab');
       return filtered;
     } catch (e) {
       print('❌ Error in filteredAttendees: $e');
@@ -273,14 +282,18 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
                         color: theme.scaffoldBackgroundColor,
                         width: 2,
                       ),
-                      image: attendees.isNotEmpty && index < attendees.length && attendees[index]['avatar'] != null
+                      image: attendees.isNotEmpty &&
+                              index < attendees.length &&
+                              attendees[index]['avatar'] != null
                           ? DecorationImage(
                               image: NetworkImage(attendees[index]['avatar']),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: attendees.isEmpty || index >= attendees.length || attendees[index]['avatar'] == null
+                    child: attendees.isEmpty ||
+                            index >= attendees.length ||
+                            attendees[index]['avatar'] == null
                         ? Icon(
                             Icons.person,
                             color: theme.colorScheme.onPrimaryContainer,
@@ -414,9 +427,11 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
         padding: const EdgeInsets.only(top: 20),
         itemCount: filteredAttendees.length,
         itemBuilder: (context, index) {
-          print('🏗️ ListView.builder: index=$index, total=${filteredAttendees.length}');
+          print(
+              '🏗️ ListView.builder: index=$index, total=${filteredAttendees.length}');
           if (index >= filteredAttendees.length) {
-            print('❌ Index out of bounds: $index >= ${filteredAttendees.length}');
+            print(
+                '❌ Index out of bounds: $index >= ${filteredAttendees.length}');
             return const SizedBox.shrink();
           }
           final attendee = filteredAttendees[index];
@@ -442,9 +457,10 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
           CircleAvatar(
             radius: 24,
             backgroundColor: theme.colorScheme.primaryContainer,
-            backgroundImage: (attendee['avatar'] != null && attendee['avatar'].isNotEmpty)
-                ? NetworkImage(attendee['avatar'])
-                : null,
+            backgroundImage:
+                (attendee['avatar'] != null && attendee['avatar'].isNotEmpty)
+                    ? NetworkImage(attendee['avatar'])
+                    : null,
             child: (attendee['avatar'] == null || attendee['avatar'].isEmpty)
                 ? Icon(
                     Icons.person,

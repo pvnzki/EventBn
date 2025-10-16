@@ -37,7 +37,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   bool isBookmarked = false;
   bool isFollowing = false;
   bool isAboutExpanded = false;
-  
+
   // Seat map cache
   bool? _hasCustomSeating;
   bool _seatMapLoaded = false;
@@ -64,7 +64,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Future<void> _loadSeatMapInfo() async {
     try {
       final url = '${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap';
-      
+
       // Get authentication token
       final authService = AuthService();
       final token = await authService.getStoredToken();
@@ -76,16 +76,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       } else {
         print('⚠️ No auth token available for seat map info request');
       }
-      
+
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
-      
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final seatMapData = responseData['data'];
-        
+
         setState(() {
           _hasCustomSeating = seatMapData['hasCustomSeating'] == true;
           _seatMapData = seatMapData['seats'] ?? [];
@@ -109,7 +109,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     try {
       print('🔄 Fetching attendees for event: ${widget.eventId}');
       final response = await _eventService.getEventAttendees(widget.eventId);
-      
+
       if (mounted) {
         setState(() {
           attendees = response;
@@ -123,11 +123,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       if (mounted) {
         setState(() {
           attendees = [
-            {'id': '1', 'username': 'Alex Johnson', 'avatar': 'https://i.pravatar.cc/100?img=1'},
-            {'id': '2', 'username': 'Sarah Wilson', 'avatar': 'https://i.pravatar.cc/100?img=2'},
-            {'id': '3', 'username': 'Mike Chen', 'avatar': 'https://i.pravatar.cc/100?img=3'},
-            {'id': '4', 'username': 'Emma Davis', 'avatar': 'https://i.pravatar.cc/100?img=4'},
-            {'id': '5', 'username': 'John Smith', 'avatar': 'https://i.pravatar.cc/100?img=5'},
+            {
+              'id': '1',
+              'username': 'Alex Johnson',
+              'avatar': 'https://i.pravatar.cc/100?img=1'
+            },
+            {
+              'id': '2',
+              'username': 'Sarah Wilson',
+              'avatar': 'https://i.pravatar.cc/100?img=2'
+            },
+            {
+              'id': '3',
+              'username': 'Mike Chen',
+              'avatar': 'https://i.pravatar.cc/100?img=3'
+            },
+            {
+              'id': '4',
+              'username': 'Emma Davis',
+              'avatar': 'https://i.pravatar.cc/100?img=4'
+            },
+            {
+              'id': '5',
+              'username': 'John Smith',
+              'avatar': 'https://i.pravatar.cc/100?img=5'
+            },
           ];
           _attendeesLoading = false;
           print('📦 Using ${attendees.length} fallback attendees');
@@ -139,26 +159,29 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   // Helper method to safely get attendee avatar image
   ImageProvider? _getAttendeeAvatarImage(int index) {
     try {
-      if (attendees.isEmpty || index >= attendees.length || index < 0) return null;
-      
+      if (attendees.isEmpty || index >= attendees.length || index < 0)
+        return null;
+
       final attendee = attendees[index];
       if (attendee == null) return null;
-      
+
       String? avatarUrl;
-      
+
       // Try different possible avatar field names
       if (attendee is Map) {
-        avatarUrl = attendee['avatar'] ?? 
-                   attendee['profilePicture'] ?? 
-                   attendee['userAvatarUrl'] ?? 
-                   attendee['profile_picture'];
+        avatarUrl = attendee['avatar'] ??
+            attendee['profilePicture'] ??
+            attendee['userAvatarUrl'] ??
+            attendee['profile_picture'];
       }
-      
+
       // Return NetworkImage only if URL is valid
-      if (avatarUrl != null && avatarUrl.isNotEmpty && Uri.tryParse(avatarUrl) != null) {
+      if (avatarUrl != null &&
+          avatarUrl.isNotEmpty &&
+          Uri.tryParse(avatarUrl) != null) {
         return NetworkImage(avatarUrl);
       }
-      
+
       return null;
     } catch (e) {
       print('Error loading attendee avatar: $e');
@@ -215,7 +238,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           displayCount,
           (index) {
             if (index >= attendees.length) return const SizedBox.shrink();
-            
+
             return Positioned(
               left: index * 14.0,
               child: Container(
@@ -230,7 +253,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   backgroundColor: Colors.grey[300],
                   backgroundImage: _getAttendeeAvatarImage(index),
                   onBackgroundImageError: (exception, stackTrace) {
-                    print('Error loading avatar for attendee $index: $exception');
+                    print(
+                        'Error loading avatar for attendee $index: $exception');
                   },
                   child: _getAttendeeAvatarImage(index) == null
                       ? Icon(
@@ -250,7 +274,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   double? _getLowestPriceFromSeatMap() {
     if (_seatMapData.isEmpty) return null;
-    
+
     try {
       List<double> prices = [];
       for (var seat in _seatMapData) {
@@ -258,7 +282,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           prices.add((seat['price'] as num).toDouble());
         }
       }
-      
+
       if (prices.isEmpty) return null;
       final lowestPrice = prices.reduce((a, b) => a < b ? a : b);
       return lowestPrice;
@@ -733,7 +757,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         child: Row(
                           children: [
                             Text(
-                              _attendeesLoading ? 'Loading...' : '${attendees.length} going',
+                              _attendeesLoading
+                                  ? 'Loading...'
+                                  : '${attendees.length} going',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -908,13 +934,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               if (lowestPrice != null) {
                 return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
               }
-              
+
               // Fallback to ticket types if available
               if (event.ticketTypes.isNotEmpty) {
-                final ticketPrice = event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
+                final ticketPrice = event.ticketTypes
+                    .map((t) => t.price)
+                    .reduce((a, b) => a < b ? a : b);
                 return 'From LKR ${ticketPrice.toStringAsFixed(0)}';
               }
-              
+
               return 'Free';
             }(),
             style: textTheme.titleLarge?.copyWith(
@@ -1316,7 +1344,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (_videoController != null && _videoController!.value.isPlaying) {
             _videoController?.pause();
           }
-          
+
           // Wait for seat map info to be loaded if still loading
           if (!_seatMapLoaded) {
             showDialog(
@@ -1326,17 +1354,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 child: CircularProgressIndicator(),
               ),
             );
-            
+
             // Wait for seat map to load
             while (!_seatMapLoaded) {
               await Future.delayed(const Duration(milliseconds: 100));
             }
-            
+
             if (mounted) Navigator.of(context).pop();
           }
-          
+
           // Navigate based on cached seat map information
-          print('🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
+          print(
+              '🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
           if (_hasCustomSeating == true) {
             // Event has seat map - go to seat selection
             print('🎯 Navigating to seat selection screen');
