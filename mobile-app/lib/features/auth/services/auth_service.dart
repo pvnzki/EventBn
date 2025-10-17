@@ -42,7 +42,22 @@ class AuthService {
 
         // Store token and user
         await _storeToken(token);
+        
+        // **DEBUG**: Log the raw user payload from backend
+        print('🔍 [AUTH_SERVICE] Raw user payload from login:');
+        print('   - phone_number: ${userPayload['phone_number']}');
+        print('   - date_of_birth: ${userPayload['date_of_birth']}');
+        print('   - billing_address: ${userPayload['billing_address']}');
+        print('   - All fields: ${userPayload.keys.toList()}');
+        
         final user = User.fromJson(Map<String, dynamic>.from(userPayload));
+        
+        // **DEBUG**: Log the parsed user object
+        print('🔍 [AUTH_SERVICE] Parsed user object:');
+        print('   - phoneNumber: ${user.phoneNumber}');
+        print('   - dateOfBirth: ${user.dateOfBirth}');
+        print('   - billingAddress: ${user.billingAddress}');
+        
         await _storeUser(user);
 
         print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
@@ -379,10 +394,52 @@ class AuthService {
 
       print('🔄 [AUTH_SERVICE] Updating user profile in database...');
 
-      // Prepare the data for database update using User's toJson method
-      final body = updatedUser.toJson();
+      // **CRITICAL FIX**: Merge with existing user data to prevent field reset
+      final currentUser = await getCurrentUser();
+      if (currentUser == null) {
+        return {'success': false, 'message': 'Current user not found'};
+      }
 
-      // Remove fields that shouldn't be updated via profile endpoint
+      print('🔍 [AUTH_SERVICE] Current user data:');
+      print('   - Phone: ${currentUser.phoneNumber}');
+      print('   - DOB: ${currentUser.dateOfBirth}');
+      print('   - Billing Address: ${currentUser.billingAddress}');
+
+      print('🔍 [AUTH_SERVICE] Updated user data:');
+      print('   - Phone: ${updatedUser.phoneNumber}');
+      print('   - DOB: ${updatedUser.dateOfBirth}');
+      print('   - Billing Address: ${updatedUser.billingAddress}');
+
+      // Create a merged user with current data + updates (preventing null overwrites)
+      final mergedUser = currentUser.copyWith(
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        phoneNumber: updatedUser.phoneNumber ?? currentUser.phoneNumber,
+        profileImageUrl: updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
+        billingAddress: updatedUser.billingAddress ?? currentUser.billingAddress,
+        billingCity: updatedUser.billingCity ?? currentUser.billingCity,
+        billingState: updatedUser.billingState ?? currentUser.billingState,
+        billingCountry: updatedUser.billingCountry ?? currentUser.billingCountry,
+        billingPostalCode: updatedUser.billingPostalCode ?? currentUser.billingPostalCode,
+        profileCompleted: updatedUser.profileCompleted,
+        dateOfBirth: updatedUser.dateOfBirth ?? currentUser.dateOfBirth,
+        emergencyContactName: updatedUser.emergencyContactName ?? currentUser.emergencyContactName,
+        emergencyContactPhone: updatedUser.emergencyContactPhone ?? currentUser.emergencyContactPhone,
+        emergencyContactRelationship: updatedUser.emergencyContactRelationship ?? currentUser.emergencyContactRelationship,
+        marketingEmailsEnabled: updatedUser.marketingEmailsEnabled,
+        eventNotificationsEnabled: updatedUser.eventNotificationsEnabled,
+        smsNotificationsEnabled: updatedUser.smsNotificationsEnabled,
+      );
+
+      print('🔍 [AUTH_SERVICE] Merged user data (final):');
+      print('   - Phone: ${mergedUser.phoneNumber}');
+      print('   - DOB: ${mergedUser.dateOfBirth}');
+      print('   - Billing Address: ${mergedUser.billingAddress}');
+
+      // Prepare the data for database update using merged User's toJson method
+      final body = mergedUser.toJson();
+
+      // Remove fields that shouldn't be updated via user endpoint
       body.remove('user_id');
       body.remove('id');
       body.remove('email'); // Email updates should go through separate endpoint
@@ -391,9 +448,9 @@ class AuthService {
 
       print('🔍 [AUTH_SERVICE] Sending profile data: $body');
 
+      // **CRITICAL FIX**: Use proper user endpoint instead of non-existent auth/profile
       final response = await http.put(
-        Uri.parse(
-            '$baseUrl${Constants.authEndpoint}/profile'), // Use the new auth profile endpoint
+        Uri.parse('$baseUrl/api/users/${currentUser.id}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -401,30 +458,42 @@ class AuthService {
         body: jsonEncode(body),
       );
 
-      print(
-          '🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
+      print('🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
       print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        print('✅ [AUTH_SERVICE] Basic profile updated in database');
+        final data = jsonDecode(response.body);
+        print('✅ [AUTH_SERVICE] Profile updated in database successfully');
 
-        // Store the complete user data locally (including additional fields)
-        await _storeUser(updatedUser);
+        // Parse the updated user from backend response
+        User finalUser;
+        if (data['data'] != null) {
+          finalUser = User.fromJson(data['data']);
+        } else if (data['success'] == true) {
+          finalUser = mergedUser; // Use merged data if backend doesn't return user
+        } else {
+          finalUser = mergedUser;
+        }
+
+        // Store the complete user data locally
+        await _storeUser(finalUser);
         print('✅ [AUTH_SERVICE] Complete profile stored locally');
+        print('   - Final Phone: ${finalUser.phoneNumber}');
+        print('   - Final DOB: ${finalUser.dateOfBirth}');
+        print('   - Final Billing Address: ${finalUser.billingAddress}');
 
-        return {'success': true, 'user': updatedUser};
+        return {'success': true, 'user': finalUser};
       } else {
         final data = jsonDecode(response.body);
-        print(
-            '❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
+        print('❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
 
-        // Fallback: Store locally only
-        await _storeUser(updatedUser);
-        print('⚠️ [AUTH_SERVICE] Stored locally as fallback');
+        // Fallback: Store merged data locally only
+        await _storeUser(mergedUser);
+        print('⚠️ [AUTH_SERVICE] Stored merged data locally as fallback');
 
         return {
           'success': true,
-          'user': updatedUser,
+          'user': mergedUser,
           'warning': 'Saved locally only'
         };
       }
@@ -548,9 +617,25 @@ class AuthService {
 
   // Logout
   Future<void> logout() async {
+    print('🔄 [AUTH_SERVICE] Clearing all stored authentication data...');
+    
     final prefs = await SharedPreferences.getInstance();
+    
+    // Remove primary auth data
     await prefs.remove(AppConfig.tokenKey);
     await prefs.remove(AppConfig.userKey);
+    
+    // Remove any legacy keys that might exist
+    await prefs.remove('user_email');
+    await prefs.remove('auth_token');
+    await prefs.setBool('is_authenticated', false);
+    
+    print('✅ [AUTH_SERVICE] All authentication data cleared successfully');
+    print('   - Removed: ${AppConfig.tokenKey}');
+    print('   - Removed: ${AppConfig.userKey}');
+    print('   - Removed: user_email');
+    print('   - Removed: auth_token');
+    print('   - Set is_authenticated to false');
   }
 
   // Store token
