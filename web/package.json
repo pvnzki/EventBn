@@ -68,7 +68,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "speakeasy": "^2.0.0",
+    "base32.js": "^0.0.1"
   },
   "devDependencies": {
     "@types/node": "^22",
