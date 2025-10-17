@@ -3068,8 +3068,8 @@ router.get("/analytics/dashboard", async (req, res) => {
   }
 });
 
-// Import and use users routes
+// Import and use users routes (with authentication protection)
 const usersRoutes = require("./users");
-router.use("/users", usersRoutes);
+router.use("/users", authenticateUser, usersRoutes);
 
 module.exports = router;
