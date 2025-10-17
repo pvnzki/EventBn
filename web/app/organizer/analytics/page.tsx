@@ -122,7 +122,8 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!organization) {
+  // Only show 'No Organization Found' after the org lookup has finished
+  if (!orgLoading && !organization) {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
