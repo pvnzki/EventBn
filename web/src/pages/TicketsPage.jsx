@@ -1,7 +1,13 @@
-"use client"
+"use client";
 
-import Sidebar from "../components/layout/Sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import Sidebar from "../components/layout/Sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 const TicketsPage = () => {
   return (
@@ -19,7 +25,7 @@ const TicketsPage = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TicketsPage
+export default TicketsPage;

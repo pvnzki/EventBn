@@ -1,7 +1,13 @@
-"use client"
+"use client";
 
-import Sidebar from "../components/layout/Sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import Sidebar from "../components/layout/Sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 const SettingsPage = () => {
   return (
@@ -11,7 +17,9 @@ const SettingsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>Settings</CardTitle>
-            <CardDescription>Application settings and configuration</CardDescription>
+            <CardDescription>
+              Application settings and configuration
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <p>Settings page content coming soon...</p>
@@ -19,7 +27,7 @@ const SettingsPage = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SettingsPage
+export default SettingsPage;

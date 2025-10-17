@@ -1,7 +1,13 @@
-"use client"
+"use client";
 
-import Sidebar from "../components/layout/Sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import Sidebar from "../components/layout/Sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 const AnalyticsPage = () => {
   return (
@@ -19,7 +25,7 @@ const AnalyticsPage = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AnalyticsPage
+export default AnalyticsPage;
