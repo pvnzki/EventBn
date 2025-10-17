@@ -17,6 +17,15 @@ RUN apt-get update && apt-get install -y \
 COPY package*.json ./
 RUN npm install --production
 
+# Copy Prisma schemas for services
+COPY services/*/prisma ./prisma/
+COPY services/core-service/package*.json ./services/core-service/
+COPY services/post-service/package*.json ./services/post-service/
+
+# Install dependencies for each service
+RUN cd services/core-service && npm install --production
+RUN cd services/post-service && npm install --production
+
 # Copy the rest of the backend code
 COPY . .
 

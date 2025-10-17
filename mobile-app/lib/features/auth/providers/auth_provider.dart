@@ -97,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Login
+  Future<Map<String, dynamic>> login(String email, String password) async {
   Future<bool> login(String email, String password) async {
     print('🔄 [AUTH_PROVIDER] Starting login process for: $email');
     _setLoading(true);
@@ -104,9 +105,30 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final result = await _authService.login(email, password);
+      print('🔄 [AUTH_PROVIDER] Login result: $result');
 
+      // Check if 2FA is required
+      if (result['requiresTwoFactor'] == true) {
+        print('🔐 [AUTH_PROVIDER] Two-factor authentication required');
+        _setLoading(false);
+        return {
+          'success': false,
+          'requiresTwoFactor': true,
+          'twoFactorMethod': result['twoFactorMethod'] ?? 'app',
+          'email': email,
+          'password': password,
+        };
+      }
+
+      // Ensure result is valid and contains both user + token
       if (result['user'] != null && result['token'] != null) {
-        _user = result['user'];
+        // Parse the user data into a User object
+        final userData = result['user'];
+        if (userData is Map<String, dynamic>) {
+          _user = User.fromJson(userData);
+        } else {
+          _user = userData as User;
+        }
         _isAuthenticated = true;
 
         final token = result['token'];
@@ -125,18 +147,46 @@ class AuthProvider extends ChangeNotifier {
 
         print('✅ [AUTH_PROVIDER] Authentication data stored in SharedPreferences');
         _setLoading(false);
-        return true;
+        return {'success': true};
       } else {
         print('❌ [AUTH_PROVIDER] Login failed: Invalid response from server');
         _setError('Invalid email or password');
         _setLoading(false);
-        return false;
+        return {'success': false, 'message': 'Invalid email or password'};
       }
     } catch (e) {
       print('❌ [AUTH_PROVIDER] Login error: $e');
       _setError(e.toString().replaceAll('Exception: ', ''));
       _setLoading(false);
-      return false;
+      return {
+        'success': false,
+        'message': e.toString().replaceAll('Exception: ', '')
+      };
+    }
+  }
+
+  // Complete 2FA login process
+  Future<void> completeTwoFactorLogin(Map<String, dynamic> result) async {
+    if (result['user'] != null && result['token'] != null) {
+      // Parse the user data into a User object
+      final userData = result['user'];
+      if (userData is Map<String, dynamic>) {
+        _user = User.fromJson(userData);
+      } else {
+        _user = userData as User;
+      }
+      _isAuthenticated = true;
+
+      final token = result['token'];
+      print('JWT Token (2FA): $token'); // For debugging
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', _user!.email);
+      await prefs.setString('auth_token', token);
+      await prefs.setBool('is_authenticated', true);
+
+      notifyListeners();
+      print('✅ [AUTH_PROVIDER] 2FA login completed for: ${_user!.email}');
     }
   }
 
@@ -152,7 +202,7 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       print('🔄 [AUTH_PROVIDER] Registering user: $email');
-      
+
       final result = await _authService.register(
         name: name,
         email: email,
@@ -161,7 +211,13 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result['success'] == true && result['user'] != null) {
-        _user = result['user'];
+        // Parse the user data into a User object
+        final userData = result['user'];
+        if (userData is Map<String, dynamic>) {
+          _user = User.fromJson(userData);
+        } else {
+          _user = userData as User;
+        }
         _isAuthenticated = true;
 
         final token = result['token'];
@@ -237,10 +293,18 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (result['success'] == true && result['user'] != null) {
-        _user = result['user'];
+        // Parse the user data into a User object
+        final userData = result['user'];
+        if (userData is Map<String, dynamic>) {
+          _user = User.fromJson(userData);
+        } else {
+          _user = userData as User;
+        }
+
         print('✅ [AUTH_PROVIDER] Profile updated successfully');
         print('   - Phone: ${_user!.phoneNumber}');
         print('   - Billing Address: ${_user!.billingAddress}');
+
         _setLoading(false);
         notifyListeners();
         return true;

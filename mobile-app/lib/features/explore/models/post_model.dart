@@ -145,8 +145,8 @@ class ExplorePost {
     return ExplorePost(
       id: json['id'].toString(),
       userId: json['userId'].toString(),
-      userDisplayName: json['userDisplayName'] as String,
-      userAvatarUrl: json['userAvatarUrl'] as String,
+      userDisplayName: json['userDisplayName'] as String? ?? 'Unknown User',
+      userAvatarUrl: json['userAvatarUrl'] as String? ?? '',
       isUserVerified: json['isUserVerified'] as bool? ?? false,
       content: json['content'] as String,
       imageUrls: List<String>.from(json['imageUrls'] as List),
