@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -87,15 +88,12 @@ export default function OrganizerSettingsPage() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:3001/api/users/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(apiUrl(`api/users/${userId}`), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const result = await response.json();
@@ -113,7 +111,7 @@ export default function OrganizerSettingsPage() {
           // Fetch organization data
           try {
             const orgResponse = await fetch(
-              `http://localhost:3001/api/organizations/user/${userId}`,
+              apiUrl(`api/organizations/user/${userId}`),
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -215,17 +213,14 @@ export default function OrganizerSettingsPage() {
         formData.append("profile_picture", selectedFile);
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/users/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // Don't set Content-Type header - let browser set it with boundary
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(apiUrl(`api/users/${userId}`), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type header - let browser set it with boundary
+        },
+        body: formData,
+      });
 
       if (!response.ok) throw new Error("Failed to save profile data");
 
@@ -283,17 +278,14 @@ export default function OrganizerSettingsPage() {
         formData.append("logo", organizationLogo);
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/organizations/user/${userId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // Don't set Content-Type header - let browser set it with boundary
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(apiUrl(`api/organizations/user/${userId}`), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type header - let browser set it with boundary
+        },
+        body: formData,
+      });
 
       if (!response.ok) throw new Error("Failed to save organization data");
 
@@ -366,20 +358,17 @@ export default function OrganizerSettingsPage() {
         return;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/users/${userId}/password`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            currentPassword: passwordData.currentPassword,
-            newPassword: passwordData.newPassword,
-          }),
-        }
-      );
+      const response = await fetch(apiUrl(`api/users/${userId}/password`), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
 
       if (!response.ok) {
         const errorResult = await response.json();

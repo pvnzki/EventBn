@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
@@ -85,14 +86,11 @@ export default function AdminEventDetailsPage() {
       try {
         const token = localStorage.getItem("token");
 
-        const response = await fetch(
-          `http://localhost:3001/api/events/${eventId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(apiUrl(`api/events/${eventId}`), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -106,7 +104,7 @@ export default function AdminEventDetailsPage() {
             // Fetch ticket types for this event
             try {
               const ticketResponse = await fetch(
-                `http://localhost:3001/api/events/${eventId}/ticket-types`,
+                apiUrl(`api/events/${eventId}/ticket-types`),
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,

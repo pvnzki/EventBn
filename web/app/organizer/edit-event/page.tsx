@@ -1,6 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -31,12 +32,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import dynamic from "next/dynamic";
-
-const SeatingArrangementSection = dynamic(
-  () => import("./SeatingArrangementSection"),
-  { ssr: false }
-);
+import SeatingArrangementSection from "@/components/seating/SeatingArrangementSection";
 
 interface TicketType {
   id: string;
@@ -123,7 +119,7 @@ const EditEventPage = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      fetch(`http://localhost:3001/api/events/${eventId}`, { headers })
+      fetch(apiUrl(`api/events/${eventId}`), { headers })
         .then((res) => {
           console.log("Fetch event response status:", res.status);
           if (!res.ok) {
@@ -448,7 +444,7 @@ const EditEventPage = () => {
         formData.append("video_url", form.video_url);
       }
 
-      const res = await fetch(`http://localhost:3001/api/events/${eventId}`, {
+      const res = await fetch(apiUrl(`api/events/${eventId}`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

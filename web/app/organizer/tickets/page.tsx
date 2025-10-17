@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -232,16 +233,13 @@ export default function TicketsPage() {
         return;
       }
 
-      const response = await fetch(
-        "http://localhost:3001/api/tickets/my-events-tickets",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl("api/tickets/my-events-tickets"), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -296,16 +294,13 @@ export default function TicketsPage() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch(
-        `http://localhost:3001/api/tickets/${ticketId}/attend`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl(`api/tickets/${ticketId}/attend`), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.ok) {
         // Refresh data after successful update

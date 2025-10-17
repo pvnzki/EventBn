@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from "@/lib/api";
 
 export interface Organization {
   organization_id: number;
@@ -35,7 +34,7 @@ export const useOrganization = (userId: number | null) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/organizations/user/${userId}`);
+  const response = await fetch(apiUrl(`api/organizations/user/${userId}`));
       
       if (!response.ok) {
         if (response.status === 404) {

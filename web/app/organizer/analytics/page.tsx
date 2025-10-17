@@ -9,13 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// time range selection is fixed for organizer analytics; removed Select
 import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,

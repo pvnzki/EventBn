@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -83,7 +84,7 @@ export default function UsersPage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch("http://localhost:3001/api/users", {
+        const response = await fetch(apiUrl("api/users"), {
           headers,
         });
         const data = await response.json();
@@ -137,13 +138,10 @@ export default function UsersPage() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/users/${user.id}`,
-        {
-          method: "DELETE",
-          headers,
-        }
-      );
+      const response = await fetch(apiUrl(`api/users/${user.id}`), {
+        method: "DELETE",
+        headers,
+      });
 
       if (response.ok) {
         setUsers(users.filter((u) => u.id !== user.id));

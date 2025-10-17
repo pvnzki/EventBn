@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Shield, Camera, User, Loader2 } from "lucide-react";
+import { apiUrl } from "@/lib/api";
 
 interface UserType {
   user_id: number;
@@ -68,10 +69,9 @@ export default function SettingsPage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(
-          `http://localhost:3001/api/users/${userId}`,
-          { headers }
-        );
+        const response = await fetch(apiUrl(`api/users/${userId}`), {
+          headers,
+        });
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const result = await response.json();
@@ -141,7 +141,7 @@ export default function SettingsPage() {
         formData.append("phone_number", profileData.phone);
         formData.append("profile_picture", selectedFile);
 
-        response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+        response = await fetch(apiUrl(`api/users/${userId}`), {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -151,7 +151,7 @@ export default function SettingsPage() {
         });
       } else {
         // No new file selected — don't overwrite profile_picture on the server
-        response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+        response = await fetch(apiUrl(`api/users/${userId}`), {
           method: "PUT",
           headers,
           body: JSON.stringify({

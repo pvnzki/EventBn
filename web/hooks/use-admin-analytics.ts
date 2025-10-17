@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DashboardOverview, RevenueData, CategoryData, AttendeeData, TopEvent } from './use-analytics';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from "@/lib/api";
 
 export const useAdminAnalytics = (enabled: boolean, timeRange: string = '6months') => {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
@@ -24,11 +23,11 @@ export const useAdminAnalytics = (enabled: boolean, timeRange: string = '6months
       setError(null);
 
       const [overviewRes, revenueRes, categoriesRes, attendeesRes, topEventsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/analytics/platform/dashboard/overview?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/platform/dashboard/revenue-trend?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/platform/dashboard/categories`),
-        fetch(`${API_BASE_URL}/api/analytics/platform/dashboard/daily-attendees`),
-        fetch(`${API_BASE_URL}/api/analytics/platform/dashboard/top-events?limit=5`)
+        fetch(apiUrl(`api/analytics/platform/dashboard/overview?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/platform/dashboard/revenue-trend?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/platform/dashboard/categories`)),
+        fetch(apiUrl(`api/analytics/platform/dashboard/daily-attendees`)),
+        fetch(apiUrl(`api/analytics/platform/dashboard/top-events?limit=5`))
       ]);
 
       if (!overviewRes.ok || !revenueRes.ok || !categoriesRes.ok || !attendeesRes.ok || !topEventsRes.ok) {

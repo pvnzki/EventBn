@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { apiUrl } from "@/lib/api";
 
 export interface DashboardOverview {
   totalRevenue: number;
@@ -63,8 +62,7 @@ export const useAnalytics = (timeRange: string = '6months', isAdmin: boolean = f
     try {
       setLoading(true);
       setError(null);
-      let base = `${API_BASE_URL}/api/analytics`;
-      let prefix = isAdmin ? '/platform/dashboard' : `/organizer/${organizerId}/dashboard`;
+      let prefix = isAdmin ? `platform/dashboard` : `organizer/${organizerId}/dashboard`;
       const [
         overviewRes,
         revenueRes,
@@ -72,11 +70,11 @@ export const useAnalytics = (timeRange: string = '6months', isAdmin: boolean = f
         attendeesRes,
         topEventsRes
       ] = await Promise.all([
-        fetch(`${base}${prefix}/overview?timeRange=${timeRange}`),
-        fetch(`${base}${prefix}/revenue-trend?timeRange=${timeRange}`),
-        fetch(`${base}${prefix}/categories`),
-        fetch(`${base}${prefix}/daily-attendees`),
-        fetch(`${base}${prefix}/top-events?limit=5`)
+        fetch(apiUrl(`api/analytics/${prefix}/overview?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/${prefix}/revenue-trend?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/${prefix}/categories`)),
+        fetch(apiUrl(`api/analytics/${prefix}/daily-attendees`)),
+        fetch(apiUrl(`api/analytics/${prefix}/top-events?limit=5`))
       ]);
       if (!overviewRes.ok || !revenueRes.ok || !categoriesRes.ok || !attendeesRes.ok || !topEventsRes.ok) {
         throw new Error('Failed to fetch analytics data');
@@ -138,9 +136,9 @@ export const useAnalyticsEndpoint = <T>(endpoint: string, timeRange?: string) =>
       setLoading(true);
       setError(null);
 
-      const url = timeRange 
-        ? `${API_BASE_URL}/api/analytics/${endpoint}?timeRange=${timeRange}`
-        : `${API_BASE_URL}/api/analytics/${endpoint}`;
+      const url = timeRange
+        ? apiUrl(`api/analytics/${endpoint}?timeRange=${timeRange}`)
+        : apiUrl(`api/analytics/${endpoint}`);
 
       const response = await fetch(url);
       

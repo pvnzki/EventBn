@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -105,7 +106,7 @@ const AdminDashboardPage = () => {
     }
     // Fetch events list for Recent Events panel (separate from analytics)
     setEventsLoading(true);
-    fetch("http://localhost:3001/api/events", { headers })
+    fetch(apiUrl("api/events"), { headers })
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
@@ -153,13 +154,10 @@ const AdminDashboardPage = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-          headers,
-        }
-      );
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers,
+      });
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
@@ -251,7 +249,7 @@ const AdminDashboardPage = () => {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/events/${eventToEdit.event_id}`,
+        apiUrl(`api/events/${eventToEdit.event_id}`),
         {
           method: "PUT",
           headers,

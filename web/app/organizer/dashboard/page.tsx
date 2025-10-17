@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -160,12 +161,7 @@ const AdminDashboardPage = () => {
           // Try to get user's organization. Backend returns { success: true, data: organization }
           const userIdForOrg =
             parsedUser.user_id || parsedUser.id || parsedUser.userId;
-          fetch(
-            `http://localhost:3001/api/organizations/user/${userIdForOrg}`,
-            {
-              headers,
-            }
-          )
+          fetch(apiUrl(`api/organizations/user/${userIdForOrg}`), { headers })
             .then(async (res) => {
               console.log("Organization API response status:", res.status);
               // If the backend explicitly returns 404 for no organization, treat as not linked
@@ -258,7 +254,9 @@ const AdminDashboardPage = () => {
       }
 
       fetch(
-        `http://localhost:3001/api/analytics/organizer/${user.organization_id}/dashboard/overview`,
+        apiUrl(
+          `api/analytics/organizer/${user.organization_id}/dashboard/overview`
+        ),
         { headers }
       )
         .then((res) => {
@@ -331,7 +329,9 @@ const AdminDashboardPage = () => {
       }
 
       fetch(
-        `http://localhost:3001/api/analytics/organizer/${user.organization_id}/dashboard/revenue-trend`,
+        apiUrl(
+          `api/analytics/organizer/${user.organization_id}/dashboard/revenue-trend`
+        ),
         { headers }
       )
         .then((res) => {
@@ -401,7 +401,9 @@ const AdminDashboardPage = () => {
       }
 
       // Prefer organization-specific endpoint which returns upcoming and past events
-      const orgEventsUrl = `http://localhost:3001/api/organizations/${user.organization_id}/events`;
+      const orgEventsUrl = apiUrl(
+        `api/organizations/${user.organization_id}/events`
+      );
       setLoadingEventsFetch(true);
       console.log("Requesting org events URL:", orgEventsUrl);
       fetch(orgEventsUrl, { headers })
@@ -475,13 +477,10 @@ const AdminDashboardPage = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-          headers: headers,
-        }
-      );
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers: headers,
+      });
 
       const data = await response.json();
 
@@ -573,7 +572,7 @@ const AdminDashboardPage = () => {
       }
 
       const response = await fetch(
-        `http://localhost:3001/api/events/${eventToEdit.event_id}`,
+        apiUrl(`api/events/${eventToEdit.event_id}`),
         {
           method: "PUT",
           headers: headers,

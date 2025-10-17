@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DashboardOverview, RevenueData, CategoryData, AttendeeData, TopEvent } from './use-analytics';
+import { apiUrl } from "@/lib/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const useOrganizerAnalytics = (organizationId: number | string, timeRange: string = '6months') => {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
@@ -36,11 +36,11 @@ export const useOrganizerAnalytics = (organizationId: number | string, timeRange
         attendeesRes,
         topEventsRes
       ] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/analytics/organizer/${organizationId}/dashboard/overview?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/organizer/${organizationId}/dashboard/revenue-trend?timeRange=${timeRange}`),
-        fetch(`${API_BASE_URL}/api/analytics/organizer/${organizationId}/dashboard/categories`),
-        fetch(`${API_BASE_URL}/api/analytics/organizer/${organizationId}/dashboard/daily-attendees`),
-        fetch(`${API_BASE_URL}/api/analytics/organizer/${organizationId}/dashboard/top-events?limit=5`)
+        fetch(apiUrl(`api/analytics/organizer/${organizationId}/dashboard/overview?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/organizer/${organizationId}/dashboard/revenue-trend?timeRange=${timeRange}`)),
+        fetch(apiUrl(`api/analytics/organizer/${organizationId}/dashboard/categories`)),
+        fetch(apiUrl(`api/analytics/organizer/${organizationId}/dashboard/daily-attendees`)),
+        fetch(apiUrl(`api/analytics/organizer/${organizationId}/dashboard/top-events?limit=5`))
       ]);
 
       // Check if all requests were successful
@@ -121,9 +121,9 @@ export const useOrganizerAnalyticsEndpoint = <T>(
         throw new Error('Organization ID is required');
       }
 
-      const url = timeRange 
-        ? `${API_BASE_URL}/api/analytics/organizer/${organizationId}/${endpoint}?timeRange=${timeRange}`
-        : `${API_BASE_URL}/api/analytics/organizer/${organizationId}/${endpoint}`;
+      const url = timeRange
+        ? apiUrl(`api/analytics/organizer/${organizationId}/${endpoint}?timeRange=${timeRange}`)
+        : apiUrl(`api/analytics/organizer/${organizationId}/${endpoint}`);
 
       const response = await fetch(url);
       

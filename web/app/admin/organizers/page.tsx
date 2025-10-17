@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -86,7 +87,7 @@ export default function OrganizersPage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch("http://localhost:3001/api/users", {
+        const response = await fetch(apiUrl("api/users"), {
           headers,
         });
         const data = await response.json();
@@ -136,13 +137,10 @@ export default function OrganizersPage() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/users/${organizer.id}`,
-        {
-          method: "DELETE",
-          headers,
-        }
-      );
+      const response = await fetch(apiUrl(`api/users/${organizer.id}`), {
+        method: "DELETE",
+        headers,
+      });
 
       if (response.ok) {
         setOrganizers(organizers.filter((o) => o.id !== organizer.id));

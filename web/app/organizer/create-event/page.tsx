@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -37,12 +38,7 @@ import {
   Save,
   AlertCircle,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-
-const SeatingArrangementSection = dynamic(
-  () => import("./SeatingArrangementSection"),
-  { ssr: false }
-);
+import SeatingArrangementSection from "@/components/seating/SeatingArrangementSection";
 
 interface TicketType {
   id: string;
@@ -341,18 +337,13 @@ export default function CreateEventPage() {
       }
 
       // Send to API with Authorization header
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
-        }/api/events`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(apiUrl(`api/events`), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
       // Handle common auth errors explicitly
       if (response.status === 401) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
@@ -128,7 +129,7 @@ export default function AdminEventsPage() {
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     const fetchEventsForOrg = (orgId: number) => {
-      const orgEventsUrl = `http://localhost:3001/api/organizations/${orgId}/events`;
+      const orgEventsUrl = apiUrl(`api/organizations/${orgId}/events`);
       console.log("Requesting org events URL:", orgEventsUrl);
       fetch(orgEventsUrl, { headers })
         .then((res) => {
@@ -187,7 +188,7 @@ export default function AdminEventsPage() {
       return;
     }
 
-    fetch(`http://localhost:3001/api/organizations/user/${userId}`, {
+    fetch(apiUrl(`api/organizations/user/${userId}`), {
       headers,
     })
       .then(async (res) => {
@@ -235,13 +236,10 @@ export default function AdminEventsPage() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const response = await fetch(
-        `http://localhost:3001/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-          headers: headers,
-        }
-      );
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers: headers,
+      });
 
       const data = await response.json();
 

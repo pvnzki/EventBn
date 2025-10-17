@@ -41,7 +41,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { useAnalytics } from "@/hooks/use-analytics";
 import { useAdminAnalytics } from "@/hooks/use-admin-analytics";
 
 interface User {
