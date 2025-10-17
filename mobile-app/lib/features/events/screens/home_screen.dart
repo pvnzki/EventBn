@@ -4,9 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:developer';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../providers/event_provider.dart';
 import '../models/event_model.dart';
+import '../../../core/config/app_config.dart';
+import '../../auth/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,6 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
   bool _imagesPreloaded = false;
+  
+  // Price caching for events
+  final Map<String, double> _eventPriceCache = {};
+  final Set<String> _loadingPrices = {};
+  
+  // Category filtering
+  String _selectedCategory = 'All';
+  
+  // Advanced search filters
+  DateTimeRange? _selectedDateRange;
+  RangeValues? _selectedPriceRange;
+  String _selectedLocation = 'All';
+  
+  // Available filter options
+  final List<String> _locationOptions = ['All', 'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Other'];
+  final double _minPrice = 0;
+  final double _maxPrice = 10000;
 
   final List<String> _bannerImages = [
     'assets/images/manobhawa banner.jpg',
@@ -54,7 +75,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Fetch events when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventProvider>().fetchEvents();
+      context.read<EventProvider>().fetchEvents().then((_) {
+        // Preload pricing for the first few events after events are loaded
+        _preloadEventPricing();
+      });
     });
   }
 
@@ -162,8 +186,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final eventProvider = context.read<EventProvider>();
       final results = await eventProvider.searchEvents(query);
+      
+      // Apply category filtering to search results as well
+      final filteredResults = _getFilteredEvents(results);
+      
       setState(() {
-        _searchResults = results;
+        _searchResults = filteredResults;
         _isSearching = false;
       });
     } catch (e) {
@@ -182,6 +210,148 @@ class _HomeScreenState extends State<HomeScreen> {
       _searchResults = [];
       _isSearching = false;
     });
+  }
+
+  // Check if any advanced filters are active
+  bool _hasActiveFilters() {
+    return _selectedDateRange != null ||
+           _selectedPriceRange != null ||
+           _selectedLocation != 'All';
+  }
+
+  // Show the filter modal
+  void _showFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildFilterModal(),
+    );
+  }
+
+  // Clear all filters
+  void _clearAllFilters() {
+    setState(() {
+      _selectedDateRange = null;
+      _selectedPriceRange = null;
+      _selectedLocation = 'All';
+    });
+  }
+
+  // Apply filters
+  void _applyFilters() {
+    Navigator.pop(context);
+    // If there's an active search, re-perform it with filters
+    if (_searchController.text.isNotEmpty) {
+      _performSearch(_searchController.text);
+    } else {
+      // Just refresh the UI to show filtered events
+      setState(() {});
+    }
+  }
+
+  // Select date range
+  Future<void> _selectDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _selectedDateRange,
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+    }
+  }
+
+  // Format date for display
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Get filtered events based on all active filters
+  List<Event> _getFilteredEvents(List<Event> events) {
+    return events.where((event) {
+      // Category filter
+      if (_selectedCategory != 'All') {
+        final eventCategory = event.category.toLowerCase();
+        final selectedCategory = _selectedCategory.toLowerCase();
+        
+        bool categoryMatch = false;
+        switch (selectedCategory) {
+          case 'concerts':
+            categoryMatch = eventCategory.contains('music') || 
+                           eventCategory.contains('concert') ||
+                           eventCategory.contains('entertainment');
+            break;
+          case 'sports':
+            categoryMatch = eventCategory.contains('sport') ||
+                           eventCategory.contains('football') ||
+                           eventCategory.contains('cricket') ||
+                           eventCategory.contains('game');
+            break;
+          case 'food':
+            categoryMatch = eventCategory.contains('food') ||
+                           eventCategory.contains('culinary') ||
+                           eventCategory.contains('dining') ||
+                           eventCategory.contains('restaurant');
+            break;
+          case 'art':
+            categoryMatch = eventCategory.contains('art') ||
+                           eventCategory.contains('exhibition') ||
+                           eventCategory.contains('gallery') ||
+                           eventCategory.contains('creative');
+            break;
+          case 'business':
+            categoryMatch = eventCategory.contains('business') ||
+                           eventCategory.contains('conference') ||
+                           eventCategory.contains('workshop') ||
+                           eventCategory.contains('seminar') ||
+                           eventCategory.contains('professional');
+            break;
+          default:
+            categoryMatch = eventCategory.contains(selectedCategory);
+        }
+        
+        if (!categoryMatch) return false;
+      }
+      
+      // Date range filter
+      if (_selectedDateRange != null) {
+        final eventDate = event.startDateTime;
+        if (eventDate.isBefore(_selectedDateRange!.start) || 
+            eventDate.isAfter(_selectedDateRange!.end)) {
+          return false;
+        }
+      }
+      
+      // Location filter  
+      if (_selectedLocation != 'All') {
+        final eventVenue = event.venue.toLowerCase();
+        final eventAddress = event.address.toLowerCase();
+        final selectedLocation = _selectedLocation.toLowerCase();
+        if (!eventVenue.contains(selectedLocation) && 
+            !eventAddress.contains(selectedLocation)) {
+          return false;
+        }
+      }
+      
+      // Price range filter (using cached prices if available)
+      if (_selectedPriceRange != null) {
+        final cachedPrice = _eventPriceCache[event.id];
+        if (cachedPrice != null) {
+          if (cachedPrice < _selectedPriceRange!.start || 
+              cachedPrice > _selectedPriceRange!.end) {
+            return false;
+          }
+        }
+        // If no cached price, we can't filter by price for this event
+        // so we include it to avoid filtering out events with unknown prices
+      }
+      
+      return true;
+    }).toList();
   }
 
   Widget _buildSearchBar() {
@@ -266,8 +436,39 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? Container(
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Filter button
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _showFilterModal,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: _hasActiveFilters()
+                                  ? theme.primaryColor.withOpacity(0.2)
+                                  : theme.colorScheme.onSurface.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: _hasActiveFilters()
+                                  ? theme.primaryColor
+                                  : theme.colorScheme.onSurface.withOpacity(0.7),
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Clear button (only shown when there's text)
+                    if (_searchController.text.isNotEmpty)
+                      Container(
                         padding: const EdgeInsets.all(8),
                         child: Material(
                           color: Colors.transparent,
@@ -290,8 +491,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                      )
-                    : null,
+                      ),
+                  ],
+                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -402,13 +604,28 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-          child: Text(
-            'Search Results (${_searchResults.length})',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Search Results (${_searchResults.length})',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              if (_selectedCategory != 'All') ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Filtered by: $_selectedCategory',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         ListView.builder(
@@ -936,7 +1153,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => eventProvider.fetchEvents(),
+                      onPressed: () {
+                        eventProvider.fetchEvents().then((_) {
+                          _preloadEventPricing();
+                        });
+                      },
                       child:
                           const Text('Retry', style: TextStyle(fontSize: 12)),
                     ),
@@ -947,11 +1168,47 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        if (eventProvider.events.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(32.0),
+        // Apply category filtering
+        final filteredEvents = _getFilteredEvents(eventProvider.events);
+
+        if (filteredEvents.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(32.0),
             child: Center(
-              child: Text('No events found'),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.event_busy,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _selectedCategory == 'All' 
+                        ? 'No events found' 
+                        : 'No $_selectedCategory events found',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  if (_selectedCategory != 'All') ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          // Reset to "All" category
+                          for (var cat in _categories) {
+                            cat['isSelected'] = cat['name'] == 'All';
+                          }
+                          _selectedCategory = 'All';
+                        });
+                      },
+                      child: const Text('Show All Events'),
+                    ),
+                  ],
+                ],
+              ),
             ),
           );
         }
@@ -968,9 +1225,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
-            itemCount: eventProvider.events.length,
+            itemCount: filteredEvents.length,
             itemBuilder: (context, index) {
-              final event = eventProvider.events[index];
+              final event = filteredEvents[index];
               return _buildEventCard(event);
             },
           ),
@@ -979,15 +1236,133 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _getEventPriceText(Event event) {
-    // Use the cheapestPrice getter from Event model
-    final price = event.cheapestPrice;
+  // Preload pricing for first few events to improve user experience
+  void _preloadEventPricing() {
+    final events = context.read<EventProvider>().events;
+    // Preload pricing for the first 6 events (what's typically visible)
+    final eventsToPreload = events.take(6);
+    
+    for (final event in eventsToPreload) {
+      _fetchEventPricing(event.id);
+    }
+  }
 
+  // Fetch pricing information for an event from seatmap API
+  Future<void> _fetchEventPricing(String eventId) async {
+    if (_loadingPrices.contains(eventId) || _eventPriceCache.containsKey(eventId)) {
+      return; // Already loading or cached
+    }
+
+    _loadingPrices.add(eventId);
+
+    try {
+      final authService = AuthService();
+      final token = await authService.getStoredToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final url = '${AppConfig.baseUrl}/api/events/$eventId/seatmap';
+      final response = await http.get(Uri.parse(url), headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final seatMapData = data['data']['seats'] as List?;
+          if (seatMapData != null && seatMapData.isNotEmpty) {
+            // Find the lowest price from seat data
+            double? lowestPrice;
+            for (var seat in seatMapData) {
+              if (seat['price'] != null) {
+                final price = (seat['price'] as num).toDouble();
+                if (lowestPrice == null || price < lowestPrice) {
+                  lowestPrice = price;
+                }
+              }
+            }
+            
+            if (lowestPrice != null && lowestPrice > 0) {
+              _eventPriceCache[eventId] = lowestPrice;
+              if (mounted) {
+                setState(() {});
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Silently handle errors - pricing is not critical for the list view
+      print('Could not fetch pricing for event $eventId: $e');
+    } finally {
+      _loadingPrices.remove(eventId);
+    }
+  }
+
+  String _getEventPriceText(Event event) {
+    // Check if we have cached pricing data
+    final cachedPrice = _eventPriceCache[event.id];
+    if (cachedPrice != null && cachedPrice > 0) {
+      return 'LKR ${cachedPrice.toStringAsFixed(0)}';
+    }
+
+    // Use the cheapestPrice getter from Event model as fallback
+    final price = event.cheapestPrice;
     if (price > 0) {
       return 'LKR ${price.toStringAsFixed(0)}';
-    } else {
-      return 'Free Event';
     }
+
+    // Fetch pricing data in the background if not already loading
+    if (!_loadingPrices.contains(event.id) && !_eventPriceCache.containsKey(event.id)) {
+      _fetchEventPricing(event.id);
+    }
+
+    // Smart fallback pricing based on event category and capacity
+    return _getEstimatedPrice(event);
+  }
+
+  // Provide estimated pricing based on event characteristics
+  String _getEstimatedPrice(Event event) {
+    // Analyze event category and capacity to provide realistic price estimates
+    final category = event.category.toLowerCase();
+    final capacity = event.totalCapacity;
+
+    // Base prices by category
+    int basePrice = 500; // Default base price
+    
+    switch (category) {
+      case 'music':
+      case 'concert':
+        basePrice = capacity > 2000 ? 1500 : 1000;
+        break;
+      case 'tech':
+      case 'conference':
+      case 'summit':
+        basePrice = capacity > 500 ? 2500 : 1500;
+        break;
+      case 'art':
+      case 'gallery':
+        basePrice = 800;
+        break;
+      case 'food':
+      case 'wine':
+        basePrice = 1200;
+        break;
+      case 'sports':
+        basePrice = capacity > 1000 ? 2000 : 1000;
+        break;
+      default:
+        basePrice = 500;
+    }
+
+    // Adjust for capacity (premium events typically have higher capacity)
+    if (capacity > 5000) {
+      basePrice = (basePrice * 1.5).round();
+    } else if (capacity < 100) {
+      basePrice = (basePrice * 1.3).round(); // Exclusive events
+    }
+
+    return 'From LKR $basePrice';
   }
 
   Widget _buildEventCard(Event event) {
@@ -1260,6 +1635,297 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildFilterModal() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Filter Events',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _clearAllFilters,
+                  child: Text(
+                    'Clear All',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Filter options
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date range filter
+                  _buildFilterSection(
+                    'Date Range',
+                    _buildDateRangeFilter(theme),
+                  ),
+                  const SizedBox(height: 24),
+                  // Location filter
+                  _buildFilterSection(
+                    'Location',
+                    _buildLocationFilter(theme),
+                  ),
+                  const SizedBox(height: 24),
+                  // Price range filter
+                  _buildFilterSection(
+                    'Price Range (LKR)',
+                    _buildPriceRangeFilter(theme),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+          // Apply button
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _applyFilters,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Apply Filters',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection(String title, Widget content) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        content,
+      ],
+    );
+  }
+
+  Widget _buildDateRangeFilter(ThemeData theme) {
+    return InkWell(
+      onTap: _selectDateRange,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: theme.colorScheme.outline.withOpacity(0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.date_range_rounded,
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _selectedDateRange != null
+                    ? '${_formatDate(_selectedDateRange!.start)} - ${_formatDate(_selectedDateRange!.end)}'
+                    : 'Select date range',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _selectedDateRange != null
+                      ? theme.colorScheme.onSurface
+                      : theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ),
+            if (_selectedDateRange != null)
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedDateRange = null;
+                  });
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  size: 18,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationFilter(ThemeData theme) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _locationOptions.map((location) {
+        final isSelected = _selectedLocation == location;
+        return InkWell(
+          onTap: () {
+            setState(() {
+              _selectedLocation = location;
+            });
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline.withOpacity(0.3),
+              ),
+            ),
+            child: Text(
+              location,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isSelected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildPriceRangeFilter(ThemeData theme) {
+    return Column(
+      children: [
+        if (_selectedPriceRange != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'LKR ${_selectedPriceRange!.start.round()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'LKR ${_selectedPriceRange!.end.round()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        RangeSlider(
+          values: _selectedPriceRange ?? RangeValues(_minPrice, _maxPrice),
+          min: _minPrice,
+          max: _maxPrice,
+          divisions: 20,
+          labels: _selectedPriceRange != null
+              ? RangeLabels(
+                  'LKR ${_selectedPriceRange!.start.round()}',
+                  'LKR ${_selectedPriceRange!.end.round()}',
+                )
+              : null,
+          onChanged: (RangeValues values) {
+            setState(() {
+              _selectedPriceRange = values;
+            });
+          },
+        ),
+        if (_selectedPriceRange != null) ...[
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _selectedPriceRange = null;
+              });
+            },
+            child: Text(
+              'Clear Price Filter',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildCategories() {
     final theme = Theme.of(context);
 
@@ -1296,7 +1962,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                     // Select current category
                     _categories[index]['isSelected'] = true;
+                    // Update selected category for filtering
+                    _selectedCategory = category['name'];
                   });
+                  
+                  // If there's an active search, re-perform it with the new category filter
+                  if (_searchController.text.isNotEmpty) {
+                    _performSearch(_searchController.text);
+                  }
                 },
                 child: Container(
                   margin: const EdgeInsets.only(right: 12),
