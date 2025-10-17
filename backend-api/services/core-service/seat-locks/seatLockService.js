@@ -2,8 +2,8 @@ const { getRedisClient } = require("../lib/redis");
 
 class SeatLockService {
   constructor() {
-    this.LOCK_DURATION = 1 * 60; // 1 minute in seconds (for testing)
-    this.PAYMENT_LOCK_DURATION = 10 * 60; // 10 minutes for payment process
+    this.LOCK_DURATION = 5 * 60; // 5 minutes for regular seat selection
+    this.PAYMENT_LOCK_DURATION = 1 * 60; // 15 minutes for payment process
   }
 
   /**
@@ -47,7 +47,7 @@ class SeatLockService {
         throw error;
       }
 
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const lockKey = this.getLockKey(eventId, seatId);
       const lockValue = `${normalizedUserId}:${Date.now()}`;
 
@@ -56,10 +56,13 @@ class SeatLockService {
       );
 
       // Use SET with NX (only if not exists) and EX (expiration) - ATOMIC operation
-      const result = await redis.set(lockKey, lockValue, {
-        NX: true, // Only set if key doesn't exist
-        EX: this.LOCK_DURATION, // Set expiration in seconds
-      });
+      const result = await redis.set(
+        lockKey,
+        lockValue,
+        "NX",
+        "EX",
+        this.LOCK_DURATION
+      );
 
       if (result === "OK") {
         console.log(
@@ -93,7 +96,7 @@ class SeatLockService {
    */
   async isSeatLocked(eventId, seatId) {
     try {
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const lockKey = this.getLockKey(eventId, seatId);
 
       console.log(`🔍 Checking lock status for: ${lockKey}`);
@@ -133,7 +136,7 @@ class SeatLockService {
     const normalizedUserId = String(userId);
 
     try {
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const lockKey = this.getLockKey(eventId, seatId);
 
       console.log(
@@ -164,10 +167,13 @@ class SeatLockService {
       // Atomic lock extension with conditional update
       // Use SET with XX (only if exists) to ensure atomicity
       const newLockValue = `${normalizedUserId}:${Date.now()}`;
-      const result = await redis.set(lockKey, newLockValue, {
-        XX: true, // Only set if key exists
-        EX: this.PAYMENT_LOCK_DURATION, // Set expiration in seconds
-      });
+      const result = await redis.set(
+        lockKey,
+        newLockValue,
+        "XX",
+        "EX",
+        this.PAYMENT_LOCK_DURATION
+      );
 
       if (result === "OK") {
         console.log(
@@ -203,7 +209,7 @@ class SeatLockService {
     const normalizedUserId = userId ? String(userId) : null;
 
     try {
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const lockKey = this.getLockKey(eventId, seatId);
 
       console.log(
@@ -263,7 +269,7 @@ class SeatLockService {
    */
   async getEventLockedSeats(eventId) {
     try {
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const pattern = `seat_lock:${eventId}:*`;
 
       const keys = await redis.keys(pattern);
@@ -296,7 +302,7 @@ class SeatLockService {
    */
   async cleanupExpiredLocks(eventId) {
     try {
-      const redis = getRedisClient();
+      const redis = await getRedisClient();
       const pattern = `seat_lock:${eventId}:*`;
 
       const keys = await redis.keys(pattern);

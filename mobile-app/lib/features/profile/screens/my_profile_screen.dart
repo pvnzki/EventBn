@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/models/user_model.dart';
+import '../../auth/services/auth_service.dart';
 import '../../explore/services/explore_post_service.dart';
 import '../../explore/models/post_model.dart';
+import '../../auth/screens/security_settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -19,13 +23,103 @@ class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ExplorePostService _postService = ExplorePostService();
+  final AuthService _authService = AuthService();
   List<ExplorePost> _userPosts = [];
   bool _isLoadingPosts = true;
+  String? _lastLoadedUserId; // Track the last user ID we loaded posts for
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // Wait for the next frame to ensure AuthProvider is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeProfileData();
+    });
+  }
+
+  Future<void> _initializeProfileData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    // Wait for auth to be fully initialized AND user to be available
+    print('🔄 [PROFILE] Waiting for authentication to complete...');
+
+    // More robust waiting with both polling and listener approach
+    if (authProvider.isLoading || authProvider.user == null) {
+      // Create a completer to wait for auth completion
+      final completer = Completer<void>();
+      late VoidCallback listener;
+
+      // Set up listener to complete when auth is ready
+      listener = () {
+        if (!authProvider.isLoading && authProvider.user != null) {
+          print(
+              '✅ [PROFILE] Authentication ready via listener - user: ${authProvider.user?.id}');
+          authProvider.removeListener(listener);
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        }
+      };
+
+      // Add listener to auth provider
+      authProvider.addListener(listener);
+
+      // Also use polling as backup with timeout
+      int waitAttempts = 0;
+      const maxWaitAttempts = 100; // 10 seconds total (100 * 100ms)
+
+      Future.doWhile(() async {
+        await Future.delayed(const Duration(milliseconds: 100));
+        waitAttempts++;
+
+        final stillWaiting =
+            authProvider.isLoading || authProvider.user == null;
+        if (stillWaiting) {
+          print(
+              '🔄 [PROFILE] Still waiting ($waitAttempts/100) - isLoading: ${authProvider.isLoading}, user: ${authProvider.user?.id ?? 'null'}');
+        }
+
+        // Complete if auth is ready
+        if (!stillWaiting && !completer.isCompleted) {
+          print(
+              '✅ [PROFILE] Authentication ready via polling - user: ${authProvider.user?.id}');
+          authProvider.removeListener(listener);
+          completer.complete();
+          return false;
+        }
+
+        // Stop waiting if we've reached timeout
+        if (waitAttempts >= maxWaitAttempts) {
+          print(
+              '⚠️ [PROFILE] Timeout waiting for authentication - proceeding anyway');
+          authProvider.removeListener(listener);
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+          return false;
+        }
+
+        return stillWaiting && !completer.isCompleted;
+      });
+
+      // Wait for completion
+      await completer.future;
+    } else {
+      print(
+          '✅ [PROFILE] Authentication already ready - user: ${authProvider.user?.id}');
+    }
+
+    if (authProvider.user != null) {
+      print(
+          '✅ [PROFILE] Final check - authentication ready - user: ${authProvider.user?.id}');
+    } else {
+      print(
+          '❌ [PROFILE] Final check - authentication timeout - user still null after waiting');
+    }
+
+    // Now load user posts
     _loadUserPosts();
   }
 
@@ -42,9 +136,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       final currentUser = authProvider.user;
 
       if (currentUser?.id != null) {
+        print('📋 [PROFILE] Loading posts for user: ${currentUser!.id}');
+        _lastLoadedUserId = currentUser.id; // Update the tracked user ID
+
         // Fetch posts for the current user
         final posts = await _postService.getExplorePostsForUser(
-          userId: currentUser!.id,
+          userId: currentUser.id,
           page: 1,
           limit: 50, // Load more posts for the grid
         );
@@ -52,7 +149,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           _userPosts = posts;
           _isLoadingPosts = false;
         });
+        print(
+            '✅ [PROFILE] Successfully loaded ${posts.length} posts for user: ${currentUser.id}');
       } else {
+        print(
+            '❌ [PROFILE] No user ID available for loading posts - currentUser: $currentUser');
         setState(() {
           _userPosts = [];
           _isLoadingPosts = false;
@@ -77,6 +178,17 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final user = authProvider.user;
+
+          // Check if user has changed and reload posts if needed
+          if (user?.id != null &&
+              user!.id != _lastLoadedUserId &&
+              !_isLoadingPosts) {
+            _lastLoadedUserId = user.id;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadUserPosts();
+            });
+          }
+
           return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverAppBar(
@@ -151,30 +263,26 @@ class _ProfileScreenState extends State<ProfileScreen>
                               child:
                                   _buildEmptyPostsState(context, colorScheme),
                             )
-                          : SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 8),
-                              sliver: SliverGrid(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    if (index < _userPosts.length) {
-                                      return _buildPostGridItem(
-                                        context,
-                                        _userPosts[index],
-                                        colorScheme,
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                  childCount: _userPosts.length,
-                                ),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 8,
-                                  mainAxisSpacing: 8,
-                                  childAspectRatio: 1.0,
-                                ),
+                          : SliverGrid(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) {
+                                  if (index < _userPosts.length) {
+                                    return _buildPostGridItem(
+                                      context,
+                                      _userPosts[index],
+                                      colorScheme,
+                                    );
+                                  }
+                                  return null;
+                                },
+                                childCount: _userPosts.length,
+                              ),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 2,
+                                mainAxisSpacing: 2,
+                                childAspectRatio: 1.0,
                               ),
                             ),
                 ],
@@ -252,6 +360,119 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBillingAddressModal(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _BillingAddressModal(
+        currentUser: authProvider.user,
+        onSave: (billingData) async {
+          // Handle billing address save using backend API
+          try {
+            print('💾 [BILLING] Saving billing address: $billingData');
+
+            // Create updated user with new billing data
+            final updatedUser = authProvider.user!.copyWith(
+              billingAddress: billingData['billingAddress']?.toString(),
+              billingCity: billingData['billingCity']?.toString(),
+              billingState: billingData['billingState']?.toString(),
+              billingCountry: billingData['billingCountry']?.toString(),
+              billingPostalCode: billingData['billingPostalCode']?.toString(),
+              profileCompleted: true,
+            );
+
+            // Use AuthService to update profile with billing data
+            final result = await _authService.updateUserProfile(updatedUser);
+
+            if (result['success'] == true) {
+              print('✅ [BILLING] Billing address updated successfully');
+
+              // Update the AuthProvider with the new user data
+              authProvider.updateUser(updatedUser);
+
+              // Check if widget is still mounted before showing snackbar
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Billing address updated successfully!')),
+                );
+              }
+            } else {
+              throw Exception(
+                  result['message'] ?? 'Failed to update billing address');
+            }
+          } catch (e) {
+            print('❌ [BILLING] Failed to update billing address: $e');
+            // Check if widget is still mounted before showing snackbar
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to update billing address: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _showEmergencyContactModal(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _EmergencyContactModal(
+        currentUser: authProvider.user,
+        onSave: (emergencyData) async {
+          // Handle emergency contact save
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Emergency contact updated successfully!')),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to update emergency contact: $e')),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _showCommunicationPreferencesModal(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _CommunicationPreferencesModal(
+        currentUser: authProvider.user,
+        onSave: (preferencesData) async {
+          // Handle communication preferences save
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content:
+                      Text('Communication preferences updated successfully!')),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text('Failed to update communication preferences: $e')),
+            );
+          }
+        },
       ),
     );
   }
@@ -337,6 +558,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
+        margin: const EdgeInsets.only(
+          bottom:
+              kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -371,29 +596,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   const SizedBox(height: 16),
                   _buildSettingsOption(
-                      context, Icons.notifications_outlined, 'Notifications',
-                      () {
+                      context, Icons.tune_outlined, 'Preferences', () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Notifications settings coming soon!')),
-                    );
-                  }),
-                  _buildSettingsOption(
-                      context, Icons.privacy_tip_outlined, 'Privacy', () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Privacy settings coming soon!')),
-                    );
-                  }),
-                  _buildSettingsOption(
-                      context, Icons.security_outlined, 'Security', () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Security settings coming soon!')),
-                    );
+                    _showPreferencesModal(context, authProvider);
                   }),
                   _buildSettingsOption(context, Icons.palette_outlined, 'Theme',
                       () {
@@ -407,6 +612,111 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text('Help & Support coming soon!')),
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPreferencesModal(BuildContext context, AuthProvider authProvider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        margin: const EdgeInsets.only(
+          bottom:
+              kBottomNavigationBarHeight + 32, // Add space for bottom navbar
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back),
+                      ),
+                      Text(
+                        'Preferences',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSettingsOption(
+                      context, Icons.notifications_outlined, 'Notifications',
+                      () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Notifications settings coming soon!')),
+                    );
+                  }),
+                  _buildSettingsOption(
+                      context, Icons.location_on_outlined, 'Billing Address',
+                      () {
+                    Navigator.pop(context);
+                    _showBillingAddressModal(context);
+                  }),
+                  _buildSettingsOption(
+                      context, Icons.emergency_outlined, 'Emergency Contact',
+                      () {
+                    Navigator.pop(context);
+                    _showEmergencyContactModal(context);
+                  }),
+                  _buildSettingsOption(context, Icons.settings_outlined,
+                      'Communication Preferences', () {
+                    Navigator.pop(context);
+                    _showCommunicationPreferencesModal(context);
+                  }),
+                  _buildSettingsOption(
+                      context, Icons.privacy_tip_outlined, 'Privacy', () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Privacy settings coming soon!')),
+                    );
+                  }),
+                  _buildSettingsOption(
+                      context, Icons.security_outlined, 'Security', () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SecuritySettingsScreen(),
+                      ),
                     );
                   }),
                   const SizedBox(height: 16),
@@ -617,35 +927,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                'EventBn user • Event enthusiast 🎉',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.3,
-                ),
-              ),
-              if (user?.email != null) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      size: 14,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      user!.email,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              // if (user?.email != null) ...[
+              //   const SizedBox(height: 4),
+              //   Text(
+              //     user!.email,
+              //     style: TextStyle(
+              //       fontSize: 12,
+              //       color: colorScheme.onSurfaceVariant,
+              //     ),
+              //   ),
+              // ],
             ],
           ),
 
@@ -655,7 +946,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           Row(
             children: [
               Expanded(
-                flex: 4,
                 child: _buildActionButton(
                   'Edit Profile',
                   colorScheme,
@@ -663,24 +953,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () => _editProfile(context),
                   isPrimary: true,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: _buildActionButton(
-                  'Share',
-                  colorScheme,
-                  icon: Icons.share_outlined,
-                  onTap: () => _shareProfile(context),
-                ),
-              ),
-              const SizedBox(width: 12),
-              _buildActionButton(
-                '',
-                colorScheme,
-                icon: Icons.settings_outlined,
-                onTap: () => _showQuickSettingsModal(context),
-                isIconOnly: true,
               ),
             ],
           ),
@@ -775,45 +1047,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildStoryHighlights(BuildContext context, ColorScheme colorScheme) {
-    // Simplified highlights section for minimal UI
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // Add New Highlight
-          Column(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  Icons.add,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'New',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    // Story highlights section removed for cleaner UI
+    return const SizedBox.shrink();
   }
 
   Widget _buildTabBar(BuildContext context, ColorScheme colorScheme) {
@@ -992,11 +1227,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   ) {
     return GestureDetector(
       onTap: () {
-        // Navigate to post detail screen (same as explore page)
+        // Navigate to IGTV feed screen (same as explore page)
         print('🎯 Profile post tapped! Post ID: ${post.id}');
-        print('🚀 Navigating to: /explore/post/${post.id}');
+        print('🚀 Navigating to: /explore/igtv/${post.id}');
         try {
-          context.push('/explore/post/${post.id}');
+          context.push('/explore/igtv/${post.id}');
           print('✅ Navigation call successful');
         } catch (e) {
           print('❌ Navigation failed: $e');
@@ -1022,8 +1257,29 @@ class _ProfileScreenState extends State<ProfileScreen>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Post Image
-            if (post.imageUrls.isNotEmpty)
+            // Post Image or Video Thumbnail
+            if (post.videoUrls.isNotEmpty && post.videoThumbnails.isNotEmpty)
+              // Show video thumbnail for video posts
+              CachedNetworkImage(
+                imageUrl: post.videoThumbnails.first,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.video_library,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.broken_image,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else if (post.imageUrls.isNotEmpty)
+              // Show image for photo posts
               CachedNetworkImage(
                 imageUrl: post.imageUrls.first,
                 fit: BoxFit.cover,
@@ -1043,6 +1299,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               )
             else
+              // Default placeholder
               Container(
                 color: colorScheme.surfaceContainerHighest,
                 child: Icon(
@@ -1096,47 +1353,56 @@ class _ProfileScreenState extends State<ProfileScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      isScrollControlled: true,
+      useSafeArea: false,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom +
+              kBottomNavigationBarHeight +
+              32, // Add more space for bottom navbar
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant
-                    .withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildCreateOption(context, Icons.add_box_outlined, 'Post',
-                      () {
-                    Navigator.pop(context);
-                    context.push('/create-post');
-                  }),
-                  _buildCreateOption(context, Icons.video_call_outlined, 'Reel',
-                      () {
-                    Navigator.pop(context);
-                  }),
-                  _buildCreateOption(context, Icons.add_circle_outline, 'Story',
-                      () {
-                    Navigator.pop(context);
-                  }),
-                ],
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildCreateOption(context, Icons.add_box_outlined, 'Post',
+                        () {
+                      Navigator.pop(context);
+                      context.push('/create-post');
+                    }),
+                    _buildCreateOption(
+                        context, Icons.video_call_outlined, 'Reel', () {
+                      Navigator.pop(context);
+                    }),
+                    _buildCreateOption(
+                        context, Icons.add_circle_outline, 'Story', () {
+                      Navigator.pop(context);
+                    }),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1162,279 +1428,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Profile Menu',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Manage your profile and account settings • Scroll down for more options',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Profile Section
-                        _buildSectionHeader(context, 'Profile'),
-                        _buildMenuOption(
-                            context, Icons.edit_outlined, 'Edit Profile', () {
-                          Navigator.pop(context);
-                          _editProfile(context);
-                        }),
-                        _buildMenuOption(
-                            context, Icons.share_outlined, 'Share Profile', () {
-                          Navigator.pop(context);
-                          _shareProfile(context);
-                        }),
-
-                        const SizedBox(height: 16),
-
-                        // Account Section
-                        _buildSectionHeader(context, 'Account'),
-                        _buildMenuOption(
-                            context, Icons.settings_outlined, 'Settings', () {
-                          Navigator.pop(context);
-                          _showSettingsModal(context, authProvider);
-                        }),
-                        _buildMenuOption(
-                            context, Icons.privacy_tip_outlined, 'Privacy', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Privacy settings coming soon!')),
-                          );
-                        }),
-                        _buildMenuOption(
-                            context, Icons.security_outlined, 'Security', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Security settings coming soon!')),
-                          );
-                        }),
-
-                        const SizedBox(height: 16),
-
-                        // Activity Section
-                        _buildSectionHeader(context, 'Activity'),
-                        _buildMenuOption(
-                            context, Icons.archive_outlined, 'Archive', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Archive feature coming soon!')),
-                          );
-                        }),
-                        _buildMenuOption(
-                            context, Icons.history, 'Your Activity', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Activity feature coming soon!')),
-                          );
-                        }),
-                        _buildMenuOption(
-                            context, Icons.bookmark_outline, 'Saved Posts', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Saved posts feature coming soon!')),
-                          );
-                        }),
-
-                        const SizedBox(height: 16),
-
-                        // Support Section
-                        _buildSectionHeader(context, 'Support'),
-                        _buildMenuOption(
-                            context, Icons.help_outline, 'Help & Support', () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Help & Support coming soon!')),
-                          );
-                        }),
-                        _buildMenuOption(
-                            context, Icons.feedback_outlined, 'Send Feedback',
-                            () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Feedback feature coming soon!')),
-                          );
-                        }),
-
-                        const SizedBox(height: 16),
-
-                        // Logout
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .errorContainer
-                                .withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .error
-                                  .withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: _buildMenuOption(
-                            context,
-                            Icons.logout,
-                            'Log Out',
-                            () {
-                              Navigator.pop(context);
-                              _showLogoutDialog(context, authProvider);
-                            },
-                            isDestructive: true,
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Visual indicator that this is the end
-                        Center(
-                          child: Container(
-                            width: 80,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant
-                                  .withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuOption(
-      BuildContext context, IconData icon, String title, VoidCallback onTap,
-      {bool isDestructive = false}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? colorScheme.error : colorScheme.onSurface,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive ? colorScheme.error : colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: isDestructive
-            ? colorScheme.error.withOpacity(0.6)
-            : colorScheme.onSurfaceVariant,
-      ),
-      onTap: onTap,
-    );
-  }
-
-  void _editProfile(BuildContext context) async {
-    // Navigate to edit profile screen
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EditProfileScreen(),
-      ),
-    );
-
-    // If profile was updated successfully, refresh the current screen
-    if (result == true) {
-      setState(() {
-        // This will trigger a rebuild and reload user data
-      });
-    }
-  }
-
-  void _shareProfile(BuildContext context) {
-    // Implement share profile functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share Profile coming soon!')),
-    );
-  }
-
-  void _showQuickSettingsModal(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (context) => Container(
+        margin: const EdgeInsets.only(
+          bottom: kBottomNavigationBarHeight +
+              32, // Add more space for bottom navbar
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -1478,26 +1477,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Navigator.pop(context);
                     _showSettingsModal(context, authProvider);
                   }),
-                  _buildMenuOption(
-                      context, Icons.share_outlined, 'Share Profile', () {
-                    Navigator.pop(context);
-                    _shareProfile(context);
-                  }),
-                  _buildMenuOption(context, Icons.archive_outlined, 'Archive',
-                      () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Archive feature coming soon!')),
-                    );
-                  }),
-                  _buildMenuOption(context, Icons.history, 'Your Activity', () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Activity feature coming soon!')),
-                    );
-                  }),
                   _buildMenuOption(context, Icons.logout, 'Log Out', () {
                     Navigator.pop(context);
                     _showLogoutDialog(context, authProvider);
@@ -1508,6 +1487,789 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption(
+      BuildContext context, IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  void _editProfile(BuildContext context) async {
+    // Navigate to edit profile screen
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+      ),
+    );
+
+    // If profile was updated successfully, refresh the current screen
+    if (result == true) {
+      setState(() {
+        // This will trigger a rebuild and reload user data
+      });
+    }
+  }
+
+  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(48.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.photo_camera_outlined,
+            size: 80,
+            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Posts Yet',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'When you share photos and videos, they\'ll appear on your profile.',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () {
+              // Navigate to create post screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Create Post coming soon!')),
+              );
+            },
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: const Text('Share Your First Post'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              side: BorderSide(color: colorScheme.primary),
+              foregroundColor: colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Settings Modal Widgets
+class _BillingAddressModal extends StatefulWidget {
+  final User? currentUser;
+  final Function(Map<String, dynamic>) onSave;
+
+  const _BillingAddressModal({
+    required this.currentUser,
+    required this.onSave,
+  });
+
+  @override
+  State<_BillingAddressModal> createState() => _BillingAddressModalState();
+}
+
+class _BillingAddressModalState extends State<_BillingAddressModal> {
+  final _formKey = GlobalKey<FormState>();
+  final _billingAddressController = TextEditingController();
+  final _billingCityController = TextEditingController();
+  final _billingStateController = TextEditingController();
+  final _billingCountryController = TextEditingController();
+  final _billingPostalCodeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current user data if available
+    if (widget.currentUser != null) {
+      _billingAddressController.text = widget.currentUser!.billingAddress ?? '';
+      _billingCityController.text = widget.currentUser!.billingCity ?? '';
+      _billingStateController.text = widget.currentUser!.billingState ?? '';
+      _billingCountryController.text = widget.currentUser!.billingCountry ?? '';
+      _billingPostalCodeController.text =
+          widget.currentUser!.billingPostalCode ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _billingAddressController.dispose();
+    _billingCityController.dispose();
+    _billingStateController.dispose();
+    _billingCountryController.dispose();
+    _billingPostalCodeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Billing Address',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This information will be used for payment processing and receipts.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Billing Address
+                    TextFormField(
+                      controller: _billingAddressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Address Line *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.home_outlined),
+                        helperText: 'Street address, apartment, building, etc.',
+                      ),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Address is required for payment processing';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // City and State Row
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _billingCityController,
+                            decoration: const InputDecoration(
+                              labelText: 'City *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_city_outlined),
+                            ),
+                            validator: (value) {
+                              if (value?.trim().isEmpty ?? true) {
+                                return 'City is required';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _billingStateController,
+                            decoration: const InputDecoration(
+                              labelText: 'State/Province',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Country and Postal Code Row
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _billingCountryController,
+                            decoration: const InputDecoration(
+                              labelText: 'Country *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.public_outlined),
+                            ),
+                            validator: (value) {
+                              if (value?.trim().isEmpty ?? true) {
+                                return 'Country is required';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _billingPostalCodeController,
+                            decoration: const InputDecoration(
+                              labelText: 'Postal Code',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Your billing address is securely stored and used only for payment verification and receipt generation.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            final billingData = {
+                              'firstName': widget.currentUser?.firstName ?? '',
+                              'lastName': widget.currentUser?.lastName ?? '',
+                              'phoneNumber':
+                                  widget.currentUser?.phoneNumber ?? '',
+                              'billingAddress':
+                                  _billingAddressController.text.trim(),
+                              'billingCity': _billingCityController.text.trim(),
+                              'billingState':
+                                  _billingStateController.text.trim(),
+                              'billingCountry':
+                                  _billingCountryController.text.trim(),
+                              'billingPostalCode':
+                                  _billingPostalCodeController.text.trim(),
+                            };
+                            widget.onSave(billingData);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        child: const Text('Save Billing Address'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EmergencyContactModal extends StatefulWidget {
+  final User? currentUser;
+  final Function(Map<String, dynamic>) onSave;
+
+  const _EmergencyContactModal({
+    required this.currentUser,
+    required this.onSave,
+  });
+
+  @override
+  State<_EmergencyContactModal> createState() => _EmergencyContactModalState();
+}
+
+class _EmergencyContactModalState extends State<_EmergencyContactModal> {
+  final _formKey = GlobalKey<FormState>();
+  final _emergencyContactNameController = TextEditingController();
+  final _emergencyContactPhoneController = TextEditingController();
+  final _emergencyContactRelationshipController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current user emergency contact data if available
+    if (widget.currentUser != null) {
+      _emergencyContactNameController.text =
+          widget.currentUser?.emergencyContactName ?? '';
+      _emergencyContactPhoneController.text =
+          widget.currentUser?.emergencyContactPhone ?? '';
+      _emergencyContactRelationshipController.text =
+          widget.currentUser?.emergencyContactRelationship ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _emergencyContactNameController.dispose();
+    _emergencyContactPhoneController.dispose();
+    _emergencyContactRelationshipController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Emergency Contact',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Emergency contact information for safety at events.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Emergency Contact Name
+                    TextFormField(
+                      controller: _emergencyContactNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Emergency Contact Name',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person_outline),
+                        helperText:
+                            'Optional - Full name of your emergency contact',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Emergency Contact Phone
+                    TextFormField(
+                      controller: _emergencyContactPhoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Emergency Contact Phone',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.phone_outlined),
+                        helperText:
+                            'Optional - Include country code (e.g., +94xxxxxxxxx)',
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value?.trim().isNotEmpty == true) {
+                          if (!RegExp(r'^\+\d{10,15}$')
+                              .hasMatch(value!.trim())) {
+                            return 'Enter a valid phone number with country code';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Emergency Contact Relationship
+                    TextFormField(
+                      controller: _emergencyContactRelationshipController,
+                      decoration: const InputDecoration(
+                        labelText: 'Relationship',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.family_restroom_outlined),
+                        helperText:
+                            'Optional - e.g., Parent, Spouse, Sibling, Friend',
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .errorContainer
+                            .withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .error
+                              .withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.emergency_outlined,
+                            color: Theme.of(context).colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Emergency Contact Information',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'This information will only be used in case of emergency during events. Your privacy is protected.',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            final emergencyData = {
+                              'emergencyContactName':
+                                  _emergencyContactNameController.text.trim(),
+                              'emergencyContactPhone':
+                                  _emergencyContactPhoneController.text.trim(),
+                              'emergencyContactRelationship':
+                                  _emergencyContactRelationshipController.text
+                                      .trim(),
+                            };
+                            widget.onSave(emergencyData);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        child: const Text('Save Emergency Contact'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CommunicationPreferencesModal extends StatefulWidget {
+  final User? currentUser;
+  final Function(Map<String, dynamic>) onSave;
+
+  const _CommunicationPreferencesModal({
+    required this.currentUser,
+    required this.onSave,
+  });
+
+  @override
+  State<_CommunicationPreferencesModal> createState() =>
+      _CommunicationPreferencesModalState();
+}
+
+class _CommunicationPreferencesModalState
+    extends State<_CommunicationPreferencesModal> {
+  bool _eventNotifications = true;
+  bool _marketingEmails = false;
+  bool _smsNotifications = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current user preferences if available
+    if (widget.currentUser != null) {
+      _eventNotifications =
+          widget.currentUser?.eventNotificationsEnabled ?? true;
+      _marketingEmails = widget.currentUser?.marketingEmailsEnabled ?? false;
+      _smsNotifications = widget.currentUser?.smsNotificationsEnabled ?? true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            kBottomNavigationBarHeight +
+            32,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Communication Preferences',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose how you want to receive notifications and updates.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Event Notifications
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('Event Notifications'),
+                      subtitle: const Text(
+                          'Receive notifications about your booked events'),
+                      value: _eventNotifications,
+                      onChanged: (value) {
+                        setState(() {
+                          _eventNotifications = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.event_outlined),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Marketing Emails
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('Marketing Emails'),
+                      subtitle: const Text(
+                          'Receive promotional offers and event recommendations'),
+                      value: _marketingEmails,
+                      onChanged: (value) {
+                        setState(() {
+                          _marketingEmails = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.mail_outline),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // SMS Notifications
+                  Card(
+                    child: SwitchListTile(
+                      title: const Text('SMS Notifications'),
+                      subtitle: const Text('Receive important updates via SMS'),
+                      value: _smsNotifications,
+                      onChanged: (value) {
+                        setState(() {
+                          _smsNotifications = value;
+                        });
+                      },
+                      secondary: const Icon(Icons.sms_outlined),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.privacy_tip_outlined,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You can change these preferences at any time. We respect your privacy and follow data protection regulations.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final preferencesData = {
+                          'eventNotifications': _eventNotifications,
+                          'marketingEmails': _marketingEmails,
+                          'smsNotifications': _smsNotifications,
+                        };
+                        widget.onSave(preferencesData);
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Save Communication Preferences'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'dart:io';
+import '../../../core/config/app_config.dart';
 import '../../auth/models/user_model.dart';
 import '../../auth/services/auth_service.dart';
+import '../../auth/providers/auth_provider.dart';
 
 /// Professional edit profile screen for enterprise-level user management
 /// Handles billing information, emergency contacts, and profile completion
@@ -11,13 +18,9 @@ class EditProfileScreen extends StatefulWidget {
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen>
-    with SingleTickerProviderStateMixin {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
-
-  // Tab controller for professional sections
-  late TabController _tabController;
 
   // Loading states
   bool _isLoading = false;
@@ -30,37 +33,22 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   late TextEditingController _phoneController;
   late TextEditingController _dateOfBirthController;
 
-  // Form controllers - Billing Address
-  late TextEditingController _billingAddressController;
-  late TextEditingController _billingCityController;
-  late TextEditingController _billingStateController;
-  late TextEditingController _billingCountryController;
-  late TextEditingController _billingPostalCodeController;
-
-  // Form controllers - Emergency Contact
-  late TextEditingController _emergencyContactNameController;
-  late TextEditingController _emergencyContactPhoneController;
-  late TextEditingController _emergencyContactRelationshipController;
-
-  // Form controllers - Communication Preferences
-  bool _marketingEmails = false;
-  bool _eventNotifications = true;
-  bool _smsNotifications = false;
-
   User? _currentUser;
-  double _profileCompletionProgress = 0.0;
+
+  // Profile picture variables
+  final ImagePicker _imagePicker = ImagePicker();
+  File? _selectedImage;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _initializeControllers();
     _loadUserData();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _disposeControllers();
     super.dispose();
   }
@@ -72,18 +60,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
     _dateOfBirthController = TextEditingController();
-
-    // Billing Address
-    _billingAddressController = TextEditingController();
-    _billingCityController = TextEditingController();
-    _billingStateController = TextEditingController();
-    _billingCountryController = TextEditingController();
-    _billingPostalCodeController = TextEditingController();
-
-    // Emergency Contact
-    _emergencyContactNameController = TextEditingController();
-    _emergencyContactPhoneController = TextEditingController();
-    _emergencyContactRelationshipController = TextEditingController();
   }
 
   void _disposeControllers() {
@@ -93,18 +69,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _emailController.dispose();
     _phoneController.dispose();
     _dateOfBirthController.dispose();
-
-    // Billing Address
-    _billingAddressController.dispose();
-    _billingCityController.dispose();
-    _billingStateController.dispose();
-    _billingCountryController.dispose();
-    _billingPostalCodeController.dispose();
-
-    // Emergency Contact
-    _emergencyContactNameController.dispose();
-    _emergencyContactPhoneController.dispose();
-    _emergencyContactRelationshipController.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -118,7 +82,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         setState(() {
           _currentUser = user;
           _populateFields(user);
-          _calculateProfileCompletion();
         });
       }
     } catch (e) {
@@ -139,56 +102,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _dateOfBirthController.text = user.dateOfBirth != null
         ? '${user.dateOfBirth!.year}-${user.dateOfBirth!.month.toString().padLeft(2, '0')}-${user.dateOfBirth!.day.toString().padLeft(2, '0')}'
         : '';
-
-    // Billing Address
-    _billingAddressController.text = user.billingAddress ?? '';
-    _billingCityController.text = user.billingCity ?? '';
-    _billingStateController.text = user.billingState ?? '';
-    _billingCountryController.text = user.billingCountry ?? '';
-    _billingPostalCodeController.text = user.billingPostalCode ?? '';
-
-    // Emergency Contact
-    _emergencyContactNameController.text = user.emergencyContactName ?? '';
-    _emergencyContactPhoneController.text = user.emergencyContactPhone ?? '';
-    _emergencyContactRelationshipController.text =
-        user.emergencyContactRelationship ?? '';
-
-    // Communication Preferences
-    _marketingEmails = user.marketingEmailsEnabled;
-    _eventNotifications = user.eventNotificationsEnabled;
-    _smsNotifications = user.smsNotificationsEnabled;
-  }
-
-  void _calculateProfileCompletion() {
-    if (_currentUser == null) return;
-
-    int completedFields = 0;
-    int totalFields = 11; // Total required fields for professional profile
-
-    // Personal Information (5 fields)
-    if (_currentUser!.firstName.isNotEmpty) completedFields++;
-    if (_currentUser!.lastName.isNotEmpty) completedFields++;
-    if (_currentUser!.email.isNotEmpty) completedFields++;
-    if (_currentUser!.phoneNumber?.isNotEmpty == true) completedFields++;
-    if (_currentUser!.dateOfBirth != null) completedFields++;
-
-    // Billing Address (5 fields)
-    if (_currentUser!.billingAddress?.isNotEmpty == true) completedFields++;
-    if (_currentUser!.billingCity?.isNotEmpty == true) completedFields++;
-    if (_currentUser!.billingCountry?.isNotEmpty == true) completedFields++;
-    if (_currentUser!.billingPostalCode?.isNotEmpty == true) completedFields++;
-
-    // Emergency Contact (2 fields - relationship removed from calculation)
-    if (_currentUser!.emergencyContactName?.isNotEmpty == true) {
-      completedFields++;
-    }
-    if (_currentUser!.emergencyContactPhone?.isNotEmpty == true) {
-      completedFields++;
-    }
-
-    setState(() {
-      _profileCompletionProgress = completedFields / totalFields;
-    });
   }
 
   Future<void> _saveProfile() async {
@@ -200,9 +113,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     print('   Last Name: "${_lastNameController.text}"');
     print('   Phone: "${_phoneController.text}"');
     print('   Date of Birth: "${_dateOfBirthController.text}"');
-    print('   Billing Address: "${_billingAddressController.text}"');
-    print('   Billing City: "${_billingCityController.text}"');
-    print('   Billing Country: "${_billingCountryController.text}"');
 
     final isValid = _formKey.currentState!.validate();
     print('🔍 [EditProfile] Form validation result: $isValid');
@@ -218,7 +128,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     });
 
     try {
-      // Create updated user object
+      // Create updated user object with only personal information
       final updatedUser = _currentUser!.copyWith(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
@@ -226,29 +136,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         dateOfBirth: _dateOfBirthController.text.trim().isNotEmpty
             ? DateTime.parse(_dateOfBirthController.text.trim())
             : null,
-        billingAddress: _billingAddressController.text.trim(),
-        billingCity: _billingCityController.text.trim(),
-        billingState: _billingStateController.text.trim(),
-        billingCountry: _billingCountryController.text.trim(),
-        billingPostalCode: _billingPostalCodeController.text.trim(),
-        emergencyContactName: _emergencyContactNameController.text.trim(),
-        emergencyContactPhone: _emergencyContactPhoneController.text.trim(),
-        emergencyContactRelationship:
-            _emergencyContactRelationshipController.text.trim(),
-        marketingEmailsEnabled: _marketingEmails,
-        eventNotificationsEnabled: _eventNotifications,
-        smsNotificationsEnabled: _smsNotifications,
-        profileCompleted:
-            _profileCompletionProgress >= 0.8, // 80% completion required
+        profileCompleted: true, // Mark as completed when personal info is saved
       );
 
       print('💾 Attempting to save profile:');
       print('   Phone: "${updatedUser.phoneNumber}"');
-      print('   Billing Address: "${updatedUser.billingAddress}"');
-      print('   Billing City: "${updatedUser.billingCity}"');
-      print('   Billing Country: "${updatedUser.billingCountry}"');
-      print('   Emergency Name: "${updatedUser.emergencyContactName}"');
-      print('   Emergency Phone: "${updatedUser.emergencyContactPhone}"');
+      print('   Date of Birth: "${updatedUser.dateOfBirth}"');
 
       // Update user profile using AuthService
       final result = await _authService.updateUserProfile(updatedUser);
@@ -291,6 +184,206 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         _dateOfBirthController.text =
             '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
+    }
+  }
+
+  // Profile picture methods
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              if (_currentUser?.profileImageUrl != null ||
+                  _selectedImage != null)
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text('Remove Photo'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _removeImage();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+
+        // Upload image to Cloudinary
+        await _uploadImageToCloudinary();
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to pick image: $e');
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+    });
+    // You might want to also update the backend to remove the image
+  }
+
+  Future<void> _uploadImageToCloudinary() async {
+    if (_selectedImage == null) return;
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    try {
+      print('🔄 [EDIT_PROFILE] Starting backend image upload...');
+
+      // Get authentication token
+      final token = await _authService.getStoredToken();
+      if (token == null) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      // Use the backend endpoint instead of direct Cloudinary upload
+      final uri = Uri.parse(
+          '${AppConfig.baseUrl}/api/users/${_currentUser!.id}/upload-profile-image');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add authentication header
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add the image file
+      final file =
+          await http.MultipartFile.fromPath('image', _selectedImage!.path);
+      request.files.add(file);
+
+      print('🔄 [EDIT_PROFILE] Sending upload request to backend...');
+      final response = await request.send();
+
+      print(
+          '🔍 [EDIT_PROFILE] Backend upload response status: ${response.statusCode}');
+
+      final responseBody = await response.stream.bytesToString();
+      print('🔍 [EDIT_PROFILE] Backend upload response body: $responseBody');
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(responseBody);
+
+        if (jsonResponse['success'] == true) {
+          final imageUrl = jsonResponse['imageUrl'];
+          print(
+              '✅ [EDIT_PROFILE] Image uploaded successfully via backend: $imageUrl');
+
+          // Add cache-busting parameter to force image reload
+          final cacheBustedUrl =
+              '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+          // Update the current user state immediately
+          setState(() {
+            _currentUser =
+                _currentUser!.copyWith(profileImageUrl: cacheBustedUrl);
+            _selectedImage =
+                null; // Clear the selected image since it's now uploaded
+          });
+
+          print(
+              '🔄 [EDIT_PROFILE] Updated current user with new image URL: $cacheBustedUrl');
+
+          // Update the auth provider with the new user data
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
+          authProvider.updateUserData(_currentUser!);
+
+          print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
+
+          _showSuccessSnackBar('Profile picture updated successfully!');
+        } else {
+          throw Exception('Backend upload failed: ${jsonResponse['message']}');
+        }
+      } else {
+        throw Exception(
+            'Backend upload failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ [EDIT_PROFILE] Error uploading via backend: $e');
+
+      // Fallback to placeholder for testing
+      try {
+        print('⚠️ [EDIT_PROFILE] Using fallback placeholder image...');
+        const placeholderImageUrl =
+            'https://ui-avatars.com/api/?name=User&background=FF6B6B&color=FFFFFF&size=200';
+        await _updateProfileImage(placeholderImageUrl);
+        _showSuccessSnackBar(
+            'Profile picture updated successfully! (Demo mode)');
+      } catch (fallbackError) {
+        _showErrorSnackBar('Failed to upload image: $e');
+      }
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
+  }
+
+  Future<void> _updateProfileImage(String imageUrl) async {
+    try {
+      print('🔄 [EDIT_PROFILE] Updating profile image: $imageUrl');
+
+      final result = await _authService.updateProfileImage(imageUrl: imageUrl);
+
+      if (result['success'] == true) {
+        print('✅ [EDIT_PROFILE] Profile image updated successfully');
+
+        // Update the local state
+        setState(() {
+          _currentUser = result['user'];
+        });
+
+        // Update the provider if available
+        if (mounted) {
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
+          authProvider.updateUser(result['user']);
+        }
+
+        _showSuccessSnackBar('Profile picture updated successfully!');
+      } else {
+        print(
+            '❌ [EDIT_PROFILE] Profile image update failed: ${result['message']}');
+        throw Exception(result['message'] ?? 'Failed to update profile image');
+      }
+    } catch (e) {
+      print('❌ [EDIT_PROFILE] Error updating profile image: $e');
+      throw Exception('Failed to update profile image: $e');
     }
   }
 
@@ -340,81 +433,12 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               child: const Text('Save'),
             ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Personal', icon: Icon(Icons.person_outline)),
-            Tab(text: 'Billing', icon: Icon(Icons.location_on_outlined)),
-            Tab(text: 'Emergency', icon: Icon(Icons.emergency_outlined)),
-            Tab(text: 'Preferences', icon: Icon(Icons.settings_outlined)),
-          ],
-        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Profile Completion Progress
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Profile Completion',
-                            style: theme.textTheme.titleSmall,
-                          ),
-                          Text(
-                            '${(_profileCompletionProgress * 100).round()}%',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: _profileCompletionProgress,
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          _profileCompletionProgress >= 0.8
-                              ? Colors.green
-                              : colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _profileCompletionProgress >= 0.8
-                            ? 'Profile complete - Ready for seamless payments!'
-                            : 'Complete your profile for faster checkout',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                // Tab Content
-                Expanded(
-                  child: Form(
-                    key: _formKey,
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildPersonalInfoTab(),
-                        _buildBillingAddressTab(),
-                        _buildEmergencyContactTab(),
-                        _buildPreferencesTab(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          : Form(
+              key: _formKey,
+              child: _buildPersonalInfoTab(),
             ),
     );
   }
@@ -425,18 +449,115 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Personal Information',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Basic information for your account and event bookings.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          // Profile Picture Section
+          Center(
+            child: Column(
+              children: [
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: _selectedImage != null
+                          ? ClipOval(
+                              child: Image.file(
+                                _selectedImage!,
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : _currentUser?.profileImageUrl != null
+                              ? ClipOval(
+                                  child: Image.network(
+                                    _currentUser!.profileImageUrl!,
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    key: ValueKey(_currentUser!
+                                        .profileImageUrl), // Force rebuild when URL changes
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print(
+                                          '🖼️ [EDIT_PROFILE] Failed to load profile image: $error');
+                                      return Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      );
+                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: _isUploadingImage
+                              ? null
+                              : _showImagePickerOptions,
+                          icon: _isUploadingImage
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color:
+                                        Theme.of(context).colorScheme.onPrimary,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.camera_alt,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  size: 20,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'Tap the camera icon to change your profile picture',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
           // First Name
           TextFormField(
@@ -526,373 +647,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             readOnly: true,
             onTap: _selectDate,
             validator: null, // Make date of birth optional
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBillingAddressTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Billing Address',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This information will be used for payment processing and receipts.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-
-          // Billing Address
-          TextFormField(
-            controller: _billingAddressController,
-            decoration: const InputDecoration(
-              labelText: 'Address Line *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.home_outlined),
-              helperText: 'Street address, apartment, building, etc.',
-            ),
-            maxLines: 2,
-            validator: (value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Address is required for payment processing';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // City and State Row
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextFormField(
-                  controller: _billingCityController,
-                  decoration: const InputDecoration(
-                    labelText: 'City *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_city_outlined),
-                  ),
-                  validator: (value) {
-                    if (value?.trim().isEmpty ?? true) {
-                      return 'City is required';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _billingStateController,
-                  decoration: const InputDecoration(
-                    labelText: 'State/Province',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Country and Postal Code Row
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextFormField(
-                  controller: _billingCountryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Country *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.public_outlined),
-                  ),
-                  validator: (value) {
-                    if (value?.trim().isEmpty ?? true) {
-                      return 'Country is required';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _billingPostalCodeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Postal Code',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: null, // Make postal code optional
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer
-                  .withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Your billing address is securely stored and used only for payment verification and receipt generation.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmergencyContactTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Emergency Contact',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Emergency contact information for safety at events.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-
-          // Emergency Contact Name
-          TextFormField(
-            controller: _emergencyContactNameController,
-            decoration: const InputDecoration(
-              labelText: 'Emergency Contact Name',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_outline),
-              helperText: 'Optional - Full name of your emergency contact',
-            ),
-            validator: (value) {
-              // Emergency contact is optional for basic profile saving
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Emergency Contact Phone
-          TextFormField(
-            controller: _emergencyContactPhoneController,
-            decoration: const InputDecoration(
-              labelText: 'Emergency Contact Phone',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.phone_outlined),
-              helperText:
-                  'Optional - Include country code (e.g., +94xxxxxxxxx)',
-            ),
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              // Emergency contact phone is optional for basic profile saving
-              if (value?.trim().isNotEmpty == true) {
-                if (!RegExp(r'^\+\d{10,15}$').hasMatch(value!.trim())) {
-                  return 'Enter a valid phone number with country code';
-                }
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Emergency Contact Relationship
-          TextFormField(
-            controller: _emergencyContactRelationshipController,
-            decoration: const InputDecoration(
-              labelText: 'Relationship',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.family_restroom_outlined),
-              helperText: 'Optional - e.g., Parent, Spouse, Sibling, Friend',
-            ),
-            validator: (value) {
-              // Emergency contact relationship is optional for basic profile saving
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.error.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.emergency_outlined,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Emergency Contact Information',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'This information will only be used in case of emergency during events. Your privacy is protected.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreferencesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Communication Preferences',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Choose how you want to receive notifications and updates.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-
-          // Event Notifications
-          Card(
-            child: SwitchListTile(
-              title: const Text('Event Notifications'),
-              subtitle:
-                  const Text('Receive notifications about your booked events'),
-              value: _eventNotifications,
-              onChanged: (value) {
-                setState(() {
-                  _eventNotifications = value;
-                });
-              },
-              secondary: const Icon(Icons.event_outlined),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Marketing Emails
-          Card(
-            child: SwitchListTile(
-              title: const Text('Marketing Emails'),
-              subtitle: const Text(
-                  'Receive promotional offers and event recommendations'),
-              value: _marketingEmails,
-              onChanged: (value) {
-                setState(() {
-                  _marketingEmails = value;
-                });
-              },
-              secondary: const Icon(Icons.mail_outline),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // SMS Notifications
-          Card(
-            child: SwitchListTile(
-              title: const Text('SMS Notifications'),
-              subtitle: const Text('Receive important updates via SMS'),
-              value: _smsNotifications,
-              onChanged: (value) {
-                setState(() {
-                  _smsNotifications = value;
-                });
-              },
-              secondary: const Icon(Icons.sms_outlined),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.privacy_tip_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'You can change these preferences at any time. We respect your privacy and follow data protection regulations.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

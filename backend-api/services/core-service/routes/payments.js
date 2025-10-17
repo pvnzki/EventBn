@@ -5,6 +5,7 @@ const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
 const crypto = require('crypto');
 const { validateUUID, ValidationError } = require("../lib/validation");
+const emailService = require("../email");
 
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
@@ -214,6 +215,73 @@ router.post("/", authenticateToken, async (req, res) => {
           // Continue with payment success even if ticket creation fails
         }
       }
+    }
+
+    // Send email with tickets after successful payment and ticket creation
+    console.log('📧 [EMAIL] Starting email sending process for payment:', payment.payment_id);
+    try {
+      // Fetch the created tickets for email
+      console.log('📧 [EMAIL] Fetching created tickets from database...');
+      const createdTickets = await prisma.$queryRaw`
+        SELECT 
+          tp.*,
+          u.name as user_name,
+          u.email as user_email,
+          e.title as event_title,
+          e.venue as event_venue,
+          e.location as event_location,
+          e.start_time as event_start_time
+        FROM ticket_purchase tp
+        JOIN users u ON tp.user_id = u.user_id
+        JOIN events e ON tp.event_id = e.event_id
+        WHERE tp.payment_id = ${payment.payment_id}::uuid
+        ORDER BY tp.seat_label
+      `;
+      
+      console.log(`📧 [EMAIL] Found ${createdTickets?.length || 0} tickets for email`);
+      if (createdTickets && createdTickets.length > 0) {
+        console.log('📧 [EMAIL] Sample ticket data:', createdTickets[0]);
+      }
+
+      if (createdTickets && createdTickets.length > 0) {
+        // Prepare ticket data for email
+        const ticketsForEmail = createdTickets.map(ticket => ({
+          user_name: ticket.user_name,
+          user_email: ticket.user_email,
+          event_title: ticket.event_title,
+          event_venue: ticket.event_venue,
+          event_location: ticket.event_location,
+          event_start_time: ticket.event_start_time,
+          seat_label: ticket.seat_label,
+          price: Number(ticket.price), // Convert BigInt to number
+          qr_code: ticket.qr_code,
+          payment_id: payment.payment_id,
+          purchase_date: ticket.purchase_date
+        }));
+
+        const userEmail = payment.user.email;
+        console.log(`📧 [EMAIL] Preparing to send email to: ${userEmail}`);
+        console.log(`📧 [EMAIL] Number of tickets: ${ticketsForEmail.length}`);
+        
+        // Send email based on number of tickets
+        if (ticketsForEmail.length === 1) {
+          // Single ticket
+          console.log('📧 [EMAIL] Sending single ticket email...');
+          await emailService.sendTicketEmail(ticketsForEmail[0], userEmail);
+          console.log(`✅ Single ticket email sent to ${userEmail}`);
+        } else {
+          // Multiple tickets
+          console.log('📧 [EMAIL] Sending multiple tickets email...');
+          await emailService.sendMultipleTicketsEmail(ticketsForEmail, userEmail);
+          console.log(`✅ Multiple tickets email sent to ${userEmail} (${ticketsForEmail.length} tickets)`);
+        }
+      } else {
+        console.log('📧 [EMAIL] No tickets found for email sending');
+      }
+    } catch (emailError) {
+      console.error('❌ [EMAIL] Error sending ticket email:', emailError);
+      console.error('❌ [EMAIL] Full error stack:', emailError.stack);
+      // Don't fail the payment if email fails - just log it
     }
 
     res.status(201).json({

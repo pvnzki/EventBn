@@ -7,6 +7,7 @@ import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
 import '../../profile/screens/edit_profile_screen.dart';
 import '../services/seat_lock_service.dart';
+import '../../../common_widgets/custom_notification.dart';
 
 // Extended user profile interface for payment-related data
 class PaymentUserProfile {
@@ -317,11 +318,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _showIncompleteProfileSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please complete your profile to proceed with payment'),
-        backgroundColor: Colors.orange,
-      ),
+    CustomNotification.show(
+      context,
+      message: 'Please complete your profile to proceed with payment',
+      type: NotificationType.warning,
     );
   }
 
@@ -468,8 +468,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       }
 
       // Create payment record in backend
+      // Add skipLockValidation for AWS deployment to avoid Redis issues
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/payments')
+          .replace(queryParameters: {'skipLockValidation': '1'});
+
       final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/payments'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

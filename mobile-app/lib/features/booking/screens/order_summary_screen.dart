@@ -7,6 +7,7 @@ import '../../events/services/event_service.dart';
 import '../../events/models/event_model.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
+import '../../../common_widgets/custom_notification.dart';
 
 class OrderSummaryScreen extends StatefulWidget {
   final String eventId;
@@ -97,11 +98,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       await _startPayHerePayment();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        CustomNotification.show(
+          context,
+          message: 'Payment failed: ${e.toString()}',
+          type: NotificationType.error,
         );
       }
     } finally {
@@ -158,11 +158,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         paymentObject["currency"] == null ||
         paymentObject["order_id"] == null) {
       print("❌ Missing required payment parameters");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment configuration error. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
+      CustomNotification.show(
+        context,
+        message: 'Payment configuration error. Please try again.',
+        type: NotificationType.error,
       );
       setState(() {
         _isPaymentProcessing = false;
@@ -199,12 +198,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Payment successful but failed to save: ${e.toString()}'),
-            backgroundColor: Colors.orange,
-          ),
+        CustomNotification.show(
+          context,
+          message: 'Payment successful but failed to save: ${e.toString()}',
+          type: NotificationType.warning,
         );
       }
     }
@@ -215,11 +212,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       setState(() {
         _isPaymentProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Payment failed: $error'),
-          backgroundColor: Colors.red,
-        ),
+      CustomNotification.show(
+        context,
+        message: 'Payment failed: $error',
+        type: NotificationType.error,
       );
     }
   }
@@ -229,11 +225,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       setState(() {
         _isPaymentProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment was cancelled'),
-          backgroundColor: Colors.grey,
-        ),
+      CustomNotification.show(
+        context,
+        message: 'Payment was cancelled',
+        type: NotificationType.info,
       );
     }
   }
@@ -428,10 +423,10 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
                     : null,
               ),
               child: _event?.imageUrl == null || _event!.imageUrl.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Icon(
                         Icons.event,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimaryContainer,
                         size: 32,
                       ),
                     )
@@ -657,14 +652,14 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
               width: 40,
               height: 25,
               decoration: BoxDecoration(
-                color: Colors.orange,
+                color: theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'MC',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimaryContainer,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),

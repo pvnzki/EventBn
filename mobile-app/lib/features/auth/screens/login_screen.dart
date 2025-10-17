@@ -36,13 +36,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
       try {
-        final success = await authProvider.login(
+        final result = await authProvider.login(
           _emailController.text.trim(),
           _passwordController.text,
         );
         // Remove loading indicator
         Navigator.of(context).pop();
-        if (success) {
+
+        if (result['success'] == true) {
           context.go('/home');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -50,10 +51,18 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.green,
             ),
           );
+        } else if (result['requiresTwoFactor'] == true) {
+          // Navigate to 2FA verification screen
+          context.push('/two-factor-login', extra: {
+            'email': _emailController.text.trim(),
+            'password': _passwordController.text,
+            'twoFactorMethod': result['twoFactorMethod'] ?? 'app',
+          });
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(authProvider.error ?? 'Login failed'),
+              content: Text(
+                  result['message'] ?? authProvider.error ?? 'Login failed'),
               backgroundColor: Colors.red,
             ),
           );

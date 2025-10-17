@@ -30,6 +30,48 @@ BigInt.prototype.toJSON = function () {
 
 const app = express();
 
+// --- Early CORS middleware (before helmet/body parser) ---
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // allow non-browser clients
+  const allowed = process.env.POST_SERVICE_CORS_ORIGINS?.split(",") || [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+  ];
+  if (process.env.NODE_ENV === "development") {
+    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+      return true;
+    }
+  }
+  return allowed.includes(origin);
+};
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isOriginAllowed(origin)) {
+    if (origin) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+    }
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type,Authorization,X-Service-Key,X-Requested-With,Accept,Origin,Cache-Control,Pragma"
+    );
+    if (req.method === "OPTIONS") {
+      return res.status(204).end();
+    }
+  }
+  next();
+});
+
 // Security middleware
 app.use(
   helmet({
@@ -51,46 +93,55 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // CORS Configuration
-let corsOptions = {};
-
-if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-  // Development → allow all localhost origins dynamically
-  corsOptions = {
-    origin: function(origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Allow any localhost or 127.0.0.1 origin on any port
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.POST_SERVICE_CORS_ORIGINS?.split(",") || [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3001",
+      "http://localhost:8080",
+      "http://127.0.0.1:8080",
+    ];
+    
+    // Allow localhost with any port in development
+    if (process.env.NODE_ENV === 'development') {
       if (origin.match(/^http:\/\/localhost:\d+$/) || 
-          origin.match(/^http:\/\/127\.0\.0\.1:\d+$/) ||
-          origin.includes('flutter') ||
-          origin.includes('dart')) {
+          origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
         return callback(null, true);
       }
-      
-      return callback(null, true); // Allow all in development
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key", "X-Requested-With", "Accept", "Origin"],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  };
-} else {
-  // Production → use environment variable or defaults
-  corsOptions = {
-    origin: process.env.POST_SERVICE_CORS_ORIGINS?.split(",") || [
-      "http://localhost:3000",
-      "http://localhost:3001", // core-service
-      "http://localhost:8080",
-      /^http:\/\/localhost:\d+$/,
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Service-Key"],
-  };
-}
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Service-Key", 
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Cache-Control",
+    "Pragma"
+  ],
+  exposedHeaders: ["X-Service-Name", "X-Service-Version"],
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
 app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
 
 // Service identification middleware
 app.use((req, res, next) => {

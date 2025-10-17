@@ -90,6 +90,17 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     });
   }
 
+  String _getActiveFiltersText() {
+    List<String> filters = [];
+    if (_searchQuery.isNotEmpty) {
+      filters.add('Search');
+    }
+    if (_selectedCategory != PostCategory.all) {
+      filters.add(_selectedCategory.toString().split('.').last);
+    }
+    return filters.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -293,6 +304,21 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   size: 22,
                 ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                          _loadInitialPosts();
+                        },
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.6),
+                          size: 20,
+                        ),
+                      )
+                    : null,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -345,6 +371,52 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
               },
             ),
           ),
+          // Active filters indicator
+          if (_searchQuery.isNotEmpty ||
+              _selectedCategory != PostCategory.all) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_list_rounded,
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Active filters: ${_getActiveFiltersText()}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                        _selectedCategory = PostCategory.all;
+                      });
+                      _loadInitialPosts();
+                    },
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

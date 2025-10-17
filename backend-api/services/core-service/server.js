@@ -12,7 +12,7 @@ const prisma = require("./lib/database");
 // const coreService = require("./index"); // Temporarily disabled to avoid database conflicts
 
 // Redis
-// const { connectRedis } = require("../../lib/redis"); // Disabled for now
+const { connectRedis } = require("./lib/redis");
 
 // RabbitMQ
 const {
@@ -30,6 +30,48 @@ BigInt.prototype.toJSON = function () {
 };
 
 const app = express();
+
+// --- Early CORS middleware (before helmet/body parser) ---
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // allow non-browser clients
+  const allowed = process.env.CORE_SERVICE_CORS_ORIGINS?.split(",") || [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+  ];
+  if (process.env.NODE_ENV === "development") {
+    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+      return true;
+    }
+  }
+  return allowed.includes(origin);
+};
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isOriginAllowed(origin)) {
+    if (origin) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+    }
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type,Authorization,X-Service-Key,X-Requested-With,Accept,Origin,Cache-Control,Pragma"
+    );
+    if (req.method === "OPTIONS") {
+      return res.status(204).end();
+    }
+  }
+  next();
+});
 
 // Security middleware
 app.use(
@@ -131,6 +173,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+
 // Service identification middleware
 app.use((req, res, next) => {
   res.setHeader("X-Service-Name", "core-service");
@@ -180,6 +225,10 @@ const apiRoutes = require("./routes/api");
 const authRoutes = require("./routes/auth");
 const internalRoutes = require("./routes/internal");
 
+// Initialize email service
+const emailService = require("./email");
+console.log("📧 Email service imported and will be initialized...");
+
 // Health check - Always returns 200 for service readiness (no DB check for testing)
 app.get("/health", (req, res) => {
   console.log("[CORE-SERVICE] Health check requested");
@@ -195,10 +244,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-// API Routes
-app.use("/api/v1", apiRoutes); // Versioned API for clients
-app.use("/api", apiRoutes); // Legacy API for backward compatibility
-app.use("/api/auth", authRoutes); // Auth routes
+// API Routes - Mount auth routes first to avoid conflicts
+app.use("/auth", authRoutes); // Auth routes (signup, login, etc.) - no /api prefix to avoid conflicts
+app.use("/api/auth", authRoutes); // Also mount at /api/auth for compatibility
+app.use("/api/v1", apiRoutes); // Versioned API for clients  
+app.use("/api/users", apiRoutes); // User-related API routes
+app.use("/api/events", apiRoutes); // Event-related API routes
+app.use("/api/organizations", apiRoutes); // Organization-related API routes
+app.use("/api/tickets", apiRoutes); // Ticket-related API routes  
+app.use("/api/payments", apiRoutes); // Payment-related API routes
 app.use("/internal/v1", internalRoutes); // Inter-service communication
 
 // Root route for testing
@@ -330,8 +384,7 @@ app.listen(PORT, HOST, async () => {
     );
   }
 
-  // Initialize Redis for seat locking - Disabled for now
-  /*
+  // Initialize Redis for seat locking
   try {
     console.log("\x1b[34m⏳ Initializing Redis...\x1b[0m");
     await connectRedis();
@@ -346,7 +399,6 @@ app.listen(PORT, HOST, async () => {
       "\x1b[33m⚠️  Continuing without Redis (seat locking disabled)\x1b[0m"
     );
   }
-  */
 
   // Initialize RabbitMQ if enabled
   if (process.env.RABBITMQ_ENABLED === "true") {

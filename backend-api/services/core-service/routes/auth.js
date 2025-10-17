@@ -4,40 +4,182 @@ const prisma = require("../lib/database");
 
 const { authService, authenticateToken } = require("../auth/index.js");
 
-// Register user
+// Register user (Sign Up)
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, phone, phone_number, profile_picture, role } = req.body;
+    console.log("[AUTH] Registration request received:", {
+      email: req.body.email,
+      name: req.body.name,
+      hasPassword: !!req.body.password,
+    });
 
+    const { name, email, password, phone_number, role } = req.body;
+
+    // Input validation
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "name, email and password are required",
+        message: "Name, email, and password are required",
+        errors: [
+          ...(!name ? [{ field: "name", message: "Name is required" }] : []),
+          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
+          ...(!password
+            ? [{ field: "password", message: "Password is required" }]
+            : []),
+        ],
       });
     }
 
-    const { user, token } = await authService.register({
-      name,
-      email,
+    // Use the auth service to register the user
+    const result = await authService.register({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password,
-      phone,
-      phone_number,
-      profile_picture,
-      role,
+      phone_number: phone_number || null,
+      role: role || "ATTENDEE",
     });
 
-    return res.status(201).json({
+    console.log("[AUTH] Registration successful for:", result.user.email);
+
+    res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      user,
-      token,
+      message: "Registration successful",
+      data: result.user,
+      token: result.token,
     });
   } catch (error) {
-    console.error("[AUTH][REGISTER] Error:", error.message);
-    const status = /already registered|validation/i.test(error.message) ? 400 : 500;
-    return res.status(status).json({
+    console.error("[AUTH] Registration error:", error);
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        errors: error.errors || [
+          { field: error.field, message: error.message },
+        ],
+      });
+    }
+
+    // Handle duplicate email error
+    if (error.message.includes("Email already registered")) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
+      });
+    }
+
+    // Handle database errors
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
+      });
+    }
+
+    res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Registration failed",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
+    });
+  }
+});
+
+// Sign up endpoint (alias for register)
+router.post("/signup", async (req, res) => {
+  try {
+    console.log("[AUTH] Signup request received (redirecting to register):", {
+      email: req.body.email,
+      name: req.body.name,
+      hasPassword: !!req.body.password,
+    });
+
+    const { name, email, password, phone_number, role } = req.body;
+
+    // Input validation
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required",
+        errors: [
+          ...(!name ? [{ field: "name", message: "Name is required" }] : []),
+          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
+          ...(!password
+            ? [{ field: "password", message: "Password is required" }]
+            : []),
+        ],
+      });
+    }
+
+    // Use the auth service to register the user
+    const result = await authService.register({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+      phone_number: phone_number || null,
+      role: role || "ATTENDEE",
+    });
+
+    console.log("[AUTH] Signup successful for:", result.user.email);
+
+    res.status(201).json({
+      success: true,
+      message: "Signup successful",
+      data: result.user,
+      token: result.token,
+    });
+  } catch (error) {
+    console.error("[AUTH] Signup error:", error);
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        errors: error.errors || [
+          { field: error.field, message: error.message },
+        ],
+      });
+    }
+
+    // Handle duplicate email error
+    if (error.message.includes("Email already registered")) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
+      });
+    }
+
+    // Handle database errors
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        message: "Email already registered",
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Signup failed",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
@@ -66,19 +208,54 @@ router.post("/login", async (req, res) => {
     const status = /invalid email or password|validation|failed/i.test(error.message.toLowerCase()) ? 401 : 500;
     return res.status(status).json({
       success: false,
-      message: error.message,
+      message: "Login failed",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
 
-// Get current user
+// Get current user (complete profile data from database)
 router.get("/me", authenticateToken, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user.user_id || req.user.id;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID not found in token",
+      });
+    }
+
+    console.log(`🔍 [AUTH /me] Fetching complete user data for ID: ${userId}`);
+
+    // Fetch complete user data from database instead of just returning JWT payload
+    const usersService = require("../users");
+    const completeUser = await usersService.getUserById(userId);
+
+    if (!completeUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(`✅ [AUTH /me] Retrieved complete user data:`, {
+      user_id: completeUser.user_id,
+      phone_number: completeUser.phone_number,
+      date_of_birth: completeUser.date_of_birth,
+      billing_address: completeUser.billing_address,
+      fieldsCount: Object.keys(completeUser).length
+    });
+
     res.json({
       success: true,
-      user: req.user,
+      user: completeUser,
     });
   } catch (error) {
+    console.error(`❌ [AUTH /me] Error fetching user data:`, error.message);
     res.status(500).json({
       success: false,
       message: error.message,
