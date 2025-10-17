@@ -132,7 +132,7 @@ class SeatLockService {
    * @param {string} userId
    * @returns {Promise<boolean>}
    */
-  async extendLock(eventId, seatId, userId) {
+  async extendLock(eventId, seatId, userId, type = 'default') {
     const normalizedUserId = String(userId);
 
     try {

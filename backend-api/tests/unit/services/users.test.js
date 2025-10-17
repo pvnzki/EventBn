@@ -1,9 +1,9 @@
 // Unit tests for users service
-const usersService = require('../services/core-service/users');
+const usersService = require('../../../services/core-service/users');
 const bcrypt = require('bcrypt');
 
 // Mock the database
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   user: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
@@ -25,7 +25,7 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn()
 }));
 
-const db = require('../lib/database');
+const db = require('../../../lib/database');
 
 describe('Users Service', () => {
   beforeEach(() => {

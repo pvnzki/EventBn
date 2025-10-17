@@ -1,0 +1,14 @@
+Target: http://localhost:3000
+Output Directory: D:\Sem 5\Software Engineering Project\code\EventBn\security-reports
+Connectivity: localhost:3000 is reachable
+
+==== HTTP Security Headers ====
+Saved: D:\Sem 5\Software Engineering Project\code\EventBn\security-reports\headers.txt
+
+==== TLS ====
+
+==== OWASP ZAP Baseline ====
+Saved: D:\Sem 5\Software Engineering Project\code\EventBn\security-reports\zap_report.html
+
+==== Done ====
+Reports folder: D:\Sem 5\Software Engineering Project\code\EventBn\security-reports

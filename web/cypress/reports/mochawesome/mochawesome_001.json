@@ -1,0 +1,110 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2025-10-12T14:04:27.635Z",
+    "end": "2025-10-12T14:04:28.184Z",
+    "duration": 549,
+    "testsRegistered": 1,
+    "passPercent": 0,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "bf43a153-72d6-483f-a271-1d3ee532568b",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a9c80bf1-c2b8-4b78-9986-b16526db9419",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 200,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Error message appears on invalid credentials (no backend required)\ncy.get('#email').type('invalid@example.com');\ncy.get('#password').type('wrongpass');\ncy.contains('button', /sign in/i).click();\n// Either app shows a destructive Alert or inline error text\ncy.contains(/something went wrong|login failed/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/\n\nThe `content-type` of the response we received from your web server was:\n\n  > `application/json`\n\nThis was considered a failure because responses must have `content-type: 'text/html'`\n\nHowever, you can likely use `cy.request()` instead of `cy.visit()`.\n\n`cy.request()` will automatically get and set cookies and enable you to parse responses.",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/\n\nThe `content-type` of the response we received from your web server was:\n\n  > `application/json`\n\nThis was considered a failure because responses must have `content-type: 'text/html'`\n\nHowever, you can likely use `cy.request()` instead of `cy.visit()`.\n\n`cy.request()` will automatically get and set cookies and enable you to parse responses.\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/01-ui-elements.cy.ts:5:0)",
+                "diff": null
+              },
+              "uuid": "d8e6df49-acae-451b-a390-08e3ab906994",
+              "parentUUID": "a9c80bf1-c2b8-4b78-9986-b16526db9419",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "d8e6df49-acae-451b-a390-08e3ab906994"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 200,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

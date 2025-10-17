@@ -963,8 +963,60 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         if (_videoController != null && _videoController!.value.isPlaying) {
           _videoController?.pause();
         }
-        // Navigate to organization details page
-        context.push('/organization/${event.organizationId}');
+        // Navigate to organizer profile page instead of organization
+        // Try to get the organizer user ID from the event data
+        print(
+            '🔍 [EventDetails] Event organizationId: ${event.organizationId}');
+        print(
+            '🔍 [EventDetails] Event organization data: ${event.organization}');
+
+        String organizerId = event.organizationId;
+
+        // If the event has creator info, use that as the organizer ID
+        if (event.organization != null &&
+            event.organization!['creator_id'] != null) {
+          organizerId = event.organization!['creator_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['user_id'] != null) {
+          organizerId = event.organization!['user_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['organization_id'] != null) {
+          organizerId = event.organization!['organization_id'].toString();
+        } else if (event.organization != null &&
+            event.organization!['id'] != null) {
+          organizerId = event.organization!['id'].toString();
+        }
+
+        // If still empty, try to use organization name as a fallback
+        if (organizerId.isEmpty || organizerId == 'null') {
+          if (event.organization != null &&
+              event.organization!['name'] != null) {
+            // Create a hash-based ID from organization name for consistency
+            organizerId = event.organization!['name']
+                .toString()
+                .hashCode
+                .abs()
+                .toString();
+            print(
+                '🔄 [EventDetails] Using organization name hash as organizer ID: $organizerId');
+          }
+        }
+
+        // Validate that organizerId is not empty
+        if (organizerId.isEmpty || organizerId == 'null') {
+          print('❌ [EventDetails] Invalid organizer ID: "$organizerId"');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Organizer profile not available'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
+        print('🔗 Navigating to organizer profile: $organizerId');
+        print('🔗 Full URL: /organizer/$organizerId');
+        context.push('/organizer/$organizerId');
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

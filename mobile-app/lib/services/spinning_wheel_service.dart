@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../core/config/app_config.dart';
 
 class SpinningWheelService {
-  static const String baseUrl = 'http://10.0.2.2:3001'; // Android emulator
-  // static const String baseUrl = 'http://localhost:3001'; // iOS simulator
+  static String get _base => AppConfig.baseUrl;
 
   // Get user's current game stats
   static Future<UserGameStats?> getUserGameStats(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/games/stats/$userId'),
+        Uri.parse('$_base/api/games/stats/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -28,7 +28,7 @@ class SpinningWheelService {
   static Future<SpinResult?> performSpin(String userId, String spinType) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/games/spin'),
+        Uri.parse('$_base/api/games/spin'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userId': userId,
@@ -51,7 +51,7 @@ class SpinningWheelService {
   static Future<WheelConfig?> getWheelConfiguration() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/games/wheel-config'),
+        Uri.parse('$_base/api/games/wheel-config'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -71,7 +71,7 @@ class SpinningWheelService {
       {int limit = 10}) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/games/history/$userId?limit=$limit'),
+        Uri.parse('$_base/api/games/history/$userId?limit=$limit'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -90,7 +90,7 @@ class SpinningWheelService {
   static Future<SpinAvailability?> checkSpinAvailability(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/games/spin-availability/$userId'),
+        Uri.parse('$_base/api/games/spin-availability/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -109,7 +109,7 @@ class SpinningWheelService {
   static Future<List<DailyChallenge>> getDailyChallenges(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/games/challenges/$userId'),
+        Uri.parse('$_base/api/games/challenges/$userId'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -129,7 +129,7 @@ class SpinningWheelService {
       String userId, String challengeId) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/games/claim-challenge'),
+        Uri.parse('$_base/api/games/claim-challenge'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'userId': userId,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -159,15 +160,12 @@ export default function AttendeesPage() {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/my-events-tickets`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl(`api/tickets/my-events-tickets`), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch attendees: ${response.statusText}`);
@@ -221,6 +219,23 @@ export default function AttendeesPage() {
     return matchesSearch && matchesEvent && matchesStatus;
   });
 
+  // Group attendees by user
+  const groupedAttendees = filteredAttendees.reduce((groups, attendee) => {
+    const userKey = `${attendee.user?.email || "unknown"}-${
+      attendee.user?.name || "unknown"
+    }`;
+    if (!groups[userKey]) {
+      groups[userKey] = {
+        user: attendee.user,
+        tickets: [],
+      };
+    }
+    groups[userKey].tickets.push(attendee);
+    return groups;
+  }, {} as Record<string, { user: any; tickets: Attendee[] }>);
+
+  const groupedAttendeesArray = Object.values(groupedAttendees);
+
   const getStatusColor = (attended: boolean) => {
     return attended ? "default" : "secondary";
   };
@@ -254,16 +269,13 @@ export default function AttendeesPage() {
         throw new Error("No authentication token found");
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/attend`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(apiUrl(`api/tickets/${ticketId}/attend`), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to check in attendee: ${response.statusText}`);
@@ -310,6 +322,7 @@ export default function AttendeesPage() {
   };
 
   const totalAttendees = statistics.totalTicketsSold;
+  const uniqueAttendees = groupedAttendeesArray.length;
   const checkedInCount = attendees.filter((a) => a.attended).length;
   const totalRevenue = statistics.totalRevenue;
 
@@ -387,14 +400,14 @@ export default function AttendeesPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Attendees
+                  Unique Attendees
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalAttendees}</div>
+                <div className="text-2xl font-bold">{uniqueAttendees}</div>
                 <p className="text-xs text-muted-foreground">
-                  Registered attendees
+                  {totalAttendees} total tickets
                 </p>
               </CardContent>
             </Card>
@@ -597,127 +610,182 @@ export default function AttendeesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {filteredAttendees.map((attendee) => {
-                  const attended = attendee.attended;
-                  const StatusIcon = getStatusIcon(attended);
-                  const status = getCheckInStatus(attended);
+              <div className="space-y-6">
+                {groupedAttendeesArray.map((group, groupIndex) => {
+                  const allTicketsCheckedIn = group.tickets.every(
+                    (ticket) => ticket.attended
+                  );
+                  const totalSpent = group.tickets.reduce(
+                    (sum, ticket) => sum + ticket.price,
+                    0
+                  );
+                  const totalTickets = group.tickets.length;
 
                   return (
                     <div
-                      key={attendee.ticket_id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      key={`${group.user?.email || "unknown"}-${groupIndex}`}
+                      className="border rounded-lg p-6 hover:bg-gray-50"
                     >
-                      <div className="flex items-center space-x-4">
-                        <Checkbox
-                          checked={selectedAttendees.includes(
-                            attendee.ticket_id
-                          )}
-                          onCheckedChange={(checked) =>
-                            handleSelectAttendee(
-                              attendee.ticket_id,
-                              checked as boolean
-                            )
-                          }
-                        />
+                      {/* User Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage
+                              src="/placeholder.svg"
+                              alt={group.user?.name || "User"}
+                            />
+                            <AvatarFallback>
+                              {group.user?.name
+                                ?.split(" ")
+                                .map((n: string) => n[0])
+                                .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
 
-                        <Avatar>
-                          <AvatarImage
-                            src="/placeholder.svg"
-                            alt={attendee.user?.name || "User"}
-                          />
-                          <AvatarFallback>
-                            {attendee.user?.name
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("") || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <h3 className="font-semibold text-gray-900">
-                              {attendee.user?.name || "Unknown User"}
+                          <div>
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {group.user?.name || "Unknown User"}
                             </h3>
-                            <Badge variant={getStatusColor(attended)}>
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {status.replace("-", " ")}
-                            </Badge>
-                            {attendee.seat_label && (
-                              <Badge variant="outline">
-                                Seat {attendee.seat_label}
-                              </Badge>
-                            )}
-                          </div>
-
-                          <div className="flex items-center space-x-6 mt-1 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {attendee.user?.email || "No email"}
-                            </div>
-                            {attendee.user?.phone_number && (
+                            <div className="flex items-center space-x-4 text-sm text-gray-600">
                               <div className="flex items-center">
-                                <Phone className="h-3 w-3 mr-1" />
-                                {attendee.user.phone_number}
+                                <Mail className="h-3 w-3 mr-1" />
+                                {group.user?.email || "No email"}
                               </div>
-                            )}
-                            <div className="flex items-center">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {attendee.event?.title || "Unknown Event"}
-                            </div>
-                          </div>
-
-                          {(attendee.event?.venue ||
-                            attendee.event?.location) && (
-                            <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
-                              {attendee.event?.venue && (
-                                <span>{attendee.event.venue}</span>
-                              )}
-                              {attendee.event?.location && (
-                                <span>• {attendee.event.location}</span>
+                              {group.user?.phone_number && (
+                                <div className="flex items-center">
+                                  <Phone className="h-3 w-3 mr-1" />
+                                  {group.user.phone_number}
+                                </div>
                               )}
                             </div>
-                          )}
-
-                          <div className="text-sm text-blue-600 mt-1">
-                            Purchased:{" "}
-                            {new Date(attendee.purchase_date).toLocaleString()}
                           </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="font-semibold text-lg">
+                            ${totalSpent.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {totalTickets} ticket{totalTickets !== 1 ? "s" : ""}
+                          </div>
+                          <Badge
+                            variant={
+                              allTicketsCheckedIn ? "default" : "secondary"
+                            }
+                          >
+                            {allTicketsCheckedIn
+                              ? "All Checked In"
+                              : "Pending Check-ins"}
+                          </Badge>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <div className="text-right mr-4">
-                          <div className="font-semibold">
-                            ${attendee.price.toFixed(2)}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {attendee.payment?.payment_method || "Card"}
-                          </div>
-                        </div>
+                      {/* Tickets List */}
+                      <div className="space-y-3 ml-16">
+                        {group.tickets.map((attendee) => {
+                          const attended = attendee.attended;
+                          const StatusIcon = getStatusIcon(attended);
+                          const status = getCheckInStatus(attended);
 
-                        <div className="flex space-x-1">
-                          {!attended && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleCheckIn(attendee.ticket_id)}
+                          return (
+                            <div
+                              key={attendee.ticket_id}
+                              className="flex items-center justify-between p-3 bg-white border rounded-md"
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Check In
-                            </Button>
-                          )}
-                          {attendee.qr_code && (
-                            <Button size="sm" variant="ghost">
-                              <QrCode className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                        </div>
+                              <div className="flex items-center space-x-3">
+                                <Checkbox
+                                  checked={selectedAttendees.includes(
+                                    attendee.ticket_id
+                                  )}
+                                  onCheckedChange={(checked) =>
+                                    handleSelectAttendee(
+                                      attendee.ticket_id,
+                                      checked as boolean
+                                    )
+                                  }
+                                />
+
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3">
+                                    <h4 className="font-medium text-gray-900">
+                                      {attendee.event?.title || "Unknown Event"}
+                                    </h4>
+                                    <Badge variant={getStatusColor(attended)}>
+                                      <StatusIcon className="h-3 w-3 mr-1" />
+                                      {status.replace("-", " ")}
+                                    </Badge>
+                                    {attendee.seat_label && (
+                                      <Badge variant="outline">
+                                        Seat {attendee.seat_label}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center space-x-4 mt-1 text-sm text-gray-600">
+                                    {(attendee.event?.venue ||
+                                      attendee.event?.location) && (
+                                      <div className="flex items-center">
+                                        <Calendar className="h-3 w-3 mr-1" />
+                                        {attendee.event?.venue && (
+                                          <span>{attendee.event.venue}</span>
+                                        )}
+                                        {attendee.event?.location && (
+                                          <span>
+                                            {attendee.event?.venue
+                                              ? ` • ${attendee.event.location}`
+                                              : attendee.event.location}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="text-blue-600">
+                                      Purchased:{" "}
+                                      {new Date(
+                                        attendee.purchase_date
+                                      ).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <div className="text-right mr-4">
+                                  <div className="font-semibold">
+                                    ${attendee.price.toFixed(2)}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {attendee.payment?.payment_method || "Card"}
+                                  </div>
+                                </div>
+
+                                <div className="flex space-x-1">
+                                  {!attended && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleCheckIn(attendee.ticket_id)
+                                      }
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Check In
+                                    </Button>
+                                  )}
+                                  {attendee.qr_code && (
+                                    <Button size="sm" variant="ghost">
+                                      <QrCode className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="ghost">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost">
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -725,7 +793,7 @@ export default function AttendeesPage() {
               </div>
 
               {/* Empty State */}
-              {filteredAttendees.length === 0 && (
+              {groupedAttendeesArray.length === 0 && (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">

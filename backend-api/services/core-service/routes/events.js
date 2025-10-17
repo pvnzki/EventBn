@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-const eventsService = require("../services/core-service/events");
+const eventsService = require("../events");
 const prisma = require("../lib/database");
-const multer = require("multer");
-const cloudinary = require("../lib/cloudinary");
-const upload = multer({ storage: multer.memoryStorage() });
+const { authenticateToken, requireOrganizer } = require("../../../middleware/auth");
+
+console.log("[EVENTS.JS] Events routes being loaded...");
 
 // Get all events
 router.get("/", async (req, res) => {
@@ -108,8 +108,22 @@ router.post("/", upload.fields([
 });
 
 // Update event
-router.put("/:id", async (req, res) => {
+console.log("[EVENTS-ROUTES] Registering PUT /:id route");
+router.put("/:id", authenticateToken, requireOrganizer, async (req, res) => {
+  console.log(`[EVENTS-ROUTES] PUT /:id called for event ${req.params.id}`);
   try {
+    // Check if event exists
+    const existingEvent = await eventsService.getEventById(req.params.id);
+    if (!existingEvent) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    // For now, skip authorization check in test mode
+    // TODO: Implement proper organization-based authorization
+
     const event = await eventsService.updateEvent(req.params.id, req.body);
     res.json({
       success: true,
@@ -125,12 +139,25 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete event
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, requireOrganizer, async (req, res) => {
   try {
-    await eventsService.deleteEvent(req.params.id);
+    // Check if event exists
+    const existingEvent = await eventsService.getEventById(req.params.id);
+    if (!existingEvent) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    // For now, skip authorization check in test mode
+    // TODO: Implement proper organization-based authorization
+
+    const deletedEvent = await eventsService.deleteEvent(req.params.id);
     res.json({
       success: true,
       message: "Event deleted successfully",
+      data: deletedEvent,
     });
   } catch (error) {
     res.status(500).json({

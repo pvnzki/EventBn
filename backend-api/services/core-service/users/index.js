@@ -80,6 +80,23 @@ module.exports = {
     }
   },
 
+  // Get user by ID with password hash (for password verification)
+  async getUserByIdWithPassword(id) {
+    try {
+      return await prisma.user.findUnique({
+        where: { user_id: parseInt(id) },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          password_hash: true,
+        },
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch user with password: ${error.message}`);
+    }
+  },
+
   // Get all users with optional filtering
   async getAllUsers(filters = {}) {
     try {
@@ -184,7 +201,6 @@ module.exports = {
       const updateData = { ...data };
       delete updateData.user_id;
       delete updateData.created_at;
-      delete updateData.password_hash;
 
       // Handle email case conversion
       if (updateData.email) {
@@ -222,6 +238,9 @@ module.exports = {
         const saltRounds = 12;
         updateData.password_hash = await bcrypt.hash(data.password, saltRounds);
         delete updateData.password;
+      } else {
+        // Only delete password_hash if we're not updating it
+        delete updateData.password_hash;
       }
 
       return await prisma.user.update({
