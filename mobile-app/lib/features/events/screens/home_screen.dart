@@ -29,21 +29,28 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
   bool _imagesPreloaded = false;
-  
+
   // Price caching for events
   final Map<String, double> _eventPriceCache = {};
   final Set<String> _loadingPrices = {};
-  
+
   // Category filtering
   String _selectedCategory = 'All';
-  
+
   // Advanced search filters
   DateTimeRange? _selectedDateRange;
   RangeValues? _selectedPriceRange;
   String _selectedLocation = 'All';
-  
+
   // Available filter options
-  final List<String> _locationOptions = ['All', 'Colombo', 'Kandy', 'Galle', 'Jaffna', 'Other'];
+  final List<String> _locationOptions = [
+    'All',
+    'Colombo',
+    'Kandy',
+    'Galle',
+    'Jaffna',
+    'Other'
+  ];
   final double _minPrice = 0;
   final double _maxPrice = 10000;
 
@@ -186,10 +193,10 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final eventProvider = context.read<EventProvider>();
       final results = await eventProvider.searchEvents(query);
-      
+
       // Apply category filtering to search results as well
       final filteredResults = _getFilteredEvents(results);
-      
+
       setState(() {
         _searchResults = filteredResults;
         _isSearching = false;
@@ -215,8 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Check if any advanced filters are active
   bool _hasActiveFilters() {
     return _selectedDateRange != null ||
-           _selectedPriceRange != null ||
-           _selectedLocation != 'All';
+        _selectedPriceRange != null ||
+        _selectedLocation != 'All';
   }
 
   // Show the filter modal
@@ -277,71 +284,71 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_selectedCategory != 'All') {
         final eventCategory = event.category.toLowerCase();
         final selectedCategory = _selectedCategory.toLowerCase();
-        
+
         bool categoryMatch = false;
         switch (selectedCategory) {
           case 'concerts':
-            categoryMatch = eventCategory.contains('music') || 
-                           eventCategory.contains('concert') ||
-                           eventCategory.contains('entertainment');
+            categoryMatch = eventCategory.contains('music') ||
+                eventCategory.contains('concert') ||
+                eventCategory.contains('entertainment');
             break;
           case 'sports':
             categoryMatch = eventCategory.contains('sport') ||
-                           eventCategory.contains('football') ||
-                           eventCategory.contains('cricket') ||
-                           eventCategory.contains('game');
+                eventCategory.contains('football') ||
+                eventCategory.contains('cricket') ||
+                eventCategory.contains('game');
             break;
           case 'food':
             categoryMatch = eventCategory.contains('food') ||
-                           eventCategory.contains('culinary') ||
-                           eventCategory.contains('dining') ||
-                           eventCategory.contains('restaurant');
+                eventCategory.contains('culinary') ||
+                eventCategory.contains('dining') ||
+                eventCategory.contains('restaurant');
             break;
           case 'art':
             categoryMatch = eventCategory.contains('art') ||
-                           eventCategory.contains('exhibition') ||
-                           eventCategory.contains('gallery') ||
-                           eventCategory.contains('creative');
+                eventCategory.contains('exhibition') ||
+                eventCategory.contains('gallery') ||
+                eventCategory.contains('creative');
             break;
           case 'business':
             categoryMatch = eventCategory.contains('business') ||
-                           eventCategory.contains('conference') ||
-                           eventCategory.contains('workshop') ||
-                           eventCategory.contains('seminar') ||
-                           eventCategory.contains('professional');
+                eventCategory.contains('conference') ||
+                eventCategory.contains('workshop') ||
+                eventCategory.contains('seminar') ||
+                eventCategory.contains('professional');
             break;
           default:
             categoryMatch = eventCategory.contains(selectedCategory);
         }
-        
+
         if (!categoryMatch) return false;
       }
-      
+
       // Date range filter
       if (_selectedDateRange != null) {
         final eventDate = event.startDateTime;
-        if (eventDate.isBefore(_selectedDateRange!.start) || 
+        if (eventDate.isBefore(_selectedDateRange!.start) ||
             eventDate.isAfter(_selectedDateRange!.end)) {
           return false;
         }
       }
-      
-      // Location filter  
+
+      // Location filter
       if (_selectedLocation != 'All') {
         final eventVenue = event.venue.toLowerCase();
         final eventAddress = event.address.toLowerCase();
         final selectedLocation = _selectedLocation.toLowerCase();
-        if (!eventVenue.contains(selectedLocation) && 
+        if (!eventVenue.contains(selectedLocation) &&
             !eventAddress.contains(selectedLocation)) {
           return false;
         }
       }
-      
+
       // Price range filter (using cached prices if available)
       if (_selectedPriceRange != null) {
         final cachedPrice = _eventPriceCache[event.id];
         if (cachedPrice != null) {
-          if (cachedPrice < _selectedPriceRange!.start || 
+          if (cachedPrice < _selectedPriceRange!.start ||
               cachedPrice > _selectedPriceRange!.end) {
             return false;
           }
@@ -349,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // If no cached price, we can't filter by price for this event
         // so we include it to avoid filtering out events with unknown prices
       }
-      
+
       return true;
     }).toList();
   }
@@ -452,14 +459,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: _hasActiveFilters()
                                   ? theme.primaryColor.withOpacity(0.2)
-                                  : theme.colorScheme.onSurface.withOpacity(0.1),
+                                  : theme.colorScheme.onSurface
+                                      .withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.tune_rounded,
                               color: _hasActiveFilters()
                                   ? theme.primaryColor
-                                  : theme.colorScheme.onSurface.withOpacity(0.7),
+                                  : theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
                               size: 16,
                             ),
                           ),
@@ -1184,8 +1193,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _selectedCategory == 'All' 
-                        ? 'No events found' 
+                    _selectedCategory == 'All'
+                        ? 'No events found'
                         : 'No $_selectedCategory events found',
                     style: TextStyle(
                       fontSize: 16,
@@ -1241,7 +1250,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final events = context.read<EventProvider>().events;
     // Preload pricing for the first 6 events (what's typically visible)
     final eventsToPreload = events.take(6);
-    
+
     for (final event in eventsToPreload) {
       _fetchEventPricing(event.id);
     }
@@ -1249,7 +1258,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Fetch pricing information for an event from seatmap API
   Future<void> _fetchEventPricing(String eventId) async {
-    if (_loadingPrices.contains(eventId) || _eventPriceCache.containsKey(eventId)) {
+    if (_loadingPrices.contains(eventId) ||
+        _eventPriceCache.containsKey(eventId)) {
       return; // Already loading or cached
     }
 
@@ -1281,7 +1291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             }
-            
+
             if (lowestPrice != null && lowestPrice > 0) {
               _eventPriceCache[eventId] = lowestPrice;
               if (mounted) {
@@ -1313,7 +1323,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Fetch pricing data in the background if not already loading
-    if (!_loadingPrices.contains(event.id) && !_eventPriceCache.containsKey(event.id)) {
+    if (!_loadingPrices.contains(event.id) &&
+        !_eventPriceCache.containsKey(event.id)) {
       _fetchEventPricing(event.id);
     }
 
@@ -1329,7 +1340,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Base prices by category
     int basePrice = 500; // Default base price
-    
+
     switch (category) {
       case 'music':
       case 'concert':
@@ -1965,7 +1976,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Update selected category for filtering
                     _selectedCategory = category['name'];
                   });
-                  
+
                   // If there's an active search, re-perform it with the new category filter
                   if (_searchController.text.isNotEmpty) {
                     _performSearch(_searchController.text);

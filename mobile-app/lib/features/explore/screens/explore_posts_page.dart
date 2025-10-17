@@ -313,7 +313,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
                         },
                         icon: Icon(
                           Icons.clear_rounded,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.6),
                           size: 20,
                         ),
                       )
@@ -371,7 +372,8 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
             ),
           ),
           // Active filters indicator
-          if (_searchQuery.isNotEmpty || _selectedCategory != PostCategory.all) ...[
+          if (_searchQuery.isNotEmpty ||
+              _selectedCategory != PostCategory.all) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
