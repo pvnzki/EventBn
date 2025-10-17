@@ -20,7 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Eye, Edit, Trash2, Calendar, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  X,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -68,6 +77,7 @@ export default function AdminEventsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLoaded, setUserLoaded] = useState(false);
 
   useEffect(() => {
     // Load user from localStorage
@@ -91,15 +101,27 @@ export default function AdminEventsPage() {
         variant: "destructive",
       });
     }
-    setIsLoading(false);
+    // Mark that we've completed the initial user read from localStorage so
+    // the events effect can run. We do NOT toggle `isLoading` here; the
+    // events effect controls that so the spinner stays visible until
+    // event data is actually available.
+    setUserLoaded(true);
   }, [toast]);
 
   useEffect(() => {
-    // Load user and organization if needed, then fetch only organization events
+    // Do nothing until we've completed the initial user load to avoid
+    // toggling loading prematurely (which caused the spinner -> empty ->
+    // content flicker).
+    if (!userLoaded) return;
+
+    // If user is absent after load, show no events (stop loading)
     if (!user) {
       setIsLoading(false);
       return;
     }
+
+    // Beginning the events fetch flow — show loading spinner until finished
+    setIsLoading(true);
 
     const token = localStorage.getItem("token");
     const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -349,7 +371,10 @@ export default function AdminEventsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <p className="text-center text-gray-600">Loading events...</p>
+                <div className="flex flex-col items-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-700 mb-2" />
+                  <div className="text-gray-700">Loading events...</div>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {filteredEvents.map((event) => (

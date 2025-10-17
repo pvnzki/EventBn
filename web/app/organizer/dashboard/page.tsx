@@ -29,6 +29,7 @@ import {
   Video,
   Building2,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import {
   Bar,
@@ -112,6 +113,7 @@ const AdminDashboardPage = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
   );
+  const [loadingAnalyticsFetch, setLoadingAnalyticsFetch] = useState(false);
   const [chartData, setChartData] = useState<
     {
       month: string;
@@ -119,7 +121,9 @@ const AdminDashboardPage = () => {
       events: number;
     }[]
   >([]);
+  const [loadingChartFetch, setLoadingChartFetch] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [loadingEventsFetch, setLoadingEventsFetch] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
@@ -243,6 +247,7 @@ const AdminDashboardPage = () => {
     if (user?.organization_id) {
       console.log("Fetching analytics for organization:", user.organization_id);
 
+      setLoadingAnalyticsFetch(true);
       // Prepare headers with token
       const token = localStorage.getItem("token");
       const headers: HeadersInit = {
@@ -299,6 +304,9 @@ const AdminDashboardPage = () => {
             description: "Analytics service unavailable, showing sample data.",
             variant: "destructive",
           });
+        })
+        .finally(() => {
+          setLoadingAnalyticsFetch(false);
         });
     } else {
       console.log("No organization_id found, skipping analytics fetch");
@@ -312,6 +320,7 @@ const AdminDashboardPage = () => {
         user.organization_id
       );
 
+      setLoadingChartFetch(true);
       // Prepare headers with token
       const token = localStorage.getItem("token");
       const headers: HeadersInit = {
@@ -362,6 +371,9 @@ const AdminDashboardPage = () => {
             description: "Chart service unavailable, showing sample data.",
             variant: "destructive",
           });
+        })
+        .finally(() => {
+          setLoadingChartFetch(false);
         });
     } else {
       console.log("No organization_id found, skipping chart data fetch");
@@ -374,6 +386,7 @@ const AdminDashboardPage = () => {
     // Only fetch events if user is loaded
     if (!user) {
       console.log("User not loaded yet, skipping events fetch");
+      setLoadingEventsFetch(false);
       return;
     }
 
@@ -389,6 +402,7 @@ const AdminDashboardPage = () => {
 
       // Prefer organization-specific endpoint which returns upcoming and past events
       const orgEventsUrl = `http://localhost:3001/api/organizations/${user.organization_id}/events`;
+      setLoadingEventsFetch(true);
       console.log("Requesting org events URL:", orgEventsUrl);
       fetch(orgEventsUrl, { headers })
         .then((res) => {
@@ -413,6 +427,7 @@ const AdminDashboardPage = () => {
                   new Date(b.start_time).getTime()
               )
             );
+            setLoadingEventsFetch(false);
           } else {
             console.error(
               "Org events API returned unexpected response:",
@@ -423,6 +438,7 @@ const AdminDashboardPage = () => {
               description: "Failed to load events data for your organization.",
               variant: "destructive",
             });
+            setLoadingEventsFetch(false);
           }
         })
         .catch((err) => {
@@ -432,6 +448,7 @@ const AdminDashboardPage = () => {
             description: "Unable to connect to events service.",
             variant: "destructive",
           });
+          setLoadingEventsFetch(false);
         });
     } else {
       // Organizer has no organization linked: do not show other organizations' events
@@ -445,6 +462,7 @@ const AdminDashboardPage = () => {
           variant: "destructive",
         });
       }
+      setLoadingEventsFetch(false);
     }
   }, [user]); // Add user as a dependency to refetch events when user data changes
 
@@ -601,6 +619,28 @@ const AdminDashboardPage = () => {
     totalRevenue: 25680,
     conversionRate: 3.2,
   };
+
+  const isLoadingData =
+    user === null ||
+    loadingAnalyticsFetch ||
+    loadingChartFetch ||
+    loadingEventsFetch;
+
+  if (isLoadingData) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-700" />
+              <div className="text-gray-700">Loading dashboard data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // For organizer dashboard, we'll show current data without comparison
   // Historical trends would require additional endpoints
