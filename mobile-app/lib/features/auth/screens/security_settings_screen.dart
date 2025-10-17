@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../auth/services/two_factor_service.dart';
-import '../../auth/providers/auth_provider.dart';
 
 class SecuritySettingsScreen extends StatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -252,7 +250,6 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
   bool _isLoading = false;
   String? _qrCode;
   String? _secret;
-  List<String>? _backupCodes;
 
   @override
   void initState() {
@@ -269,14 +266,8 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
       setState(() {
         _qrCode = result['qrCode'];
         _secret = result['secret'];
-        _backupCodes = List<String>.from(result['backupCodes'] ?? []);
         _isLoading = false;
       });
-
-      // Show backup codes immediately since 2FA is now enabled
-      if (_backupCodes != null && _backupCodes!.isNotEmpty) {
-        _showBackupCodes(_backupCodes!);
-      }
     } else {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -287,54 +278,6 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
         Navigator.of(context).pop();
       }
     }
-  }
-
-  void _showBackupCodes(List<String> codes) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Save Your Backup Codes'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-                'Save these backup codes in a safe place. You can use them to access your account if you lose your authenticator device.'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: codes
-                    .map((code) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(code,
-                              style: const TextStyle(fontFamily: 'monospace')),
-                        ))
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(true); // Return to security settings
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Two-factor authentication enabled!')),
-              );
-            },
-            child: const Text('I\'ve Saved Them'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -419,7 +362,15 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
                       'Two-factor authentication has been enabled successfully. Your backup codes will be shown next for safekeeping.'),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
+                    onPressed: () {
+                      Navigator.of(context).pop(true);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Two-factor authentication enabled successfully!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),

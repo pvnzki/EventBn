@@ -321,7 +321,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           // Update the auth provider with the new user data
           final authProvider =
               Provider.of<AuthProvider>(context, listen: false);
-          authProvider.updateUser(_currentUser!);
+          authProvider.updateUserData(_currentUser!);
 
           print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
 

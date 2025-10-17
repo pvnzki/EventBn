@@ -496,7 +496,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
       // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(currentPost.isLiked ? 'Liked!' : 'Unliked!'),
+          content: Text(currentPost.isLiked ? 'Uniked!' : 'Liked!'),
           duration: const Duration(milliseconds: 500),
           backgroundColor: Colors.green,
         ),

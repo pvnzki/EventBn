@@ -98,7 +98,6 @@ class AuthProvider extends ChangeNotifier {
 
   // Login
   Future<Map<String, dynamic>> login(String email, String password) async {
-  Future<bool> login(String email, String password) async {
     print('🔄 [AUTH_PROVIDER] Starting login process for: $email');
     _setLoading(true);
     _setError(null);
@@ -392,6 +391,12 @@ class AuthProvider extends ChangeNotifier {
 
   // Update user data (for profile updates)
   void updateUser(User updatedUser) {
+    _user = updatedUser;
+    notifyListeners();
+  }
+
+  // Alternative method name for updateUser
+  void updateUserData(User updatedUser) {
     _user = updatedUser;
     notifyListeners();
   }

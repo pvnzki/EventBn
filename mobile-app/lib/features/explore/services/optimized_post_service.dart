@@ -42,10 +42,6 @@ class OptimizedExplorePostService {
   String? _cachedAuthToken;
   DateTime? _tokenExpiry;
 
-  // Performance metrics
-  final int _networkFetchCount = 0;
-  final int _cacheHitCount = 0;
-
   // Getters
   List<ExplorePost> get posts => _posts;
   bool get isLoading => _isLoading;

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
+import '../../../common_widgets/custom_notification.dart';
 import '../../auth/services/auth_service.dart';
 import 'payment_screen.dart';
 
@@ -311,10 +312,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     return await _unlockSeat(seatId);
   }
 
-  Future<bool> _extendSeatLock(String seatId) async {
-    return await _extendSeatLocks([seatId]);
-  }
-
   // ========== PAYMENT SEAT LOCKING ==========
   
   Future<bool> _lockAllSelectedSeatsForPayment() async {
@@ -569,12 +566,20 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   }
 
   void _showSnackBar(String message, Color? backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-      ),
+    // Determine notification type based on color
+    NotificationType type;
+    if (backgroundColor == Colors.red) {
+      type = NotificationType.error;
+    } else if (backgroundColor == Colors.orange) {
+      type = NotificationType.warning;
+    } else {
+      type = NotificationType.info;
+    }
+
+    CustomNotification.show(
+      context,
+      message: message,
+      type: type,
     );
   }
 
@@ -1033,30 +1038,32 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     final isLockedByOther = lockedSeats.contains(seatId) && !isSelected;
 
     Color getSeatColor() {
+      final isDark = theme.brightness == Brightness.dark;
+      
       if (isOccupied) {
-        // Bright red for booked/occupied seats - highly visible
-        return const Color(0xFFD32F2F);
+        // Red for booked/occupied seats - theme-aware
+        return isDark ? const Color(0xFFEF5350) : const Color(0xFFD32F2F);
       }
       if (isSelected) {
-        // Bright green for selected seats
-        return const Color(0xFF4CAF50);
+        // Green for selected seats - theme-aware
+        return isDark ? const Color(0xFF66BB6A) : const Color(0xFF4CAF50);
       }
       if (isLockedByOther) {
-        // Orange for seats locked by other users
-        return const Color(0xFFFF9800);
+        // Orange for seats locked by other users - theme-aware
+        return isDark ? const Color(0xFFFFB74D) : const Color(0xFFFF9800);
       }
 
-      // Available seats with tier-based colors
+      // Available seats with tier-based colors - theme-aware
       switch (tier.toLowerCase()) {
         case 'premium':
           // Gold/amber for premium available seats
-          return const Color(0xFFFFB74D);
+          return isDark ? const Color(0xFFFFCC02) : const Color(0xFFFFB74D);
         case 'vip':
           // Purple for VIP available seats
-          return const Color(0xFF9C27B0);
+          return isDark ? const Color(0xFFBA68C8) : const Color(0xFF9C27B0);
         default:
           // Blue for regular available seats
-          return const Color(0xFF2196F3);
+          return isDark ? const Color(0xFF42A5F5) : const Color(0xFF2196F3);
       }
     }
 
@@ -1076,20 +1083,20 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
             color: getSeatColor(),
             borderRadius: BorderRadius.circular(6),
             border: isSelected
-                ? Border.all(color: Colors.white, width: 3)
+                ? Border.all(color: theme.colorScheme.surface, width: 3)
                 : Border.all(
-                    color: Colors.white.withValues(alpha: 0.3), width: 1),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3), width: 1),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF4CAF50).withValues(alpha: 0.6),
+                      color: getSeatColor().withValues(alpha: 0.6),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.15),
                       blurRadius: 4,
                       spreadRadius: 0,
                       offset: const Offset(0, 2),
@@ -1103,18 +1110,18 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                     builder: (context, child) {
                       return Transform.scale(
                         scale: 0.8 + (_selectionAnimation.value * 0.4),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check,
-                          color: Colors.white,
+                          color: theme.colorScheme.surface,
                           size: 18,
                         ),
                       );
                     },
                   )
                 : isOccupied
-                    ? const Icon(
+                    ? Icon(
                         Icons.close,
-                        color: Colors.white,
+                        color: theme.colorScheme.surface,
                         size: 16,
                       )
                     : isLockedByOther

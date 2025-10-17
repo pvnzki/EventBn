@@ -88,11 +88,11 @@ class AuthService {
 
           // Store token and user
           await _storeToken(token);
-          final user = User.fromJson(Map<String, dynamic>.from(userPayload));
-          await _storeUser(user);
+          final userObject = User.fromJson(Map<String, dynamic>.from(userPayload));
+          await _storeUser(userObject);
 
-          print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
-          return {'success': true, 'user': user, 'token': token};
+          print('✅ [AUTH_SERVICE] Login successful for: ${userObject.email}');
+          return {'success': true, 'user': userObject, 'token': token};
         } else {
           print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
           return {
@@ -125,7 +125,7 @@ class AuthService {
         'name': name,
         'email': email,
         'password': password,
-        if (phoneNumber != null && phoneNumber.isNotEmpty)
+        if (phoneNumber.isNotEmpty)
           'phone_number': phoneNumber,
       };
 

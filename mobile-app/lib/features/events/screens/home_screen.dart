@@ -980,15 +980,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getEventPriceText(Event event) {
-    // Check if event has ticket types with pricing
-    if (event.ticketTypes.isNotEmpty) {
-      final lowestPrice =
-          event.ticketTypes.map((t) => t.price).reduce((a, b) => a < b ? a : b);
-      if (lowestPrice > 0) {
-        return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
-      }
+    // Use the cheapestPrice getter from Event model
+    final price = event.cheapestPrice;
+    
+    if (price > 0) {
+      return 'LKR ${price.toStringAsFixed(0)}';
+    } else {
+      return 'Free Event';
     }
-    return 'Free Event';
   }
 
   Widget _buildEventCard(Event event) {

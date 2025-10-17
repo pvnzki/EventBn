@@ -8,6 +8,7 @@ import '../widgets/smart_event_picker.dart';
 import '../../events/services/event_service.dart';
 import '../../events/models/event_model.dart';
 import '../../auth/services/auth_service.dart';
+import '../../../common_widgets/custom_notification.dart';
 import '../../auth/models/user_model.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -94,11 +95,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     // Check if we've reached the maximum number of images
     const maxImages = 10;
     if (_selectedImages.length >= maxImages) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum $maxImages images allowed'),
-          backgroundColor: Colors.orange,
-        ),
+      CustomNotification.show(
+        context,
+        message: 'Maximum $maxImages images allowed',
+        type: NotificationType.warning,
       );
       return;
     }
@@ -131,8 +131,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking images: $e')),
+      CustomNotification.show(
+        context,
+        message: 'Error picking images: $e',
+        type: NotificationType.error,
       );
     }
   }
@@ -235,12 +237,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         SnackBar(content: Text('Error recording video: $e')),
       );
     }
-  }
-
-  void _removeVideo(int index) {
-    setState(() {
-      _selectedVideos.removeAt(index);
-    });
   }
 
   bool _canPost() {
@@ -568,11 +564,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     } catch (e) {
       if (mounted) {
         print('💥 Error in _createPost: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('💥 Network error: Please check your connection'),
-            backgroundColor: Colors.red,
-          ),
+        CustomNotification.show(
+          context,
+          message: 'Network error: Please check your connection',
+          type: NotificationType.error,
         );
       }
     } finally {
