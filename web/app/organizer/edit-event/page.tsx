@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { apiUrl } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,7 +70,7 @@ type Event = {
   ticket_types: any;
 };
 
-const EditEventPage = () => {
+const EditEventPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams ? searchParams.get("id") : null;
@@ -1031,6 +1031,23 @@ const EditEventPage = () => {
         </div>
       </main>
     </div>
+  );
+};
+
+const EditEventPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 p-8 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-lg">Loading...</div>
+          </div>
+        </main>
+      </div>
+    }>
+      <EditEventPageContent />
+    </Suspense>
   );
 };
 
