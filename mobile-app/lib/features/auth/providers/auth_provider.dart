@@ -45,7 +45,7 @@ class AuthProvider extends ChangeNotifier {
         // We have both token and user data - user is authenticated
         _user = user;
         _isAuthenticated = true;
-        
+
         print('✅ [AUTH_PROVIDER] User authenticated from stored data');
         print('   - User ID: ${user.id}');
         print('   - Email: ${user.email}');
@@ -57,20 +57,19 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', user.email);
         await prefs.setBool('is_authenticated', true);
-        
       } else {
         // No valid authentication data found
         print('❌ [AUTH_PROVIDER] No valid authentication data found');
-        
+
         // Ensure clean state by removing any partial data
         await _cleanPartialAuthData();
-        
+
         _user = null;
         _isAuthenticated = false;
       }
     } catch (e) {
       print('❌ [AUTH_PROVIDER] Error initializing authentication: $e');
-      
+
       // On error, ensure clean state
       await _cleanPartialAuthData();
       _user = null;
@@ -78,7 +77,8 @@ class AuthProvider extends ChangeNotifier {
       _setError('Failed to initialize authentication');
     } finally {
       _setLoading(false);
-      print('🏁 [AUTH_PROVIDER] Initialization complete. User: ${_user?.id}, Authenticated: $_isAuthenticated');
+      print(
+          '🏁 [AUTH_PROVIDER] Initialization complete. User: ${_user?.id}, Authenticated: $_isAuthenticated');
     }
   }
 
@@ -131,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
 
         final token = result['token'];
-        
+
         print('✅ [AUTH_PROVIDER] Login successful for user: ${_user!.id}');
         print('   - Email: ${_user!.email}');
         print('   - Phone: ${_user!.phoneNumber}');
@@ -144,7 +144,8 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('auth_token', token);
         await prefs.setBool('is_authenticated', true);
 
-        print('✅ [AUTH_PROVIDER] Authentication data stored in SharedPreferences');
+        print(
+            '✅ [AUTH_PROVIDER] Authentication data stored in SharedPreferences');
         _setLoading(false);
         return {'success': true};
       } else {
@@ -248,10 +249,10 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     try {
       print('🔄 [AUTH_PROVIDER] Starting logout process...');
-      
+
       // Call AuthService logout to remove all stored data (token + user data)
       await _authService.logout();
-      
+
       // Also clear AuthProvider-specific SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_email');
@@ -264,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _isAuthenticated = false;
       _error = null;
-      
+
       print('✅ [AUTH_PROVIDER] Logout completed successfully');
       notifyListeners();
     } catch (e) {
@@ -339,7 +340,7 @@ class AuthProvider extends ChangeNotifier {
         print('   - Billing City: ${_user!.billingCity}');
         print('   - Billing Country: ${_user!.billingCountry}');
         print('   - Emergency Contact: ${_user!.emergencyContactName}');
-        
+
         _setLoading(false);
         notifyListeners();
         return true;

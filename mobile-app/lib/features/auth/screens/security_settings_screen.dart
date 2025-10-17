@@ -366,7 +366,8 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
                       Navigator.of(context).pop(true);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Two-factor authentication enabled successfully!'),
+                          content: Text(
+                              'Two-factor authentication enabled successfully!'),
                           backgroundColor: Colors.green,
                         ),
                       );

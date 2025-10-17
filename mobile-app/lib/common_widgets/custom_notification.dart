@@ -44,7 +44,8 @@ class CustomNotification {
         icon = Icons.warning;
         break;
       case NotificationType.info:
-        backgroundColor = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
+        backgroundColor =
+            isDark ? const Color(0xFF2A2A2A) : const Color(0xFFFFFFFF);
         textColor = isDark ? Colors.white : Colors.black;
         icon = Icons.info;
         break;

@@ -57,25 +57,25 @@ class AuthService {
                 '❌ [AUTH_SERVICE] Login succeeded but token missing in response');
             return {'success': false, 'message': 'Token missing in response'};
           }
-        // Store token and user
-        await _storeToken(token);
-        
-        // **DEBUG**: Log the raw user payload from backend
-        print('🔍 [AUTH_SERVICE] Raw user payload from login:');
-        print('   - phone_number: ${userPayload['phone_number']}');
-        print('   - date_of_birth: ${userPayload['date_of_birth']}');
-        print('   - billing_address: ${userPayload['billing_address']}');
-        print('   - All fields: ${userPayload.keys.toList()}');
-        
-        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
-        
-        // **DEBUG**: Log the parsed user object
-        print('🔍 [AUTH_SERVICE] Parsed user object:');
-        print('   - phoneNumber: ${user.phoneNumber}');
-        print('   - dateOfBirth: ${user.dateOfBirth}');
-        print('   - billingAddress: ${user.billingAddress}');
-        
-        await _storeUser(user);
+          // Store token and user
+          await _storeToken(token);
+
+          // **DEBUG**: Log the raw user payload from backend
+          print('🔍 [AUTH_SERVICE] Raw user payload from login:');
+          print('   - phone_number: ${userPayload['phone_number']}');
+          print('   - date_of_birth: ${userPayload['date_of_birth']}');
+          print('   - billing_address: ${userPayload['billing_address']}');
+          print('   - All fields: ${userPayload.keys.toList()}');
+
+          final user = User.fromJson(Map<String, dynamic>.from(userPayload));
+
+          // **DEBUG**: Log the parsed user object
+          print('🔍 [AUTH_SERVICE] Parsed user object:');
+          print('   - phoneNumber: ${user.phoneNumber}');
+          print('   - dateOfBirth: ${user.dateOfBirth}');
+          print('   - billingAddress: ${user.billingAddress}');
+
+          await _storeUser(user);
 
           if (userPayload == null || userPayload is! Map<String, dynamic>) {
             print(
@@ -88,7 +88,8 @@ class AuthService {
 
           // Store token and user
           await _storeToken(token);
-          final userObject = User.fromJson(Map<String, dynamic>.from(userPayload));
+          final userObject =
+              User.fromJson(Map<String, dynamic>.from(userPayload));
           await _storeUser(userObject);
 
           print('✅ [AUTH_SERVICE] Login successful for: ${userObject.email}');
@@ -125,8 +126,7 @@ class AuthService {
         'name': name,
         'email': email,
         'password': password,
-        if (phoneNumber.isNotEmpty)
-          'phone_number': phoneNumber,
+        if (phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
       };
 
       print('🔄 [AUTH_SERVICE] Request body: $requestBody');
@@ -458,17 +458,25 @@ class AuthService {
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
         phoneNumber: updatedUser.phoneNumber ?? currentUser.phoneNumber,
-        profileImageUrl: updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
-        billingAddress: updatedUser.billingAddress ?? currentUser.billingAddress,
+        profileImageUrl:
+            updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
+        billingAddress:
+            updatedUser.billingAddress ?? currentUser.billingAddress,
         billingCity: updatedUser.billingCity ?? currentUser.billingCity,
         billingState: updatedUser.billingState ?? currentUser.billingState,
-        billingCountry: updatedUser.billingCountry ?? currentUser.billingCountry,
-        billingPostalCode: updatedUser.billingPostalCode ?? currentUser.billingPostalCode,
+        billingCountry:
+            updatedUser.billingCountry ?? currentUser.billingCountry,
+        billingPostalCode:
+            updatedUser.billingPostalCode ?? currentUser.billingPostalCode,
         profileCompleted: updatedUser.profileCompleted,
         dateOfBirth: updatedUser.dateOfBirth ?? currentUser.dateOfBirth,
-        emergencyContactName: updatedUser.emergencyContactName ?? currentUser.emergencyContactName,
-        emergencyContactPhone: updatedUser.emergencyContactPhone ?? currentUser.emergencyContactPhone,
-        emergencyContactRelationship: updatedUser.emergencyContactRelationship ?? currentUser.emergencyContactRelationship,
+        emergencyContactName: updatedUser.emergencyContactName ??
+            currentUser.emergencyContactName,
+        emergencyContactPhone: updatedUser.emergencyContactPhone ??
+            currentUser.emergencyContactPhone,
+        emergencyContactRelationship:
+            updatedUser.emergencyContactRelationship ??
+                currentUser.emergencyContactRelationship,
         marketingEmailsEnabled: updatedUser.marketingEmailsEnabled,
         eventNotificationsEnabled: updatedUser.eventNotificationsEnabled,
         smsNotificationsEnabled: updatedUser.smsNotificationsEnabled,
@@ -501,7 +509,8 @@ class AuthService {
         body: jsonEncode(body),
       );
 
-      print('🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
+      print(
+          '🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
       print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -513,7 +522,8 @@ class AuthService {
         if (data['data'] != null) {
           finalUser = User.fromJson(data['data']);
         } else if (data['success'] == true) {
-          finalUser = mergedUser; // Use merged data if backend doesn't return user
+          finalUser =
+              mergedUser; // Use merged data if backend doesn't return user
         } else {
           finalUser = mergedUser;
         }
@@ -528,7 +538,8 @@ class AuthService {
         return {'success': true, 'user': finalUser};
       } else {
         final data = jsonDecode(response.body);
-        print('❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
 
         // Fallback: Store merged data locally only
         await _storeUser(mergedUser);
@@ -661,18 +672,18 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     print('🔄 [AUTH_SERVICE] Clearing all stored authentication data...');
-    
+
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Remove primary auth data
     await prefs.remove(AppConfig.tokenKey);
     await prefs.remove(AppConfig.userKey);
-    
+
     // Remove any legacy keys that might exist
     await prefs.remove('user_email');
     await prefs.remove('auth_token');
     await prefs.setBool('is_authenticated', false);
-    
+
     print('✅ [AUTH_SERVICE] All authentication data cleared successfully');
     print('   - Removed: ${AppConfig.tokenKey}');
     print('   - Removed: ${AppConfig.userKey}');

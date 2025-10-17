@@ -982,7 +982,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getEventPriceText(Event event) {
     // Use the cheapestPrice getter from Event model
     final price = event.cheapestPrice;
-    
+
     if (price > 0) {
       return 'LKR ${price.toStringAsFixed(0)}';
     } else {

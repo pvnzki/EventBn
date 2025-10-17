@@ -408,7 +408,8 @@ class PaymentSuccessScreen extends StatelessWidget {
             '❌ [PAYMENT SUCCESS] Invalid booking ID format: $bookingId (length: ${bookingId.length})');
         CustomNotification.show(
           context,
-          message: 'Invalid ticket ID format. Please try again or contact support.',
+          message:
+              'Invalid ticket ID format. Please try again or contact support.',
           type: NotificationType.error,
         );
         return;
