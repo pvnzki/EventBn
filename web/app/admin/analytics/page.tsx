@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -9,13 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// time range selector removed
 import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
@@ -56,16 +51,32 @@ interface User {
 
 export default function AnalyticsPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [timeRange, setTimeRange] = useState("6months");
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        const parsed = JSON.parse(userData);
+        // Normalize role to lowercase for consistent checks across components
+        if (parsed && parsed.role)
+          parsed.role = String(parsed.role).toLowerCase();
+        setUser(parsed);
+      } catch (e) {
+        // On parse error, clear user to avoid mis-typing
+        console.error("Failed to parse user from localStorage", e);
+        setUser(null);
+      }
     }
   }, []);
 
+  const router = useRouter();
+
+  // NOTE: we intentionally do NOT redirect here. Instead we will render an
+  // explicit Access Denied UI for non-admin users so they aren't silently
+  // navigated away and confused by organizer-specific pages (which may 404).
+
   // Only fetch analytics if user is loaded and is admin
+  // Role normalization: allow stored roles like 'ADMIN' or 'admin'
   const isAdmin = user?.role === "admin";
   // Mirror organizer analytics flow: wait for user, require admin, then fetch platform-wide analytics
   // IMPORTANT: hooks must be called unconditionally — call the admin analytics hook here even if user is null
@@ -78,23 +89,9 @@ export default function AnalyticsPage() {
     loading,
     error,
     refetch,
-  } = useAdminAnalytics(!!isAdmin, timeRange);
+  } = useAdminAnalytics(!!isAdmin, "6months");
 
-  if (user && !isAdmin) {
-    return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1 lg:ml-64 p-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl font-semibold">Access denied</h2>
-            <p className="mt-2 text-gray-600">
-              You must be an admin to view platform analytics.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Non-admin users are redirected to organizer analytics
 
   if (!user) {
     return (
@@ -105,6 +102,41 @@ export default function AnalyticsPage() {
             <div className="flex items-center space-x-2">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span>Loading user data...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If the user is present but not an admin, show an Access Denied UI
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-2">
+                Access denied
+              </h2>
+              <p className="text-gray-600 mb-4">
+                You must be an admin to view platform analytics.
+              </p>
+              <div className="flex items-center justify-center space-x-4">
+                <button
+                  onClick={() => router.push("/organizer/analytics")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Go to Organizer Analytics
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -181,18 +213,7 @@ export default function AnalyticsPage() {
                   : "Your event performance and insights"}
               </p>
             </div>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7days">Last 7 days</SelectItem>
-                <SelectItem value="30days">Last 30 days</SelectItem>
-                <SelectItem value="3months">Last 3 months</SelectItem>
-                <SelectItem value="6months">Last 6 months</SelectItem>
-                <SelectItem value="1year">Last year</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* time range selector removed - defaulting to 6 months */}
           </div>
 
           {/* Key Metrics */}
@@ -528,40 +549,8 @@ export default function AnalyticsPage() {
               </div>
             </CardContent>
           </Card>
-          {/* Debug: raw data (temporary) */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Debug: Raw Analytics JSON</CardTitle>
-              <CardDescription>
-                Temporary - remove in production
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs overflow-auto max-h-64">
-                {JSON.stringify(
-                  {
-                    overview,
-                    revenueData,
-                    categoryData,
-                    attendeeData,
-                    topEvents,
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </CardContent>
-          </Card>
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Debug: User</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs">
-                {JSON.stringify({ user, isAdmin }, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
+          {/* Debug: raw data (removed) */}
+          {/* Debug: User removed */}
         </div>
       </div>
     </div>

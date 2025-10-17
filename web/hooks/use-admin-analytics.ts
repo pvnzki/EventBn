@@ -14,7 +14,11 @@ export const useAdminAnalytics = (enabled: boolean, timeRange: string = '6months
 
 
   const fetchData = async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      // If analytics are not enabled for this session (user not admin), ensure we are not left in loading state
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
