@@ -13,7 +13,7 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       print('🔄 [AUTH_SERVICE] Logging in user: $email');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/login'),
         headers: {'Content-Type': 'application/json'},
@@ -25,45 +25,85 @@ class AuthService {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['success'] == true) {
-        // Backend may return user under 'data' or 'user'. Handle both.
-        final token = data['token'];
-        final dynamic userPayload = data['data'] ?? data['user'];
+      if (response.statusCode == 200) {
+        print('🔍 [AUTH_SERVICE] Response data: $data');
+        print('🔍 [AUTH_SERVICE] success: ${data['success']}');
+        print(
+            '🔍 [AUTH_SERVICE] requiresTwoFactor: ${data['requiresTwoFactor']}');
 
-        if (token == null) {
-          print('❌ [AUTH_SERVICE] Login succeeded but token missing in response');
-          return {'success': false, 'message': 'Token missing in response'};
+        // Check if 2FA is required (even if success is false)
+        if (data['requiresTwoFactor'] == true) {
+          print('🔐 [AUTH_SERVICE] Two-factor authentication required');
+          print(
+              '🔐 [AUTH_SERVICE] twoFactorMethod: ${data['twoFactorMethod']}');
+          return {
+            'success': false,
+            'requiresTwoFactor': true,
+            'twoFactorMethod': data['twoFactorMethod'] ?? 'app',
+            'message': data['message'] ?? '2FA required',
+            'email': email,
+            'password': password, // Temporarily store for 2FA verification
+          };
         }
 
-        if (userPayload == null || userPayload is! Map<String, dynamic>) {
-          print('❌ [AUTH_SERVICE] Login succeeded but user payload missing/invalid: $userPayload');
-          return {'success': false, 'message': 'User data missing in response'};
+        // Only check success=true for normal login
+        if (data['success'] == true) {
+          // Backend may return user under 'data' or 'user'. Handle both.
+          final token = data['token'];
+          final dynamic userPayload = data['data'] ?? data['user'];
+
+          if (token == null) {
+            print(
+                '❌ [AUTH_SERVICE] Login succeeded but token missing in response');
+            return {'success': false, 'message': 'Token missing in response'};
+          }
+          // Store token and user
+          await _storeToken(token);
+
+          // **DEBUG**: Log the raw user payload from backend
+          print('🔍 [AUTH_SERVICE] Raw user payload from login:');
+          print('   - phone_number: ${userPayload['phone_number']}');
+          print('   - date_of_birth: ${userPayload['date_of_birth']}');
+          print('   - billing_address: ${userPayload['billing_address']}');
+          print('   - All fields: ${userPayload.keys.toList()}');
+
+          final user = User.fromJson(Map<String, dynamic>.from(userPayload));
+
+          // **DEBUG**: Log the parsed user object
+          print('🔍 [AUTH_SERVICE] Parsed user object:');
+          print('   - phoneNumber: ${user.phoneNumber}');
+          print('   - dateOfBirth: ${user.dateOfBirth}');
+          print('   - billingAddress: ${user.billingAddress}');
+
+          await _storeUser(user);
+
+          if (userPayload == null || userPayload is! Map<String, dynamic>) {
+            print(
+                '❌ [AUTH_SERVICE] Login succeeded but user payload missing/invalid: $userPayload');
+            return {
+              'success': false,
+              'message': 'User data missing in response'
+            };
+          }
+
+          // Store token and user
+          await _storeToken(token);
+          final userObject =
+              User.fromJson(Map<String, dynamic>.from(userPayload));
+          await _storeUser(userObject);
+
+          print('✅ [AUTH_SERVICE] Login successful for: ${userObject.email}');
+          return {'success': true, 'user': userObject, 'token': token};
+        } else {
+          print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
+          return {
+            'success': false,
+            'message': data['message'] ?? 'Login failed'
+          };
         }
-
-        // Store token and user
-        await _storeToken(token);
-        
-        // **DEBUG**: Log the raw user payload from backend
-        print('🔍 [AUTH_SERVICE] Raw user payload from login:');
-        print('   - phone_number: ${userPayload['phone_number']}');
-        print('   - date_of_birth: ${userPayload['date_of_birth']}');
-        print('   - billing_address: ${userPayload['billing_address']}');
-        print('   - All fields: ${userPayload.keys.toList()}');
-        
-        final user = User.fromJson(Map<String, dynamic>.from(userPayload));
-        
-        // **DEBUG**: Log the parsed user object
-        print('🔍 [AUTH_SERVICE] Parsed user object:');
-        print('   - phoneNumber: ${user.phoneNumber}');
-        print('   - dateOfBirth: ${user.dateOfBirth}');
-        print('   - billingAddress: ${user.billingAddress}');
-        
-        await _storeUser(user);
-
-        print('✅ [AUTH_SERVICE] Login successful for: ${user.email}');
-        return {'success': true, 'user': user, 'token': token};
       } else {
-        print('❌ [AUTH_SERVICE] Login failed: ${data['message']}');
+        print('❌ [AUTH_SERVICE] Non-200 response: ${response.statusCode}');
+        final data = jsonDecode(response.body);
         return {'success': false, 'message': data['message'] ?? 'Login failed'};
       }
     } catch (e) {
@@ -81,14 +121,14 @@ class AuthService {
   }) async {
     try {
       print('🔄 [AUTH_SERVICE] Registering user: $email');
-      
+
       final requestBody = {
         'name': name,
         'email': email,
         'password': password,
-        if (phoneNumber != null && phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
+        if (phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
       };
-      
+
       print('🔄 [AUTH_SERVICE] Request body: $requestBody');
 
       final response = await http.post(
@@ -108,12 +148,14 @@ class AuthService {
         final dynamic userPayload = data['data'] ?? data['user'];
 
         if (token == null) {
-          print('❌ [AUTH_SERVICE] Registration succeeded but token missing in response');
+          print(
+              '❌ [AUTH_SERVICE] Registration succeeded but token missing in response');
           return {'success': false, 'message': 'Token missing in response'};
         }
 
         if (userPayload == null || userPayload is! Map<String, dynamic>) {
-          print('❌ [AUTH_SERVICE] Registration succeeded but user payload missing/invalid: $userPayload');
+          print(
+              '❌ [AUTH_SERVICE] Registration succeeded but user payload missing/invalid: $userPayload');
           return {'success': false, 'message': 'User data missing in response'};
         }
 
@@ -175,7 +217,8 @@ class AuthService {
         print('🔍 [AUTH_SERVICE] Parsed data: $data');
         final dynamic userPayload = data['user'] ?? data['data'];
         if (userPayload == null || userPayload is! Map<String, dynamic>) {
-          print('❌ [AUTH_SERVICE] /me returned invalid user payload: $userPayload');
+          print(
+              '❌ [AUTH_SERVICE] /me returned invalid user payload: $userPayload');
         } else {
           final user = User.fromJson(Map<String, dynamic>.from(userPayload));
           await _storeUser(user); // Store the complete user data
@@ -415,17 +458,25 @@ class AuthService {
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
         phoneNumber: updatedUser.phoneNumber ?? currentUser.phoneNumber,
-        profileImageUrl: updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
-        billingAddress: updatedUser.billingAddress ?? currentUser.billingAddress,
+        profileImageUrl:
+            updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
+        billingAddress:
+            updatedUser.billingAddress ?? currentUser.billingAddress,
         billingCity: updatedUser.billingCity ?? currentUser.billingCity,
         billingState: updatedUser.billingState ?? currentUser.billingState,
-        billingCountry: updatedUser.billingCountry ?? currentUser.billingCountry,
-        billingPostalCode: updatedUser.billingPostalCode ?? currentUser.billingPostalCode,
+        billingCountry:
+            updatedUser.billingCountry ?? currentUser.billingCountry,
+        billingPostalCode:
+            updatedUser.billingPostalCode ?? currentUser.billingPostalCode,
         profileCompleted: updatedUser.profileCompleted,
         dateOfBirth: updatedUser.dateOfBirth ?? currentUser.dateOfBirth,
-        emergencyContactName: updatedUser.emergencyContactName ?? currentUser.emergencyContactName,
-        emergencyContactPhone: updatedUser.emergencyContactPhone ?? currentUser.emergencyContactPhone,
-        emergencyContactRelationship: updatedUser.emergencyContactRelationship ?? currentUser.emergencyContactRelationship,
+        emergencyContactName: updatedUser.emergencyContactName ??
+            currentUser.emergencyContactName,
+        emergencyContactPhone: updatedUser.emergencyContactPhone ??
+            currentUser.emergencyContactPhone,
+        emergencyContactRelationship:
+            updatedUser.emergencyContactRelationship ??
+                currentUser.emergencyContactRelationship,
         marketingEmailsEnabled: updatedUser.marketingEmailsEnabled,
         eventNotificationsEnabled: updatedUser.eventNotificationsEnabled,
         smsNotificationsEnabled: updatedUser.smsNotificationsEnabled,
@@ -458,7 +509,8 @@ class AuthService {
         body: jsonEncode(body),
       );
 
-      print('🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
+      print(
+          '🔍 [AUTH_SERVICE] Profile update response: ${response.statusCode}');
       print('🔍 [AUTH_SERVICE] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -470,7 +522,8 @@ class AuthService {
         if (data['data'] != null) {
           finalUser = User.fromJson(data['data']);
         } else if (data['success'] == true) {
-          finalUser = mergedUser; // Use merged data if backend doesn't return user
+          finalUser =
+              mergedUser; // Use merged data if backend doesn't return user
         } else {
           finalUser = mergedUser;
         }
@@ -485,7 +538,8 @@ class AuthService {
         return {'success': true, 'user': finalUser};
       } else {
         final data = jsonDecode(response.body);
-        print('❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
+        print(
+            '❌ [AUTH_SERVICE] Database update failed: ${data['message'] ?? 'Unknown error'}');
 
         // Fallback: Store merged data locally only
         await _storeUser(mergedUser);
@@ -618,18 +672,18 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     print('🔄 [AUTH_SERVICE] Clearing all stored authentication data...');
-    
+
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Remove primary auth data
     await prefs.remove(AppConfig.tokenKey);
     await prefs.remove(AppConfig.userKey);
-    
+
     // Remove any legacy keys that might exist
     await prefs.remove('user_email');
     await prefs.remove('auth_token');
     await prefs.setBool('is_authenticated', false);
-    
+
     print('✅ [AUTH_SERVICE] All authentication data cleared successfully');
     print('   - Removed: ${AppConfig.tokenKey}');
     print('   - Removed: ${AppConfig.userKey}');

@@ -993,7 +993,7 @@ class _CommentsContentState extends State<_CommentsContent> {
       }
 
       print(
-          '✅ [SMART_COMMENTS] Comment ${isCurrentlyLiked ? 'unliked' : 'liked'} successfully');
+          '✅ [SMART_COMMENTS] Comment ${isCurrentlyLiked ? 'Liked' : 'Unliked'} successfully');
     } catch (e) {
       print('❌ [SMART_COMMENTS] Failed to toggle comment like: $e');
 

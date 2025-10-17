@@ -164,8 +164,17 @@ class _ExplorePostCardState extends State<ExplorePostCard>
             tag: 'user_avatar_${widget.post.userId}',
             child: CircleAvatar(
               radius: 16,
-              backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+              backgroundImage: widget.post.userAvatarUrl.isNotEmpty
+                  ? NetworkImage(widget.post.userAvatarUrl)
+                  : null,
               backgroundColor: colorScheme.surfaceContainerHighest,
+              child: widget.post.userAvatarUrl.isEmpty
+                  ? Icon(
+                      Icons.person,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 8),

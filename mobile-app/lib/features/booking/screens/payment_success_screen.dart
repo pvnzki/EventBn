@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../common_widgets/custom_notification.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
   final Map<String, dynamic> bookingData;
@@ -393,11 +394,10 @@ class PaymentSuccessScreen extends StatelessWidget {
       if (bookingId == null || bookingId.isEmpty) {
         print(
             '❌ [PAYMENT SUCCESS] No booking ID available for E-ticket navigation');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to view ticket. Booking ID not found.'),
-            backgroundColor: Colors.red,
-          ),
+        CustomNotification.show(
+          context,
+          message: 'Unable to view ticket. Booking ID not found.',
+          type: NotificationType.error,
         );
         return;
       }
@@ -406,12 +406,11 @@ class PaymentSuccessScreen extends StatelessWidget {
       if (bookingId.length < 30) {
         print(
             '❌ [PAYMENT SUCCESS] Invalid booking ID format: $bookingId (length: ${bookingId.length})');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Invalid ticket ID format. Please try again or contact support.'),
-            backgroundColor: Colors.red,
-          ),
+        CustomNotification.show(
+          context,
+          message:
+              'Invalid ticket ID format. Please try again or contact support.',
+          type: NotificationType.error,
         );
         return;
       }

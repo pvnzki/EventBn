@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/app_config.dart';
+import '../../../common_widgets/custom_notification.dart';
 import '../../auth/services/auth_service.dart';
 import 'payment_screen.dart';
 
@@ -29,7 +30,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   List<dynamic> seatMap = [];
   List<String> selectedSeats = [];
   List<String> lockedSeats = [];
-  Set<String> unlockedByUser = {}; // Track seats explicitly unlocked by this user
+  Set<String> unlockedByUser =
+      {}; // Track seats explicitly unlocked by this user
   bool isLoading = true;
   String eventName = '';
   String eventDate = '';
@@ -41,9 +43,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
 
   // Seat lock timer management
   Timer? _seatLockTimer;
-
-
-
 
   // Animation controllers
   late AnimationController _selectionAnimation;
@@ -83,7 +82,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   void dispose() {
     // Release all selected seats before disposing
     _releaseAllSeatsOnDispose();
-    
+
     _sessionTimer?.cancel();
     _seatLockTimer?.cancel();
     _controlsTimer?.cancel();
@@ -305,28 +304,24 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     }
   }
 
-
   // Wrapper methods for individual seat operations
   Future<bool> _releaseSeatLock(String seatId) async {
     return await _unlockSeat(seatId);
   }
 
-  Future<bool> _extendSeatLock(String seatId) async {
-    return await _extendSeatLocks([seatId]);
-  }
-
   // ========== PAYMENT SEAT LOCKING ==========
-  
+
   Future<bool> _lockAllSelectedSeatsForPayment() async {
     if (selectedSeats.isEmpty) {
       print('⚠️ No seats selected to lock for payment');
       return false;
     }
-    
-    print('🔒 Locking ${selectedSeats.length} seats for payment: $selectedSeats');
+
+    print(
+        '🔒 Locking ${selectedSeats.length} seats for payment: $selectedSeats');
     bool allSuccess = true;
     List<String> failedSeats = [];
-    
+
     for (String seatId in selectedSeats) {
       try {
         // First lock the seat with regular duration
@@ -351,7 +346,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         failedSeats.add(seatId);
       }
     }
-    
+
     if (allSuccess) {
       setState(() {
         lockedSeats.addAll(selectedSeats);
@@ -359,38 +354,39 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       _startPaymentTimer(); // Start 15-minute payment timer
       print('✅ All selected seats locked for payment');
     } else {
-      _showSnackBar('Failed to lock seats: ${failedSeats.join(", ")}', Colors.red);
+      _showSnackBar(
+          'Failed to lock seats: ${failedSeats.join(", ")}', Colors.red);
       print('❌ Failed to lock some seats for payment: $failedSeats');
     }
-    
+
     return allSuccess;
   }
-  
+
   void _startPaymentTimer() {
     _sessionTimer?.cancel();
-    
+
     setState(() {
       _sessionTimeLeft = 900; // 15 minutes for payment
       _sessionActive = true;
     });
-    
+
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _sessionTimeLeft--;
       });
-      
+
       if (_sessionTimeLeft <= 0) {
         _paymentTimeExpired();
         timer.cancel();
       }
     });
-    
+
     print('⏰ Started 15-minute payment timer');
   }
-  
+
   void _paymentTimeExpired() async {
     print('🕒 Payment time expired, releasing all locked seats');
-    
+
     // Release all locked seats
     final seatsToRelease = List<String>.from(selectedSeats);
     for (String seatId in seatsToRelease) {
@@ -401,7 +397,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         print('❌ Failed to release expired payment lock for seat $seatId: $e');
       }
     }
-    
+
     setState(() {
       selectedSeats.clear();
       lockedSeats.clear();
@@ -409,8 +405,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       _sessionActive = false;
       _sessionTimeLeft = 0;
     });
-    
-    _showSnackBar('Payment time expired. Please select seats again.', Colors.orange);
+
+    _showSnackBar(
+        'Payment time expired. Please select seats again.', Colors.orange);
   }
 
   // ========== LOCKED SEATS FETCHING ==========
@@ -418,7 +415,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   Future<void> _fetchLockedSeats() async {
     try {
       print('🔍 Fetching currently locked seats for event: ${widget.eventId}');
-      final url = '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/locks';
+      final url =
+          '${AppConfig.baseUrl}/api/seat-locks/events/${widget.eventId}/locks';
 
       // Get authentication token
       final authService = AuthService();
@@ -442,20 +440,24 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         print('🔍 API Response: ${response.body}');
         if (data['success'] == true) {
           final List<dynamic> lockedSeatsData = data['locks'] ?? [];
-          
+
           // Debug: Log what the API returned
-          final allLockedSeats = lockedSeatsData.map((seat) => seat['seatId'].toString()).toList();
+          final allLockedSeats =
+              lockedSeatsData.map((seat) => seat['seatId'].toString()).toList();
           print('🔍 API returned locked seats: $allLockedSeats');
-          
+
           setState(() {
             lockedSeats = lockedSeatsData
                 .map((seat) => seat['seatId'].toString())
-                .where((seatId) => !selectedSeats.contains(seatId)) // Don't include our own selections
-                .where((seatId) => !unlockedByUser.contains(seatId)) // Don't include seats we explicitly unlocked
+                .where((seatId) => !selectedSeats
+                    .contains(seatId)) // Don't include our own selections
+                .where((seatId) => !unlockedByUser.contains(
+                    seatId)) // Don't include seats we explicitly unlocked
                 .toList();
           });
 
-          print('🔒 Final locked seats for display: $lockedSeats (filtered from ${allLockedSeats.length} API seats)');
+          print(
+              '🔒 Final locked seats for display: $lockedSeats (filtered from ${allLockedSeats.length} API seats)');
           if (unlockedByUser.isNotEmpty) {
             print('🚫 Seats unlocked by this user (excluded): $unlockedByUser');
           }
@@ -472,17 +474,15 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
 
   Timer? _lockedSeatsRefreshTimer;
 
-
   void _startLockedSeatsRefreshTimer() {
     _lockedSeatsRefreshTimer?.cancel();
-    _lockedSeatsRefreshTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+    _lockedSeatsRefreshTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (mounted) {
         _fetchLockedSeats();
       }
     });
   }
-  
-
 
   void _stopLockedSeatsRefreshTimer() {
     _lockedSeatsRefreshTimer?.cancel();
@@ -569,20 +569,22 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
   }
 
   void _showSnackBar(String message, Color? backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-      ),
+    // Determine notification type based on color
+    NotificationType type;
+    if (backgroundColor == Colors.red) {
+      type = NotificationType.error;
+    } else if (backgroundColor == Colors.orange) {
+      type = NotificationType.warning;
+    } else {
+      type = NotificationType.info;
+    }
+
+    CustomNotification.show(
+      context,
+      message: message,
+      type: type,
     );
   }
-
-
-
-
-
-
 
   String _getSeatLabel(String seatId) {
     final seat = seatMap.firstWhere((s) => s['id'].toString() == seatId,
@@ -602,8 +604,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     // Check if seat is locked by another user
     if (lockedSeats.contains(seatId) && !selectedSeats.contains(seatId)) {
       HapticFeedback.heavyImpact();
-      _showSnackBar(
-          'This seat is currently being selected by another user', Colors.orange);
+      _showSnackBar('This seat is currently being selected by another user',
+          Colors.orange);
       print('🔒 Seat $seatId is locked by another user');
       return;
     }
@@ -654,7 +656,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       // Select seat (no locking until payment)
       setState(() {
         selectedSeats.add(seatId);
-        unlockedByUser.remove(seatId); // Remove from unlocked list if re-selecting
+        unlockedByUser
+            .remove(seatId); // Remove from unlocked list if re-selecting
       });
 
       // Enhanced selection animation
@@ -670,7 +673,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       if (!_sessionActive) {
         _startSession();
       }
-      
+
       print('✅ Seat $seatId selected (not locked until payment)');
     }
   }
@@ -731,7 +734,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
         child: Column(
           children: [
             _buildAppBar(theme),
-
             if (_sessionActive) _buildSessionTimer(theme),
             Expanded(
               child: _buildSeatMapContainer(theme),
@@ -858,8 +860,6 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
       ),
     );
   }
-
-
 
   Widget _buildSeatMapContainer(ThemeData theme) {
     return Stack(
@@ -1033,37 +1033,40 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     final isLockedByOther = lockedSeats.contains(seatId) && !isSelected;
 
     Color getSeatColor() {
+      final isDark = theme.brightness == Brightness.dark;
+
       if (isOccupied) {
-        // Bright red for booked/occupied seats - highly visible
-        return const Color(0xFFD32F2F);
+        // Red for booked/occupied seats - theme-aware
+        return isDark ? const Color(0xFFEF5350) : const Color(0xFFD32F2F);
       }
       if (isSelected) {
-        // Bright green for selected seats
-        return const Color(0xFF4CAF50);
+        // Green for selected seats - theme-aware
+        return isDark ? const Color(0xFF66BB6A) : const Color(0xFF4CAF50);
       }
       if (isLockedByOther) {
-        // Orange for seats locked by other users
-        return const Color(0xFFFF9800);
+        // Orange for seats locked by other users - theme-aware
+        return isDark ? const Color(0xFFFFB74D) : const Color(0xFFFF9800);
       }
 
-      // Available seats with tier-based colors
+      // Available seats with tier-based colors - theme-aware
       switch (tier.toLowerCase()) {
         case 'premium':
           // Gold/amber for premium available seats
-          return const Color(0xFFFFB74D);
+          return isDark ? const Color(0xFFFFCC02) : const Color(0xFFFFB74D);
         case 'vip':
           // Purple for VIP available seats
-          return const Color(0xFF9C27B0);
+          return isDark ? const Color(0xFFBA68C8) : const Color(0xFF9C27B0);
         default:
           // Blue for regular available seats
-          return const Color(0xFF2196F3);
+          return isDark ? const Color(0xFF42A5F5) : const Color(0xFF2196F3);
       }
     }
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: (isOccupied || isLockedByOther) ? null : () => _toggleSeat(seatId),
+        onTap:
+            (isOccupied || isLockedByOther) ? null : () => _toggleSeat(seatId),
         borderRadius: BorderRadius.circular(6),
         splashColor: colorScheme.primary.withValues(alpha: 0.3),
         highlightColor: colorScheme.primary.withValues(alpha: 0.1),
@@ -1076,20 +1079,21 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
             color: getSeatColor(),
             borderRadius: BorderRadius.circular(6),
             border: isSelected
-                ? Border.all(color: Colors.white, width: 3)
+                ? Border.all(color: theme.colorScheme.surface, width: 3)
                 : Border.all(
-                    color: Colors.white.withValues(alpha: 0.3), width: 1),
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF4CAF50).withValues(alpha: 0.6),
+                      color: getSeatColor().withValues(alpha: 0.6),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.15),
                       blurRadius: 4,
                       spreadRadius: 0,
                       offset: const Offset(0, 2),
@@ -1103,18 +1107,18 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                     builder: (context, child) {
                       return Transform.scale(
                         scale: 0.8 + (_selectionAnimation.value * 0.4),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check,
-                          color: Colors.white,
+                          color: theme.colorScheme.surface,
                           size: 18,
                         ),
                       );
                     },
                   )
                 : isOccupied
-                    ? const Icon(
+                    ? Icon(
                         Icons.close,
-                        color: Colors.white,
+                        color: theme.colorScheme.surface,
                         size: 16,
                       )
                     : isLockedByOther
@@ -1495,13 +1499,16 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
 
       // Lock all selected seats for 15-minute payment process
       final lockSuccess = await _lockAllSelectedSeatsForPayment();
-      
+
       if (!lockSuccess) {
-        _showSnackBar('Failed to lock some seats. Please try again.', Colors.red);
+        _showSnackBar(
+            'Failed to lock some seats. Please try again.', Colors.red);
         return;
       }
-      
-      _showSnackBar('Seats locked for payment. You have 15 minutes to complete.', Colors.green);
+
+      _showSnackBar(
+          'Seats locked for payment. You have 15 minutes to complete.',
+          Colors.green);
 
       final selectedSeatData = selectedSeats.map((seatId) {
         final seat = seatMap.firstWhere((s) => s['id'].toString() == seatId,
