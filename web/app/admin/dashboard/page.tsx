@@ -83,6 +83,7 @@ const AdminDashboardPage = () => {
     { month: string; revenue: number; events: number }[]
   >([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState<boolean>(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
@@ -103,6 +104,7 @@ const AdminDashboardPage = () => {
       headers["Authorization"] = `Bearer ${token}`;
     }
     // Fetch events list for Recent Events panel (separate from analytics)
+    setEventsLoading(true);
     fetch("http://localhost:3001/api/events", { headers })
       .then((res) => res.json())
       .then((response) => {
@@ -110,7 +112,8 @@ const AdminDashboardPage = () => {
           setEvents(response.data);
         }
       })
-      .catch((err) => console.error("Error fetching events:", err));
+      .catch((err) => console.error("Error fetching events:", err))
+      .finally(() => setEventsLoading(false));
   }, []);
 
   // use admin analytics hook to fetch platform-level analytics (tickets, revenue, conversion)
@@ -336,6 +339,25 @@ const AdminDashboardPage = () => {
     console.log("Closing delete modal");
     setEventToDelete(null);
   };
+
+  if (analyticsLoading || eventsLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                Loading dashboard data...
+              </h2>
+              <p className="text-gray-600">Fetching analytics and events</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
