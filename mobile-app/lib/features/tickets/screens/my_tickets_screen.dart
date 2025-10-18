@@ -71,25 +71,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     ),
                   ),
                   const Spacer(),
-                  // Search and Menu icons
-                  IconButton(
-                    icon: Icon(
-                      Icons.search,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      // TODO: Implement search
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.more_horiz,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    onPressed: () {
-                      // TODO: Implement menu
-                    },
-                  ),
                   Consumer<TicketProvider>(
                     builder: (context, ticketProvider, child) {
                       return IconButton(
