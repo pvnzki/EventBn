@@ -68,7 +68,26 @@ if (explicitOrigins.length === 0) {
     "http://localhost:5174",
     "http://localhost:8080"
   );
+  // Helpful defaults for remote dev/testing (add your staging/prod UI origins here)
+  explicitOrigins.push(
+    // Admin UI hosted on Vercel (allows requests from admin UI during dev/testing)
+    "https://eventbn-admin.vercel.app",
+    // Primary site (optional - add other production origins as needed)
+    "https://eventbn.vercel.app"
+  );
 }
+
+// Always ensure certain helpful origins are present (won't duplicate)
+const requiredHelpfulOrigins = [
+  "https://eventbn-admin.vercel.app",
+  "https://eventbn.vercel.app",
+];
+for (const o of requiredHelpfulOrigins) {
+  if (!explicitOrigins.includes(o)) explicitOrigins.push(o);
+}
+
+// Log effective allowed origins for debugging
+console.log("[CORS] Effective allowed origins:", explicitOrigins);
 
 const LOCALHOST_REGEX = /^https?:\/\/localhost(?::\d+)?$/i;
 
