@@ -302,8 +302,6 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
     );
   }
 
-
-
   Widget _buildAttendeesList(ThemeData theme) {
     // Show loading indicator
     if (_isLoading) {
@@ -446,6 +444,4 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
       ),
     );
   }
-
-
 }

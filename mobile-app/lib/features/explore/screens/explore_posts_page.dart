@@ -173,8 +173,6 @@ class _ExplorePostsPageState extends State<ExplorePostsPage>
     );
   }
 
-
-
   Widget _buildVerticalFeed() {
     if (_postService.posts.isEmpty && !_postService.isLoading) {
       return _buildEmptyState();
