@@ -95,16 +95,6 @@ class _ETicketScreenState extends State<ETicketScreen> {
             fontSize: 18,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: colorScheme.onSurface),
-            onPressed: _shareTicket,
-          ),
-          IconButton(
-            icon: Icon(Icons.download, color: colorScheme.onSurface),
-            onPressed: _downloadTicket,
-          ),
-        ],
       ),
       body: _buildBody(context),
     );
@@ -557,7 +547,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
                 child: _buildTicketInfo(
                   context,
                   'Amount',
-                  'LKR ${_ticket!.price.toStringAsFixed(2)}',
+                  'LKR ${(_ticket!.price*100).toStringAsFixed(2)}',
                 ),
               ),
               const SizedBox(width: 16),
@@ -717,43 +707,6 @@ class _ETicketScreenState extends State<ETicketScreen> {
 
     return Column(
       children: [
-        // Add to Calendar Button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _addToCalendar,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-              ),
-              elevation: 2,
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.calendar_today, size: 20),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Add to Calendar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
         // Go Home Button
         SizedBox(
           width: double.infinity,
@@ -777,27 +730,6 @@ class _ETicketScreenState extends State<ETicketScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  void _shareTicket() {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share functionality coming soon!')),
-    );
-  }
-
-  void _downloadTicket() {
-    // TODO: Implement download functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Download functionality coming soon!')),
-    );
-  }
-
-  void _addToCalendar() {
-    // TODO: Implement add to calendar functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Calendar integration coming soon!')),
     );
   }
 

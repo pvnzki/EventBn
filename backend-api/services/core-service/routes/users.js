@@ -26,18 +26,25 @@ router.get("/", async (req, res) => {
 // Get user by ID
 router.get("/:id", async (req, res) => {
   try {
+    console.log(`👤 [Users Route] GET /api/users/${req.params.id}`);
+    console.log(`👤 [Users Route] Request headers:`, req.headers);
+    
     const user = await usersService.getUserById(req.params.id);
     if (!user) {
+      console.log(`❌ [Users Route] User not found for ID: ${req.params.id}`);
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
+    
+    console.log(`✅ [Users Route] User found, returning data`);
     res.json({
       success: true,
       data: user,
     });
   } catch (error) {
+    console.error(`❌ [Users Route] Error in GET /api/users/${req.params.id}:`, error);
     res.status(500).json({
       success: false,
       message: error.message,

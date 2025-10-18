@@ -77,6 +77,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     try {
       print('👤 [UserProfile] Loading user data for ID: ${widget.userId}');
+      print('👤 [UserProfile] Current user ID: $_currentUserId');
 
       // Check if we're viewing the current user's profile
       Map<String, dynamic>? fetchedUserData;
@@ -86,25 +87,29 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         final currentUser = await _authService.getCurrentUser();
         if (currentUser != null) {
           fetchedUserData = _convertUserModelToMap(currentUser);
+          print('👤 [UserProfile] AuthService data: $fetchedUserData');
         }
       }
 
       // Fallback to UserService if AuthService didn't work or it's not the current user
       if (fetchedUserData == null) {
-        print('👤 [UserProfile] Loading user data from UserService');
+        print('👤 [UserProfile] Loading user data from UserService for userId: ${widget.userId}');
         fetchedUserData = await _userService.getUserById(widget.userId);
+        print('👤 [UserProfile] UserService returned: $fetchedUserData');
       }
 
       if (fetchedUserData != null) {
+        print('👤 [UserProfile] Processing user data: $fetchedUserData');
         setState(() {
           userData = {
-            'id': fetchedUserData!['id'] ?? widget.userId,
-            'name': fetchedUserData['fullName'] ??
-                fetchedUserData['name'] ??
+            'id': fetchedUserData!['user_id']?.toString() ?? fetchedUserData['id']?.toString() ?? widget.userId,
+            'name': fetchedUserData['name'] ?? 
+                fetchedUserData['fullName'] ??
                 'Unknown User',
             'username':
                 '@${fetchedUserData['username'] ?? fetchedUserData['email']?.split('@')[0] ?? 'user'}',
-            'avatar': fetchedUserData['profileImageUrl'] ??
+            'avatar': fetchedUserData['profile_picture'] ?? 
+                fetchedUserData['profileImageUrl'] ??
                 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
             'coverImage': fetchedUserData['coverImageUrl'] ??
                 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
@@ -112,16 +117,16 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
             'posts': 0, // Will be updated when posts are loaded
             'followers': fetchedUserData['followersCount']?.toString() ?? '0',
-            'following': fetchedUserData['followingCount'] ?? 0,
+            'following': fetchedUserData['followingCount']?.toString() ?? '0',
             'location': fetchedUserData['location'],
             'website': fetchedUserData['website'],
-            'joinedDate': _formatJoinDate(fetchedUserData['createdAt']),
+            'joinedDate': _formatJoinDate(fetchedUserData['created_at'] ?? fetchedUserData['createdAt']),
             'isVerified': fetchedUserData['isVerified'] ?? false,
             'interests':
                 fetchedUserData['interests'] ?? ['Events', 'Networking'],
           };
         });
-        print('✅ [UserProfile] User data loaded successfully');
+        print('✅ [UserProfile] User data processed and set: $userData');
       } else {
         // Fallback to enhanced mock data based on userId
         print(
@@ -132,6 +137,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       }
     } catch (e) {
       print('❌ [UserProfile] Error loading user data: $e');
+      print('❌ [UserProfile] Stack trace: ${StackTrace.current}');
       setState(() {
         userData = _getEnhancedFallbackUserData(widget.userId);
       });

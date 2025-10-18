@@ -1323,10 +1323,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: theme.brightness == Brightness.dark 
+            ? colorScheme.surfaceContainerHighest 
+            : colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.2),
+            color: colorScheme.outline.withValues(alpha: 0.4),
           ),
         ),
       ),
@@ -1337,22 +1339,21 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.primary.withValues(alpha: 0.08),
-                    colorScheme.primaryContainer.withValues(alpha: 0.12),
-                  ],
-                ),
+                color: theme.brightness == Brightness.dark
+                    ? colorScheme.surfaceContainer
+                    : colorScheme.primaryContainer.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.2),
+                  color: theme.brightness == Brightness.dark
+                      ? colorScheme.outline.withValues(alpha: 0.6)
+                      : colorScheme.primary.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : colorScheme.primary.withValues(alpha: 0.1),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                     spreadRadius: 0,
@@ -1371,18 +1372,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                             '${selectedSeats.length} seat${selectedSeats.length > 1 ? 's' : ''} selected',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurface,
+                              color: theme.brightness == Brightness.dark 
+                                  ? Colors.white 
+                                  : colorScheme.onSurface,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Total Amount',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color:
-                                  colorScheme.onSurface.withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+
                         ],
                       ),
                       Container(
@@ -1402,7 +1397,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                         child: Text(
                           'LKR ${totalPrice.toStringAsFixed(0)}',
                           style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
@@ -1415,10 +1410,12 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.8),
+                      color: theme.brightness == Brightness.dark
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surface.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.15),
+                        color: colorScheme.outline.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
@@ -1427,7 +1424,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                         Text(
                           'Selected Seats',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: theme.brightness == Brightness.dark 
+                                ? Colors.white.withValues(alpha: 0.8) 
+                                : colorScheme.onSurface.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3,
                           ),
@@ -1438,7 +1437,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                               .map((id) => _getSeatLabel(id))
                               .join(' • '),
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface,
+                            color: theme.brightness == Brightness.dark 
+                                ? Colors.white 
+                                : colorScheme.onSurface,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2,
                           ),
@@ -1459,9 +1460,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                 backgroundColor: selectedSeats.isEmpty
                     ? colorScheme.outline.withValues(alpha: 0.3)
                     : colorScheme.primary,
-                foregroundColor: Colors.white, // Always white text
-                disabledForegroundColor:
-                    colorScheme.onSurface.withValues(alpha: 0.5),
+                foregroundColor: selectedSeats.isEmpty
+                    ? (theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.7))
+                    : colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1474,7 +1475,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                     : 'Continue to Payment',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.white, // Explicit white color
+                  color: selectedSeats.isEmpty
+                      ? (theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.7))
+                      : colorScheme.onPrimary,
                 ),
               ),
             ),

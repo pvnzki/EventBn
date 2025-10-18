@@ -8,8 +8,19 @@ module.exports = {
   // Get single user by ID
   async getUserById(id) {
     try {
-      return await prisma.user.findUnique({
-        where: { user_id: parseInt(id) },
+      console.log(`👤 [Users] Getting user by ID: ${id} (type: ${typeof id})`);
+      
+      // Parse ID to ensure it's a number
+      const userId = parseInt(id);
+      if (isNaN(userId)) {
+        console.log(`❌ [Users] Invalid user ID format: ${id}`);
+        throw new Error(`Invalid user ID format: ${id}`);
+      }
+
+      console.log(`👤 [Users] Parsed user ID: ${userId}`);
+
+      const user = await prisma.user.findUnique({
+        where: { user_id: userId },
         select: {
           user_id: true,
           name: true,
@@ -37,7 +48,16 @@ module.exports = {
           updated_at: true,
         },
       });
+
+      if (user) {
+        console.log(`✅ [Users] User found: ${JSON.stringify(user, null, 2)}`);
+      } else {
+        console.log(`❌ [Users] User not found for ID: ${userId}`);
+      }
+
+      return user;
     } catch (error) {
+      console.error(`❌ [Users] Error fetching user by ID ${id}:`, error);
       throw new Error(`Failed to fetch user: ${error.message}`);
     }
   },

@@ -18,7 +18,11 @@ class PaymentSuccessScreen extends StatelessWidget {
 
     // Debug logging
     print('🎉 [PAYMENT_SUCCESS] Screen loaded with booking data:');
-    print('🎉 [PAYMENT_SUCCESS] Event: ${bookingData['eventName']}');
+    print('🎉 [PAYMENT_SUCCESS] All booking data keys: ${bookingData.keys.toList()}');
+    print('🎉 [PAYMENT_SUCCESS] Full booking data: $bookingData');
+    print('🎉 [PAYMENT_SUCCESS] Event: ${_getEventName()}');
+    print('🎉 [PAYMENT_SUCCESS] Location: ${_getEventLocation()}');
+    print('🎉 [PAYMENT_SUCCESS] Date: ${_getEventDate()}');
     print('🎉 [PAYMENT_SUCCESS] Payment ID: $paymentId');
     print(
         '🎉 [PAYMENT_SUCCESS] Selected seats: ${bookingData['selectedSeats']}');
@@ -116,9 +120,11 @@ class PaymentSuccessScreen extends StatelessWidget {
     final selectedSeats =
         (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
-    final subtotal = _calculateSubtotal();
-    final tax = subtotal * 0.1;
-    final total = subtotal + tax;
+    final total = bookingData['totalAmount'] != null 
+        ? (bookingData['totalAmount'] is double 
+            ? bookingData['totalAmount'] 
+            : double.tryParse(bookingData['totalAmount'].toString()) ?? 0.0)
+        : _calculateSubtotal();
 
     return Container(
       decoration: BoxDecoration(
@@ -186,22 +192,32 @@ class PaymentSuccessScreen extends StatelessWidget {
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary
-                  ],
-                ),
+                gradient: bookingData['eventImageUrl'] == null
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary
+                        ],
+                      )
+                    : null,
+                image: bookingData['eventImageUrl'] != null
+                    ? DecorationImage(
+                        image: NetworkImage(bookingData['eventImageUrl']),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.music_note,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
+              child: bookingData['eventImageUrl'] == null
+                  ? const Center(
+                      child: Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 16),
 
@@ -211,7 +227,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    bookingData['eventName'] ?? 'National Music Festival 2024',
+                    _getEventName(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -222,8 +238,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    bookingData['eventDate'] ??
-                        'Mon, Dec 24 • 18.00 - 23.00 PM',
+                    _getEventDate(),
                     style: TextStyle(
                       fontSize: 14,
                       color: theme.colorScheme.primary,
@@ -239,11 +254,14 @@ class PaymentSuccessScreen extends StatelessWidget {
                         size: 14,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        'Grand Park, New York',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      Expanded(
+                        child: Text(
+                          _getEventLocation(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -384,6 +402,56 @@ class PaymentSuccessScreen extends StatelessWidget {
   String _getCurrentDate() {
     final now = DateTime.now();
     return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+  }
+
+  String _getEventName() {
+    // Try multiple possible field names for event name
+    return bookingData['eventName'] ?? 
+           bookingData['event_name'] ?? 
+           bookingData['title'] ?? 
+           bookingData['event_title'] ?? 
+           'Event Details Unavailable';
+  }
+
+  String _getEventDate() {
+    // Use the formatted date method
+    return _formatEventDate();
+  }
+
+  String _getEventLocation() {
+    // Try multiple possible field names for event location
+    return bookingData['eventLocation'] ?? 
+           bookingData['event_location'] ?? 
+           bookingData['venue'] ?? 
+           bookingData['event_venue'] ?? 
+           bookingData['location'] ?? 
+           'Venue TBD';
+  }
+
+  String _formatEventDate() {
+    // Try to format from booking data
+    final eventDateString = bookingData['eventStartDate'] ?? bookingData['eventDate'];
+    
+    if (eventDateString != null) {
+      try {
+        final eventDate = DateTime.parse(eventDateString);
+        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        final dayName = days[eventDate.weekday - 1];
+        final monthName = months[eventDate.month - 1];
+        final day = eventDate.day;
+        final hour = eventDate.hour.toString().padLeft(2, '0');
+        final minute = eventDate.minute.toString().padLeft(2, '0');
+        
+        return '$dayName, $monthName $day • $hour:$minute';
+      } catch (e) {
+        print('Error parsing event date: $e');
+      }
+    }
+    
+    return 'TBD';
   }
 
   void _navigateToETicket(BuildContext context) {
