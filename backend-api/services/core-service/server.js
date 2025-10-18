@@ -43,7 +43,10 @@ const isOriginAllowed = (origin) => {
     "http://127.0.0.1:8080",
   ];
   if (process.env.NODE_ENV === "development") {
-    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+    if (
+      /^http:\/\/localhost:\d+$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
+    ) {
       return true;
     }
   }
@@ -174,7 +177,7 @@ app.use((req, res, next) => {
 });
 
 // Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Service identification middleware
 app.use((req, res, next) => {
@@ -187,20 +190,20 @@ app.use((req, res, next) => {
 app.get("/test-analytics/:organizationId", async (req, res) => {
   try {
     const organizationId = parseInt(req.params.organizationId);
-    console.log('=== DIRECT ANALYTICS TEST FOR ORG:', organizationId, '===');
-    
+    console.log("=== DIRECT ANALYTICS TEST FOR ORG:", organizationId, "===");
+
     const events = await prisma.event.findMany({
       where: { organization_id: organizationId },
-      select: { event_id: true, title: true }
+      select: { event_id: true, title: true },
     });
-    console.log('EVENTS FOUND:', events.length, events);
-    
-    const eventIds = events.map(e => e.event_id);
+    console.log("EVENTS FOUND:", events.length, events);
+
+    const eventIds = events.map((e) => e.event_id);
     const ticketCount = await prisma.ticket_purchase.count({
-      where: { event_id: { in: eventIds } }
+      where: { event_id: { in: eventIds } },
     });
-    console.log('TICKET COUNT:', ticketCount);
-    
+    console.log("TICKET COUNT:", ticketCount);
+
     const result = {
       totalEvents: events.length,
       ticketsSold: ticketCount,
@@ -209,13 +212,13 @@ app.get("/test-analytics/:organizationId", async (req, res) => {
       conversionRate: 0,
       avgTicketPrice: 0,
       revenueGrowth: 0,
-      attendeeGrowth: 0
+      attendeeGrowth: 0,
     };
-    
-    console.log('FINAL RESULT:', result);
+
+    console.log("FINAL RESULT:", result);
     res.json({ success: true, data: result, debug: true });
   } catch (error) {
-    console.error('Direct test error:', error);
+    console.error("Direct test error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -248,17 +251,17 @@ app.get("/health", (req, res) => {
 app.get("/redis/status", (req, res) => {
   const { getRedisStatus, resetRedisCircuitBreaker } = require("./lib/redis");
   const status = getRedisStatus();
-  
+
   res.json({
     redis: status,
-    message: status.isCircuitBreakerOpen 
+    message: status.isCircuitBreakerOpen
       ? "Redis circuit breaker is open - connection temporarily suspended"
-      : status.isConnected 
-        ? "Redis is connected and operational"
-        : "Redis is not connected",
+      : status.isConnected
+      ? "Redis is connected and operational"
+      : "Redis is not connected",
     actions: {
-      reset: "/redis/reset"
-    }
+      reset: "/redis/reset",
+    },
   });
 });
 
@@ -266,21 +269,21 @@ app.get("/redis/status", (req, res) => {
 app.post("/redis/reset", (req, res) => {
   const { resetRedisCircuitBreaker } = require("./lib/redis");
   resetRedisCircuitBreaker();
-  
+
   res.json({
     message: "Redis circuit breaker has been reset",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 // API Routes - Mount auth routes first to avoid conflicts
 app.use("/auth", authRoutes); // Auth routes (signup, login, etc.) - no /api prefix to avoid conflicts
 app.use("/api/auth", authRoutes); // Also mount at /api/auth for compatibility
-app.use("/api/v1", apiRoutes); // Versioned API for clients  
+app.use("/api/v1", apiRoutes); // Versioned API for clients
 app.use("/api/users", apiRoutes); // User-related API routes
 app.use("/api/events", apiRoutes); // Event-related API routes
 app.use("/api/organizations", apiRoutes); // Organization-related API routes
-app.use("/api/tickets", apiRoutes); // Ticket-related API routes  
+app.use("/api/tickets", apiRoutes); // Ticket-related API routes
 app.use("/api/payments", apiRoutes); // Payment-related API routes
 app.use("/internal/v1", internalRoutes); // Inter-service communication
 

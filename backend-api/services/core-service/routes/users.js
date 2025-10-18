@@ -1,9 +1,9 @@
-const express = require('express');
-const multer =require('multer');
-const bcrypt = require('bcrypt');
+const express = require("express");
+const multer = require("multer");
+const bcrypt = require("bcrypt");
 const router = express.Router();
-const usersService = require('../users');
-const { uploadStream } = require('../lib/cloudinary');
+const usersService = require("../users");
+const { uploadStream } = require("../lib/cloudinary");
 const { cloudinary } = require("../lib/cloudinary");
 
 // Get all users
@@ -73,23 +73,23 @@ router.post("/", async (req, res) => {
 
 // Configure Multer for memory storage (Cloudinary integration)
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
     // Only allow image files
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error("Only image files are allowed"), false);
     }
-  }
+  },
 });
 
 // Update user password
-router.put('/:id/password', async (req, res) => {
+router.put("/:id/password", async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const { currentPassword, newPassword } = req.body;
@@ -97,7 +97,7 @@ router.put('/:id/password', async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: 'Current password and new password are required'
+        error: "Current password and new password are required",
       });
     }
 
@@ -106,16 +106,19 @@ router.put('/:id/password', async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: "User not found",
       });
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        error: 'Current password is incorrect'
+        error: "Current password is incorrect",
       });
     }
 
@@ -128,13 +131,13 @@ router.put('/:id/password', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password updated successfully'
+      message: "Password updated successfully",
     });
   } catch (error) {
-    console.error('Error updating password:', error);
+    console.error("Error updating password:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -155,18 +158,18 @@ router.put("/:id", upload.single("profile_picture"), async (req, res) => {
 
     // If a new profile picture is uploaded, upload to Cloudinary
     if (req.file) {
-      console.log('Uploading profile picture to Cloudinary...');
+      console.log("Uploading profile picture to Cloudinary...");
       const result = await uploadStream(req.file.buffer, {
-        folder: 'eventbn/profile_pictures',
-        resource_type: 'image',
+        folder: "eventbn/profile_pictures",
+        resource_type: "image",
         transformation: [
-          { width: 400, height: 400, crop: 'fill' },
-          { quality: 'auto' }
-        ]
+          { width: 400, height: 400, crop: "fill" },
+          { quality: "auto" },
+        ],
       });
-      
+
       updateData.profile_picture = result.secure_url;
-      console.log('Profile picture uploaded to Cloudinary:', result.secure_url);
+      console.log("Profile picture uploaded to Cloudinary:", result.secure_url);
     }
 
     // Ensure user can only update their own profile

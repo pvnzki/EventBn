@@ -19,7 +19,11 @@ class RedisClient {
     if (this.isCircuitBreakerOpen) {
       const timeSinceLastAttempt = Date.now() - this.lastConnectionAttempt;
       if (timeSinceLastAttempt < this.circuitBreakerTimeout) {
-        throw new Error(`Redis circuit breaker is open. Next attempt in ${Math.ceil((this.circuitBreakerTimeout - timeSinceLastAttempt) / 1000)} seconds`);
+        throw new Error(
+          `Redis circuit breaker is open. Next attempt in ${Math.ceil(
+            (this.circuitBreakerTimeout - timeSinceLastAttempt) / 1000
+          )} seconds`
+        );
       } else {
         // Reset circuit breaker after timeout
         this.isCircuitBreakerOpen = false;
@@ -32,7 +36,9 @@ class RedisClient {
     if (this.connectionAttempts >= this.maxRetries) {
       this.isCircuitBreakerOpen = true;
       this.lastConnectionAttempt = Date.now();
-      throw new Error(`Redis connection failed after ${this.maxRetries} attempts. Circuit breaker activated.`);
+      throw new Error(
+        `Redis connection failed after ${this.maxRetries} attempts. Circuit breaker activated.`
+      );
     }
 
     try {
@@ -42,7 +48,9 @@ class RedisClient {
       const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
       const authToken = process.env.REDIS_AUTH_TOKEN;
 
-      console.log(`🔗 Redis connection attempt ${this.connectionAttempts}/${this.maxRetries}: ${redisUrl}`);
+      console.log(
+        `🔗 Redis connection attempt ${this.connectionAttempts}/${this.maxRetries}: ${redisUrl}`
+      );
       if (authToken) {
         console.log("🔑 Using Redis AUTH token");
       }
@@ -61,7 +69,8 @@ class RedisClient {
         family: 4,
         // Limit automatic reconnection attempts
         maxRetriesPerRequest: 2,
-        retryDelayOnFailover: this.retryBackoffBase * Math.pow(2, this.connectionAttempts - 1), // Exponential backoff
+        retryDelayOnFailover:
+          this.retryBackoffBase * Math.pow(2, this.connectionAttempts - 1), // Exponential backoff
         ...(authToken && { password: authToken }),
       };
 
@@ -84,9 +93,12 @@ class RedisClient {
       });
 
       this.client.on("error", (err) => {
-        console.error(`❌ Redis client error (attempt ${this.connectionAttempts}/${this.maxRetries}):`, err.message);
+        console.error(
+          `❌ Redis client error (attempt ${this.connectionAttempts}/${this.maxRetries}):`,
+          err.message
+        );
         this.isConnected = false;
-        
+
         // Don't log full error details repeatedly to reduce noise
         if (this.connectionAttempts === 1) {
           console.error("❌ Redis error details:", err);
@@ -99,11 +111,15 @@ class RedisClient {
       });
 
       this.client.on("reconnecting", (time) => {
-        console.log(`🔄 Redis client reconnecting in ${time}ms (attempt ${this.connectionAttempts}/${this.maxRetries})`);
-        
+        console.log(
+          `🔄 Redis client reconnecting in ${time}ms (attempt ${this.connectionAttempts}/${this.maxRetries})`
+        );
+
         // Stop automatic reconnection if we've hit the limit
         if (this.connectionAttempts >= this.maxRetries) {
-          console.log("🛑 Max Redis reconnection attempts reached, stopping automatic reconnection");
+          console.log(
+            "🛑 Max Redis reconnection attempts reached, stopping automatic reconnection"
+          );
           this.client.disconnect(false); // Disconnect without triggering reconnect
           this.isCircuitBreakerOpen = true;
         }
@@ -112,26 +128,35 @@ class RedisClient {
       // Test the connection with ping
       await this.client.ping();
       console.log("✅ Redis connection verified with ping");
-      
+
       // Reset attempts on successful connection
       this.connectionAttempts = 0;
       this.isCircuitBreakerOpen = false;
-      
+
       return this.client;
     } catch (error) {
-      console.error(`❌ Redis connection attempt ${this.connectionAttempts}/${this.maxRetries} failed:`, error.message);
-      
+      console.error(
+        `❌ Redis connection attempt ${this.connectionAttempts}/${this.maxRetries} failed:`,
+        error.message
+      );
+
       // Only log full error details on first attempt to reduce noise
       if (this.connectionAttempts === 1) {
         console.error("❌ Full error:", error);
-        
+
         // Log specific error types for AWS ElastiCache debugging
         if (error.code === "ENOTFOUND") {
-          console.error("❌ DNS resolution failed - check ElastiCache endpoint");
+          console.error(
+            "❌ DNS resolution failed - check ElastiCache endpoint"
+          );
         } else if (error.code === "ECONNREFUSED") {
-          console.error("❌ Connection refused - check security groups and network access");
+          console.error(
+            "❌ Connection refused - check security groups and network access"
+          );
         } else if (error.code === "ETIMEDOUT") {
-          console.error("❌ Connection timeout - check security groups and ElastiCache availability");
+          console.error(
+            "❌ Connection timeout - check security groups and ElastiCache availability"
+          );
         }
       }
 
@@ -173,7 +198,7 @@ class RedisClient {
       maxRetries: this.maxRetries,
       isCircuitBreakerOpen: this.isCircuitBreakerOpen,
       lastConnectionAttempt: this.lastConnectionAttempt,
-      clientStatus: this.client ? this.client.status : 'no-client'
+      clientStatus: this.client ? this.client.status : "no-client",
     };
   }
 
@@ -239,17 +264,20 @@ async function connectRedis() {
   if (!redisClient) {
     redisClient = new RedisClient();
   }
-  
+
   // Only attempt connection if not connected and circuit breaker allows it
   if (!redisClient.isConnected) {
     try {
       await redisClient.connect();
     } catch (error) {
       // Don't throw error immediately, let the application continue with fallback
-      console.warn("⚠️ Redis connection failed, application will use fallback methods:", error.message);
+      console.warn(
+        "⚠️ Redis connection failed, application will use fallback methods:",
+        error.message
+      );
     }
   }
-  
+
   return redisClient;
 }
 
@@ -257,12 +285,14 @@ async function getRedisClient() {
   if (!redisClient) {
     await connectRedis();
   }
-  
+
   // Check if circuit breaker is open
   if (redisClient.isCircuitBreakerOpen) {
-    throw new Error("Redis is temporarily unavailable due to repeated connection failures");
+    throw new Error(
+      "Redis is temporarily unavailable due to repeated connection failures"
+    );
   }
-  
+
   return redisClient.getClient();
 }
 
@@ -271,6 +301,10 @@ module.exports = {
   getRedisClient,
   RedisClient,
   // Export utility functions for monitoring and management
-  getRedisStatus: () => redisClient ? redisClient.getConnectionStatus() : { status: 'not-initialized' },
-  resetRedisCircuitBreaker: () => redisClient ? redisClient.resetCircuitBreaker() : null,
+  getRedisStatus: () =>
+    redisClient
+      ? redisClient.getConnectionStatus()
+      : { status: "not-initialized" },
+  resetRedisCircuitBreaker: () =>
+    redisClient ? redisClient.resetCircuitBreaker() : null,
 };

@@ -9,9 +9,9 @@ const { uploadStream } = require("../lib/cloudinary");
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
 const speakeasy = require("speakeasy");
 const bcrypt = require("bcrypt");
@@ -1807,94 +1807,101 @@ router.use("/analytics", analyticsRoutes);
 
 // Add POST route to create event with file upload support
 router.post(
-  "/events", 
-  authenticateUser, 
+  "/events",
+  authenticateUser,
   upload.fields([
-    { name: 'cover_image', maxCount: 1 },
-    { name: 'other_images', maxCount: 5 },
-    { name: 'video', maxCount: 1 }
+    { name: "cover_image", maxCount: 1 },
+    { name: "other_images", maxCount: 5 },
+    { name: "video", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
       console.log("[API.JS] POST /events called");
       console.log("[API.JS] Request body:", req.body);
       console.log("[API.JS] Files:", req.files);
-      
+
       // Parse JSON fields from FormData
       const eventData = { ...req.body };
-      
+
       // Parse seat_map if it's a string
-      if (eventData.seat_map && typeof eventData.seat_map === 'string') {
+      if (eventData.seat_map && typeof eventData.seat_map === "string") {
         try {
           eventData.seat_map = JSON.parse(eventData.seat_map);
         } catch (e) {
           console.error("[API.JS] Error parsing seat_map:", e);
         }
       }
-      
+
       // Parse ticket_types if it's a string
-      if (eventData.ticket_types && typeof eventData.ticket_types === 'string') {
+      if (
+        eventData.ticket_types &&
+        typeof eventData.ticket_types === "string"
+      ) {
         try {
           eventData.ticket_types = JSON.parse(eventData.ticket_types);
         } catch (e) {
           console.error("[API.JS] Error parsing ticket_types:", e);
         }
       }
-      
+
       // Upload cover image to Cloudinary if provided
       if (req.files && req.files.cover_image && req.files.cover_image[0]) {
         console.log("[API.JS] Uploading cover image to Cloudinary...");
         const coverImageFile = req.files.cover_image[0];
         const uploadResult = await uploadStream(coverImageFile.buffer, {
-          folder: 'eventbn/events/cover_images',
-          resource_type: 'image',
+          folder: "eventbn/events/cover_images",
+          resource_type: "image",
           transformation: [
-            { width: 1200, height: 630, crop: 'fill' },
-            { quality: 'auto' }
-          ]
+            { width: 1200, height: 630, crop: "fill" },
+            { quality: "auto" },
+          ],
         });
         eventData.cover_image_url = uploadResult.secure_url;
         console.log("[API.JS] Cover image uploaded:", uploadResult.secure_url);
       }
-      
+
       // Upload other images to Cloudinary if provided
-      if (req.files && req.files.other_images && req.files.other_images.length > 0) {
+      if (
+        req.files &&
+        req.files.other_images &&
+        req.files.other_images.length > 0
+      ) {
         console.log("[API.JS] Uploading other images to Cloudinary...");
         const otherImageUrls = [];
         for (const imageFile of req.files.other_images) {
           const uploadResult = await uploadStream(imageFile.buffer, {
-            folder: 'eventbn/events/gallery',
-            resource_type: 'image',
+            folder: "eventbn/events/gallery",
+            resource_type: "image",
             transformation: [
-              { width: 800, height: 600, crop: 'fill' },
-              { quality: 'auto' }
-            ]
+              { width: 800, height: 600, crop: "fill" },
+              { quality: "auto" },
+            ],
           });
           otherImageUrls.push(uploadResult.secure_url);
         }
         eventData.other_images_url = JSON.stringify(otherImageUrls);
         console.log("[API.JS] Other images uploaded:", otherImageUrls);
       }
-      
+
       // Upload video to Cloudinary if provided
       if (req.files && req.files.video && req.files.video[0]) {
         console.log("[API.JS] Uploading video to Cloudinary...");
         const videoFile = req.files.video[0];
         const uploadResult = await uploadStream(videoFile.buffer, {
-          folder: 'eventbn/events/videos',
-          resource_type: 'video',
+          folder: "eventbn/events/videos",
+          resource_type: "video",
           transformation: [
-            { width: 1280, height: 720, crop: 'limit' },
-            { quality: 'auto' }
-          ]
+            { width: 1280, height: 720, crop: "limit" },
+            { quality: "auto" },
+          ],
         });
         eventData.video_url = uploadResult.secure_url;
         console.log("[API.JS] Video uploaded:", uploadResult.secure_url);
       }
-      
+
       // Use events service to create the event
       const newEvent = await eventsService.createEvent(eventData);
-      
+
       res.status(201).json({
         success: true,
         message: "Event created successfully",
@@ -1912,93 +1919,100 @@ router.post(
 
 // Add PUT route directly here for now with Cloudinary upload support
 router.put(
-  "/events/:id", 
-  authenticateUser, 
+  "/events/:id",
+  authenticateUser,
   upload.fields([
-    { name: 'cover_image', maxCount: 1 },
-    { name: 'other_images', maxCount: 5 },
-    { name: 'video', maxCount: 1 }
+    { name: "cover_image", maxCount: 1 },
+    { name: "other_images", maxCount: 5 },
+    { name: "video", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
       console.log("[API.JS] PUT /events/:id called with ID:", req.params.id);
       const eventId = req.params.id;
-      
+
       // Parse JSON fields from FormData
       const eventData = { ...req.body };
-      
+
       // Parse seat_map if it's a string
-      if (eventData.seat_map && typeof eventData.seat_map === 'string') {
+      if (eventData.seat_map && typeof eventData.seat_map === "string") {
         try {
           eventData.seat_map = JSON.parse(eventData.seat_map);
         } catch (e) {
           console.error("[API.JS] Error parsing seat_map:", e);
         }
       }
-      
+
       // Parse ticket_types if it's a string
-      if (eventData.ticket_types && typeof eventData.ticket_types === 'string') {
+      if (
+        eventData.ticket_types &&
+        typeof eventData.ticket_types === "string"
+      ) {
         try {
           eventData.ticket_types = JSON.parse(eventData.ticket_types);
         } catch (e) {
           console.error("[API.JS] Error parsing ticket_types:", e);
         }
       }
-      
+
       // Upload cover image to Cloudinary if provided
       if (req.files && req.files.cover_image && req.files.cover_image[0]) {
         console.log("[API.JS] Uploading new cover image to Cloudinary...");
         const coverImageFile = req.files.cover_image[0];
         const uploadResult = await uploadStream(coverImageFile.buffer, {
-          folder: 'eventbn/events/cover_images',
-          resource_type: 'image',
+          folder: "eventbn/events/cover_images",
+          resource_type: "image",
           transformation: [
-            { width: 1200, height: 630, crop: 'fill' },
-            { quality: 'auto' }
-          ]
+            { width: 1200, height: 630, crop: "fill" },
+            { quality: "auto" },
+          ],
         });
         eventData.cover_image_url = uploadResult.secure_url;
         console.log("[API.JS] Cover image uploaded:", uploadResult.secure_url);
       }
-      
+
       // Upload other images to Cloudinary if provided
-      if (req.files && req.files.other_images && req.files.other_images.length > 0) {
+      if (
+        req.files &&
+        req.files.other_images &&
+        req.files.other_images.length > 0
+      ) {
         console.log("[API.JS] Uploading new other images to Cloudinary...");
         const otherImageUrls = [];
         for (const imageFile of req.files.other_images) {
           const uploadResult = await uploadStream(imageFile.buffer, {
-            folder: 'eventbn/events/gallery',
-            resource_type: 'image',
+            folder: "eventbn/events/gallery",
+            resource_type: "image",
             transformation: [
-              { width: 800, height: 600, crop: 'fill' },
-              { quality: 'auto' }
-            ]
+              { width: 800, height: 600, crop: "fill" },
+              { quality: "auto" },
+            ],
           });
           otherImageUrls.push(uploadResult.secure_url);
         }
         eventData.other_images_url = JSON.stringify(otherImageUrls);
         console.log("[API.JS] Other images uploaded:", otherImageUrls);
       }
-      
+
       // Upload video to Cloudinary if provided
       if (req.files && req.files.video && req.files.video[0]) {
         console.log("[API.JS] Uploading new video to Cloudinary...");
         const videoFile = req.files.video[0];
         const uploadResult = await uploadStream(videoFile.buffer, {
-          folder: 'eventbn/events/videos',
-          resource_type: 'video',
+          folder: "eventbn/events/videos",
+          resource_type: "video",
           transformation: [
-            { width: 1280, height: 720, crop: 'limit' },
-            { quality: 'auto' }
-          ]
+            { width: 1280, height: 720, crop: "limit" },
+            { quality: "auto" },
+          ],
         });
         eventData.video_url = uploadResult.secure_url;
         console.log("[API.JS] Video uploaded:", uploadResult.secure_url);
       }
-      
+
       // Use events service to update the event
       const updatedEvent = await eventsService.updateEvent(eventId, eventData);
-      
+
       res.json({
         success: true,
         message: "Event updated successfully",
@@ -2019,10 +2033,10 @@ router.delete("/events/:id", authenticateUser, async (req, res) => {
   try {
     console.log("[API.JS] DELETE /events/:id called with ID:", req.params.id);
     const eventId = req.params.id;
-    
+
     // Use events service to delete the event
     await eventsService.deleteEvent(eventId);
-    
+
     res.json({
       success: true,
       message: "Event deleted successfully",
@@ -2043,14 +2057,14 @@ router.delete("/events/:id", authenticateUser, async (req, res) => {
 router.get("/tickets/test-events-tickets/:userId", async (req, res) => {
   try {
     const user_id = parseInt(req.params.userId);
-    console.log('DEBUG: Testing with user_id:', user_id);
+    console.log("DEBUG: Testing with user_id:", user_id);
 
     // Get all events for this user
     const events = await prisma.event.findMany({
       where: {
         organization: {
-          user_id: user_id
-        }
+          user_id: user_id,
+        },
       },
       select: {
         event_id: true,
@@ -2064,17 +2078,17 @@ router.get("/tickets/test-events-tickets/:userId", async (req, res) => {
         capacity: true,
         category: true,
         ticket_types: true,
-      }
+      },
     });
 
-    console.log('DEBUG: Found events for user', user_id, ':', events.length);
-    events.forEach(event => {
-      console.log('DEBUG: Event', event.event_id, 'title:', `"${event.title}"`);
+    console.log("DEBUG: Found events for user", user_id, ":", events.length);
+    events.forEach((event) => {
+      console.log("DEBUG: Event", event.event_id, "title:", `"${event.title}"`);
     });
 
     res.json({
       success: true,
-      message: 'Test endpoint',
+      message: "Test endpoint",
       user_id: user_id,
       events: events,
       eventsCount: events.length,
@@ -2092,7 +2106,7 @@ router.get("/tickets/test-events-tickets/:userId", async (req, res) => {
 // TEST ENDPOINT 2 - Check all events
 router.get("/tickets/test-all-events", async (req, res) => {
   try {
-    console.log('DEBUG: Getting all events...');
+    console.log("DEBUG: Getting all events...");
 
     // Get all events
     const allEvents = await prisma.event.findMany({
@@ -2100,7 +2114,7 @@ router.get("/tickets/test-all-events", async (req, res) => {
         event_id: true,
         title: true,
         organization_id: true,
-      }
+      },
     });
 
     // Get all organizations
@@ -2109,23 +2123,37 @@ router.get("/tickets/test-all-events", async (req, res) => {
         organization_id: true,
         user_id: true,
         name: true,
-      }
+      },
     });
 
-    console.log('DEBUG: Total events:', allEvents.length);
-    console.log('DEBUG: Total organizations:', allOrgs.length);
-    
-    allEvents.forEach(event => {
-      console.log('DEBUG: Event', event.event_id, 'title:', `"${event.title}"`, 'org:', event.organization_id);
+    console.log("DEBUG: Total events:", allEvents.length);
+    console.log("DEBUG: Total organizations:", allOrgs.length);
+
+    allEvents.forEach((event) => {
+      console.log(
+        "DEBUG: Event",
+        event.event_id,
+        "title:",
+        `"${event.title}"`,
+        "org:",
+        event.organization_id
+      );
     });
 
-    allOrgs.forEach(org => {
-      console.log('DEBUG: Org', org.organization_id, 'name:', `"${org.name}"`, 'user:', org.user_id);
+    allOrgs.forEach((org) => {
+      console.log(
+        "DEBUG: Org",
+        org.organization_id,
+        "name:",
+        `"${org.name}"`,
+        "user:",
+        org.user_id
+      );
     });
 
     res.json({
       success: true,
-      message: 'All events test endpoint',
+      message: "All events test endpoint",
       allEvents: allEvents,
       allOrgs: allOrgs,
       eventsCount: allEvents.length,
@@ -2145,16 +2173,16 @@ router.get("/tickets/test-all-events", async (req, res) => {
 router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
   try {
     const user_id = req.userId;
-    console.log('DEBUG: Getting tickets for user_id:', user_id);
+    console.log("DEBUG: Getting tickets for user_id:", user_id);
 
     // Get all tickets for events owned by user's organizations
     const ticketsData = await prisma.ticket_purchase.findMany({
       where: {
         Event: {
           organization: {
-            user_id: user_id // Events from organizations owned by this user
-          }
-        }
+            user_id: user_id, // Events from organizations owned by this user
+          },
+        },
       },
       include: {
         User: {
@@ -2187,16 +2215,16 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
         },
       },
       orderBy: {
-        purchase_date: 'desc'
-      }
+        purchase_date: "desc",
+      },
     });
 
     // Get unique events from the tickets
     const events = await prisma.event.findMany({
       where: {
         organization: {
-          user_id: user_id
-        }
+          user_id: user_id,
+        },
       },
       select: {
         event_id: true,
@@ -2208,16 +2236,16 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
         location: true,
         cover_image_url: true,
         capacity: true,
-      }
+      },
     });
 
     // Normalize ticket data - convert Prisma capitalized relations to lowercase for frontend
-    const normalizedTickets = ticketsData.map(ticket => ({
+    const normalizedTickets = ticketsData.map((ticket) => ({
       ...ticket,
       event: ticket.Event,
       user: ticket.User,
       Event: undefined,
-      User: undefined
+      User: undefined,
     }));
 
     // Calculate statistics and group by event
@@ -2225,7 +2253,7 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
     const eventTicketsMap = {};
     const byStatus = {};
 
-    normalizedTickets.forEach(ticket => {
+    normalizedTickets.forEach((ticket) => {
       // Calculate total revenue (price is BigInt, convert to number)
       totalRevenue += Number(ticket.price);
 
@@ -2237,7 +2265,7 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
           tickets: [],
           ticketCount: 0,
           eventRevenue: 0,
-          attendedCount: 0
+          attendedCount: 0,
         };
       }
       eventTicketsMap[eventId].tickets.push(ticket);
@@ -2248,15 +2276,15 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
       }
 
       // Count by status
-      const status = ticket.payment?.status || 'unknown';
+      const status = ticket.payment?.status || "unknown";
       byStatus[status] = (byStatus[status] || 0) + 1;
     });
 
     // Convert eventTicketsMap to array and include all events (even those with no tickets)
     const ticketsByEvent = [];
-    
+
     // First, add all events with tickets
-    Object.values(eventTicketsMap).forEach(eventData => {
+    Object.values(eventTicketsMap).forEach((eventData) => {
       ticketsByEvent.push({
         event_id: eventData.event.event_id,
         title: eventData.event.title,
@@ -2273,13 +2301,19 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
         ticketCount: eventData.ticketCount,
         attendedCount: eventData.attendedCount,
         eventRevenue: eventData.eventRevenue,
-        averageTicketPrice: eventData.ticketCount > 0 ? (eventData.eventRevenue / eventData.ticketCount) : 0,
-        attendanceRate: eventData.ticketCount > 0 ? (eventData.attendedCount / eventData.ticketCount * 100) : 0
+        averageTicketPrice:
+          eventData.ticketCount > 0
+            ? eventData.eventRevenue / eventData.ticketCount
+            : 0,
+        attendanceRate:
+          eventData.ticketCount > 0
+            ? (eventData.attendedCount / eventData.ticketCount) * 100
+            : 0,
       });
     });
-    
+
     // Then, add events with no tickets sold
-    events.forEach(event => {
+    events.forEach((event) => {
       if (!eventTicketsMap[event.event_id]) {
         ticketsByEvent.push({
           event_id: event.event_id,
@@ -2298,21 +2332,29 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
           attendedCount: 0,
           eventRevenue: 0,
           averageTicketPrice: 0,
-          attendanceRate: 0
+          attendanceRate: 0,
         });
       }
     });
 
-    console.log('DEBUG: Final ticketsByEvent count:', ticketsByEvent.length);
-    ticketsByEvent.forEach(event => {
-      console.log('DEBUG: Event in response', event.event_id, 'title:', `"${event.title}"`);
+    console.log("DEBUG: Final ticketsByEvent count:", ticketsByEvent.length);
+    ticketsByEvent.forEach((event) => {
+      console.log(
+        "DEBUG: Event in response",
+        event.event_id,
+        "title:",
+        `"${event.title}"`
+      );
     });
 
     const statistics = {
       totalTicketsSold: normalizedTickets.length,
       totalRevenue: totalRevenue,
       totalEvents: events.length,
-      averageTicketPrice: normalizedTickets.length > 0 ? totalRevenue / normalizedTickets.length : 0,
+      averageTicketPrice:
+        normalizedTickets.length > 0
+          ? totalRevenue / normalizedTickets.length
+          : 0,
       byEvent: eventTicketsMap,
       byStatus: byStatus,
     };
@@ -2322,14 +2364,14 @@ router.get("/tickets/my-events-tickets", authenticateUser, async (req, res) => {
       tickets: normalizedTickets,
       events: events,
       ticketsByEvent: ticketsByEvent,
-      statistics: statistics
+      statistics: statistics,
     });
   } catch (error) {
     console.error("[API.JS] Error fetching organizer tickets:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch tickets",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -3462,7 +3504,7 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
     console.log(
       `[CORE-SERVICE][TICKETS] /tickets/:ticketId/attend userId=${userId} ticketId=${ticketId}`
     );
-    
+
     // Fetch ticket with event details and organization
     const ticket = await prisma.ticket_purchase.findUnique({
       where: { ticket_id: ticketId },
@@ -3480,37 +3522,48 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
         },
       },
     });
-    
-    console.log(`[CORE-SERVICE][TICKETS] Ticket found:`, ticket ? `Yes, user_id=${ticket.user_id}, event_id=${ticket.Event?.event_id}` : 'No');
+
+    console.log(
+      `[CORE-SERVICE][TICKETS] Ticket found:`,
+      ticket
+        ? `Yes, user_id=${ticket.user_id}, event_id=${ticket.Event?.event_id}`
+        : "No"
+    );
     console.log(`[CORE-SERVICE][TICKETS] Requesting user_id=${userId}`);
-    
+
     if (!ticket) {
-      return res.status(404).json({ success: false, error: "Ticket not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Ticket not found" });
     }
-    
+
     // Get the requesting user's organizations (users can own multiple organizations)
     const requestingUser = await prisma.user.findUnique({
       where: { user_id: userId },
       include: { organizations: { select: { organization_id: true } } },
     });
-    
+
     // Check if user can mark this ticket as attended:
     // 1. User owns the ticket, OR
     // 2. User owns an organization that matches the event's organization
     const isTicketOwner = ticket.user_id === userId;
-    const userOrgIds = requestingUser?.organizations.map(org => org.organization_id) || [];
-    const isEventOrganizer = ticket.Event?.organization_id && 
-                             userOrgIds.includes(ticket.Event.organization_id);
-    
-    console.log(`[CORE-SERVICE][TICKETS] isTicketOwner=${isTicketOwner}, isEventOrganizer=${isEventOrganizer}, userOrgIds=[${userOrgIds}], eventOrgId=${ticket.Event?.organization_id}`);
-    
+    const userOrgIds =
+      requestingUser?.organizations.map((org) => org.organization_id) || [];
+    const isEventOrganizer =
+      ticket.Event?.organization_id &&
+      userOrgIds.includes(ticket.Event.organization_id);
+
+    console.log(
+      `[CORE-SERVICE][TICKETS] isTicketOwner=${isTicketOwner}, isEventOrganizer=${isEventOrganizer}, userOrgIds=[${userOrgIds}], eventOrgId=${ticket.Event?.organization_id}`
+    );
+
     if (!isTicketOwner && !isEventOrganizer) {
-      return res.status(403).json({ 
-        success: false, 
-        error: "You don't have permission to mark this ticket as attended" 
+      return res.status(403).json({
+        success: false,
+        error: "You don't have permission to mark this ticket as attended",
       });
     }
-    
+
     if (ticket.attended) {
       return res.json({
         success: true,
@@ -3518,13 +3571,15 @@ router.put("/tickets/:ticketId/attend", authenticateUser, async (req, res) => {
         ticket: { ...ticket, price: Number(ticket.price) },
       });
     }
-    
+
     const updated = await prisma.ticket_purchase.update({
       where: { ticket_id: ticketId },
       data: { attended: true },
     });
-    
-    console.log(`[CORE-SERVICE][TICKETS] Marked attended ticket=${ticketId} by user=${userId}`);
+
+    console.log(
+      `[CORE-SERVICE][TICKETS] Marked attended ticket=${ticketId} by user=${userId}`
+    );
     res.json({
       success: true,
       message: "Ticket marked as attended",
@@ -3578,9 +3633,9 @@ router.get("/users", async (req, res) => {
     });
 
     if (!currentUser || currentUser.role.toLowerCase() !== "admin") {
-      return res.status(403).json({ 
-        success: false, 
-        error: "Forbidden: Admin access required" 
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden: Admin access required",
       });
     }
 
@@ -3600,15 +3655,15 @@ router.get("/users", async (req, res) => {
         organization_id: true,
       },
       orderBy: {
-        created_at: 'desc'
-      }
+        created_at: "desc",
+      },
     });
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       data: users,
       count: users.length,
-      service: "core-service" 
+      service: "core-service",
     });
   } catch (error) {
     console.error("[API.JS] Error fetching users:", error);
@@ -3690,14 +3745,14 @@ router.put("/users/profile", async (req, res) => {
 router.get("/users/:id", async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
-    
+
     if (isNaN(userId)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Invalid user ID" 
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID",
       });
     }
-    
+
     const user = await prisma.user.findUnique({
       where: { user_id: userId },
       select: {
@@ -3713,18 +3768,18 @@ router.get("/users/:id", async (req, res) => {
         updated_at: true,
       },
     });
-    
+
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "User not found" 
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
       });
     }
-    
-    res.json({ 
-      success: true, 
-      user, 
-      service: "core-service" 
+
+    res.json({
+      success: true,
+      user,
+      service: "core-service",
     });
   } catch (error) {
     console.error("[API.JS] Error fetching user:", error);
@@ -3741,30 +3796,30 @@ router.put("/users/:id", async (req, res) => {
   try {
     const targetUserId = parseInt(req.params.id);
     const currentUserId = parseInt(req.userId);
-    
+
     if (isNaN(targetUserId)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Invalid user ID" 
+      return res.status(400).json({
+        success: false,
+        error: "Invalid user ID",
       });
     }
-    
+
     // Users can only update their own profile unless they're admin
-    if (targetUserId !== currentUserId && req.user?.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false, 
-        error: "Forbidden: You can only update your own profile" 
+    if (targetUserId !== currentUserId && req.user?.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden: You can only update your own profile",
       });
     }
-    
+
     const { name, phone_number, profile_picture } = req.body;
-    
+
     const user = await prisma.user.update({
       where: { user_id: targetUserId },
-      data: { 
+      data: {
         ...(name && { name }),
         ...(phone_number !== undefined && { phone_number }),
-        ...(profile_picture !== undefined && { profile_picture })
+        ...(profile_picture !== undefined && { profile_picture }),
       },
       select: {
         user_id: true,
@@ -3779,7 +3834,7 @@ router.put("/users/:id", async (req, res) => {
         updated_at: true,
       },
     });
-    
+
     res.json({
       success: true,
       message: "User updated successfully",
@@ -3835,4 +3890,3 @@ router.get("/analytics/dashboard", async (req, res) => {
 router.use("/users", authenticateUser, usersRoutes);
 
 module.exports = router;
-
