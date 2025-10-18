@@ -94,32 +94,37 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
 
     // Calculate the segment angle
     final double segmentAngle = (2 * pi) / _wheelRewards.length;
-    
+
     // Always land on "Try Again" - choose index 1 for consistency
-    final int winningSegment = 1; // This will always select "Try Again" at index 1
-    
+    final int winningSegment =
+        1; // This will always select "Try Again" at index 1
+
     // Calculate the exact center angle where we want to land
     // Segments start at (i * segmentAngle - π/2), center is at start + segmentAngle/2
     final double segmentStartAngle = (winningSegment * segmentAngle) - (pi / 2);
     final double segmentCenterAngle = segmentStartAngle + (segmentAngle / 2);
-    
+
     // Calculate how much we need to rotate to align segment center with pointer (top = 0)
     // We want: wheelAngle + rotation = -segmentCenterAngle (mod 2π)
     double targetRotation = -segmentCenterAngle - _startAngle;
-    
+
     // Normalize to positive and add full spins
     while (targetRotation < 0) targetRotation += 2 * pi;
     targetRotation += baseSpins * 2 * pi;
-    
+
     // Calculate final target angle
     _targetAngle = _startAngle + targetRotation;
-    
+
     // Debug: Verify the target will land on "Try Again"
     final double finalNormalizedAngle = _targetAngle % (2 * pi);
     final double pointerAngle = 0; // Pointer is at top
-    final double relativeAngle = (finalNormalizedAngle - pointerAngle + 2 * pi) % (2 * pi);
-    final int calculatedSegment = ((2 * pi - relativeAngle + pi/2) / segmentAngle).floor() % _wheelRewards.length;
-    print('Target segment: $winningSegment, Calculated segment: $calculatedSegment, Reward: ${_wheelRewards[calculatedSegment]}');
+    final double relativeAngle =
+        (finalNormalizedAngle - pointerAngle + 2 * pi) % (2 * pi);
+    final int calculatedSegment =
+        ((2 * pi - relativeAngle + pi / 2) / segmentAngle).floor() %
+            _wheelRewards.length;
+    print(
+        'Target segment: $winningSegment, Calculated segment: $calculatedSegment, Reward: ${_wheelRewards[calculatedSegment]}');
 
     // Reset and start animation
     _wheelController.reset();
@@ -544,7 +549,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                             // Casino-style pointer - positioned at exact middle top
                             Positioned(
                               top: 0, // Position at exact top
-                              left: 140, // Center horizontally (320/2 - 20 = 140 for pointer width ~40)
+                              left:
+                                  140, // Center horizontally (320/2 - 20 = 140 for pointer width ~40)
                               child: SizedBox(
                                 width: 40,
                                 height: 40,
@@ -948,8 +954,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                 child: Column(
                                   children: [
                                     Text(
-                                      _selectedReward == 'Try Again' 
-                                          ? 'Better Luck Next Time!' 
+                                      _selectedReward == 'Try Again'
+                                          ? 'Better Luck Next Time!'
                                           : 'You Won',
                                       style: TextStyle(
                                         fontSize: 16,
@@ -991,15 +997,17 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                 height: 56,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: _selectedReward == 'Try Again' 
+                                    colors: _selectedReward == 'Try Again'
                                         ? [
                                             const Color(0xFFFF9800), // Orange
-                                            const Color(0xFFE65100), // Dark orange
+                                            const Color(
+                                                0xFFE65100), // Dark orange
                                             const Color(0xFFFF9800), // Orange
                                           ]
                                         : [
                                             const Color(0xFF4CAF50), // Green
-                                            const Color(0xFF2E7D32), // Dark green
+                                            const Color(
+                                                0xFF2E7D32), // Dark green
                                             const Color(0xFF4CAF50), // Green
                                           ],
                                     begin: Alignment.topLeft,
@@ -1008,9 +1016,9 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                   borderRadius: BorderRadius.circular(28),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (_selectedReward == 'Try Again' 
-                                          ? const Color(0xFFFF9800) 
-                                          : const Color(0xFF4CAF50))
+                                      color: (_selectedReward == 'Try Again'
+                                              ? const Color(0xFFFF9800)
+                                              : const Color(0xFF4CAF50))
                                           .withOpacity(0.4),
                                       blurRadius: 15,
                                       spreadRadius: 2,
@@ -1050,8 +1058,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                     // Button text
                                     Center(
                                       child: Text(
-                                        _selectedReward == 'Try Again' 
-                                            ? 'Continue' 
+                                        _selectedReward == 'Try Again'
+                                            ? 'Continue'
                                             : 'Collect Reward',
                                         style: const TextStyle(
                                           color: Colors.white,
