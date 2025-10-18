@@ -317,8 +317,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-
-
   void _showIncompleteProfileSnackBar() {
     CustomNotification.show(
       context,

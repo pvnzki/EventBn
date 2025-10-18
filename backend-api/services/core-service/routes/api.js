@@ -513,8 +513,14 @@ router.post("/auth/login/2fa", async (req, res) => {
 
 router.post("/auth/register", async (req, res) => {
   try {
-    const { name, email, password, phone_number, profile_picture, date_of_birth } =
-      req.body || {};
+    const {
+      name,
+      email,
+      password,
+      phone_number,
+      profile_picture,
+      date_of_birth,
+    } = req.body || {};
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,

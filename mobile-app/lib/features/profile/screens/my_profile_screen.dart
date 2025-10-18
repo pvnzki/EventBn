@@ -14,7 +14,7 @@ import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool showBillingAddress;
-  
+
   const ProfileScreen({super.key, this.showBillingAddress = false});
 
   @override
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     // Now load user posts
     _loadUserPosts();
-    
+
     // Show billing address modal if requested
     if (widget.showBillingAddress) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

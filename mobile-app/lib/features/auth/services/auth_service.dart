@@ -128,7 +128,10 @@ class AuthService {
         'email': email,
         'password': password,
         if (phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
-        if (dateOfBirth != null) 'date_of_birth': dateOfBirth.toIso8601String().split('T')[0], // Send as YYYY-MM-DD format
+        if (dateOfBirth != null)
+          'date_of_birth': dateOfBirth
+              .toIso8601String()
+              .split('T')[0], // Send as YYYY-MM-DD format
       };
 
       print('🔄 [AUTH_SERVICE] Request body: $requestBody');

@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 
-
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -97,39 +95,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_selectedDateOfBirth == null) {
       return 'Please select a valid date';
     }
-    
+
     // Check if user is at least 13 years old
     final now = DateTime.now();
     final age = now.year - _selectedDateOfBirth!.year;
     final monthDiff = now.month - _selectedDateOfBirth!.month;
     final dayDiff = now.day - _selectedDateOfBirth!.day;
-    
+
     int actualAge = age;
     if (monthDiff < 0 || (monthDiff == 0 && dayDiff < 0)) {
       actualAge--;
     }
-    
+
     if (actualAge < 13) {
       return 'You must be at least 13 years old to register';
     }
-    
+
     return null;
   }
 
   Future<void> _selectDateOfBirth() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 20)), // Default to 20 years ago
+      initialDate: DateTime.now()
+          .subtract(const Duration(days: 365 * 20)), // Default to 20 years ago
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       helpText: 'Select Date of Birth',
       fieldLabelText: 'Date of Birth',
     );
-    
+
     if (picked != null && picked != _selectedDateOfBirth) {
       setState(() {
         _selectedDateOfBirth = picked;
-        _dateOfBirthController.text = 
+        _dateOfBirthController.text =
             '${picked.day}/${picked.month}/${picked.year}';
       });
     }
@@ -141,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.register(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -160,10 +159,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
 
-  await Future.delayed(const Duration(milliseconds: 1200));
-  if (!mounted) return;
-  // Use GoRouter for navigation (MaterialApp.router)
-  context.go('/login');
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (!mounted) return;
+      // Use GoRouter for navigation (MaterialApp.router)
+      context.go('/login');
     }
   }
 
@@ -185,21 +184,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 32),
-                    
+
                     // Welcome text
                     Text(
                       'Join EventBn',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Create your account to start booking amazing events',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
@@ -267,7 +267,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Password',
                         prefixIcon: const Icon(Icons.lock),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                          icon: Icon(_obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off),
                           onPressed: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;
@@ -289,10 +291,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Confirm Password',
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                          icon: Icon(_obscureConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off),
                           onPressed: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),
