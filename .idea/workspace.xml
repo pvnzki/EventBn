@@ -6,11 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat-consistency.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/check-seat.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/seat-locks/seatLockService.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/tickets.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/tickets.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/android/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/android/local.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/models/ticket_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/models/ticket_model.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/providers/ticket_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/providers/ticket_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/screens/my_tickets_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/screens/my_tickets_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/services/ticket_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/services/ticket_service.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,7 +43,7 @@
     &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;payment-email&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;fixes-2&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/asank/Desktop/EventBn Email/EventBn&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;device.mirroring&quot;
   }

@@ -3,6 +3,17 @@ const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const prisma = require("../lib/database");
 
+console.log("✅ Tickets router loaded successfully");
+
+// Test route to verify routing is working
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Tickets router is working!",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Get user's tickets
 router.get("/my-tickets", authenticateToken, async (req, res) => {
   try {
@@ -364,7 +375,7 @@ router.get("/by-payment/:paymentId", authenticateToken, async (req, res) => {
       ...ticket,
       price: Number(ticket.price),
       user_id: Number(ticket.user_id),
-      event_id: Number(ticket.event_id),
+      event_id: Number(ticket.event_id),  
       qr_code: qrCode,
     };
 
@@ -377,6 +388,139 @@ router.get("/by-payment/:paymentId", authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch ticket details",
+      error: error.message,
+    });
+  }
+});
+
+console.log("🔧 Registering cancellation route: PUT /payment/:paymentId/cancel");
+
+// PUT /api/tickets/payment/:paymentId/cancel - Cancel all tickets for a payment
+router.put("/payment/:paymentId/cancel", authenticateToken, async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const user_id = req.user.user_id;
+
+    console.log(`🎫 [CANCEL] Starting cancellation for payment: ${paymentId} by user: ${user_id}`);
+
+    // Start a transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // First, verify the payment belongs to the user
+      const payment = await tx.payment.findFirst({
+        where: {
+          payment_id: paymentId,
+          user_id: user_id,
+        },
+        include: {
+          event: {
+            select: {
+              title: true,
+              start_time: true,
+            },
+          },
+        },
+      });
+
+      if (!payment) {
+        throw new Error("Payment not found or access denied");
+      }
+
+      // Check if payment is already cancelled
+      if (payment.status === 'cancelled') {
+        throw new Error("Payment is already cancelled");
+      }
+
+      // Check if the event has already started (cannot cancel tickets for past events)
+      const now = new Date();
+      if (payment.event.start_time <= now) {
+        throw new Error("Cannot cancel tickets for past events");
+      }
+
+      // Get all tickets for this payment
+      const tickets = await tx.ticketPurchase.findMany({
+        where: {
+          payment_id: paymentId,
+          user_id: user_id,
+        },
+      });
+
+      if (tickets.length === 0) {
+        throw new Error("No tickets found for this payment");
+      }
+
+      // Check if any tickets are already used/attended
+      const usedTickets = tickets.filter(ticket => ticket.attended === true);
+      if (usedTickets.length > 0) {
+        throw new Error("Cannot cancel tickets that have already been used");
+      }
+
+      // Update payment status to 'cancelled'
+      await tx.payment.update({
+        where: { payment_id: paymentId },
+        data: {
+          status: 'cancelled',
+          updated_at: new Date(),
+        },
+      });
+
+      // Update all tickets status to 'cancelled'
+      const updatedTickets = await tx.ticketPurchase.updateMany({
+        where: {
+          payment_id: paymentId,
+          user_id: user_id,
+        },
+        data: {
+          status: 'cancelled',
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        payment,
+        ticketsCount: updatedTickets.count,
+        eventTitle: payment.event.title,
+      };
+    });
+
+    console.log(`✅ [CANCEL] Successfully cancelled ${result.ticketsCount} tickets for payment: ${paymentId}`);
+
+    res.json({
+      success: true,
+      message: `Successfully cancelled ${result.ticketsCount} ticket(s) for ${result.eventTitle}`,
+      data: {
+        payment_id: paymentId,
+        tickets_cancelled: result.ticketsCount,
+        event_title: result.eventTitle,
+      },
+    });
+
+  } catch (error) {
+    console.error(`❌ [CANCEL] Error cancelling tickets by payment ${paymentId}:`, error);
+    
+    // Handle specific error messages
+    let statusCode = 500;
+    let message = "Failed to cancel tickets";
+
+    if (error.message === "Payment not found or access denied") {
+      statusCode = 404;
+      message = error.message;
+    } else if (error.message === "Payment is already cancelled") {
+      statusCode = 400;
+      message = error.message;
+    } else if (error.message === "Cannot cancel tickets for past events") {
+      statusCode = 400;
+      message = error.message;
+    } else if (error.message === "Cannot cancel tickets that have already been used") {
+      statusCode = 400;
+      message = error.message;
+    } else if (error.message === "No tickets found for this payment") {
+      statusCode = 404;
+      message = error.message;
+    }
+
+    res.status(statusCode).json({
+      success: false,
+      message: message,
       error: error.message,
     });
   }
