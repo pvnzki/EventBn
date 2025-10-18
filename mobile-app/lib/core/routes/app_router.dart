@@ -433,10 +433,7 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => ExplorePostsPage(
-              focusSearch: state.extra is Map &&
-                  (state.extra as Map)['focusSearch'] == true,
-            ),
+            builder: (context, state) => const ExplorePostsPage(),
           ),
           GoRoute(
             path: '/tickets',

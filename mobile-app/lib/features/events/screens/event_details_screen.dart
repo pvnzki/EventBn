@@ -35,7 +35,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   // State variables
   bool isBookmarked = false;
-  bool isFollowing = false;
   bool isAboutExpanded = false;
 
   // Seat map cache
@@ -958,68 +957,42 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildOrganizerSection(ThemeData theme, Event event) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    return GestureDetector(
-      onTap: () {
-        if (_videoController != null && _videoController!.value.isPlaying) {
-          _videoController?.pause();
-        }
-        // Navigate to organization details page
-        context.push('/organization/${event.organizationId}');
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: CachedNetworkImageProvider(
-                (event.organization != null &&
-                        event.organization!['logo_url'] != null &&
-                        event.organization!['logo_url'].toString().isNotEmpty)
-                    ? event.organization!['logo_url']
-                    : 'https://i.pravatar.cc/100?u=${event.organizationId}',
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: CachedNetworkImageProvider(
+              (event.organization != null &&
+                      event.organization!['logo_url'] != null &&
+                      event.organization!['logo_url'].toString().isNotEmpty)
+                  ? event.organization!['logo_url']
+                  : 'https://i.pravatar.cc/100?u=${event.organizationId}',
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.organizerName,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.organizerName,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
-                  Text(
-                    'Organizer',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
+                ),
+                Text(
+                  'Organizer',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.6),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () => setState(() => isFollowing = !isFollowing),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isFollowing ? colorScheme.surface : colorScheme.primary,
-                foregroundColor:
-                    isFollowing ? colorScheme.primary : colorScheme.onPrimary,
-                side:
-                    isFollowing ? BorderSide(color: colorScheme.primary) : null,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                elevation: 0,
-              ),
-              child: Text(isFollowing ? 'Following' : 'Follow'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1262,70 +1235,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 150,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: colorScheme.surface,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.map,
-                            color: colorScheme.onSurface.withOpacity(0.5),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Map View (Coming Soon)',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 20,
-                    left: 20,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: CircleAvatar(
-                        radius: 12,
-                        backgroundImage: NetworkImage(
-                            'https://i.pravatar.cc/100?u=${event.organizationId}'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
