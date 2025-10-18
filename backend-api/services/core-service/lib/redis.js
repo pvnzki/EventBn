@@ -12,7 +12,7 @@ class RedisClient {
     try {
       const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
       const authToken = process.env.REDIS_AUTH_TOKEN;
-      
+
       console.log(`🔗 Attempting to connect to Redis: ${redisUrl}`);
       if (authToken) {
         console.log("🔑 Using Redis AUTH token");
@@ -71,16 +71,20 @@ class RedisClient {
     } catch (error) {
       console.error("❌ Failed to connect to Redis:", error.message);
       console.error("❌ Full error:", error);
-      
+
       // Log specific error types for AWS ElastiCache debugging
-      if (error.code === 'ENOTFOUND') {
+      if (error.code === "ENOTFOUND") {
         console.error("❌ DNS resolution failed - check ElastiCache endpoint");
-      } else if (error.code === 'ECONNREFUSED') {
-        console.error("❌ Connection refused - check security groups and network access");
-      } else if (error.code === 'ETIMEDOUT') {
-        console.error("❌ Connection timeout - check security groups and ElastiCache availability");
+      } else if (error.code === "ECONNREFUSED") {
+        console.error(
+          "❌ Connection refused - check security groups and network access"
+        );
+      } else if (error.code === "ETIMEDOUT") {
+        console.error(
+          "❌ Connection timeout - check security groups and ElastiCache availability"
+        );
       }
-      
+
       throw error;
     }
   }
@@ -99,8 +103,13 @@ class RedisClient {
       throw new Error("Redis client is not initialized");
     }
     if (!this.isConnected) {
-      console.error("❌ Redis client not connected, status:", this.client.status);
-      throw new Error(`Redis client is not connected (status: ${this.client.status})`);
+      console.error(
+        "❌ Redis client not connected, status:",
+        this.client.status
+      );
+      throw new Error(
+        `Redis client is not connected (status: ${this.client.status})`
+      );
     }
     return this.client;
   }

@@ -15,7 +15,10 @@ class SeatLockService {
     try {
       return await getRedisClient();
     } catch (error) {
-      console.warn("⚠️ Redis unavailable, using memory fallback:", error.message);
+      console.warn(
+        "⚠️ Redis unavailable, using memory fallback:",
+        error.message
+      );
       return null;
     }
   }
@@ -73,7 +76,7 @@ class SeatLockService {
         // Fallback to memory store
         const memoryKey = `${eventId}:${seatId}`;
         const existingLock = this.memoryFallback.get(memoryKey);
-        
+
         if (existingLock && Date.now() <= existingLock.expires) {
           console.log(
             `❌ Seat lock failed (already locked in memory): ${eventId}:${seatId} for user ${normalizedUserId}`
@@ -85,7 +88,7 @@ class SeatLockService {
         this.memoryFallback.set(memoryKey, {
           userId: normalizedUserId,
           timestamp: Date.now(),
-          expires: Date.now() + (this.LOCK_DURATION * 1000),
+          expires: Date.now() + this.LOCK_DURATION * 1000,
         });
 
         console.log(
@@ -144,7 +147,7 @@ class SeatLockService {
         // Fallback to memory store
         const memoryKey = `${eventId}:${seatId}`;
         const memoryLock = this.memoryFallback.get(memoryKey);
-        
+
         if (!memoryLock || Date.now() > memoryLock.expires) {
           if (memoryLock) this.memoryFallback.delete(memoryKey);
           console.log(`🟢 Seat is available (memory): ${eventId}:${seatId}`);
@@ -156,7 +159,10 @@ class SeatLockService {
           locked: true,
           userId: memoryLock.userId,
           timestamp: memoryLock.timestamp,
-          ttl: Math.max(0, Math.floor((memoryLock.expires - Date.now()) / 1000)),
+          ttl: Math.max(
+            0,
+            Math.floor((memoryLock.expires - Date.now()) / 1000)
+          ),
         };
       }
 
@@ -181,7 +187,9 @@ class SeatLockService {
     } catch (error) {
       console.error(`🚨 Error checking seat lock ${eventId}:${seatId}:`, error);
       // Return unlocked as fallback to prevent blocking the app
-      console.warn(`🔄 Returning unlocked as fallback for ${eventId}:${seatId}`);
+      console.warn(
+        `🔄 Returning unlocked as fallback for ${eventId}:${seatId}`
+      );
       return { locked: false };
     }
   }
@@ -209,20 +217,26 @@ class SeatLockService {
         console.log("🔄 Using memory fallback for extendLock");
         const memoryKey = `${eventId}:${seatId}`;
         const lock = this.memoryFallback.get(memoryKey);
-        
+
         if (!lock) {
-          console.log(`❌ Memory fallback: No active lock for ${eventId}:${seatId}`);
+          console.log(
+            `❌ Memory fallback: No active lock for ${eventId}:${seatId}`
+          );
           return false;
         }
-        
+
         if (String(lock.userId) !== normalizedUserId) {
-          console.log(`❌ Memory fallback: Lock owned by ${lock.userId}, requested by ${normalizedUserId}`);
+          console.log(
+            `❌ Memory fallback: Lock owned by ${lock.userId}, requested by ${normalizedUserId}`
+          );
           return false;
         }
-        
+
         // Extend the lock
-        lock.expires = Date.now() + (this.LOCK_DURATION * 1000);
-        console.log(`✅ Memory fallback: Extended lock ${eventId}:${seatId} for ${this.LOCK_DURATION}s`);
+        lock.expires = Date.now() + this.LOCK_DURATION * 1000;
+        console.log(
+          `✅ Memory fallback: Extended lock ${eventId}:${seatId} for ${this.LOCK_DURATION}s`
+        );
         return true;
       }
 
@@ -303,17 +317,21 @@ class SeatLockService {
         // Fallback to memory store
         console.log("🔄 Using memory fallback for releaseLock");
         const memoryKey = `${eventId}:${seatId}`;
-        
+
         if (normalizedUserId) {
           const lock = this.memoryFallback.get(memoryKey);
           if (lock && String(lock.userId) !== normalizedUserId) {
-            console.log(`❌ Cannot release lock: user ${normalizedUserId} doesn't own the lock`);
+            console.log(
+              `❌ Cannot release lock: user ${normalizedUserId} doesn't own the lock`
+            );
             return false;
           }
         }
-        
+
         const deleted = this.memoryFallback.delete(memoryKey);
-        console.log(`✅ Memory fallback: Released lock ${eventId}:${seatId}, deleted: ${deleted}`);
+        console.log(
+          `✅ Memory fallback: Released lock ${eventId}:${seatId}, deleted: ${deleted}`
+        );
         return deleted;
       }
 
@@ -419,7 +437,9 @@ class SeatLockService {
     } catch (error) {
       console.error("Error getting event locked seats:", error);
       // Return empty array as fallback to prevent API failure
-      console.warn("🔄 Returning empty array as fallback for getEventLockedSeats");
+      console.warn(
+        "🔄 Returning empty array as fallback for getEventLockedSeats"
+      );
       return [];
     }
   }
@@ -431,20 +451,22 @@ class SeatLockService {
   async cleanupExpiredLocks(eventId) {
     try {
       const redis = await this.getRedisClientSafe();
-      
+
       if (!redis) {
         console.log("🔄 Using memory fallback for cleanupExpiredLocks");
         let cleanedCount = 0;
         const now = Date.now();
-        
+
         for (const [key, lock] of this.memoryFallback.entries()) {
           if (key.startsWith(`${eventId}:`) && now > lock.expires) {
             this.memoryFallback.delete(key);
             cleanedCount++;
           }
         }
-        
-        console.log(`✅ Memory fallback: Cleaned up ${cleanedCount} expired locks for event ${eventId}`);
+
+        console.log(
+          `✅ Memory fallback: Cleaned up ${cleanedCount} expired locks for event ${eventId}`
+        );
         return cleanedCount;
       }
       const pattern = `seat_lock:${eventId}:*`;
