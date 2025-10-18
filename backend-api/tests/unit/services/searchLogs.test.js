@@ -1,8 +1,8 @@
 // Unit tests for tickets/search logs service
-const searchLogsService = require('../services/core-service/tickets');
+const searchLogsService = require('../../../services/core-service/tickets');
 
 // Mock the database
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   search_Log: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -15,7 +15,7 @@ jest.mock('../lib/database', () => ({
   }
 }));
 
-const db = require('../lib/database');
+const db = require('../../../lib/database');
 
 describe('Search Logs Service', () => {
   beforeEach(() => {

@@ -46,19 +46,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Future<void> _loadPost() async {
     try {
       print('🔍 Loading post with ID: ${widget.postId}');
-      // Load posts and find the specific post
-      await _postService.loadPosts(refresh: true);
-      print('📚 Posts loaded. Total count: ${_postService.posts.length}');
-      print(
-          '📋 Available post IDs: ${_postService.posts.map((p) => p.id).toList()}');
+      print('🔍 PostId type: ${widget.postId.runtimeType}');
+      print('🔍 PostId value: "${widget.postId}"');
+      print('🔍 About to call getPostById...');
+      // Use more efficient getPostById method
+      final post = await _postService.getPostById(widget.postId);
+      print('🔍 getPostById returned: ${post != null ? "SUCCESS" : "NULL"}');
 
-      final post = _postService.posts.firstWhere(
-        (p) => p.id == widget.postId,
-        orElse: () => throw Exception('Post not found'),
-      );
+      if (post == null) {
+        throw Exception('Post not found');
+      }
 
       print(
-          '✅ Post found: ${post.userDisplayName} - ${post.content.substring(0, 50)}...');
+          '✅ Post found: ${post.userDisplayName} - ${post.content.substring(0, post.content.length > 50 ? 50 : post.content.length)}...');
       setState(() {
         _post = post;
         _isLoading = false;

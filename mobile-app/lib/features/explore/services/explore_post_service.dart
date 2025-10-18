@@ -734,17 +734,31 @@ class ExplorePostService {
 
   // Get a single post by ID
   Future<ExplorePost?> getPostById(String postId) async {
+    print('🚀 [GET_POST] Method called with postId: $postId');
+    print('🚀 [GET_POST] PostId type: ${postId.runtimeType}');
+    print('🚀 [GET_POST] PostId length: ${postId.length}');
+    print('🚀 [GET_POST] Starting getPostById for postId: $postId');
     try {
+      print('🔑 [GET_POST] Getting auth token...');
       final token = await _getAuthToken();
+      print('🔑 [GET_POST] Token obtained: ${token != null ? "YES" : "NO"}');
+
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
+      final url = '$_postServiceUrl/api/posts/$postId';
+      print('🌐 [GET_POST] Making request to: $url');
+      print('📤 [GET_POST] Headers: $headers');
+
       final response = await http.get(
-        Uri.parse('$_postServiceUrl/api/posts/$postId'),
+        Uri.parse(url),
         headers: headers,
       );
+
+      print('📥 [GET_POST] Response status: ${response.statusCode}');
+      print('📄 [GET_POST] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

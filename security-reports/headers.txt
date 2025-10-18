@@ -1,0 +1,6 @@
+﻿Strict-Transport-Security: max-age=15552000; includeSubDomains
+Content-Security-Policy: <missing>
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Referrer-Policy: no-referrer
+Permissions-Policy: <missing>

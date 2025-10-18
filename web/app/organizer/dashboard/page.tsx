@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -12,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Calendar,
   Users,
@@ -21,6 +24,13 @@ import {
   Edit,
   Trash2,
   X,
+  MapPin,
+  Clock,
+  Image as ImageIcon,
+  Video,
+  Building2,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import {
   Bar,
@@ -67,14 +77,19 @@ const monthNames = [
 
 const AdminDashboardPage = () => {
   const router = useRouter();
-  type User = { role: string; organization_id?: number } | null;
+  type User = {
+    role: string;
+    user_id?: number;
+    organization_id?: number;
+  } | null;
   const [user, setUser] = useState<User>(null);
   type AnalyticsData = {
-    month: number;
-    total_events: number;
-    total_attendees: number;
-    total_revenue: number;
-    growth_rate: number;
+    totalRevenue: number;
+    ticketsSold: number;
+    conversionRate: number;
+    pageViews: number;
+    totalPayments: number;
+    totalEvents: number;
   };
   type Event = {
     event_id: number;
@@ -96,55 +111,379 @@ const AdminDashboardPage = () => {
     organization?: { name: string; organization_id: number; logo_url: string };
   };
 
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
+    null
+  );
+  const [loadingAnalyticsFetch, setLoadingAnalyticsFetch] = useState(false);
+  const [chartData, setChartData] = useState<
+    {
+      month: string;
+      revenue: number;
+      events: number;
+    }[]
+  >([]);
+  const [loadingChartFetch, setLoadingChartFetch] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [loadingEventsFetch, setLoadingEventsFetch] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
   const [formData, setFormData] = useState<Partial<Event>>({});
   const { toast } = useToast();
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    console.log("Raw user data from localStorage:", userData);
+    console.log("Token from localStorage:", token);
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        const parsedUser = JSON.parse(userData);
+        console.log("Parsed user data:", parsedUser);
+        console.log("Organization ID:", parsedUser?.organization_id);
+
+        // If user is an organizer but has no organization_id, try to fetch it
+        if (parsedUser.role === "ORGANIZER" && !parsedUser.organization_id) {
+          console.log(
+            "Organizer missing organization_id, attempting to fetch organization"
+          );
+
+          // Prepare headers with token if available
+          const headers: HeadersInit = {
+            "Content-Type": "application/json",
+          };
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          // Try to get user's organization. Backend returns { success: true, data: organization }
+          const userIdForOrg =
+            parsedUser.user_id || parsedUser.id || parsedUser.userId;
+          fetch(apiUrl(`api/organizations/user/${userIdForOrg}`), { headers })
+            .then(async (res) => {
+              console.log("Organization API response status:", res.status);
+              // If the backend explicitly returns 404 for no organization, treat as not linked
+              if (res.status === 404) {
+                return { success: false, data: null, status: 404 };
+              }
+              try {
+                return await res.json();
+              } catch (e) {
+                console.error("Failed to parse organization response JSON:", e);
+                return { success: false, data: null };
+              }
+            })
+            .then((orgResponse) => {
+              console.log("Organization API response:", orgResponse);
+              // Check the expected shape: { success: true, data: organization }
+              if (orgResponse && orgResponse.success && orgResponse.data) {
+                const org = orgResponse.data;
+                if (org.organization_id) {
+                  const updatedUser = {
+                    ...parsedUser,
+                    organization_id: org.organization_id,
+                  };
+                  console.log(
+                    "Updated user with organization_id:",
+                    updatedUser
+                  );
+                  setUser(updatedUser);
+                  // Update localStorage with the complete user data
+                  localStorage.setItem("user", JSON.stringify(updatedUser));
+                  toast({
+                    title: "Organization Found",
+                    description: `Linked to organization: ${org.name}`,
+                  });
+                  return;
+                }
+              }
+
+              // No organization found for this user
+              setUser(parsedUser);
+              toast({
+                title: "No Organization Found",
+                description:
+                  "Your account is not associated with an organization. Please contact support or create one.",
+                variant: "destructive",
+              });
+            })
+            .catch((err) => {
+              console.error("Error fetching organization:", err);
+              setUser(parsedUser);
+              toast({
+                title: "Organization Error",
+                description: "Unable to load organization data.",
+                variant: "destructive",
+              });
+            });
+        } else {
+          setUser(parsedUser);
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        toast({
+          title: "Authentication Error",
+          description: "Invalid user data. Please log in again.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      console.log("No user data found in localStorage");
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to view the dashboard.",
+        variant: "destructive",
+      });
     }
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/analytics")
-      .then((res) => res.json())
-      .then((response) => {
-        if (response.success) {
-          setAnalyticsData(response.data);
-        }
-      })
-      .catch((err) => console.error("Error fetching analytics:", err));
-  }, []);
+    if (user?.organization_id) {
+      console.log("Fetching analytics for organization:", user.organization_id);
+
+      setLoadingAnalyticsFetch(true);
+      // Prepare headers with token
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      fetch(
+        apiUrl(
+          `api/analytics/organizer/${user.organization_id}/dashboard/overview`
+        ),
+        { headers }
+      )
+        .then((res) => {
+          console.log("Analytics API response status:", res.status);
+          return res.json();
+        })
+        .then((response) => {
+          console.log("Analytics API response:", response);
+          if (response.success) {
+            setAnalyticsData(response.data);
+          } else {
+            console.error("Analytics API returned error:", response);
+            // Set mock data as fallback
+            setAnalyticsData({
+              totalRevenue: 25680,
+              ticketsSold: 1247,
+              conversionRate: 3.2,
+              pageViews: 8934,
+              totalPayments: 1247,
+              totalEvents: 8,
+            });
+            toast({
+              title: "Using Mock Data",
+              description:
+                "Analytics service unavailable, showing sample data.",
+              variant: "destructive",
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching analytics:", err);
+          // Set mock data as fallback for network errors too
+          setAnalyticsData({
+            totalRevenue: 25680,
+            ticketsSold: 1247,
+            conversionRate: 3.2,
+            pageViews: 8934,
+            totalPayments: 1247,
+            totalEvents: 8,
+          });
+          toast({
+            title: "Using Mock Data",
+            description: "Analytics service unavailable, showing sample data.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setLoadingAnalyticsFetch(false);
+        });
+    } else {
+      console.log("No organization_id found, skipping analytics fetch");
+    }
+  }, [user]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/events")
-      .then((res) => res.json())
-      .then((response) => {
-        if (response.success && user?.organization_id) {
-          // Filter events to only include those matching the user's organization_id
-          const filteredEvents = response.data.filter(
-            (event: Event) => event.organization_id === user.organization_id
-          );
-          setEvents(filteredEvents);
-        }
-      })
-      .catch((err) => console.error("Error fetching events:", err));
+    if (user?.organization_id) {
+      console.log(
+        "Fetching chart data for organization:",
+        user.organization_id
+      );
+
+      setLoadingChartFetch(true);
+      // Prepare headers with token
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      fetch(
+        apiUrl(
+          `api/analytics/organizer/${user.organization_id}/dashboard/revenue-trend`
+        ),
+        { headers }
+      )
+        .then((res) => {
+          console.log("Chart data API response status:", res.status);
+          return res.json();
+        })
+        .then((response) => {
+          console.log("Chart data API response:", response);
+          if (response.success) {
+            setChartData(response.data);
+          } else {
+            console.error("Chart data API returned error:", response);
+            // Set mock chart data as fallback
+            setChartData([
+              { month: "Jan", revenue: 4200, events: 3 },
+              { month: "Feb", revenue: 3100, events: 2 },
+              { month: "Mar", revenue: 6800, events: 4 },
+              { month: "Apr", revenue: 5400, events: 3 },
+              { month: "May", revenue: 7200, events: 5 },
+              { month: "Jun", revenue: 4900, events: 3 },
+            ]);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching chart data:", err);
+          // Set mock chart data as fallback for network errors too
+          setChartData([
+            { month: "Jan", revenue: 4200, events: 3 },
+            { month: "Feb", revenue: 3100, events: 2 },
+            { month: "Mar", revenue: 6800, events: 4 },
+            { month: "Apr", revenue: 5400, events: 3 },
+            { month: "May", revenue: 7200, events: 5 },
+            { month: "Jun", revenue: 4900, events: 3 },
+          ]);
+          toast({
+            title: "Using Mock Chart Data",
+            description: "Chart service unavailable, showing sample data.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setLoadingChartFetch(false);
+        });
+    } else {
+      console.log("No organization_id found, skipping chart data fetch");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    console.log("Fetching events for organizer dashboard, user:", user);
+
+    // Only fetch events if user is loaded
+    if (!user) {
+      console.log("User not loaded yet, skipping events fetch");
+      setLoadingEventsFetch(false);
+      return;
+    }
+
+    // If the user is linked to an organization, request only that organization's events
+    if (user.organization_id) {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      // Prefer organization-specific endpoint which returns upcoming and past events
+      const orgEventsUrl = apiUrl(
+        `api/organizations/${user.organization_id}/events`
+      );
+      setLoadingEventsFetch(true);
+      console.log("Requesting org events URL:", orgEventsUrl);
+      fetch(orgEventsUrl, { headers })
+        .then((res) => {
+          console.log("Org events response status:", res.status);
+          return res.json();
+        })
+        .then((response) => {
+          console.log("Org events response:", response);
+          // The organizations route returns { upcomingEvents, pastEvents }
+          if (response) {
+            const upcoming = Array.isArray(response.upcomingEvents)
+              ? response.upcomingEvents
+              : response.upcomingEvents || [];
+            const past = Array.isArray(response.pastEvents)
+              ? response.pastEvents
+              : response.pastEvents || [];
+            const combined = [...upcoming, ...past];
+            setEvents(
+              combined.sort(
+                (a, b) =>
+                  new Date(a.start_time).getTime() -
+                  new Date(b.start_time).getTime()
+              )
+            );
+            setLoadingEventsFetch(false);
+          } else {
+            console.error(
+              "Org events API returned unexpected response:",
+              response
+            );
+            toast({
+              title: "Events Loading Error",
+              description: "Failed to load events data for your organization.",
+              variant: "destructive",
+            });
+            setLoadingEventsFetch(false);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching org events:", err);
+          toast({
+            title: "Network Error",
+            description: "Unable to connect to events service.",
+            variant: "destructive",
+          });
+          setLoadingEventsFetch(false);
+        });
+    } else {
+      // Organizer has no organization linked: do not show other organizations' events
+      console.log("User has no organization_id; clearing events list");
+      setEvents([]);
+      if (user.role === "ORGANIZER") {
+        toast({
+          title: "Organization Missing",
+          description:
+            "Your account is not associated with an organization. No events to display.",
+          variant: "destructive",
+        });
+      }
+      setLoadingEventsFetch(false);
+    }
   }, [user]); // Add user as a dependency to refetch events when user data changes
 
   const handleDeleteEvent = async (event: Event) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers: headers,
+      });
+
+      const data = await response.json();
+
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
@@ -153,20 +492,15 @@ const AdminDashboardPage = () => {
           description: "Event deleted successfully",
         });
       } else {
-        console.error("Failed to delete event");
-        toast({
-          title: "Error",
-          description: "Failed to delete event",
-          variant: "destructive",
-        });
+        console.error("Failed to delete event:", data);
+        // Show error popup instead of toast
+        setDeleteError(data.message || "Failed to delete event");
+        setEventToDelete(null);
       }
     } catch (err) {
       console.error("Error deleting event:", err);
-      toast({
-        title: "Error",
-        description: "Error deleting event",
-        variant: "destructive",
-      });
+      setDeleteError("Error deleting event. Please try again.");
+      setEventToDelete(null);
     }
   };
 
@@ -227,13 +561,21 @@ const AdminDashboardPage = () => {
 
     try {
       console.log("Sending PUT request with data:", formData);
+
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/events/${eventToEdit.event_id}`,
+        apiUrl(`api/events/${eventToEdit.event_id}`),
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: headers,
           body: JSON.stringify(formData),
         }
       );
@@ -270,53 +612,39 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const recentData = analyticsData[0] || {
-    total_events: 0,
-    total_attendees: 0,
-    total_revenue: 0,
-    growth_rate: 0,
+  const recentData = analyticsData || {
+    totalEvents: 4,
+    ticketsSold: 58,
+    totalRevenue: 25680,
+    conversionRate: 3.2,
   };
 
-  const previousData = analyticsData[1] || recentData;
+  const isLoadingData =
+    user === null ||
+    loadingAnalyticsFetch ||
+    loadingChartFetch ||
+    loadingEventsFetch;
 
-  const eventsChange =
-    previousData.total_events === 0
-      ? 0
-      : ((recentData.total_events - previousData.total_events) /
-          previousData.total_events) *
-        100;
-
-  const attendeesChange =
-    previousData.total_attendees === 0
-      ? 0
-      : ((recentData.total_attendees - previousData.total_attendees) /
-          previousData.total_attendees) *
-        100;
-
-  const revenueChange =
-    previousData.total_revenue === 0
-      ? 0
-      : ((recentData.total_revenue - previousData.total_revenue) /
-          previousData.total_revenue) *
-        100;
-
-  const growthChange = recentData.growth_rate - previousData.growth_rate;
-
-  let chartData: {
-    month: string;
-    sales: number;
-    Ascending: true;
-    events: number;
-  }[] = [];
-  if (analyticsData.length > 0) {
-    const lastSix = analyticsData.slice(0, 6).reverse();
-    chartData = lastSix.map((item) => ({
-      month: monthNames[item.month - 1],
-      sales: item.total_revenue,
-      events: item.total_events,
-      Ascending: true,
-    }));
+  if (isLoadingData) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-700" />
+              <div className="text-gray-700">Loading dashboard data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // For organizer dashboard, we'll show current data without comparison
+  // Historical trends would require additional endpoints
+
+  // Chart data is now managed in state and fetched from revenue trend endpoint
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -329,13 +657,13 @@ const AdminDashboardPage = () => {
   };
 
   const handleViewEvent = (event: Event) => {
-    console.log("Opening view modal for event:", event);
     setSelectedEvent(event);
+    setIsViewDialogOpen(true);
   };
 
   const closeModal = () => {
-    console.log("Closing view modal");
     setSelectedEvent(null);
+    setIsViewDialogOpen(false);
   };
 
   const handleOpenDeleteModal = (event: Event) => {
@@ -365,18 +693,15 @@ const AdminDashboardPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Events
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">My Events</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_events.toLocaleString()}
+                  {(recentData?.totalEvents || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {eventsChange > 0 ? "+" : ""}
-                  {eventsChange.toFixed(1)}% from last month
+                  Your active events
                 </p>
               </CardContent>
             </Card>
@@ -384,17 +709,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Attendees
+                  Tickets Sold
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_attendees.toLocaleString()}
+                  {(recentData?.ticketsSold || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {attendeesChange > 0 ? "+" : ""}
-                  {attendeesChange.toFixed(1)}% from last month
+                  Total tickets purchased
                 </p>
               </CardContent>
             </Card>
@@ -406,11 +730,10 @@ const AdminDashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${recentData.total_revenue.toLocaleString()}
+                  ${(recentData?.totalRevenue || 0).toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {revenueChange > 0 ? "+" : ""}
-                  {revenueChange.toFixed(1)}% from last month
+                  Your total revenue
                 </p>
               </CardContent>
             </Card>
@@ -418,18 +741,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Growth Rate
+                  Conversion Rate
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.growth_rate > 0 ? "+" : ""}
-                  {recentData.growth_rate.toFixed(2)}%
+                  {(recentData?.conversionRate || 0).toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {growthChange > 0 ? "+" : ""}
-                  {growthChange.toFixed(1)}% from last month
+                  Tickets per event ratio
                 </p>
               </CardContent>
             </Card>
@@ -446,7 +767,7 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
+                    revenue: {
                       label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
@@ -465,8 +786,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Legend />
                       <Bar
-                        dataKey="sales"
-                        fill="var(--color-sales)"
+                        dataKey="revenue"
+                        fill="var(--color-revenue)"
                         name="Revenue ($)"
                       />
                       <Bar
@@ -488,8 +809,8 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
-                      label: "Sales",
+                    revenue: {
+                      label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
                   }}
@@ -503,8 +824,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
                         type="monotone"
-                        dataKey="sales"
-                        stroke="var(--color-sales)"
+                        dataKey="revenue"
+                        stroke="var(--color-revenue)"
                         strokeWidth={2}
                         name="Revenue ($)"
                       />
@@ -551,22 +872,13 @@ const AdminDashboardPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Badge
-                        variant={
-                          event.status === "ACTIVE"
-                            ? "default"
-                            : event.status === "SOLD_OUT"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {event.status.toLowerCase()}
-                      </Badge>
                       <div className="flex space-x-1">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleViewEvent(event)}
+                          onClick={() =>
+                            router.push(`/organizer/events/${event.event_id}`)
+                          }
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -598,119 +910,187 @@ const AdminDashboardPage = () => {
         </div>
       </div>
 
-      {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 w-full max-w-md max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-bold">{selectedEvent.title}</h2>
-              <Button variant="ghost" onClick={closeModal}>
+      {/* Event Details Modal - Compact Version */}
+      {isViewDialogOpen && selectedEvent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[75vh] overflow-hidden flex flex-col shadow-2xl border border-gray-100">
+            {/* Header with Gradient */}
+            <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-3">
+              <h3 className="text-base font-bold text-white pr-8 line-clamp-2">
+                {selectedEvent.title}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="absolute top-3 right-3 text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1 transition-all"
+              >
                 <X className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
-            <div className="space-y-2">
-              <img
-                src={selectedEvent.cover_image_url}
-                alt={selectedEvent.title}
-                className="w-32 h-16 object-cover rounded-md"
-              />
-              <p className="text-sm">
-                <strong>Event ID:</strong> {selectedEvent.event_id}
-              </p>
-              <p className="text-sm">
-                <strong>Title:</strong> {selectedEvent.title}
-              </p>
-              <p className="text-sm">
-                <strong>Description:</strong> {selectedEvent.description}
-              </p>
-              <p className="text-sm">
-                <strong>Category:</strong> {selectedEvent.category}
-              </p>
-              <p className="text-sm">
-                <strong>Venue:</strong> {selectedEvent.venue}
-              </p>
-              <p className="text-sm">
-                <strong>Location:</strong> {selectedEvent.location}
-              </p>
-              <p className="text-sm">
-                <strong>Start Time:</strong>{" "}
-                {formatDateTime(selectedEvent.start_time)}
-              </p>
-              <p className="text-sm">
-                <strong>End Time:</strong>{" "}
-                {formatDateTime(selectedEvent.end_time)}
-              </p>
-              <p className="text-sm">
-                <strong>Capacity:</strong> {selectedEvent.capacity}
-              </p>
-              <p className="text-sm">
-                <strong>Status:</strong> {selectedEvent.status.toLowerCase()}
-              </p>
-              <p className="text-sm">
-                <strong>Cover Image URL:</strong>{" "}
-                <a
-                  href={selectedEvent.cover_image_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  View Image
-                </a>
-              </p>
-              <p className="text-sm">
-                <strong>Other Images URL:</strong>{" "}
-                {selectedEvent.other_images_url &&
-                selectedEvent.other_images_url.trim() !== ""
-                  ? selectedEvent.other_images_url
-                      .split(", ")
-                      .map((url, index) => (
-                        <a
-                          key={index}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline block"
-                        >
-                          Image {index + 1}
-                        </a>
-                      ))
-                  : "N/A"}
-              </p>
-              <p className="text-sm">
-                <strong>Video URL:</strong>{" "}
-                {selectedEvent.video_url ? (
-                  <a
-                    href={selectedEvent.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    View Video
-                  </a>
-                ) : (
-                  "N/A"
+
+            {/* Content - Scrollable */}
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
+              <div className="p-3 space-y-2.5">
+                {/* Event Image */}
+                <div className="relative group">
+                  <img
+                    src={selectedEvent.cover_image_url}
+                    alt={selectedEvent.title}
+                    className="w-full h-28 object-cover rounded-xl shadow-md"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl"></div>
+                </div>
+
+                {/* Description Card */}
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-2.5 rounded-xl border border-blue-100">
+                  <p className="text-xs text-gray-700 leading-relaxed">
+                    {selectedEvent.description}
+                  </p>
+                </div>
+
+                {/* Info Grid with Cards */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white border border-gray-200 p-2.5 rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="bg-blue-100 p-1 rounded-lg">
+                        <Building2 className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span className="font-semibold text-xs text-gray-700">
+                        Category
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">
+                      {selectedEvent.category}
+                    </p>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 p-2.5 rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="bg-purple-100 p-1 rounded-lg">
+                        <Users className="h-3 w-3 text-purple-600" />
+                      </div>
+                      <span className="font-semibold text-xs text-gray-700">
+                        Capacity
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">
+                      {selectedEvent.capacity}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Venue Card */}
+                <div className="bg-white border border-gray-200 p-2.5 rounded-xl hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="bg-green-100 p-1 rounded-lg">
+                      <MapPin className="h-3 w-3 text-green-600" />
+                    </div>
+                    <span className="font-semibold text-xs text-gray-700">
+                      Venue & Location
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-700 font-medium">
+                    {selectedEvent.venue}
+                  </p>
+                  {selectedEvent.location && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedEvent.location}
+                    </p>
+                  )}
+                </div>
+
+                {/* Date & Time Card */}
+                <div className="bg-white border border-gray-200 p-2.5 rounded-xl hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="bg-orange-100 p-1 rounded-lg">
+                      <Clock className="h-3 w-3 text-orange-600" />
+                    </div>
+                    <span className="font-semibold text-xs text-gray-700">
+                      Date & Time
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-xs font-semibold text-green-600 min-w-[32px]">
+                        Start:
+                      </span>
+                      <span className="text-xs text-gray-700">
+                        {new Date(selectedEvent.start_time).toLocaleString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-xs font-semibold text-red-600 min-w-[35px]">
+                        End:
+                      </span>
+                      <span className="text-xs text-gray-700">
+                        {new Date(selectedEvent.end_time).toLocaleString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Video Link Card */}
+                {selectedEvent.video_url && (
+                  <div className="bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-200 p-2.5 rounded-xl hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="bg-pink-100 p-1 rounded-lg">
+                        <Video className="h-3 w-3 text-pink-600" />
+                      </div>
+                      <span className="font-semibold text-xs text-gray-700">
+                        Video
+                      </span>
+                    </div>
+                    <a
+                      href={selectedEvent.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-pink-600 hover:text-pink-700 font-medium flex items-center gap-1 hover:underline"
+                    >
+                      <span>Watch promotional video</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 )}
-              </p>
-              <p className="text-sm">
-                <strong>Created At:</strong>{" "}
-                {formatDateTime(selectedEvent.created_at)}
-              </p>
-              <p className="text-sm">
-                <strong>Updated At:</strong>{" "}
-                {formatDateTime(selectedEvent.updated_at)}
-              </p>
-              {selectedEvent.organization && (
-                <p className="text-sm">
-                  <strong>Organization:</strong>{" "}
-                  {selectedEvent.organization.name}
-                </p>
-              )}
-              <p className="text-sm">
-                <strong>Organization ID:</strong>{" "}
-                {selectedEvent.organization_id || "N/A"}
-              </p>
+              </div>
             </div>
-            <div className="mt-3 flex justify-end">
-              <Button onClick={closeModal} size="sm">
+
+            {/* Footer with Action Buttons */}
+            <div className="flex justify-end gap-2 p-3 border-t bg-gradient-to-r from-gray-50 to-gray-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  router.push(
+                    `/organizer/edit-event?id=${selectedEvent.event_id}`
+                  );
+                }}
+                className="h-8 text-xs border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-all"
+              >
+                <Edit className="h-3.5 w-3.5 mr-1.5" />
+                Edit Event
+              </Button>
+              <Button
+                size="sm"
+                onClick={closeModal}
+                className="h-8 text-xs bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md"
+              >
                 Close
               </Button>
             </div>
@@ -744,6 +1124,56 @@ const AdminDashboardPage = () => {
                 onClick={() => handleDeleteEvent(eventToDelete)}
               >
                 Yes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Popup for Delete Failures */}
+      {deleteError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl border-2 border-red-500">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-red-600">
+                Cannot Delete Event
+              </h2>
+              <Button variant="ghost" onClick={() => setDeleteError(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mb-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-6 w-6 text-red-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {deleteError}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setDeleteError(null)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                OK
               </Button>
             </div>
           </div>

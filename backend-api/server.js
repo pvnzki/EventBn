@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
+const helmet = require("helmet");
 const prisma = require("./lib/database");
 const { connectRedis } = require("./lib/redis");
 
@@ -21,16 +22,47 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// Security headers via Helmet
+// Disable CSP by default to avoid breaking local dev; configure a strict CSP later if needed.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+// In production, add HSTS when serving over HTTPS (handled by reverse proxy/CDN typically)
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet.hsts({
+    maxAge: 15552000, // 180 days
+    includeSubDomains: true,
+    preload: false,
+  }));
+}
+
 // CORS Configuration
 let corsOptions = {};
 
 if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-  // Development & Test → allow all origins
-  corsOptions = {
-    origin: true,
+  // Development & Test → allow all origins with more permissive settings
+  corsOptions = { 
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow any localhost or 127.0.0.1 origin on any port
+      if (origin.match(/^http:\/\/localhost:\d+$/) || 
+          origin.match(/^http:\/\/127\.0\.0\.1:\d+$/) ||
+          origin.includes('flutter') ||
+          origin.includes('dart')) {
+        return callback(null, true);
+      }
+      
+      return callback(null, true); // Allow all in development
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   };
 } else {
   // Production → only allow origins from .env
@@ -62,20 +94,46 @@ if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
 
 app.use(cors(corsOptions));
 
-// Explicit preflight handling (some environments need this when custom headers appear later)
-app.options("*", (req, res) => {
-  // Mirror the request origin in dev/test when origin: true was used
-  if (
-    (process.env.NODE_ENV === "development" ||
-      process.env.NODE_ENV === "test") &&
-    req.headers.origin
-  ) {
-    res.header("Access-Control-Allow-Origin", req.headers.origin);
+// Add explicit CORS headers middleware for all requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // In development, allow any localhost/127.0.0.1 origin
+  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+    if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
   }
-  res.header("Vary", "Origin");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Vary', 'Origin');
+  
+  next();
+});
+
+// Explicit preflight handling
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  
+  // In development, allow any localhost/127.0.0.1 origin
+  if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+    if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  
   return res.sendStatus(204);
 });
 
@@ -139,6 +197,10 @@ app.use("/api/seat-locks", seatLockRoutes);
 app.use("/api/queue", queueRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
+
+// Mount post service routes
+const postServiceRoutes = require("./services/post-service/routes/api");
+app.use("/api", postServiceRoutes);
 
 // Service health endpoints (prepare for microservice separation)
 app.get("/api/services/core/health", async (req, res) => {
@@ -213,7 +275,7 @@ const startServer = async () => {
     await connectRedis();
 
     // Start the server
-    app.listen(PORT, HOST, () => {
+    const server = app.listen(PORT, HOST, () => {
       console.log(`
 \x1b[36m==============================\x1b[0m
 \x1b[35m EventBn API Server Started \x1b[0m
@@ -228,12 +290,16 @@ const startServer = async () => {
 \x1b[36m==============================\x1b[0m
 `);
     });
+    return server;
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
 
-startServer();
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test' && !module.parent) {
+  startServer();
+}
 
 module.exports = app;

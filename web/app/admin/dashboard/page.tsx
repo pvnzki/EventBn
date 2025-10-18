@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -49,33 +50,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAnalytics } from "@/hooks/use-admin-analytics";
 
-const monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+// helper month names removed (not needed)
 
 const AdminDashboardPage = () => {
   const router = useRouter();
   type User = { role: string } | null;
   const [user, setUser] = useState<User>(null);
-  type AnalyticsData = {
-    month: number;
-    total_events: number;
-    total_attendees: number;
-    total_revenue: number;
-    growth_rate: number;
-  };
+  // analytics data removed - dashboard uses event-based counts
   type Event = {
     event_id: number;
     organization_id: number | null;
@@ -96,8 +79,12 @@ const AdminDashboardPage = () => {
     organization?: { name: string; organization_id: number; logo_url: string };
   };
 
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  // chart data state for revenue trend charts
+  const [chartData, setChartData] = useState<
+    { month: string; revenue: number; events: number }[]
+  >([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState<boolean>(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
@@ -112,35 +99,65 @@ const AdminDashboardPage = () => {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/analytics")
-      .then((res) => res.json())
-      .then((response) => {
-        if (response.success) {
-          setAnalyticsData(response.data);
-        }
-      })
-      .catch((err) => console.error("Error fetching analytics:", err));
-  }, []);
-
-  useEffect(() => {
-    fetch("http://localhost:3000/api/events")
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    // Fetch events list for Recent Events panel (separate from analytics)
+    setEventsLoading(true);
+    fetch(apiUrl("api/events"), { headers })
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
           setEvents(response.data);
         }
       })
-      .catch((err) => console.error("Error fetching events:", err));
+      .catch((err) => console.error("Error fetching events:", err))
+      .finally(() => setEventsLoading(false));
   }, []);
+
+  // use admin analytics hook to fetch platform-level analytics (tickets, revenue, conversion)
+  const {
+    overview,
+    revenueData,
+    topEvents,
+    loading: analyticsLoading,
+  } = useAdminAnalytics(true, "6months");
+
+  // Map revenueData into chartData format expected by recharts
+  useEffect(() => {
+    if (revenueData && revenueData.length > 0) {
+      const mapped = revenueData
+        .slice(-6)
+        .map((r: any) => ({
+          month: r.month,
+          revenue: r.revenue,
+          events: r.events,
+        }))
+        .map((item: any) => ({
+          month: item.month,
+          revenue: item.revenue || 0,
+          events: item.events || 0,
+        }));
+      setChartData(
+        mapped.length ? mapped : [{ month: "Jan", revenue: 0, events: 0 }]
+      );
+    }
+  }, [revenueData]);
 
   const handleDeleteEvent = async (event: Event) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers,
+      });
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
@@ -223,13 +240,19 @@ const AdminDashboardPage = () => {
 
     try {
       console.log("Sending PUT request with data:", formData);
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
-        `http://localhost:3000/api/events/${eventToEdit.event_id}`,
+        apiUrl(`api/events/${eventToEdit.event_id}`),
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify(formData),
         }
       );
@@ -266,53 +289,25 @@ const AdminDashboardPage = () => {
     }
   };
 
-  const recentData = analyticsData[0] || {
-    total_events: 0,
-    total_attendees: 0,
-    total_revenue: 0,
-    growth_rate: 0,
-  };
+  // derive simple summary data from analytics overview when available, otherwise from events
+  const recentData = overview
+    ? {
+        totalEvents: overview.totalEvents || events.length,
+        ticketsSold: overview.ticketsSold || 0,
+        totalRevenue: overview.totalRevenue || 0,
+        conversionRate: overview.conversionRate || 0,
+      }
+    : {
+        totalEvents: events.length,
+        ticketsSold: 0,
+        totalRevenue: 0,
+        conversionRate: 0,
+      };
 
-  const previousData = analyticsData[1] || recentData;
+  // For now, we'll show current data without comparison since dashboard overview gives us current totals
+  // In a real app, you'd want to implement historical comparison
 
-  const eventsChange =
-    previousData.total_events === 0
-      ? 0
-      : ((recentData.total_events - previousData.total_events) /
-          previousData.total_events) *
-        100;
-
-  const attendeesChange =
-    previousData.total_attendees === 0
-      ? 0
-      : ((recentData.total_attendees - previousData.total_attendees) /
-          previousData.total_attendees) *
-        100;
-
-  const revenueChange =
-    previousData.total_revenue === 0
-      ? 0
-      : ((recentData.total_revenue - previousData.total_revenue) /
-          previousData.total_revenue) *
-        100;
-
-  const growthChange = recentData.growth_rate - previousData.growth_rate;
-
-  let chartData: {
-    month: string;
-    sales: number;
-    Ascending: true;
-    events: number;
-  }[] = [];
-  if (analyticsData.length > 0) {
-    const lastSix = analyticsData.slice(0, 6).reverse();
-    chartData = lastSix.map((item) => ({
-      month: monthNames[item.month - 1],
-      sales: item.total_revenue,
-      events: item.total_events,
-      Ascending: true,
-    }));
-  }
+  // Chart data is now managed in state and fetched from revenue trend endpoint
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -325,8 +320,7 @@ const AdminDashboardPage = () => {
   };
 
   const handleViewEvent = (event: Event) => {
-    console.log("Opening view modal for event:", event);
-    setSelectedEvent(event);
+    router.push(`/admin/events/${event.event_id}`);
   };
 
   const closeModal = () => {
@@ -343,6 +337,25 @@ const AdminDashboardPage = () => {
     console.log("Closing delete modal");
     setEventToDelete(null);
   };
+
+  if (analyticsLoading || eventsLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">
+                Loading dashboard data...
+              </h2>
+              <p className="text-gray-600">Fetching analytics and events</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -368,11 +381,10 @@ const AdminDashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_events.toLocaleString()}
+                  {recentData.totalEvents.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {eventsChange > 0 ? "+" : ""}
-                  {eventsChange.toFixed(1)}% from last month
+                  Total active events
                 </p>
               </CardContent>
             </Card>
@@ -380,17 +392,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Attendees
+                  Tickets Sold
                 </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.total_attendees.toLocaleString()}
+                  {recentData.ticketsSold.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {attendeesChange > 0 ? "+" : ""}
-                  {attendeesChange.toFixed(1)}% from last month
+                  Total tickets purchased
                 </p>
               </CardContent>
             </Card>
@@ -402,11 +413,10 @@ const AdminDashboardPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${recentData.total_revenue.toLocaleString()}
+                  ${recentData.totalRevenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {revenueChange > 0 ? "+" : ""}
-                  {revenueChange.toFixed(1)}% from last month
+                  Total revenue generated
                 </p>
               </CardContent>
             </Card>
@@ -414,18 +424,16 @@ const AdminDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Growth Rate
+                  Conversion Rate
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {recentData.growth_rate > 0 ? "+" : ""}
-                  {recentData.growth_rate.toFixed(2)}%
+                  {recentData.conversionRate.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {growthChange > 0 ? "+" : ""}
-                  {growthChange.toFixed(1)}% from last month
+                  Tickets per event ratio
                 </p>
               </CardContent>
             </Card>
@@ -442,7 +450,7 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
+                    revenue: {
                       label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
@@ -461,8 +469,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Legend />
                       <Bar
-                        dataKey="sales"
-                        fill="var(--color-sales)"
+                        dataKey="revenue"
+                        fill="var(--color-revenue)"
                         name="Revenue ($)"
                       />
                       <Bar
@@ -484,8 +492,8 @@ const AdminDashboardPage = () => {
               <CardContent>
                 <ChartContainer
                   config={{
-                    sales: {
-                      label: "Sales",
+                    revenue: {
+                      label: "Revenue",
                       color: "hsl(var(--chart-1))",
                     },
                   }}
@@ -499,8 +507,8 @@ const AdminDashboardPage = () => {
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line
                         type="monotone"
-                        dataKey="sales"
-                        stroke="var(--color-sales)"
+                        dataKey="revenue"
+                        stroke="var(--color-revenue)"
                         strokeWidth={2}
                         name="Revenue ($)"
                       />
@@ -513,10 +521,8 @@ const AdminDashboardPage = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Latest events across the platform
-              </CardDescription>
+              <CardTitle>All Events</CardTitle>
+              <CardDescription>All events across the platform</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

@@ -1,0 +1,40 @@
+name: Configuration Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "**" ]
+
+jobs:
+  backend-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend-api
+        run: |
+          npm ci
+
+      - name: Build app image and run Postgres 13 + NGINX
+        working-directory: backend-api
+        run: |
+          docker compose -f docker-compose.config.yml --profile app --profile pg13 --profile nginx up -d --build
+          timeout 90 bash -c 'until nc -z localhost 55432; do sleep 2; done'
+          docker compose -f docker-compose.config.yml exec -T app sh -lc "npx prisma migrate deploy"
+          docker compose -f docker-compose.config.yml exec -T app sh -lc "npm run test:db-int"
+          docker compose -f docker-compose.config.yml down -v
+
+      - name: Postgres 15 + Apache
+        working-directory: backend-api
+        run: |
+          docker compose -f docker-compose.config.yml --profile app --profile pg15 --profile apache up -d --build
+          timeout 90 bash -c 'until nc -z localhost 56432; do sleep 2; done'
+          docker compose -f docker-compose.config.yml exec -T app sh -lc "npx prisma migrate deploy"
+          docker compose -f docker-compose.config.yml exec -T app sh -lc "npm run test:db-int"
+          docker compose -f docker-compose.config.yml down -v

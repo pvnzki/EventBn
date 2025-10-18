@@ -1,0 +1,37 @@
+{
+  "auth": {
+    "username": "${BROWSERSTACK_USERNAME}",
+    "access_key": "${BROWSERSTACK_ACCESS_KEY}"
+  },
+  "browsers": [
+    { "browser": "chrome", "os": "Windows", "os_version": "11" },
+    { "browser": "edge", "os": "Windows", "os_version": "11" },
+    { "browser": "firefox", "os": "Windows", "os_version": "11" },
+    { "browser": "chrome", "os": "OS X", "os_version": "Sonoma" },
+    { "browser": "firefox", "os": "OS X", "os_version": "Sonoma" }
+  ],
+  "run_settings": {
+    "cypress_config_file": "cypress.config.ts",
+    "cypress_version": "13",
+    "project_name": "EventBn Web UI",
+    "build_name": "UI E2E - ${GITHUB_SHA:-local}-${DATE}",
+    "parallels": 3,
+    "specs": [
+      "cypress/e2e/**/*.cy.ts"
+    ],
+    "npm_dependencies": {
+      "typescript": "^5",
+      "cypress": "^13.15.0",
+      "cypress-axe": "^1.6.0",
+      "axe-core": "^4.10.0"
+    },
+    "package_config_options": {
+      "silent": true
+    }
+  },
+  "connection_settings": {
+    "local": true,
+    "local_identifier": "eventbn-local-${DATE}"
+  },
+  "disable_usage_reporting": true
+}

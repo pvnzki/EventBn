@@ -1,0 +1,106 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-10-12T14:23:50.063Z",
+    "end": "2025-10-12T14:23:50.875Z",
+    "duration": 812,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "a9d49de4-8750-4b4c-84e4-bb4f4327cbf5",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "5895c068-484c-49c6-be45-93d8aa008d43",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 748,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {},
+              "uuid": "937db08d-6d98-419a-8eea-4199b3da76d9",
+              "parentUUID": "5895c068-484c-49c6-be45-93d8aa008d43",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "937db08d-6d98-419a-8eea-4199b3da76d9"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 748,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

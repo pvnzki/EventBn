@@ -1,0 +1,110 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 0,
+    "pending": 0,
+    "failures": 1,
+    "start": "2025-10-12T14:04:49.044Z",
+    "end": "2025-10-12T14:04:49.553Z",
+    "duration": 509,
+    "testsRegistered": 1,
+    "passPercent": 0,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "c8cd1163-cc8a-4378-bd0c-5aff9f700510",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "64eace4d-21cc-4d10-96ea-e58faf223160",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 203,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/analytics\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/analytics\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/11-organizer-analytics.cy.ts:9:0)",
+                "diff": null
+              },
+              "uuid": "57af8383-6c4c-4e74-9025-6bdf280b9352",
+              "parentUUID": "64eace4d-21cc-4d10-96ea-e58faf223160",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "57af8383-6c4c-4e74-9025-6bdf280b9352"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 203,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}
