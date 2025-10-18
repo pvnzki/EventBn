@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Camera, User } from "lucide-react";
+import { Shield, Camera, User, Loader2 } from "lucide-react";
+import { apiUrl } from "@/lib/api";
 
 interface UserType {
   user_id: number;
@@ -36,9 +37,11 @@ export default function SettingsPage() {
     phone: "",
     avatar: "/placeholder.svg?height=100&width=100",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -60,9 +63,15 @@ export default function SettingsPage() {
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:3000/api/users/${userId}`
-        );
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(apiUrl(`api/users/${userId}`), {
+          headers,
+        });
         if (!response.ok) throw new Error("Failed to fetch user data");
 
         const result = await response.json();
@@ -98,14 +107,17 @@ export default function SettingsPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setProfileData({ ...profileData, avatar: reader.result as string });
-    };
-    reader.readAsDataURL(file);
+    // Save the File so we can upload it as multipart/form-data on save
+    setSelectedFile(file);
+    // Use an object URL for preview to avoid storing big data URLs in state
+    const objectUrl = URL.createObjectURL(file);
+    setProfileData({ ...profileData, avatar: objectUrl });
   };
 
   const handleProfileSave = async () => {
+    // Prevent duplicate submissions
+    if (saving) return;
+    setSaving(true);
     try {
       const userData = localStorage.getItem("user");
       if (!userData) return;
@@ -113,19 +125,42 @@ export default function SettingsPage() {
       const parsedUser = JSON.parse(userData);
       const userId = parsedUser.user_id;
 
-      const response = await fetch(
-        `http://localhost:3000/api/users/${userId}`,
-        {
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      let response: Response;
+      if (selectedFile) {
+        // Upload file as multipart/form-data so backend can save to Cloudinary and
+        // return a hosted URL in result.data.profile_picture
+        const formData = new FormData();
+        formData.append("name", profileData.name);
+        formData.append("email", profileData.email);
+        formData.append("phone_number", profileData.phone);
+        formData.append("profile_picture", selectedFile);
+
+        response = await fetch(apiUrl(`api/users/${userId}`), {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // Let the browser set Content-Type including boundary
+          } as any,
+          body: formData,
+        });
+      } else {
+        // No new file selected — don't overwrite profile_picture on the server
+        response = await fetch(apiUrl(`api/users/${userId}`), {
+          method: "PUT",
+          headers,
           body: JSON.stringify({
             name: profileData.name,
             email: profileData.email,
             phone_number: profileData.phone,
-            profile_picture: profileData.avatar,
           }),
-        }
-      );
+        });
+      }
 
       if (!response.ok) throw new Error("Failed to save profile data");
 
@@ -144,18 +179,60 @@ export default function SettingsPage() {
 
         localStorage.setItem("user", JSON.stringify(result.data));
 
+        // Clear the selected file and revoke object URL if applicable
+        if (selectedFile && profileData.avatar?.startsWith("blob:")) {
+          try {
+            URL.revokeObjectURL(profileData.avatar);
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        setSelectedFile(null);
+
         setShowPopup(true);
         setTimeout(() => setShowPopup(false), 3000);
       }
     } catch (err) {
       console.error("Error saving profile:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading)
-    return <div className="flex min-h-screen bg-gray-50">Loading...</div>;
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+              <span>Loading settings...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   if (error)
-    return <div className="flex min-h-screen bg-gray-50">Error: {error}</div>;
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-2">Error</h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -313,7 +390,16 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={handleProfileSave}>Save Changes</Button>
+                    <Button onClick={handleProfileSave} disabled={saving}>
+                      {saving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

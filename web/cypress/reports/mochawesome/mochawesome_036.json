@@ -1,0 +1,106 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-10-12T14:32:08.162Z",
+    "end": "2025-10-12T14:32:10.023Z",
+    "duration": 1861,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "d6862bcb-dc3d-443c-8292-4b4cf71430b5",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a08953f4-7bf9-4b61-9dca-bd409f1727be",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 1842,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {},
+              "uuid": "dd80c662-410b-4a72-b026-c2178db3ad4d",
+              "parentUUID": "a08953f4-7bf9-4b61-9dca-bd409f1727be",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "dd80c662-410b-4a72-b026-c2178db3ad4d"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1842,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

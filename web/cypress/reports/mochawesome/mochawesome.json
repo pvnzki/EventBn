@@ -1,0 +1,4275 @@
+{
+  "stats": {
+    "suites": 65,
+    "tests": 85,
+    "passes": 64,
+    "pending": 0,
+    "failures": 19,
+    "testsRegistered": 85,
+    "passPercent": 75.29411764705883,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 2,
+    "hasSkipped": true,
+    "start": "2025-10-12T14:04:27.635Z",
+    "end": "2025-10-12T14:42:15.865Z",
+    "duration": 2268230
+  },
+  "results": [
+    {
+      "uuid": "bf43a153-72d6-483f-a271-1d3ee532568b",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a9c80bf1-c2b8-4b78-9986-b16526db9419",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 200,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Error message appears on invalid credentials (no backend required)\ncy.get('#email').type('invalid@example.com');\ncy.get('#password').type('wrongpass');\ncy.contains('button', /sign in/i).click();\n// Either app shows a destructive Alert or inline error text\ncy.contains(/something went wrong|login failed/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/\n\nThe `content-type` of the response we received from your web server was:\n\n  > `application/json`\n\nThis was considered a failure because responses must have `content-type: 'text/html'`\n\nHowever, you can likely use `cy.request()` instead of `cy.visit()`.\n\n`cy.request()` will automatically get and set cookies and enable you to parse responses.",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/\n\nThe `content-type` of the response we received from your web server was:\n\n  > `application/json`\n\nThis was considered a failure because responses must have `content-type: 'text/html'`\n\nHowever, you can likely use `cy.request()` instead of `cy.visit()`.\n\n`cy.request()` will automatically get and set cookies and enable you to parse responses.\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/01-ui-elements.cy.ts:5:0)",
+                "diff": null
+              },
+              "uuid": "d8e6df49-acae-451b-a390-08e3ab906994",
+              "parentUUID": "a9c80bf1-c2b8-4b78-9986-b16526db9419",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "d8e6df49-acae-451b-a390-08e3ab906994"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 200,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "37852f3e-a9d2-4419-bbc0-f6b6e1847854",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "92ed3748-f559-418c-87c3-ac1907bec7fb",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 155,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/02-responsiveness.cy.ts:18:0)",
+                "diff": null
+              },
+              "uuid": "b9f1033e-cf6b-45bc-9587-a7f21e0c30c0",
+              "parentUUID": "92ed3748-f559-418c-87c3-ac1907bec7fb",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 133,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/02-responsiveness.cy.ts:18:0)",
+                "diff": null
+              },
+              "uuid": "2a618437-0715-4326-8fae-01836a7618ed",
+              "parentUUID": "92ed3748-f559-418c-87c3-ac1907bec7fb",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 133,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/02-responsiveness.cy.ts:18:0)",
+                "diff": null
+              },
+              "uuid": "090a0d0d-c427-4367-b0e6-29370cbd7e0f",
+              "parentUUID": "92ed3748-f559-418c-87c3-ac1907bec7fb",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "b9f1033e-cf6b-45bc-9587-a7f21e0c30c0",
+            "2a618437-0715-4326-8fae-01836a7618ed",
+            "090a0d0d-c427-4367-b0e6-29370cbd7e0f"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 421,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "4c618b88-a8f5-4b8d-99d8-848e1e0828f0",
+      "title": "",
+      "fullFile": "cypress\\e2e\\03-accessibility.cy.ts",
+      "file": "cypress\\e2e\\03-accessibility.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "0d1878af-ff47-4a7f-a57f-15f38f44f773",
+          "title": "Accessibility - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "has no critical accessibility violations",
+              "fullTitle": "Accessibility - Login page has no critical accessibility violations",
+              "timedOut": null,
+              "duration": 122,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\ncy.injectAxe();\ncy.checkA11y(undefined, { includedImpacts: ['critical', 'serious'] });",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/03-accessibility.cy.ts:5:0)",
+                "diff": null
+              },
+              "uuid": "a9573cd3-cbd8-4716-8e87-e4736212446b",
+              "parentUUID": "0d1878af-ff47-4a7f-a57f-15f38f44f773",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "a9573cd3-cbd8-4716-8e87-e4736212446b"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 122,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "df98e39a-e573-40cc-a038-8931eef890d0",
+      "title": "",
+      "fullFile": "cypress\\e2e\\04-navigation.cy.ts",
+      "file": "cypress\\e2e\\04-navigation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "ea349c3f-4ea6-41f5-bb88-4ab47eb0f813",
+          "title": "Navigation flow - Organizer",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "navigates to organizer dashboard and renders key widgets",
+              "fullTitle": "Navigation flow - Organizer navigates to organizer dashboard and renders key widgets",
+              "timedOut": null,
+              "duration": 161,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "// Intercept analytics and events network calls to avoid backend dependency\ncy.intercept('GET', 'http://localhost:3000/api/analytics/organizer/*/dashboard/overview', {\n    statusCode: 200,\n    body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },\n}).as('overview');\ncy.intercept('GET', 'http://localhost:3000/api/analytics/organizer/*/dashboard/revenue-trend', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('trend');\ncy.intercept('GET', 'http://localhost:3000/api/events', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('events');\ncy.visit('/organizer/dashboard');\ncy.contains(/organizer dashboard/i).should('be.visible');\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/04-navigation.cy.ts:26:0)",
+                "diff": null
+              },
+              "uuid": "308c8b8b-ea6a-46a9-9a99-f3f47f1c0760",
+              "parentUUID": "ea349c3f-4ea6-41f5-bb88-4ab47eb0f813",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "308c8b8b-ea6a-46a9-9a99-f3f47f1c0760"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 161,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "ba1ff540-dced-4168-b679-b294e31a606c",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "bc6fb5fb-21fa-44ef-8602-0faf07d5f0ba",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 151,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n\nBecause this error occurred during a `before each` hook we are skipping the remaining tests in the current suite: `Login form validation`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n\nBecause this error occurred during a `before each` hook we are skipping the remaining tests in the current suite: `Login form validation`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/05-login-validation.cy.ts:5:0)",
+                "diff": null
+              },
+              "uuid": "1394a819-2fee-4c46-bdac-c0a36f89d26c",
+              "parentUUID": "bc6fb5fb-21fa-44ef-8602-0faf07d5f0ba",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 0,
+              "state": "skipped",
+              "speed": null,
+              "pass": false,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "3e294478-8bf0-4396-8b37-750bd779a23b",
+              "parentUUID": "bc6fb5fb-21fa-44ef-8602-0faf07d5f0ba",
+              "isHook": false,
+              "skipped": true
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 0,
+              "state": "skipped",
+              "speed": null,
+              "pass": false,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "e869c0ca-f49d-463e-b9f5-82b30b048648",
+              "parentUUID": "bc6fb5fb-21fa-44ef-8602-0faf07d5f0ba",
+              "isHook": false,
+              "skipped": true
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "1394a819-2fee-4c46-bdac-c0a36f89d26c"
+          ],
+          "pending": [],
+          "skipped": [
+            "3e294478-8bf0-4396-8b37-750bd779a23b",
+            "e869c0ca-f49d-463e-b9f5-82b30b048648"
+          ],
+          "duration": 151,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "81a23f05-b301-4453-8425-b9c77367563a",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "fc0db535-5afd-4664-b60f-2af8fdb685f4",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 143,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/06-responsive-sidebar.cy.ts:25:0)",
+                "diff": null
+              },
+              "uuid": "6d6e5ef1-830a-4b9e-9d3b-c24b5bed4fcc",
+              "parentUUID": "fc0db535-5afd-4664-b60f-2af8fdb685f4",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "6d6e5ef1-830a-4b9e-9d3b-c24b5bed4fcc"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 143,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "020791ab-0845-447f-95fd-6695e142ad4e",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "570ab5f7-ed8a-401e-b38b-64531f54bae6",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 166,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/login\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/07-accessibility-keyboard.cy.ts:5:0)",
+                "diff": null
+              },
+              "uuid": "3b445b25-1086-4582-a318-b79ab6666ff9",
+              "parentUUID": "570ab5f7-ed8a-401e-b38b-64531f54bae6",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "3b445b25-1086-4582-a318-b79ab6666ff9"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 166,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "9613da0d-9ab1-4123-b925-939f6453ff74",
+      "title": "",
+      "fullFile": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "file": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "11b220ce-1691-4459-bd15-8ca90ec9f3dc",
+          "title": "Organizer - Events listing",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads events and filters by search/category/status",
+              "fullTitle": "Organizer - Events listing loads events and filters by search/category/status",
+              "timedOut": null,
+              "duration": 199,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/events');\ncy.wait(['@events']);\n// Sees seeded events\ncy.contains(/tech summit/i).should('be.visible');\ncy.contains(/music fest/i).should('be.visible');\n// Search filter (use placeholder selector from shadcn Input)\ncy.get('input[placeholder=\"Search events...\"]').type('tech');\ncy.contains(/tech summit/i).should('be.visible');\n// Status filter (selects All to keep list visible)\ncy.get('[role=\"combobox\"]').eq(0).click();\ncy.contains('div[role=\"option\"]', 'All Status').click({ force: true });",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/events\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/events\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/08-organizer-events.cy.ts:9:0)",
+                "diff": null
+              },
+              "uuid": "0b57035f-1879-42e3-bbac-ea6a1880d860",
+              "parentUUID": "11b220ce-1691-4459-bd15-8ca90ec9f3dc",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "0b57035f-1879-42e3-bbac-ea6a1880d860"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 199,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "3e3fb33b-9c1c-4061-9729-951a639b9282",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "7c9c3f61-939c-4a4c-9acb-d157737b9134",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 175,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/create-event\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/create-event\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/09-organizer-create-event.cy.ts:9:0)",
+                "diff": null
+              },
+              "uuid": "daaeb0e9-216e-4a3a-9b64-edded38440b3",
+              "parentUUID": "7c9c3f61-939c-4a4c-9acb-d157737b9134",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "daaeb0e9-216e-4a3a-9b64-edded38440b3"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 175,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "84e73f99-ae2d-4702-9502-3106d5fd35da",
+      "title": "",
+      "fullFile": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "file": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "9d60d03a-c7b1-4689-8c10-c7df6ffd4dff",
+          "title": "Organizer - Tickets page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads ticket stats and events with stubs",
+              "fullTitle": "Organizer - Tickets page loads ticket stats and events with stubs",
+              "timedOut": null,
+              "duration": 160,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/tickets');\ncy.wait(['@tickets']);\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/active events/i).should('be.visible');\ncy.contains(/avg ticket price/i).should('be.visible');\ncy.contains(/tech summit/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/tickets\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/tickets\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/10-organizer-tickets.cy.ts:9:0)",
+                "diff": null
+              },
+              "uuid": "95c7e47c-ccd4-4f27-ae0b-47846085664e",
+              "parentUUID": "9d60d03a-c7b1-4689-8c10-c7df6ffd4dff",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "95c7e47c-ccd4-4f27-ae0b-47846085664e"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 160,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "c8cd1163-cc8a-4378-bd0c-5aff9f700510",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "64eace4d-21cc-4d10-96ea-e58faf223160",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 203,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/analytics\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/organizer/analytics\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/11-organizer-analytics.cy.ts:9:0)",
+                "diff": null
+              },
+              "uuid": "57af8383-6c4c-4e74-9025-6bdf280b9352",
+              "parentUUID": "64eace4d-21cc-4d10-96ea-e58faf223160",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "57af8383-6c4c-4e74-9025-6bdf280b9352"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 203,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "85c3b363-33f2-4c32-abdf-cabfb52efcca",
+      "title": "",
+      "fullFile": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "file": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "36e6f967-a6cf-403d-bf35-9efefa826771",
+          "title": "Admin - Dashboard smoke",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads admin dashboard shell",
+              "fullTitle": "Admin - Dashboard smoke loads admin dashboard shell",
+              "timedOut": null,
+              "duration": 155,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/admin/dashboard');\ncy.contains(/dashboard/i).should('be.visible');\n// Sidebar visible on desktop\ncy.get('div.fixed.inset-y-0.left-0').should('be.visible');",
+              "err": {
+                "message": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/admin/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`",
+                "estack": "CypressError: `cy.visit()` failed trying to load:\n\nhttp://localhost:3001/admin/dashboard\n\nThe response we received from your web server was:\n\n  > 404: Not Found\n\nThis was considered a failure because the status code was not `2xx`.\n\nIf you do not want status codes to cause failures pass the option: `failOnStatusCode: false`\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131591:76)\n    at visitFailedByErr (http://localhost:3001/__cypress/runner/cypress_runner.js:131006:12)\n    at <unknown> (http://localhost:3001/__cypress/runner/cypress_runner.js:131574:13)\n    at tryCatcher (http://localhost:3001/__cypress/runner/cypress_runner.js:1830:23)\n    at Promise._settlePromiseFromHandler (http://localhost:3001/__cypress/runner/cypress_runner.js:1542:31)\n    at Promise._settlePromise (http://localhost:3001/__cypress/runner/cypress_runner.js:1599:18)\n    at Promise._settlePromise0 (http://localhost:3001/__cypress/runner/cypress_runner.js:1644:10)\n    at Promise._settlePromises (http://localhost:3001/__cypress/runner/cypress_runner.js:1720:18)\n    at _drainQueueStep (http://localhost:3001/__cypress/runner/cypress_runner.js:2430:12)\n    at _drainQueue (http://localhost:3001/__cypress/runner/cypress_runner.js:2423:9)\n    at Async._drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2439:5)\n    at Async.drainQueues (http://localhost:3001/__cypress/runner/cypress_runner.js:2309:14)\nFrom Your Spec Code:\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/12-admin-dashboard.cy.ts:12:0)",
+                "diff": null
+              },
+              "uuid": "6f9eaa00-aea2-4d31-aa25-2b687411da11",
+              "parentUUID": "36e6f967-a6cf-403d-bf35-9efefa826771",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "6f9eaa00-aea2-4d31-aa25-2b687411da11"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 155,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "26c8af8a-2f7b-483c-9cec-01d83f539dda",
+      "title": "",
+      "fullFile": "cypress\\e2e\\00-smoke.cy.ts",
+      "file": "cypress\\e2e\\00-smoke.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "13136bbd-d632-4616-a36f-4dca94995b8a",
+          "title": "smoke: mochawesome setup",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "generates a mochawesome result without app",
+              "fullTitle": "smoke: mochawesome setup generates a mochawesome result without app",
+              "timedOut": null,
+              "duration": 29,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "expect(true).to.eq(true);",
+              "err": {},
+              "uuid": "0545ab0e-0666-4808-b190-24fb0b748167",
+              "parentUUID": "13136bbd-d632-4616-a36f-4dca94995b8a",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "0545ab0e-0666-4808-b190-24fb0b748167"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 29,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "c57becdc-2fc8-4235-9507-d41565dcafd5",
+      "title": "",
+      "fullFile": "cypress\\e2e\\00-smoke.cy.ts",
+      "file": "cypress\\e2e\\00-smoke.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a71273cd-bfec-4bc2-b82d-6dfcdfaa3bd2",
+          "title": "smoke: mochawesome setup",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "generates a mochawesome result without app",
+              "fullTitle": "smoke: mochawesome setup generates a mochawesome result without app",
+              "timedOut": null,
+              "duration": 31,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "expect(true).to.eq(true);",
+              "err": {},
+              "uuid": "9ad61fe3-9a09-4094-a91c-c9bf39546420",
+              "parentUUID": "a71273cd-bfec-4bc2-b82d-6dfcdfaa3bd2",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9ad61fe3-9a09-4094-a91c-c9bf39546420"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 31,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "3b98aa28-c003-4bbc-b406-d44d6072a342",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "0690ea5a-c6d6-45f6-99c9-9fd8fe60f93e",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 13373,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Error message appears on invalid credentials (no backend required)\ncy.get('#email').type('invalid@example.com');\ncy.get('#password').type('wrongpass');\ncy.contains('button', /sign in/i).click();\n// Either app shows a destructive Alert or inline error text\ncy.contains(/something went wrong|login failed/i).should('be.visible');",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 8000ms: Expected to find content: '/something went wrong|login failed/i' but never did.",
+                "estack": "AssertionError: Timed out retrying after 8000ms: Expected to find content: '/something went wrong|login failed/i' but never did.\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/01-ui-elements.cy.ts:20:0)",
+                "diff": null
+              },
+              "uuid": "488107c8-ba25-498d-a58c-cc5ecfe967f3",
+              "parentUUID": "0690ea5a-c6d6-45f6-99c9-9fd8fe60f93e",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "488107c8-ba25-498d-a58c-cc5ecfe967f3"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 13373,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "3cbb2ea6-1430-40d3-9363-73294015c774",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "1ad2d884-fded-47fc-99a9-eb07648178b5",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 726,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "9c001169-4ce8-40ed-91dd-814a449219f2",
+              "parentUUID": "1ad2d884-fded-47fc-99a9-eb07648178b5",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 700,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "593e133d-ba55-4b6f-b209-f5b6b9f6b281",
+              "parentUUID": "1ad2d884-fded-47fc-99a9-eb07648178b5",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 800,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "9de268bb-1960-4164-b7a8-ca58a54c525c",
+              "parentUUID": "1ad2d884-fded-47fc-99a9-eb07648178b5",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9c001169-4ce8-40ed-91dd-814a449219f2",
+            "593e133d-ba55-4b6f-b209-f5b6b9f6b281",
+            "9de268bb-1960-4164-b7a8-ca58a54c525c"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2226,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "0aee657e-fcd8-47bd-9e67-a5cfdf9bd937",
+      "title": "",
+      "fullFile": "cypress\\e2e\\03-accessibility.cy.ts",
+      "file": "cypress\\e2e\\03-accessibility.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "4a0b1629-d106-4e33-8b40-8d6645decaf9",
+          "title": "Accessibility - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "has no critical accessibility violations",
+              "fullTitle": "Accessibility - Login page has no critical accessibility violations",
+              "timedOut": null,
+              "duration": 964,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\ncy.injectAxe();\ncy.checkA11y(undefined, { includedImpacts: ['critical', 'serious'] });",
+              "err": {},
+              "uuid": "b803978b-2448-4cc1-bbc5-53726d7f63f1",
+              "parentUUID": "4a0b1629-d106-4e33-8b40-8d6645decaf9",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "b803978b-2448-4cc1-bbc5-53726d7f63f1"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 964,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "8d13ee4e-aa62-4620-8e2b-8becf9aa84f6",
+      "title": "",
+      "fullFile": "cypress\\e2e\\04-navigation.cy.ts",
+      "file": "cypress\\e2e\\04-navigation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "d4cf417d-2bad-4940-b727-014a632cb469",
+          "title": "Navigation flow - Organizer",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "navigates to organizer dashboard and renders key widgets",
+              "fullTitle": "Navigation flow - Organizer navigates to organizer dashboard and renders key widgets",
+              "timedOut": null,
+              "duration": 9153,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "// Intercept analytics and events network calls to avoid backend dependency\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/overview', {\n    statusCode: 200,\n    body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },\n}).as('overview');\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/revenue-trend', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('trend');\ncy.intercept('GET', '**/api/events', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('events');\ncy.visit('/organizer/dashboard');\ncy.contains(/organizer dashboard/i).should('be.visible');\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 8000ms: Expected to find content: '/total events/i' but never did.",
+                "estack": "AssertionError: Timed out retrying after 8000ms: Expected to find content: '/total events/i' but never did.\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/04-navigation.cy.ts:28:0)",
+                "diff": null
+              },
+              "uuid": "a4ea95ae-f936-48b9-b4a8-d9be719ed992",
+              "parentUUID": "d4cf417d-2bad-4940-b727-014a632cb469",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "a4ea95ae-f936-48b9-b4a8-d9be719ed992"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 9153,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "4a8215ab-5afa-41cc-88d5-d552036a4d67",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 869,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {},
+              "uuid": "1711afd1-91c2-4091-8e6d-f80db6959277",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 1343,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "fdab617e-48c1-46f2-a0e5-4dae6317c7dd",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 2157,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "f3fabb3b-3615-4dab-ac50-101d4ed7a808",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "1711afd1-91c2-4091-8e6d-f80db6959277",
+            "fdab617e-48c1-46f2-a0e5-4dae6317c7dd",
+            "f3fabb3b-3615-4dab-ac50-101d4ed7a808"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 4369,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "ccacc1bc-4ac1-4443-b193-85727dbd0952",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "09606df7-8835-44dd-b8e3-2396d87f6236",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 1219,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {},
+              "uuid": "1832d542-7f2d-48d8-9caf-5231db8352f9",
+              "parentUUID": "09606df7-8835-44dd-b8e3-2396d87f6236",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "1832d542-7f2d-48d8-9caf-5231db8352f9"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1219,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "a9d49de4-8750-4b4c-84e4-bb4f4327cbf5",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "5895c068-484c-49c6-be45-93d8aa008d43",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 748,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {},
+              "uuid": "937db08d-6d98-419a-8eea-4199b3da76d9",
+              "parentUUID": "5895c068-484c-49c6-be45-93d8aa008d43",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "937db08d-6d98-419a-8eea-4199b3da76d9"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 748,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "ff5808d9-b19e-4519-92ef-99b6db7153c6",
+      "title": "",
+      "fullFile": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "file": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "14637437-d3a6-4674-ad79-50f8f3b6c94d",
+          "title": "Organizer - Events listing",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads events and filters by search/category/status",
+              "fullTitle": "Organizer - Events listing loads events and filters by search/category/status",
+              "timedOut": null,
+              "duration": 10002,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/events');\ncy.wait(['@events']);\n// Sees seeded events\ncy.contains(/tech summit/i).should('be.visible');\ncy.contains(/music fest/i).should('be.visible');\n// Search filter (use placeholder selector from shadcn Input)\ncy.get('input[placeholder=\"Search events...\"]').type('tech');\ncy.contains(/tech summit/i).should('be.visible');\n// Status filter (selects All to keep list visible)\ncy.get('[role=\"combobox\"]').eq(0).click();\ncy.contains('div[role=\"option\"]', 'All Status').click({ force: true });",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 8000ms: Expected to find content: 'All Status' within the selector: 'div[role=\"option\"]' but never did.",
+                "estack": "AssertionError: Timed out retrying after 8000ms: Expected to find content: 'All Status' within the selector: 'div[role=\"option\"]' but never did.\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/08-organizer-events.cy.ts:19:0)",
+                "diff": null
+              },
+              "uuid": "0fe100d3-0630-4250-99c6-a2288cb6556c",
+              "parentUUID": "14637437-d3a6-4674-ad79-50f8f3b6c94d",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "0fe100d3-0630-4250-99c6-a2288cb6556c"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 10002,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "300651ae-6e46-4b8b-abb9-dd19858c7e92",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "624a608d-d4a1-462f-b682-3019ab9ba951",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 2275,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {},
+              "uuid": "49ebeeb5-7c86-45d6-b2a5-6958c45c2a21",
+              "parentUUID": "624a608d-d4a1-462f-b682-3019ab9ba951",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "49ebeeb5-7c86-45d6-b2a5-6958c45c2a21"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2275,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "36ce605a-8b86-4e46-90e6-7e6679c7328b",
+      "title": "",
+      "fullFile": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "file": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "c1b57189-2619-40c7-9e5e-5a60bb22d0cd",
+          "title": "Organizer - Tickets page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads ticket stats and events with stubs",
+              "fullTitle": "Organizer - Tickets page loads ticket stats and events with stubs",
+              "timedOut": null,
+              "duration": 1844,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/tickets');\ncy.wait(['@tickets']);\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/active events/i).should('be.visible');\ncy.contains(/avg ticket price/i).should('be.visible');\ncy.contains(/tech summit/i).should('be.visible');",
+              "err": {},
+              "uuid": "ba8b577c-574c-48e5-b745-24ddd174ad34",
+              "parentUUID": "c1b57189-2619-40c7-9e5e-5a60bb22d0cd",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "ba8b577c-574c-48e5-b745-24ddd174ad34"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1844,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "3394cdf3-9fcb-4939-b6e4-ff91d65b6277",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "e9ca6d95-f402-4769-bab7-a154d47ccad4",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 2809,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "6e1fc1d3-ade6-44ac-8f4f-d17a36af77fb",
+              "parentUUID": "e9ca6d95-f402-4769-bab7-a154d47ccad4",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "6e1fc1d3-ade6-44ac-8f4f-d17a36af77fb"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2809,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "b31f96db-a106-42d2-ac08-864f7c06c784",
+      "title": "",
+      "fullFile": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "file": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "9c09d1e9-182f-4788-bdd6-90c891eacecc",
+          "title": "Admin - Dashboard smoke",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads admin dashboard shell",
+              "fullTitle": "Admin - Dashboard smoke loads admin dashboard shell",
+              "timedOut": null,
+              "duration": 1776,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/admin/dashboard');\ncy.contains(/dashboard/i).should('be.visible');\n// Sidebar visible on desktop\ncy.get('div.fixed.inset-y-0.left-0').should('be.visible');",
+              "err": {},
+              "uuid": "9a1a1fc9-4daa-49c9-a2c8-d03474ebaa04",
+              "parentUUID": "9c09d1e9-182f-4788-bdd6-90c891eacecc",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9a1a1fc9-4daa-49c9-a2c8-d03474ebaa04"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1776,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "e3950f7a-519c-494e-8711-4572d4b82552",
+      "title": "",
+      "fullFile": "cypress\\e2e\\00-smoke.cy.ts",
+      "file": "cypress\\e2e\\00-smoke.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "f5b35e33-efa1-470c-a08c-e00529858052",
+          "title": "smoke: mochawesome setup",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "generates a mochawesome result without app",
+              "fullTitle": "smoke: mochawesome setup generates a mochawesome result without app",
+              "timedOut": null,
+              "duration": 31,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "expect(true).to.eq(true);",
+              "err": {},
+              "uuid": "0ca09043-03fa-40ef-9cb5-4e1456d11f8c",
+              "parentUUID": "f5b35e33-efa1-470c-a08c-e00529858052",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "0ca09043-03fa-40ef-9cb5-4e1456d11f8c"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 31,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "0974975b-3e11-4abe-8824-e3d8ddcc0555",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "b85a27e1-2c3e-4f0a-bcc2-b041b2538e15",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 12503,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Error message appears on invalid credentials (no backend required)\ncy.get('#email').type('invalid@example.com');\ncy.get('#password').type('wrongpass');\ncy.contains('button', /sign in/i).click();\n// Either app shows a destructive Alert or inline error text\ncy.contains(/something went wrong|login failed/i, { timeout: 10000 }).should('be.visible');",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 10000ms: Expected to find content: '/something went wrong|login failed/i' but never did.",
+                "estack": "AssertionError: Timed out retrying after 10000ms: Expected to find content: '/something went wrong|login failed/i' but never did.\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/01-ui-elements.cy.ts:20:76)",
+                "diff": null
+              },
+              "uuid": "7b377399-6f74-4b6c-b2b7-dc131f4118a0",
+              "parentUUID": "b85a27e1-2c3e-4f0a-bcc2-b041b2538e15",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "7b377399-6f74-4b6c-b2b7-dc131f4118a0"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 12503,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "fb39bc4b-37c3-4d61-b305-aa954b69cd1c",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "8290e8a6-f991-4192-9d67-48c79c06384c",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 718,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "f89ed195-31a7-445b-84fc-32bb7d5ec226",
+              "parentUUID": "8290e8a6-f991-4192-9d67-48c79c06384c",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 669,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "70e2bcf0-d928-40c4-8f9c-6f0ad5d2ab95",
+              "parentUUID": "8290e8a6-f991-4192-9d67-48c79c06384c",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 761,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "2ba20654-c0fa-4394-a4bf-56aea48d8252",
+              "parentUUID": "8290e8a6-f991-4192-9d67-48c79c06384c",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "f89ed195-31a7-445b-84fc-32bb7d5ec226",
+            "70e2bcf0-d928-40c4-8f9c-6f0ad5d2ab95",
+            "2ba20654-c0fa-4394-a4bf-56aea48d8252"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2148,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "308fd8b7-2533-4028-8246-c738c105d690",
+      "title": "",
+      "fullFile": "cypress\\e2e\\03-accessibility.cy.ts",
+      "file": "cypress\\e2e\\03-accessibility.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "ac469eb3-7361-4a73-b6db-3e0ea6f0295a",
+          "title": "Accessibility - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "has no critical accessibility violations",
+              "fullTitle": "Accessibility - Login page has no critical accessibility violations",
+              "timedOut": null,
+              "duration": 943,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\ncy.injectAxe();\ncy.checkA11y(undefined, { includedImpacts: ['critical', 'serious'] });",
+              "err": {},
+              "uuid": "80a74473-fa41-4914-959f-bd3a8e0b9b17",
+              "parentUUID": "ac469eb3-7361-4a73-b6db-3e0ea6f0295a",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "80a74473-fa41-4914-959f-bd3a8e0b9b17"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 943,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "bcee75b8-51b1-4dc8-b341-c1fa926fe57f",
+      "title": "",
+      "fullFile": "cypress\\e2e\\04-navigation.cy.ts",
+      "file": "cypress\\e2e\\04-navigation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "efeeb5a8-9d14-4c0e-962c-e2aa6f3e5df4",
+          "title": "Navigation flow - Organizer",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "navigates to organizer dashboard and renders key widgets",
+              "fullTitle": "Navigation flow - Organizer navigates to organizer dashboard and renders key widgets",
+              "timedOut": null,
+              "duration": 5454,
+              "state": "passed",
+              "speed": "medium",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Intercept analytics and events network calls to avoid backend dependency\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/overview', {\n    statusCode: 200,\n    body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },\n}).as('overview');\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/revenue-trend', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('trend');\ncy.intercept('GET', '**/api/events', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('events');\ncy.visit('/organizer/dashboard');\ncy.contains(/organizer dashboard/i).should('be.visible');\n// Check for key widgets that exist on the dashboard\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/your total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "a9de9bc7-ac49-43ab-939b-fe4d2665f01e",
+              "parentUUID": "efeeb5a8-9d14-4c0e-962c-e2aa6f3e5df4",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "a9de9bc7-ac49-43ab-939b-fe4d2665f01e"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 5454,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "5baefc96-72ee-4d97-9ef2-ec33b9ecf969",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "38d90dba-c484-47a1-9f32-03304ba68b50",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 756,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {},
+              "uuid": "30444626-9670-4fdd-af55-662e30e8c092",
+              "parentUUID": "38d90dba-c484-47a1-9f32-03304ba68b50",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 1340,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "fc198ba0-60df-4b38-97f0-77b03bd4687f",
+              "parentUUID": "38d90dba-c484-47a1-9f32-03304ba68b50",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 2131,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "0de12931-fb76-4c40-99de-0c9a45d7f378",
+              "parentUUID": "38d90dba-c484-47a1-9f32-03304ba68b50",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "30444626-9670-4fdd-af55-662e30e8c092",
+            "fc198ba0-60df-4b38-97f0-77b03bd4687f",
+            "0de12931-fb76-4c40-99de-0c9a45d7f378"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 4227,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "292a24f9-7251-41da-9574-8831da827866",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "02f2c60a-ec85-48c0-96e8-1db8e42bbbe3",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 1291,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {},
+              "uuid": "a9f69ae5-c329-407d-95e6-2d2d3ef4acfe",
+              "parentUUID": "02f2c60a-ec85-48c0-96e8-1db8e42bbbe3",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "a9f69ae5-c329-407d-95e6-2d2d3ef4acfe"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1291,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "444d948c-d317-43fa-9a26-64224a10b2a1",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "1c8d27a2-821c-48a7-aad2-ebd3f0fd1763",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 783,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {},
+              "uuid": "c1b1c91d-cbf9-4f1e-a4d4-8ebd287f90f4",
+              "parentUUID": "1c8d27a2-821c-48a7-aad2-ebd3f0fd1763",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "c1b1c91d-cbf9-4f1e-a4d4-8ebd287f90f4"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 783,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "d9c3657f-806c-43dc-85e7-d43565902e38",
+      "title": "",
+      "fullFile": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "file": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "d500ee24-c9e8-42cc-a1bc-581078c80051",
+          "title": "Organizer - Events listing",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads events and filters by search/category/status",
+              "fullTitle": "Organizer - Events listing loads events and filters by search/category/status",
+              "timedOut": null,
+              "duration": 2593,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/events');\ncy.wait(['@events']);\n// Sees seeded events\ncy.contains(/tech summit/i).should('be.visible');\ncy.contains(/music fest/i).should('be.visible');\n// Search filter (use placeholder selector from shadcn Input)\ncy.get('input[placeholder=\"Search events...\"]').type('tech');\ncy.contains(/tech summit/i).should('be.visible');\n// Category filter (select 'All Categories' to keep list visible)\ncy.get('[role=\"combobox\"]').eq(0).click();\ncy.contains('div[role=\"option\"]', 'All Categories').click({ force: true });",
+              "err": {},
+              "uuid": "f3e07fa7-322b-45be-954d-ec910b0421f4",
+              "parentUUID": "d500ee24-c9e8-42cc-a1bc-581078c80051",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "f3e07fa7-322b-45be-954d-ec910b0421f4"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2593,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "d6862bcb-dc3d-443c-8292-4b4cf71430b5",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a08953f4-7bf9-4b61-9dca-bd409f1727be",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 1842,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {},
+              "uuid": "dd80c662-410b-4a72-b026-c2178db3ad4d",
+              "parentUUID": "a08953f4-7bf9-4b61-9dca-bd409f1727be",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "dd80c662-410b-4a72-b026-c2178db3ad4d"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1842,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "519a60ef-6f06-49a7-ac23-4d9d36aa7f92",
+      "title": "",
+      "fullFile": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "file": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "c2e7b3f4-1217-4435-94cc-bf241237b15a",
+          "title": "Organizer - Tickets page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads ticket stats and events with stubs",
+              "fullTitle": "Organizer - Tickets page loads ticket stats and events with stubs",
+              "timedOut": null,
+              "duration": 1899,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/tickets');\ncy.wait(['@tickets']);\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/active events/i).should('be.visible');\ncy.contains(/avg ticket price/i).should('be.visible');\ncy.contains(/tech summit/i).should('be.visible');",
+              "err": {},
+              "uuid": "25bc8bf5-c342-4d91-acd4-9f69b868bad2",
+              "parentUUID": "c2e7b3f4-1217-4435-94cc-bf241237b15a",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "25bc8bf5-c342-4d91-acd4-9f69b868bad2"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1899,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "c38468c1-978b-4bf8-81de-8e08815aa1b2",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "211b8676-2005-490e-b213-6c1abb33fc8d",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 2619,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "22dcbef5-f974-4dfe-b518-ec4fa2cb9ac6",
+              "parentUUID": "211b8676-2005-490e-b213-6c1abb33fc8d",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "22dcbef5-f974-4dfe-b518-ec4fa2cb9ac6"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2619,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "cdfd17c6-d454-4a24-8ff1-a72750c00094",
+      "title": "",
+      "fullFile": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "file": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "af1bfc2f-0f43-4955-a3ff-6d1d753e49d1",
+          "title": "Admin - Dashboard smoke",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads admin dashboard shell",
+              "fullTitle": "Admin - Dashboard smoke loads admin dashboard shell",
+              "timedOut": null,
+              "duration": 3095,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/admin/dashboard');\ncy.contains(/dashboard/i).should('be.visible');\n// Sidebar visible on desktop\ncy.get('div.fixed.inset-y-0.left-0').should('be.visible');",
+              "err": {},
+              "uuid": "7496ba12-49d4-4ae0-80d2-7a8a29798786",
+              "parentUUID": "af1bfc2f-0f43-4955-a3ff-6d1d753e49d1",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "7496ba12-49d4-4ae0-80d2-7a8a29798786"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 3095,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "4cfd5339-b3d5-42f4-a819-fc83cb0e56a1",
+      "title": "",
+      "fullFile": "cypress\\e2e\\00-smoke.cy.ts",
+      "file": "cypress\\e2e\\00-smoke.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "965a89ab-df98-4e0b-8e35-2871f425113b",
+          "title": "smoke: mochawesome setup",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "generates a mochawesome result without app",
+              "fullTitle": "smoke: mochawesome setup generates a mochawesome result without app",
+              "timedOut": null,
+              "duration": 30,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "expect(true).to.eq(true);",
+              "err": {},
+              "uuid": "5f699ef2-3586-491e-9204-341c01ce0fc9",
+              "parentUUID": "965a89ab-df98-4e0b-8e35-2871f425113b",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "5f699ef2-3586-491e-9204-341c01ce0fc9"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 30,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "cdcb2243-7c46-4f1c-9f2a-28cccfd27271",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "2a763a92-2027-420c-aa2c-862e506811e2",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 12672,
+              "state": "failed",
+              "speed": null,
+              "pass": false,
+              "fail": true,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Submitting valid credentials shows loading state then redirects to dashboard\ncy.get('#email').clear().type('organizer@example.com');\ncy.get('#password').clear().type('any-password');\ncy.contains('button', /sign in/i).click();\n// Button changes to \"Signing in...\" and becomes disabled during submission\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\n// After simulated auth, user is redirected to dashboard\ncy.url({ timeout: 10000 }).should('include', '/dashboard');",
+              "err": {
+                "message": "AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:5000/login' to include '/dashboard'",
+                "estack": "AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:5000/login' to include '/dashboard'\n    at Context.eval (webpack://my-v0-project/./cypress/e2e/01-ui-elements.cy.ts:22:33)",
+                "diff": null
+              },
+              "uuid": "1f838010-f078-4d62-89ee-c921bdd0b4b6",
+              "parentUUID": "2a763a92-2027-420c-aa2c-862e506811e2",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [],
+          "failures": [
+            "1f838010-f078-4d62-89ee-c921bdd0b4b6"
+          ],
+          "pending": [],
+          "skipped": [],
+          "duration": 12672,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "9e146c6b-2854-4a62-b066-5becad5e2d87",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 777,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "9f13d471-37f7-45f0-adf2-ba8bfd68adc2",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 651,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "3ec2f050-9cbc-47dc-96b3-5ae198da3ab1",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 654,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "f70b4acd-2453-4f18-a943-1bd13ca0b1d5",
+              "parentUUID": "ea11ed22-ccaa-41f9-913e-778f24967e8d",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9f13d471-37f7-45f0-adf2-ba8bfd68adc2",
+            "3ec2f050-9cbc-47dc-96b3-5ae198da3ab1",
+            "f70b4acd-2453-4f18-a943-1bd13ca0b1d5"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2082,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "70b9c2c2-4f59-4a9c-92c4-368b0701719a",
+      "title": "",
+      "fullFile": "cypress\\e2e\\03-accessibility.cy.ts",
+      "file": "cypress\\e2e\\03-accessibility.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "0e47112d-8e9f-43e2-8715-eca2ef6b0c8a",
+          "title": "Accessibility - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "has no critical accessibility violations",
+              "fullTitle": "Accessibility - Login page has no critical accessibility violations",
+              "timedOut": null,
+              "duration": 919,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\ncy.injectAxe();\ncy.checkA11y(undefined, { includedImpacts: ['critical', 'serious'] });",
+              "err": {},
+              "uuid": "720f6254-ed25-4921-b051-8f1f607c4903",
+              "parentUUID": "0e47112d-8e9f-43e2-8715-eca2ef6b0c8a",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "720f6254-ed25-4921-b051-8f1f607c4903"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 919,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "9b45538d-26a0-44c4-a6d3-126452bb787d",
+      "title": "",
+      "fullFile": "cypress\\e2e\\04-navigation.cy.ts",
+      "file": "cypress\\e2e\\04-navigation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "e0182784-f5d8-438b-b35f-2e13584d231c",
+          "title": "Navigation flow - Organizer",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "navigates to organizer dashboard and renders key widgets",
+              "fullTitle": "Navigation flow - Organizer navigates to organizer dashboard and renders key widgets",
+              "timedOut": null,
+              "duration": 5964,
+              "state": "passed",
+              "speed": "medium",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Intercept analytics and events network calls to avoid backend dependency\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/overview', {\n    statusCode: 200,\n    body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },\n}).as('overview');\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/revenue-trend', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('trend');\ncy.intercept('GET', '**/api/events', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('events');\ncy.visit('/organizer/dashboard');\ncy.contains(/organizer dashboard/i).should('be.visible');\n// Check for key widgets that exist on the dashboard\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/your total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "f3eb9458-3713-4025-8184-4b629ee8bd85",
+              "parentUUID": "e0182784-f5d8-438b-b35f-2e13584d231c",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "f3eb9458-3713-4025-8184-4b629ee8bd85"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 5964,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "f0c0a198-de3e-486f-91ef-f527e40e04e2",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "4a93e92b-a5a5-4ab4-b352-207d35d26eb9",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 772,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {},
+              "uuid": "69060c94-e2fc-4bb1-8023-0423f9fed290",
+              "parentUUID": "4a93e92b-a5a5-4ab4-b352-207d35d26eb9",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 1415,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "60967fbe-aeeb-4ea9-834e-7e5419f4efe5",
+              "parentUUID": "4a93e92b-a5a5-4ab4-b352-207d35d26eb9",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 2130,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "c9b4d0cf-a0f1-43fa-a9cd-927769b85477",
+              "parentUUID": "4a93e92b-a5a5-4ab4-b352-207d35d26eb9",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "69060c94-e2fc-4bb1-8023-0423f9fed290",
+            "60967fbe-aeeb-4ea9-834e-7e5419f4efe5",
+            "c9b4d0cf-a0f1-43fa-a9cd-927769b85477"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 4317,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "961bd1a1-bafe-4d14-ab9a-528a6c920ff7",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "07783e69-c1e6-4be0-8772-9adfc960c644",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 1431,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {},
+              "uuid": "dd181d09-f6ea-4efb-aeaa-2331347bbabf",
+              "parentUUID": "07783e69-c1e6-4be0-8772-9adfc960c644",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "dd181d09-f6ea-4efb-aeaa-2331347bbabf"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1431,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "62ca7db5-44a3-43ba-9729-dbc3d76dcc90",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "3485c6e4-e2bf-41bf-a56d-2dac818dab85",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 773,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {},
+              "uuid": "b0e62791-11de-4d96-a5fc-7596caa13833",
+              "parentUUID": "3485c6e4-e2bf-41bf-a56d-2dac818dab85",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "b0e62791-11de-4d96-a5fc-7596caa13833"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 773,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "04872284-fb29-4022-9195-82f66a495bc1",
+      "title": "",
+      "fullFile": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "file": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "fd05c8a1-e8be-4991-b56d-4c45d0186737",
+          "title": "Organizer - Events listing",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads events and filters by search/category/status",
+              "fullTitle": "Organizer - Events listing loads events and filters by search/category/status",
+              "timedOut": null,
+              "duration": 2855,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/events');\ncy.wait(['@events']);\n// Sees seeded events\ncy.contains(/tech summit/i).should('be.visible');\ncy.contains(/music fest/i).should('be.visible');\n// Search filter (use placeholder selector from shadcn Input)\ncy.get('input[placeholder=\"Search events...\"]').type('tech');\ncy.contains(/tech summit/i).should('be.visible');\n// Category filter (select 'All Categories' to keep list visible)\ncy.get('[role=\"combobox\"]').eq(0).click();\ncy.contains('div[role=\"option\"]', 'All Categories').click({ force: true });",
+              "err": {},
+              "uuid": "9d35a356-b259-4b30-b8b8-ea263ac7ab79",
+              "parentUUID": "fd05c8a1-e8be-4991-b56d-4c45d0186737",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "9d35a356-b259-4b30-b8b8-ea263ac7ab79"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2855,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "3b8a43d4-3077-4510-b6eb-07bd2733b006",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "a869fe1a-8f86-48ec-b4a6-10a98436f6a6",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 2504,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {},
+              "uuid": "4ceb3f59-e169-4cb5-a6de-a1098dffce40",
+              "parentUUID": "a869fe1a-8f86-48ec-b4a6-10a98436f6a6",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "4ceb3f59-e169-4cb5-a6de-a1098dffce40"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2504,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "25c2bda8-593e-4da5-ab0e-f4c74353262e",
+      "title": "",
+      "fullFile": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "file": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "12e6e27b-1432-4b48-8a9c-a5bedcc19272",
+          "title": "Organizer - Tickets page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads ticket stats and events with stubs",
+              "fullTitle": "Organizer - Tickets page loads ticket stats and events with stubs",
+              "timedOut": null,
+              "duration": 1981,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/tickets');\ncy.wait(['@tickets']);\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/active events/i).should('be.visible');\ncy.contains(/avg ticket price/i).should('be.visible');\ncy.contains(/tech summit/i).should('be.visible');",
+              "err": {},
+              "uuid": "f02badc5-d284-4916-865f-9db74c6b029c",
+              "parentUUID": "12e6e27b-1432-4b48-8a9c-a5bedcc19272",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "f02badc5-d284-4916-865f-9db74c6b029c"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1981,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "0be97e8c-b16d-4ac4-a885-d2019f789edf",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "56b8227d-f266-4733-be7f-51f0fbcca5e7",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 2534,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "523044fb-5968-4f5c-b816-bf9104ae7821",
+              "parentUUID": "56b8227d-f266-4733-be7f-51f0fbcca5e7",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "523044fb-5968-4f5c-b816-bf9104ae7821"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2534,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "211aedb8-1d2d-4423-b83b-f6157eaae990",
+      "title": "",
+      "fullFile": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "file": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "0ce3ba21-b26c-44ab-a64b-d820dd8f4021",
+          "title": "Admin - Dashboard smoke",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads admin dashboard shell",
+              "fullTitle": "Admin - Dashboard smoke loads admin dashboard shell",
+              "timedOut": null,
+              "duration": 2207,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/admin/dashboard');\ncy.contains(/dashboard/i).should('be.visible');\n// Sidebar visible on desktop\ncy.get('div.fixed.inset-y-0.left-0').should('be.visible');",
+              "err": {},
+              "uuid": "762f875f-9e26-4b12-86bb-229075fcd8d4",
+              "parentUUID": "0ce3ba21-b26c-44ab-a64b-d820dd8f4021",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "762f875f-9e26-4b12-86bb-229075fcd8d4"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2207,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "82b71f9b-c491-4dda-ac45-8fb65096b4b0",
+      "title": "",
+      "fullFile": "cypress\\e2e\\00-smoke.cy.ts",
+      "file": "cypress\\e2e\\00-smoke.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "3020bc30-6510-4cdb-8c03-16320980bf35",
+          "title": "smoke: mochawesome setup",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "generates a mochawesome result without app",
+              "fullTitle": "smoke: mochawesome setup generates a mochawesome result without app",
+              "timedOut": null,
+              "duration": 31,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "expect(true).to.eq(true);",
+              "err": {},
+              "uuid": "8141f99e-3bac-451c-9a2f-12067eb9e31b",
+              "parentUUID": "3020bc30-6510-4cdb-8c03-16320980bf35",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "8141f99e-3bac-451c-9a2f-12067eb9e31b"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 31,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "b7f52cb6-814d-4ca4-a141-a993b9847fcd",
+      "title": "",
+      "fullFile": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "file": "cypress\\e2e\\01-ui-elements.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "f71b6c70-9ec7-42c2-96b4-dae9c2bfaab1",
+          "title": "UI elements on Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders login form controls and handles validation states",
+              "fullTitle": "UI elements on Login page renders login form controls and handles validation states",
+              "timedOut": null,
+              "duration": 7119,
+              "state": "passed",
+              "speed": "medium",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/'); // redirects to /login\ncy.url().should('include', '/login');\n// Verify title text and labels\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('exist').and('be.visible');\ncy.get('#email').should('exist').and('be.visible');\ncy.get('label[for=\"password\"]').should('exist').and('be.visible');\ncy.get('#password').should('exist').and('be.visible');\n// Button exists and is enabled\ncy.contains('button', /sign in/i).should('be.visible').and('not.be.disabled');\n// Stub backend login to simulate successful ORGANIZER auth\ncy.intercept('POST', '**/api/auth/login', {\n    statusCode: 200,\n    body: {\n        success: true,\n        token: 'test-token',\n        data: { role: 'ORGANIZER', name: 'Organizer Test', email: 'organizer@example.com' }\n    }\n}).as('login');\n// Submitting valid credentials shows loading state then redirects to organizer dashboard\ncy.get('#email').clear().type('organizer@example.com');\ncy.get('#password').clear().type('any-password');\ncy.contains('button', /sign in/i).click();\n// Button changes to \"Signing in...\" and becomes disabled during submission\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');\n// After simulated auth, user is redirected to organizer dashboard\ncy.url({ timeout: 10000 }).should('include', '/organizer/dashboard');",
+              "err": {},
+              "uuid": "84331a1c-d8a9-402a-8765-53ce84062eb5",
+              "parentUUID": "f71b6c70-9ec7-42c2-96b4-dae9c2bfaab1",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "84331a1c-d8a9-402a-8765-53ce84062eb5"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 7119,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "7e3b6b18-e4ba-4ba4-98e3-a9bb6acab350",
+      "title": "",
+      "fullFile": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "file": "cypress\\e2e\\02-responsiveness.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "85d6c4f8-b99d-4b74-b595-eeb711ad76c6",
+          "title": "Responsiveness - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders correctly at iphone-6",
+              "fullTitle": "Responsiveness - Login page renders correctly at iphone-6",
+              "timedOut": null,
+              "duration": 1337,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "31d40875-bfc2-489c-af7f-9e5d63c14b20",
+              "parentUUID": "85d6c4f8-b99d-4b74-b595-eeb711ad76c6",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at ipad-2",
+              "fullTitle": "Responsiveness - Login page renders correctly at ipad-2",
+              "timedOut": null,
+              "duration": 690,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "1d83e080-d5c5-4144-aac9-03cdc7022d51",
+              "parentUUID": "85d6c4f8-b99d-4b74-b595-eeb711ad76c6",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "renders correctly at 1280x800",
+              "fullTitle": "Responsiveness - Login page renders correctly at 1280x800",
+              "timedOut": null,
+              "duration": 639,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "if (Array.isArray(size)) {\n    cy.viewport(size[0], size[1]);\n}\nelse {\n    cy.viewport(size);\n}\ncy.visit('/login');\n// Basic assertions that important elements are visible\ncy.contains(/sign in/i).should('be.visible');\ncy.get('label[for=\"email\"]').should('be.visible');\ncy.get('#email').should('be.visible');\ncy.get('label[for=\"password\"]').should('be.visible');\ncy.get('#password').should('be.visible');",
+              "err": {},
+              "uuid": "3bd4a279-b531-43be-adf4-0bc8bdb916a9",
+              "parentUUID": "85d6c4f8-b99d-4b74-b595-eeb711ad76c6",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "31d40875-bfc2-489c-af7f-9e5d63c14b20",
+            "1d83e080-d5c5-4144-aac9-03cdc7022d51",
+            "3bd4a279-b531-43be-adf4-0bc8bdb916a9"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2666,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "6d149fd1-f904-455f-9ef4-000398757c66",
+      "title": "",
+      "fullFile": "cypress\\e2e\\03-accessibility.cy.ts",
+      "file": "cypress\\e2e\\03-accessibility.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "fbd80958-ab06-468e-8268-48fce6299351",
+          "title": "Accessibility - Login page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "has no critical accessibility violations",
+              "fullTitle": "Accessibility - Login page has no critical accessibility violations",
+              "timedOut": null,
+              "duration": 1028,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\ncy.injectAxe();\ncy.checkA11y(undefined, { includedImpacts: ['critical', 'serious'] });",
+              "err": {},
+              "uuid": "bba7e9e0-3df2-49f8-9c9f-50ca8b47b1a6",
+              "parentUUID": "fbd80958-ab06-468e-8268-48fce6299351",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "bba7e9e0-3df2-49f8-9c9f-50ca8b47b1a6"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1028,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "8afe6a87-7906-4ea3-829e-9e5cb73f8be8",
+      "title": "",
+      "fullFile": "cypress\\e2e\\04-navigation.cy.ts",
+      "file": "cypress\\e2e\\04-navigation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "f4b54564-a13f-45b0-a240-c46518b5dd1c",
+          "title": "Navigation flow - Organizer",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "navigates to organizer dashboard and renders key widgets",
+              "fullTitle": "Navigation flow - Organizer navigates to organizer dashboard and renders key widgets",
+              "timedOut": null,
+              "duration": 1241,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// Intercept analytics and events network calls to avoid backend dependency\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/overview', {\n    statusCode: 200,\n    body: { success: true, data: { totalRevenue: 0, ticketsSold: 0, conversionRate: 0, pageViews: 0, totalPayments: 0, totalEvents: 0 } },\n}).as('overview');\ncy.intercept('GET', '**/api/analytics/organizer/*/dashboard/revenue-trend', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('trend');\ncy.intercept('GET', '**/api/events', {\n    statusCode: 200,\n    body: { success: true, data: [] },\n}).as('events');\ncy.visit('/organizer/dashboard');\ncy.contains(/organizer dashboard/i).should('be.visible');\n// Check for key widgets that exist on the dashboard\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/your total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "a3cc5683-0b68-4118-8433-db716cac93ca",
+              "parentUUID": "f4b54564-a13f-45b0-a240-c46518b5dd1c",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "a3cc5683-0b68-4118-8433-db716cac93ca"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1241,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "20652999-8682-464f-ae26-640317ddb988",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "3ecb738f-181c-4d04-a3d1-4b36ca7cfb2d",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 917,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {},
+              "uuid": "d09f377c-1f37-4a06-a3aa-79ea2d2d5bf6",
+              "parentUUID": "3ecb738f-181c-4d04-a3d1-4b36ca7cfb2d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 1553,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "c3c28e44-b310-427f-bdae-890b1ea79095",
+              "parentUUID": "3ecb738f-181c-4d04-a3d1-4b36ca7cfb2d",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 2350,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "bd16d0d6-9087-4acc-80c0-32651e64185e",
+              "parentUUID": "3ecb738f-181c-4d04-a3d1-4b36ca7cfb2d",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "d09f377c-1f37-4a06-a3aa-79ea2d2d5bf6",
+            "c3c28e44-b310-427f-bdae-890b1ea79095",
+            "bd16d0d6-9087-4acc-80c0-32651e64185e"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 4820,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "20777d41-e499-4944-8bbe-1ec5b3aeecd0",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "aa56dfb0-f1ac-4bfe-9805-5248698bc346",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 1292,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {},
+              "uuid": "7c9371f1-a649-48f9-81b3-cdd9b1356bf6",
+              "parentUUID": "aa56dfb0-f1ac-4bfe-9805-5248698bc346",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "7c9371f1-a649-48f9-81b3-cdd9b1356bf6"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1292,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "b15cd273-e986-43b4-97b1-0906ab52a268",
+      "title": "",
+      "fullFile": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "file": "cypress\\e2e\\07-accessibility-keyboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "5a2dcc1d-d415-4ed2-95b8-db37b5a734b8",
+          "title": "Keyboard navigation and focus",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "focus order is logical for login form",
+              "fullTitle": "Keyboard navigation and focus focus order is logical for login form",
+              "timedOut": null,
+              "duration": 802,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/login');\n// Focus first field and then tab forward\ncy.get('#email').focus();\ncy.focused().should('have.attr', 'id', 'email');\n// Simulate tab by focusing next element directly (no plugin)\ncy.get('#password').focus();\ncy.focused().should('have.attr', 'id', 'password');\ncy.contains('button', /sign in/i).focus();\ncy.focused().should(($el) => {\n    expect($el.prop('tagName')).to.eq('BUTTON');\n    expect($el.text().toLowerCase()).to.contain('sign in');\n});",
+              "err": {},
+              "uuid": "fe030c7f-b892-44dc-bff7-1771b82cd10e",
+              "parentUUID": "5a2dcc1d-d415-4ed2-95b8-db37b5a734b8",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "fe030c7f-b892-44dc-bff7-1771b82cd10e"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 802,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "54869fec-93ef-4d4d-999f-5762af308e29",
+      "title": "",
+      "fullFile": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "file": "cypress\\e2e\\08-organizer-events.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "2cff3cc7-3360-48b6-acb6-778e5b3c2428",
+          "title": "Organizer - Events listing",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads events and filters by search/category/status",
+              "fullTitle": "Organizer - Events listing loads events and filters by search/category/status",
+              "timedOut": null,
+              "duration": 3274,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/events');\ncy.wait(['@events']);\n// Sees seeded events\ncy.contains(/tech summit/i).should('be.visible');\ncy.contains(/music fest/i).should('be.visible');\n// Search filter (use placeholder selector from shadcn Input)\ncy.get('input[placeholder=\"Search events...\"]').type('tech');\ncy.contains(/tech summit/i).should('be.visible');\n// Category filter (select 'All Categories' to keep list visible)\ncy.get('[role=\"combobox\"]').eq(0).click();\ncy.contains('div[role=\"option\"]', 'All Categories').click({ force: true });",
+              "err": {},
+              "uuid": "65a96934-fb81-4e12-a322-ae3fd50042c7",
+              "parentUUID": "2cff3cc7-3360-48b6-acb6-778e5b3c2428",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "65a96934-fb81-4e12-a322-ae3fd50042c7"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 3274,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "8377facd-6f5d-44e8-be69-810ed4ad8d70",
+      "title": "",
+      "fullFile": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "file": "cypress\\e2e\\09-organizer-create-event.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "b0c657e1-c463-4f7f-b789-8868bbf7631a",
+          "title": "Organizer - Create Event validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "shows validation errors for missing fields",
+              "fullTitle": "Organizer - Create Event validation shows validation errors for missing fields",
+              "timedOut": null,
+              "duration": 2752,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/create-event');\n// Try to submit empty form\ncy.contains('button', /create event|save/i).click({ force: true });\n// App shows an alert with errors list\ncy.on('window:alert', (text) => {\n    expect(text.toLowerCase()).to.contain('required');\n});",
+              "err": {},
+              "uuid": "ab8a5695-4b80-4171-b8f3-e026e84b6075",
+              "parentUUID": "b0c657e1-c463-4f7f-b789-8868bbf7631a",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "ab8a5695-4b80-4171-b8f3-e026e84b6075"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2752,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "174f0d35-f956-4e86-ad3d-72f3acd51c50",
+      "title": "",
+      "fullFile": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "file": "cypress\\e2e\\10-organizer-tickets.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "30eae7ff-2230-4bc5-991a-53776190acc0",
+          "title": "Organizer - Tickets page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads ticket stats and events with stubs",
+              "fullTitle": "Organizer - Tickets page loads ticket stats and events with stubs",
+              "timedOut": null,
+              "duration": 2703,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/tickets');\ncy.wait(['@tickets']);\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/active events/i).should('be.visible');\ncy.contains(/avg ticket price/i).should('be.visible');\ncy.contains(/tech summit/i).should('be.visible');",
+              "err": {},
+              "uuid": "30b72468-6ff3-4e10-8495-d93742cf6284",
+              "parentUUID": "30eae7ff-2230-4bc5-991a-53776190acc0",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "30b72468-6ff3-4e10-8495-d93742cf6284"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2703,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "9daba14a-4022-4753-8c11-4c61b500198b",
+      "title": "",
+      "fullFile": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "file": "cypress\\e2e\\11-organizer-analytics.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "b5448615-58f2-4f9a-94d6-60fbe4b39277",
+          "title": "Organizer - Analytics page",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "renders analytics cards and charts",
+              "fullTitle": "Organizer - Analytics page renders analytics cards and charts",
+              "timedOut": null,
+              "duration": 3247,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/organizer/analytics');\ncy.wait(['@overview']);\ncy.contains(/total events/i).should('be.visible');\ncy.contains(/tickets sold/i).should('be.visible');\ncy.contains(/total revenue/i).should('be.visible');",
+              "err": {},
+              "uuid": "8f4d7371-2fe2-46ee-8f49-2be4612bfe1d",
+              "parentUUID": "b5448615-58f2-4f9a-94d6-60fbe4b39277",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "8f4d7371-2fe2-46ee-8f49-2be4612bfe1d"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 3247,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    },
+    {
+      "uuid": "d03a8a59-62d2-4334-99b0-ed326a030322",
+      "title": "",
+      "fullFile": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "file": "cypress\\e2e\\12-admin-dashboard.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "52a9b3d2-9666-4aa3-a26f-9fdc9d617844",
+          "title": "Admin - Dashboard smoke",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "loads admin dashboard shell",
+              "fullTitle": "Admin - Dashboard smoke loads admin dashboard shell",
+              "timedOut": null,
+              "duration": 2100,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.visit('/admin/dashboard');\ncy.contains(/dashboard/i).should('be.visible');\n// Sidebar visible on desktop\ncy.get('div.fixed.inset-y-0.left-0').should('be.visible');",
+              "err": {},
+              "uuid": "5a698f17-31ad-4677-9bd6-b6ab6f4e3513",
+              "parentUUID": "52a9b3d2-9666-4aa3-a26f-9fdc9d617844",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "5a698f17-31ad-4677-9bd6-b6ab6f4e3513"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 2100,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

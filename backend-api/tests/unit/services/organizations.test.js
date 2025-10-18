@@ -1,8 +1,8 @@
-const organizationsService = require('../services/core-service/organizations/index');
-const prisma = require('../lib/database');
+const organizationsService = require('../../../services/core-service/organizations/index');
+const prisma = require('../../../lib/database');
 
 // Mock Prisma
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   organization: {
     findUnique: jest.fn(),
     findMany: jest.fn(),

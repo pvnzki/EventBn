@@ -1,7 +1,7 @@
 // Unit tests for events service (getEventById and getAllEvents)
-const eventsService = require('../services/core-service/events');
+const eventsService = require('../../../services/core-service/events');
 
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   event: {
     findUnique: jest.fn().mockImplementation(({ where, select }) => {
       if (where.event_id === 1) {
@@ -121,9 +121,8 @@ jest.mock('../lib/database', () => ({
           { event_id: 2, name: 'Test Event 2' }
         ]);
       }
-      // Default: empty array
-      return Promise.resolve([]);
-      // searchEvents
+      
+      // searchEvents (has OR condition for search)
       if (args && args.where && args.where.OR) {
         const isSearch = args.where.OR.some(
           clause => Object.values(clause).some(
@@ -138,6 +137,7 @@ jest.mock('../lib/database', () => ({
           return Promise.resolve([]);
         }
       }
+      
       // getEventsByCategory
       if (args && args.where && args.where.category) {
         if (args.where.category === 'Sports') {
@@ -154,23 +154,22 @@ jest.mock('../lib/database', () => ({
           return Promise.resolve([]);
         }
       }
+      
       // getAllEvents with status filter
-      if (args && args.where && args.where.status && !args.where.category && !args.where.start_time) {
-        if (args.where.status === 'ACTIVE') {
-          return Promise.resolve([
-            { event_id: 1, name: 'Test Event 1' },
-            { event_id: 2, name: 'Test Event 2' }
-          ]);
-        }
-        return Promise.resolve([]);
-      }
-      // getAllEvents with start_date filter
-      if (args && args.where && args.where.start_time && !args.where.category && !args.where.status) {
+      if (args && args.where && args.where.status && args.where.status === 'ACTIVE') {
         return Promise.resolve([
           { event_id: 1, name: 'Test Event 1' },
           { event_id: 2, name: 'Test Event 2' }
         ]);
       }
+      // getAllEvents with start_time filter (converted from start_date)
+      if (args && args.where && args.where.start_time && typeof args.where.start_time === 'object' && args.where.start_time.gte) {
+        return Promise.resolve([
+          { event_id: 1, name: 'Test Event 1' },
+          { event_id: 2, name: 'Test Event 2' }
+        ]);
+      }
+      
       // getAllEvents (no filters)
       if (!args.where || Object.keys(args.where).length === 0) {
         return Promise.resolve([
@@ -180,7 +179,6 @@ jest.mock('../lib/database', () => ({
       }
       // Default: empty array
       return Promise.resolve([]);
-      // getAllEvents (no filters)
       if (!where || Object.keys(where).length === 0) {
         return Promise.resolve([
           { event_id: 1, name: 'Test Event 1' },
@@ -221,7 +219,7 @@ describe('eventsService.getUpcomingEvents', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getUpcomingEvents()).rejects.toThrow('Failed to fetch upcoming events: DB error');
   });
@@ -233,7 +231,7 @@ describe('eventsService.deleteEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.delete.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.deleteEvent(1)).rejects.toThrow('Failed to delete event: DB error');
   });
@@ -253,7 +251,7 @@ describe('eventsService.updateEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.$queryRawUnsafe.mockImplementationOnce(() => { throw new Error('DB error'); });
     await expect(eventsService.updateEvent(1, { title: 'Fail Event' })).rejects.toThrow('Failed to update event: DB error');
   });
@@ -285,6 +283,7 @@ describe('eventsService.createEvent', () => {
     const data = {
       organization_id: 1,
       title: 'New Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 1, label: 'A1' }],
@@ -299,6 +298,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Bad Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: '{bad json}',
@@ -310,6 +310,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Bad Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [],
@@ -318,11 +319,12 @@ describe('eventsService.createEvent', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.create.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Fail Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [],
@@ -334,6 +336,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ label: 'A1' }],
@@ -345,6 +348,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 1 }],
@@ -356,6 +360,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 'string', label: 'A1' }],
@@ -367,6 +372,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 1, label: 123 }],
@@ -378,6 +384,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 1, label: 'A1', price: 'invalid' }],
@@ -389,6 +396,7 @@ describe('eventsService.createEvent', () => {
     await expect(eventsService.createEvent({
       organization_id: 1,
       title: 'Invalid Event',
+      location: 'Test Location',
       start_time: new Date(),
       end_time: new Date(),
       seat_map: [{ id: 1, label: 'A1', available: 'invalid' }],
@@ -400,8 +408,8 @@ describe('eventsService.createEvent', () => {
     const eventData = {
       title: "Test Event",
       description: "A test event",
-      date: new Date().toISOString(),
-      time: "20:00",
+      start_time: new Date(),
+      end_time: new Date(),
       location: "Test Venue",
       ticket_types: JSON.stringify([{
         type: "General",
@@ -421,8 +429,8 @@ describe('eventsService.createEvent', () => {
     const eventData = {
       title: "Test Event",
       description: "A test event",
-      date: new Date().toISOString(),
-      time: "20:00",
+      start_time: new Date(),
+      end_time: new Date(),
       location: "Test Venue",
       ticket_types: JSON.stringify([{
         type: "General",
@@ -439,11 +447,14 @@ describe('eventsService.createEvent', () => {
   });
 
   it('should handle seat map validation errors - invalid seat id type', async () => {
+    const now = new Date();
+    const later = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour later
+    
     const eventData = {
       title: "Test Event",
       description: "A test event",
-      date: new Date().toISOString(),
-      time: "20:00",
+      start_time: now,
+      end_time: later,
       location: "Test Venue",
       ticket_types: JSON.stringify([{
         type: "General",
@@ -462,15 +473,18 @@ describe('eventsService.createEvent', () => {
 
     await expect(eventsService.createEvent(eventData))
       .rejects
-      .toThrow('\'id\' must be a number');
+      .toThrow('Seat at index 0: \'id\' must be a number');
   });
 
   it('should handle seat map validation errors - invalid label type', async () => {
+    const now = new Date();
+    const later = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour later
+    
     const eventData = {
       title: "Test Event",
       description: "A test event",
-      date: new Date().toISOString(),
-      time: "20:00",
+      start_time: now,
+      end_time: later,
       location: "Test Venue",
       ticket_types: JSON.stringify([{
         type: "General",
@@ -489,15 +503,18 @@ describe('eventsService.createEvent', () => {
 
     await expect(eventsService.createEvent(eventData))
       .rejects
-      .toThrow('\'label\' must be a string');
+      .toThrow('Seat at index 0: \'label\' must be a string');
   });
 
   it('should handle seat map validation errors - invalid price type', async () => {
+    const now = new Date();
+    const later = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour later
+    
     const eventData = {
       title: "Test Event",
       description: "A test event",
-      date: new Date().toISOString(),
-      time: "20:00",
+      start_time: now,
+      end_time: later,
       location: "Test Venue",
       ticket_types: JSON.stringify([{
         type: "General",
@@ -517,7 +534,7 @@ describe('eventsService.createEvent', () => {
 
     await expect(eventsService.createEvent(eventData))
       .rejects
-      .toThrow('\'price\' must be a number');
+      .toThrow('Seat at index 0: \'price\' must be a number');
   });
 });
 
@@ -533,7 +550,7 @@ describe('eventsService.getEventById', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findUnique.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getEventById(1)).rejects.toThrow('Failed to fetch event: DB error');
   });
@@ -562,7 +579,7 @@ describe('eventsService.getAllEvents', () => {
       });
 
       it('should throw error if db fails', async () => {
-        const db = require('../lib/database');
+        const db = require('../../../lib/database');
         db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
         await expect(eventsService.searchEvents('Search')).rejects.toThrow('Failed to search events: DB error');
       });
@@ -595,7 +612,7 @@ describe('eventsService.getAllEvents', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getAllEvents()).rejects.toThrow('Failed to fetch events: DB error');
   });
@@ -618,7 +635,7 @@ describe('eventsService.getEventsByCategory', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getEventsByCategory('Sports')).rejects.toThrow('Failed to fetch events by category: DB error');
   });
@@ -663,7 +680,7 @@ describe('eventsService.getSeatMap', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.findUnique.mockRejectedValueOnce(new Error('DB error'));
     await expect(eventsService.getSeatMap(1)).rejects.toThrow('Failed to fetch seat map: DB error');
   });
@@ -681,7 +698,7 @@ describe('eventsService.updateSeatMap', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.event.update.mockRejectedValueOnce(new Error('DB error'));
     
     const newSeatMap = [{ id: 'A1', row: 'A', seat: 1, status: 'booked' }];

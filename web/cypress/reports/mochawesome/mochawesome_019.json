@@ -1,0 +1,144 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 3,
+    "passes": 3,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-10-12T14:23:40.361Z",
+    "end": "2025-10-12T14:23:44.814Z",
+    "duration": 4453,
+    "testsRegistered": 3,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "4a8215ab-5afa-41cc-88d5-d552036a4d67",
+      "title": "",
+      "fullFile": "cypress\\e2e\\05-login-validation.cy.ts",
+      "file": "cypress\\e2e\\05-login-validation.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+          "title": "Login form validation",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "requires email and password",
+              "fullTitle": "Login form validation requires email and password",
+              "timedOut": null,
+              "duration": 869,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.contains('button', /sign in/i).click();\n// built-in browser constraint validation messages are not easily assertable cross-browsers\n// Instead verify the inputs are still invalid and focused cycles\ncy.get('#email:invalid').should('exist');\ncy.get('#password:invalid').should('exist');",
+              "err": {},
+              "uuid": "1711afd1-91c2-4091-8e6d-f80db6959277",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "validates email format",
+              "fullTitle": "Login form validation validates email format",
+              "timedOut": null,
+              "duration": 1343,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.get('#email').type('not-an-email');\ncy.get('#password').type('somepassword');\ncy.contains('button', /sign in/i).click();\ncy.get('#email:invalid').should('exist');",
+              "err": {},
+              "uuid": "fdab617e-48c1-46f2-a0e5-4dae6317c7dd",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            },
+            {
+              "title": "shows loading state and prevents double submit",
+              "fullTitle": "Login form validation shows loading state and prevents double submit",
+              "timedOut": null,
+              "duration": 2157,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "// stub login to delay\ncy.intercept('POST', '**/api/auth/login', (req) => {\n    return new Promise((resolve) => setTimeout(() => resolve(req.reply({ statusCode: 401, body: { success: false, message: 'Login failed' } })), 500));\n}).as('login');\ncy.get('#email').type('user@example.com');\ncy.get('#password').type('password');\ncy.contains('button', /sign in/i).click();\n// Button changes text and becomes disabled during in-flight request\ncy.contains('button', /signing in/i).should('exist').and('be.disabled');\ncy.wait('@login');",
+              "err": {},
+              "uuid": "f3fabb3b-3615-4dab-ac50-101d4ed7a808",
+              "parentUUID": "4de8a3b2-59d7-4c9f-973c-b848c61032d1",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "1711afd1-91c2-4091-8e6d-f80db6959277",
+            "fdab617e-48c1-46f2-a0e5-4dae6317c7dd",
+            "f3fabb3b-3615-4dab-ac50-101d4ed7a808"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 4369,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

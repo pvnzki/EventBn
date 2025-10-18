@@ -1,20 +1,100 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io'
+    show Platform; // Platform not available on web (guarded by kIsWeb)
 
 class AppConfig {
   // API Configuration
+  /// Base URL resolution with platform awareness.
+  /// Priority:
+  /// 1. Explicit .env BASE_URL
+  /// 2. Web: localhost (10.0.2.2 unusable in browser)
+  /// 3. Android emulator: 10.0.2.2
+  /// 4. Default: localhost
   static String get baseUrl {
-    final url = dotenv.env['BASE_URL'] ?? 'http://localhost:3001';
-    print('🔧 AppConfig: BASE_URL from .env: ${dotenv.env['BASE_URL']}');
-    print('🔧 AppConfig: Final baseUrl: $url');
-    return url;
+    final env = dotenv.env['BASE_URL'];
+    if (env != null && env.isNotEmpty) {
+      final isAndroid = _isAndroidDevice();
+      if (!isAndroid && env.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3001';
+        print(
+            '🔧 AppConfig: Non-Android runtime overriding 10.0.2.2 BASE_URL -> $adjusted');
+        return adjusted;
+      }
+      if (kIsWeb && env.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3001';
+        print(
+            '🔧 AppConfig: Web runtime overriding 10.0.2.2 BASE_URL -> $adjusted');
+        return adjusted;
+      }
+      print('🔧 AppConfig: Using BASE_URL from .env: $env');
+      return env;
+    }
+
+    if (kIsWeb) {
+      const webUrl = 'http://localhost:3001';
+      print('🔧 AppConfig: kIsWeb no env override, using $webUrl');
+      return webUrl;
+    }
+
+    try {
+      if (Platform.isAndroid) {
+        const androidEmu = 'http://10.0.2.2:3001';
+        print('🔧 AppConfig: Android platform detected, using $androidEmu');
+        return androidEmu;
+      }
+    } catch (_) {
+      // Platform not available (web) or other issue; fall through.
+    }
+
+    const fallback = 'http://localhost:3001';
+    print('🔧 AppConfig: Fallback baseUrl: $fallback');
+    return fallback;
+  }
+
+  /// Convenience method for building full API path.
+  static String api(String path) {
+    /// Convenience method for building full API path (ensures single slash between base and path)
+    final cleanedBase = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    final cleanedPath = path.startsWith('/') ? path : '/$path';
+    return '$cleanedBase$cleanedPath';
   }
 
   static String get postServiceUrl {
-    final url = dotenv.env['POST_SERVICE_URL'] ?? 'http://localhost:3002';
-    print(
-        '🔧 AppConfig: POST_SERVICE_URL from .env: ${dotenv.env['POST_SERVICE_URL']}');
-    print('🔧 AppConfig: Final postServiceUrl: $url');
-    return url;
+    final envVal = dotenv.env['POST_SERVICE_URL'];
+    if (envVal != null && envVal.isNotEmpty) {
+      final isAndroid = _isAndroidDevice();
+      if (!isAndroid && envVal.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3002';
+        print(
+            '🔧 AppConfig: Non-Android runtime overriding 10.0.2.2 POST_SERVICE_URL -> $adjusted');
+        return adjusted;
+      }
+      if (kIsWeb && envVal.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3002';
+        print(
+            '🔧 AppConfig: Web runtime overriding 10.0.2.2 POST_SERVICE_URL -> $adjusted');
+        return adjusted;
+      }
+      print('🔧 AppConfig: Using POST_SERVICE_URL from .env: $envVal');
+      return envVal;
+    }
+    // Fallback logic parallels baseUrl
+    if (kIsWeb) {
+      const webUrl = 'http://localhost:3002';
+      print('🔧 AppConfig: kIsWeb post service using $webUrl');
+      return webUrl;
+    }
+    try {
+      if (Platform.isAndroid) {
+        const androidEmu = 'http://10.0.2.2:3002';
+        print('🔧 AppConfig: Android platform post service using $androidEmu');
+        return androidEmu;
+      }
+    } catch (_) {}
+    const fallback = 'http://localhost:3002';
+    print('🔧 AppConfig: Fallback postServiceUrl: $fallback');
+    return fallback;
   }
 
   // Stripe Configuration
@@ -82,4 +162,13 @@ class AppConfig {
   // Timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
+
+  // INTERNAL HELPERS
+  static bool _isAndroidDevice() {
+    try {
+      return !kIsWeb && Platform.isAndroid;
+    } catch (_) {
+      return false; // Platform not available (web build)
+    }
+  }
 }

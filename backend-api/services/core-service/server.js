@@ -93,53 +93,85 @@ app.use(limiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// CORS Configuration
+// CORS Configuration (enhanced for development diagnostics + broader dev ports)
+const explicitOrigins = (process.env.CORE_SERVICE_CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Default dev origins if none provided
+if (explicitOrigins.length === 0) {
+  explicitOrigins.push(
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:8080"
+  );
+}
+
+const LOCALHOST_REGEX = /^https?:\/\/localhost(?::\d+)?$/i;
+
+// For quick troubleshooting you can set CORE_SERVICE_ALLOW_ALL_CORS=true (dev only!)
+const allowAllDev = process.env.CORE_SERVICE_ALLOW_ALL_CORS === "true";
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = process.env.CORE_SERVICE_CORS_ORIGINS?.split(",") || [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:3002",
-      "http://127.0.0.1:3002",
-      "http://localhost:8080",
-      "http://127.0.0.1:8080",
-    ];
-    
-    // Allow localhost with any port in development
-    if (process.env.NODE_ENV === 'development') {
-      if (origin.match(/^http:\/\/localhost:\d+$/) || 
-          origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
-        return callback(null, true);
-      }
-    }
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
+  origin: (origin, callback) => {
+    if (allowAllDev) {
+      if (origin) console.log(`[CORS][DEV-WILDCARD] Allowing ${origin}`);
       return callback(null, true);
     }
-    
-    console.warn(`[CORS] Blocked origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
+
+    // Allow no-origin requests (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (LOCALHOST_REGEX.test(origin) || explicitOrigins.includes(origin)) {
+      console.log(`[CORS] ✔ Allowed origin: ${origin}`);
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] ✖ Blocked origin: ${origin}`);
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
-    "Content-Type", 
-    "Authorization", 
-    "X-Service-Key", 
+    "Content-Type",
+    "Authorization",
+    "X-Service-Key",
     "X-Requested-With",
     "Accept",
     "Origin",
-    "Cache-Control",
-    "Pragma"
   ],
   exposedHeaders: ["X-Service-Name", "X-Service-Version"],
-  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+  maxAge: 86400, // 24h to reduce preflights in dev
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
 };
+
+// Attach CORS early
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+// Safety middleware: ensure any error still returns an ACAO header in dev (best-effort)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowAllDev && origin && !res.headersSent) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      corsOptions.allowedHeaders.join(", ")
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      corsOptions.methods.join(", ")
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  next();
+});
 
 // Handle preflight requests for all routes
 app.options('*', cors(corsOptions));
@@ -149,6 +181,43 @@ app.use((req, res, next) => {
   res.setHeader("X-Service-Name", "core-service");
   res.setHeader("X-Service-Version", "1.0.0");
   next();
+});
+
+// ANALYTICS TEST ROUTE - MUST BE BEFORE OTHER ROUTE IMPORTS
+app.get("/test-analytics/:organizationId", async (req, res) => {
+  try {
+    const organizationId = parseInt(req.params.organizationId);
+    console.log('=== DIRECT ANALYTICS TEST FOR ORG:', organizationId, '===');
+    
+    const events = await prisma.event.findMany({
+      where: { organization_id: organizationId },
+      select: { event_id: true, title: true }
+    });
+    console.log('EVENTS FOUND:', events.length, events);
+    
+    const eventIds = events.map(e => e.event_id);
+    const ticketCount = await prisma.ticket_purchase.count({
+      where: { event_id: { in: eventIds } }
+    });
+    console.log('TICKET COUNT:', ticketCount);
+    
+    const result = {
+      totalEvents: events.length,
+      ticketsSold: ticketCount,
+      totalRevenue: 0,
+      totalAttendees: ticketCount,
+      conversionRate: 0,
+      avgTicketPrice: 0,
+      revenueGrowth: 0,
+      attendeeGrowth: 0
+    };
+    
+    console.log('FINAL RESULT:', result);
+    res.json({ success: true, data: result, debug: true });
+  } catch (error) {
+    console.error('Direct test error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Import route handlers

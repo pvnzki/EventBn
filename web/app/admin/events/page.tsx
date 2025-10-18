@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -49,7 +51,9 @@ interface Event {
 }
 
 export default function AdminEventsPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -57,24 +61,36 @@ export default function AdminEventsPage() {
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/events")
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    setEventsLoading(true);
+    fetch(apiUrl("api/events"), { headers })
       .then((res) => res.json())
       .then((response) => {
         if (response.success) {
           setEvents(response.data);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error(err))
+      .finally(() => setEventsLoading(false));
   }, []);
 
   const handleDeleteEvent = async (event: Event) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/events/${event.event_id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(apiUrl(`api/events/${event.event_id}`), {
+        method: "DELETE",
+        headers,
+      });
       if (response.ok) {
         setEvents(events.filter((e) => e.event_id !== event.event_id));
         setEventToDelete(null);
@@ -131,7 +147,7 @@ export default function AdminEventsPage() {
   };
 
   const handleViewEvent = (event: Event) => {
-    setSelectedEvent(event);
+    router.push(`/admin/events/${event.event_id}`);
   };
 
   const closeModal = () => {
@@ -149,150 +165,162 @@ export default function AdminEventsPage() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 lg:ml-64">
-        <div className="p-6 lg:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">All Events</h1>
-              <p className="text-gray-600 mt-2">
-                Manage all events across the platform
-              </p>
-            </div>
-            {/* Create Event button removed */}
-          </div>
-
-          {/* Filters */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search events..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="sold_out">Sold Out</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="conference">Conference</SelectItem>
-                    <SelectItem value="workshop">Workshop</SelectItem>
-                    <SelectItem value="festival">Festival</SelectItem>
-                    <SelectItem value="exhibition">Exhibition</SelectItem>
-                    <SelectItem value="sports">Sports</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {eventsLoading ? (
+        <div className="flex-1 lg:ml-64 flex items-center justify-center">
+          <Card className="max-w-md">
+            <CardContent className="pt-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Loading events...</h2>
+              <p className="text-gray-600">Fetching events data</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Latest events across the platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {filteredEvents.map((event) => (
-                  <div
-                    key={event.event_id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={event.cover_image_url || "/placeholder.jpg"}
-                        alt={event.title || "Event"}
-                        className="w-16 h-16 object-cover rounded-md"
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">
-                          {event.title || "Untitled Event"}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Category: {event.category || "N/A"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Venue: {event.venue || "N/A"}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Date: {formatDate(event.start_time)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Badge variant={getStatusColor(event.status)}>
-                        {event.status?.toLowerCase() || "N/A"}
-                      </Badge>
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleViewEvent(event)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleOpenDeleteModal(event)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          {filteredEvents.length === 0 && (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No events found
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {searchTerm ||
-                  statusFilter !== "all" ||
-                  categoryFilter !== "all"
-                    ? "Try adjusting your filters to see more events."
-                    : "Get started by creating your first event."}
+        </div>
+      ) : (
+        <div className="flex-1 lg:ml-64">
+          <div className="p-6 lg:p-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">All Events</h1>
+                <p className="text-gray-600 mt-2">
+                  Manage all events across the platform
                 </p>
-                <Link href="/create-event">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Event
-                  </Button>
-                </Link>
+              </div>
+              {/* Create Event button removed */}
+            </div>
+
+            {/* Filters */}
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search events..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="sold_out">Sold Out</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={categoryFilter}
+                    onValueChange={setCategoryFilter}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="conference">Conference</SelectItem>
+                      <SelectItem value="workshop">Workshop</SelectItem>
+                      <SelectItem value="festival">Festival</SelectItem>
+                      <SelectItem value="exhibition">Exhibition</SelectItem>
+                      <SelectItem value="sports">Sports</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
-          )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Events</CardTitle>
+                <CardDescription>
+                  Latest events across the platform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredEvents.map((event) => (
+                    <div
+                      key={event.event_id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={event.cover_image_url || "/placeholder.jpg"}
+                          alt={event.title || "Event"}
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">
+                            {event.title || "Untitled Event"}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Category: {event.category || "N/A"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Venue: {event.venue || "N/A"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Date: {formatDate(event.start_time)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Badge variant={getStatusColor(event.status)}>
+                          {event.status?.toLowerCase() || "N/A"}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleViewEvent(event)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleOpenDeleteModal(event)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            {filteredEvents.length === 0 && (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No events found
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    {searchTerm ||
+                    statusFilter !== "all" ||
+                    categoryFilter !== "all"
+                      ? "Try adjusting your filters to see more events."
+                      : "Get started by creating your first event."}
+                  </p>
+                  <Link href="/create-event">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Event
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

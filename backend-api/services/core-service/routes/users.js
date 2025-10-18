@@ -1,7 +1,9 @@
-const express = require("express");
+const express = require('express');
+const multer =require('multer');
+const bcrypt = require('bcrypt');
 const router = express.Router();
-const usersService = require("../users");
-const multer = require("multer");
+const usersService = require('../users');
+const { uploadStream } = require('../lib/cloudinary');
 const { cloudinary } = require("../lib/cloudinary");
 
 // Configure multer for memory storage
@@ -72,6 +74,76 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Configure Multer for memory storage (Cloudinary integration)
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// Update user password
+router.put('/:id/password', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Current password and new password are required'
+      });
+    }
+
+    // Get user to verify current password
+    const user = await usersService.getUserByIdWithPassword(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    await usersService.updateUser(userId, { password_hash: newPasswordHash });
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update user
+router.put("/:id", upload.single("profile_picture"), async (req, res) => {
 // Update user (basic update without file upload)
 router.put("/:id", async (req, res) => {
   try {
@@ -86,6 +158,20 @@ router.put("/:id", async (req, res) => {
       req.headers.authorization?.slice(0, 20) + "..."
     );
 
+    // If a new profile picture is uploaded, upload to Cloudinary
+    if (req.file) {
+      console.log('Uploading profile picture to Cloudinary...');
+      const result = await uploadStream(req.file.buffer, {
+        folder: 'eventbn/profile_pictures',
+        resource_type: 'image',
+        transformation: [
+          { width: 400, height: 400, crop: 'fill' },
+          { quality: 'auto' }
+        ]
+      });
+      
+      updateData.profile_picture = result.secure_url;
+      console.log('Profile picture uploaded to Cloudinary:', result.secure_url);
     // Ensure user can only update their own profile
     if (req.userId && req.params.id !== req.userId.toString()) {
       console.log(
