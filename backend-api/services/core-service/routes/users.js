@@ -6,9 +6,6 @@ const usersService = require('../users');
 const { uploadStream } = require('../lib/cloudinary');
 const { cloudinary } = require("../lib/cloudinary");
 
-// Configure multer for memory storage
-const upload = multer({ storage: multer.memoryStorage() });
-
 // Get all users
 router.get("/", async (req, res) => {
   try {
@@ -142,10 +139,8 @@ router.put('/:id/password', async (req, res) => {
   }
 });
 
-// Update user
+// Update user (with optional profile picture upload)
 router.put("/:id", upload.single("profile_picture"), async (req, res) => {
-// Update user (basic update without file upload)
-router.put("/:id", async (req, res) => {
   try {
     console.log(`🔄 [USER UPDATE] Updating user ${req.params.id}`);
     console.log(
@@ -172,6 +167,8 @@ router.put("/:id", async (req, res) => {
       
       updateData.profile_picture = result.secure_url;
       console.log('Profile picture uploaded to Cloudinary:', result.secure_url);
+    }
+
     // Ensure user can only update their own profile
     if (req.userId && req.params.id !== req.userId.toString()) {
       console.log(

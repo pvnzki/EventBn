@@ -1498,57 +1498,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       });
     }
   }
-
-  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.photo_camera_outlined,
-            size: 80,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No Posts Yet',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'When you share photos and videos, they\'ll appear on your profile.',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: () {
-              // Navigate to create post screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Create Post coming soon!')),
-              );
-            },
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Share Your First Post'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              side: BorderSide(color: colorScheme.primary),
-              foregroundColor: colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // Settings Modal Widgets

@@ -244,6 +244,35 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Redis status endpoint
+app.get("/redis/status", (req, res) => {
+  const { getRedisStatus, resetRedisCircuitBreaker } = require("./lib/redis");
+  const status = getRedisStatus();
+  
+  res.json({
+    redis: status,
+    message: status.isCircuitBreakerOpen 
+      ? "Redis circuit breaker is open - connection temporarily suspended"
+      : status.isConnected 
+        ? "Redis is connected and operational"
+        : "Redis is not connected",
+    actions: {
+      reset: "/redis/reset"
+    }
+  });
+});
+
+// Redis circuit breaker reset endpoint (for manual intervention)
+app.post("/redis/reset", (req, res) => {
+  const { resetRedisCircuitBreaker } = require("./lib/redis");
+  resetRedisCircuitBreaker();
+  
+  res.json({
+    message: "Redis circuit breaker has been reset",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Routes - Mount auth routes first to avoid conflicts
 app.use("/auth", authRoutes); // Auth routes (signup, login, etc.) - no /api prefix to avoid conflicts
 app.use("/api/auth", authRoutes); // Also mount at /api/auth for compatibility
