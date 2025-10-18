@@ -513,7 +513,7 @@ router.post("/auth/login/2fa", async (req, res) => {
 
 router.post("/auth/register", async (req, res) => {
   try {
-    const { name, email, password, phone_number, profile_picture } =
+    const { name, email, password, phone_number, profile_picture, date_of_birth } =
       req.body || {};
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -543,6 +543,28 @@ router.post("/auth/register", async (req, res) => {
     const saltRounds = 12;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
+    // Parse date_of_birth if provided
+    let parsedDateOfBirth = null;
+    if (date_of_birth) {
+      try {
+        parsedDateOfBirth = new Date(date_of_birth);
+        // Validate it's a valid date
+        if (isNaN(parsedDateOfBirth.getTime())) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid date_of_birth format",
+            message: "Invalid date_of_birth format. Expected YYYY-MM-DD",
+          });
+        }
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid date_of_birth format",
+          message: "Invalid date_of_birth format. Expected YYYY-MM-DD",
+        });
+      }
+    }
+
     // Create user
     const newUser = await prisma.user.create({
       data: {
@@ -551,6 +573,7 @@ router.post("/auth/register", async (req, res) => {
         password_hash,
         phone_number: phone_number?.trim() || null,
         profile_picture: profile_picture?.trim() || null,
+        date_of_birth: parsedDateOfBirth,
         is_active: true,
         is_email_verified: false,
         role: "USER",

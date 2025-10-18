@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
-import '../../profile/screens/edit_profile_screen.dart';
+import '../../profile/screens/my_profile_screen.dart';
 import '../services/seat_lock_service.dart';
 import '../../../common_widgets/custom_notification.dart';
 
@@ -256,11 +256,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Show profile completion dialog
       final shouldNavigate = await _showProfileCompletionDialog();
       if (shouldNavigate == true) {
-        print('👤 Navigating to edit profile screen');
+        print('👤 Navigating to profile billing address');
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const EditProfileScreen(),
+            builder: (context) => const ProfileScreen(showBillingAddress: true),
           ),
         );
 
@@ -316,6 +316,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
   }
+
+
 
   void _showIncompleteProfileSnackBar() {
     CustomNotification.show(

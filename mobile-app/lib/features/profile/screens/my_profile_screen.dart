@@ -13,7 +13,9 @@ import '../../auth/screens/security_settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showBillingAddress;
+  
+  const ProfileScreen({super.key, this.showBillingAddress = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -121,6 +123,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     // Now load user posts
     _loadUserPosts();
+    
+    // Show billing address modal if requested
+    if (widget.showBillingAddress) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showBillingAddressModal(context);
+      });
+    }
   }
 
   @override

@@ -20,7 +20,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _dateOfBirthController = TextEditingController();
 
+  DateTime? _selectedDateOfBirth;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -31,6 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
+    _dateOfBirthController.dispose();
     super.dispose();
   }
 
@@ -78,12 +81,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String? _validatePhone(String? value) {
-    if (value != null && value.trim().isNotEmpty) {
-      if (!RegExp(r'^\+?[\d\s\-\(\)]+$').hasMatch(value.trim())) {
-        return 'Enter a valid phone number';
-      }
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+    if (!RegExp(r'^\+?[\d\s\-\(\)]+$').hasMatch(value.trim())) {
+      return 'Enter a valid phone number';
     }
     return null;
+  }
+
+  String? _validateDateOfBirth(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Date of birth is required';
+    }
+    if (_selectedDateOfBirth == null) {
+      return 'Please select a valid date';
+    }
+    
+    // Check if user is at least 13 years old
+    final now = DateTime.now();
+    final age = now.year - _selectedDateOfBirth!.year;
+    final monthDiff = now.month - _selectedDateOfBirth!.month;
+    final dayDiff = now.day - _selectedDateOfBirth!.day;
+    
+    int actualAge = age;
+    if (monthDiff < 0 || (monthDiff == 0 && dayDiff < 0)) {
+      actualAge--;
+    }
+    
+    if (actualAge < 13) {
+      return 'You must be at least 13 years old to register';
+    }
+    
+    return null;
+  }
+
+  Future<void> _selectDateOfBirth() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 20)), // Default to 20 years ago
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select Date of Birth',
+      fieldLabelText: 'Date of Birth',
+    );
+    
+    if (picked != null && picked != _selectedDateOfBirth) {
+      setState(() {
+        _selectedDateOfBirth = picked;
+        _dateOfBirthController.text = 
+            '${picked.day}/${picked.month}/${picked.year}';
+      });
+    }
   }
 
   Future<void> _register() async {
@@ -97,7 +146,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      phoneNumber: _phoneController.text.trim().isEmpty ? '' : _phoneController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
+      dateOfBirth: _selectedDateOfBirth,
     );
 
     if (success && mounted) {
@@ -181,17 +231,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Phone field (optional)
+                    // Phone field (required)
                     TextFormField(
                       controller: _phoneController,
                       decoration: const InputDecoration(
-                        labelText: 'Phone Number (Optional)',
+                        labelText: 'Phone Number *',
                         prefixIcon: Icon(Icons.phone),
                         border: OutlineInputBorder(),
                       ),
                       validator: _validatePhone,
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Date of Birth field (required)
+                    TextFormField(
+                      controller: _dateOfBirthController,
+                      decoration: const InputDecoration(
+                        labelText: 'Date of Birth *',
+                        prefixIcon: Icon(Icons.cake),
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      validator: _validateDateOfBirth,
+                      readOnly: true,
+                      onTap: _selectDateOfBirth,
                     ),
                     const SizedBox(height: 16),
 
