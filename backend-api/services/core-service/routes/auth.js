@@ -7,10 +7,10 @@ const { authService, authenticateToken } = require("../auth/index.js");
 // Register user (Sign Up)
 router.post("/register", async (req, res) => {
   try {
-    console.log("[AUTH] Registration request received:", { 
-      email: req.body.email, 
+    console.log("[AUTH] Registration request received:", {
+      email: req.body.email,
       name: req.body.name,
-      hasPassword: !!req.body.password 
+      hasPassword: !!req.body.password,
     });
 
     const { name, email, password, phone_number, role } = req.body;
@@ -21,10 +21,12 @@ router.post("/register", async (req, res) => {
         success: false,
         message: "Name, email, and password are required",
         errors: [
-          ...((!name) ? [{ field: "name", message: "Name is required" }] : []),
-          ...((!email) ? [{ field: "email", message: "Email is required" }] : []),
-          ...((!password) ? [{ field: "password", message: "Password is required" }] : [])
-        ]
+          ...(!name ? [{ field: "name", message: "Name is required" }] : []),
+          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
+          ...(!password
+            ? [{ field: "password", message: "Password is required" }]
+            : []),
+        ],
       });
     }
 
@@ -34,7 +36,7 @@ router.post("/register", async (req, res) => {
       email: email.toLowerCase().trim(),
       password,
       phone_number: phone_number || null,
-      role: role || "ATTENDEE"
+      role: role || "ATTENDEE",
     });
 
     console.log("[AUTH] Registration successful for:", result.user.email);
@@ -43,9 +45,8 @@ router.post("/register", async (req, res) => {
       success: true,
       message: "Registration successful",
       data: result.user,
-      token: result.token
+      token: result.token,
     });
-
   } catch (error) {
     console.error("[AUTH] Registration error:", error);
 
@@ -54,7 +55,9 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: error.message,
-        errors: error.errors || [{ field: error.field, message: error.message }]
+        errors: error.errors || [
+          { field: error.field, message: error.message },
+        ],
       });
     }
 
@@ -63,7 +66,9 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
-        errors: [{ field: "email", message: "This email is already registered" }]
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
       });
     }
 
@@ -72,14 +77,19 @@ router.post("/register", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
-        errors: [{ field: "email", message: "This email is already registered" }]
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
       });
     }
 
     res.status(500).json({
       success: false,
       message: "Registration failed",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
@@ -87,10 +97,10 @@ router.post("/register", async (req, res) => {
 // Sign up endpoint (alias for register)
 router.post("/signup", async (req, res) => {
   try {
-    console.log("[AUTH] Signup request received (redirecting to register):", { 
-      email: req.body.email, 
+    console.log("[AUTH] Signup request received (redirecting to register):", {
+      email: req.body.email,
       name: req.body.name,
-      hasPassword: !!req.body.password 
+      hasPassword: !!req.body.password,
     });
 
     const { name, email, password, phone_number, role } = req.body;
@@ -101,10 +111,12 @@ router.post("/signup", async (req, res) => {
         success: false,
         message: "Name, email, and password are required",
         errors: [
-          ...((!name) ? [{ field: "name", message: "Name is required" }] : []),
-          ...((!email) ? [{ field: "email", message: "Email is required" }] : []),
-          ...((!password) ? [{ field: "password", message: "Password is required" }] : [])
-        ]
+          ...(!name ? [{ field: "name", message: "Name is required" }] : []),
+          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
+          ...(!password
+            ? [{ field: "password", message: "Password is required" }]
+            : []),
+        ],
       });
     }
 
@@ -114,7 +126,7 @@ router.post("/signup", async (req, res) => {
       email: email.toLowerCase().trim(),
       password,
       phone_number: phone_number || null,
-      role: role || "ATTENDEE"
+      role: role || "ATTENDEE",
     });
 
     console.log("[AUTH] Signup successful for:", result.user.email);
@@ -123,9 +135,8 @@ router.post("/signup", async (req, res) => {
       success: true,
       message: "Signup successful",
       data: result.user,
-      token: result.token
+      token: result.token,
     });
-
   } catch (error) {
     console.error("[AUTH] Signup error:", error);
 
@@ -134,7 +145,9 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: error.message,
-        errors: error.errors || [{ field: error.field, message: error.message }]
+        errors: error.errors || [
+          { field: error.field, message: error.message },
+        ],
       });
     }
 
@@ -143,7 +156,9 @@ router.post("/signup", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
-        errors: [{ field: "email", message: "This email is already registered" }]
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
       });
     }
 
@@ -152,14 +167,19 @@ router.post("/signup", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
-        errors: [{ field: "email", message: "This email is already registered" }]
+        errors: [
+          { field: "email", message: "This email is already registered" },
+        ],
       });
     }
 
     res.status(500).json({
       success: false,
       message: "Signup failed",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
@@ -167,9 +187,9 @@ router.post("/signup", async (req, res) => {
 // Login user
 router.post("/login", async (req, res) => {
   try {
-    console.log("[AUTH] Login request received:", { 
-      email: req.body.email, 
-      hasPassword: !!req.body.password 
+    console.log("[AUTH] Login request received:", {
+      email: req.body.email,
+      hasPassword: !!req.body.password,
     });
 
     const { email, password } = req.body;
@@ -180,17 +200,30 @@ router.post("/login", async (req, res) => {
         success: false,
         message: "Email and password are required",
         errors: [
-          ...((!email) ? [{ field: "email", message: "Email is required" }] : []),
-          ...((!password) ? [{ field: "password", message: "Password is required" }] : [])
-        ]
+          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
+          ...(!password
+            ? [{ field: "password", message: "Password is required" }]
+            : []),
+        ],
       });
     }
 
     // Use the auth service to login the user
     const result = await authService.login({
       email: email.toLowerCase().trim(),
-      password
+      password,
     });
+
+    // Check if 2FA is required
+    if (result.requiresTwoFactor) {
+      console.log("[AUTH] 2FA required, returning 2FA response");
+      return res.status(200).json({
+        success: false,
+        requiresTwoFactor: true,
+        twoFactorMethod: result.twoFactorMethod || "app",
+        message: result.message || "2FA required",
+      });
+    }
 
     console.log("[AUTH] Login successful for:", result.user.email);
 
@@ -198,9 +231,8 @@ router.post("/login", async (req, res) => {
       success: true,
       message: "Login successful",
       data: result.user,
-      token: result.token
+      token: result.token,
     });
-
   } catch (error) {
     console.error("[AUTH] Login error:", error);
 
@@ -209,36 +241,76 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: error.message,
-        errors: error.errors || [{ field: error.field, message: error.message }]
+        errors: error.errors || [
+          { field: error.field, message: error.message },
+        ],
       });
     }
 
     // Handle invalid credentials
-    if (error.message.includes("Invalid email or password") || 
-        error.message.includes("Account setup incomplete")) {
+    if (
+      error.message.includes("Invalid email or password") ||
+      error.message.includes("Account setup incomplete")
+    ) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
-        errors: [{ field: "credentials", message: "Invalid email or password" }]
+        errors: [
+          { field: "credentials", message: "Invalid email or password" },
+        ],
       });
     }
 
     res.status(500).json({
       success: false,
       message: "Login failed",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 });
 
-// Get current user
+// Get current user (complete profile data from database)
 router.get("/me", authenticateToken, async (req, res) => {
   try {
+    const userId = req.user.userId || req.user.user_id || req.user.id;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID not found in token",
+      });
+    }
+
+    console.log(`🔍 [AUTH /me] Fetching complete user data for ID: ${userId}`);
+
+    // Fetch complete user data from database instead of just returning JWT payload
+    const usersService = require("../users");
+    const completeUser = await usersService.getUserById(userId);
+
+    if (!completeUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(`✅ [AUTH /me] Retrieved complete user data:`, {
+      user_id: completeUser.user_id,
+      phone_number: completeUser.phone_number,
+      date_of_birth: completeUser.date_of_birth,
+      billing_address: completeUser.billing_address,
+      fieldsCount: Object.keys(completeUser).length
+    });
+
     res.json({
       success: true,
-      user: req.user,
+      user: completeUser,
     });
   } catch (error) {
+    console.error(`❌ [AUTH /me] Error fetching user data:`, error.message);
     res.status(500).json({
       success: false,
       message: error.message,

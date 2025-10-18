@@ -15,6 +15,7 @@ import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/auth/screens/welcome_login_screen.dart';
 import '../../features/auth/screens/email_login_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/two_factor_login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/profile_setup_screen.dart';
 import '../../features/auth/screens/location_setup_screen.dart';
@@ -70,6 +71,18 @@ class AppRouter {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/two-factor-login',
+        name: 'two-factor-login',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return TwoFactorLoginScreen(
+            email: extra['email'] as String,
+            password: extra['password'] as String,
+            twoFactorMethod: extra['twoFactorMethod'] as String?,
+          );
+        },
       ),
       GoRoute(
         path: '/register',
@@ -420,10 +433,7 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => ExplorePostsPage(
-              focusSearch: state.extra is Map &&
-                  (state.extra as Map)['focusSearch'] == true,
-            ),
+            builder: (context, state) => const ExplorePostsPage(),
           ),
           GoRoute(
             path: '/tickets',

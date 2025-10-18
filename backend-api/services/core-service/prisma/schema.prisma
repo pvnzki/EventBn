@@ -34,6 +34,14 @@ model User {
   marketing_emails_enabled       Boolean?          @default(true)
   event_notifications_enabled    Boolean?          @default(true)
   sms_notifications_enabled      Boolean?          @default(true)
+  two_factor_secret              String?           @db.VarChar(255)
+  two_factor_enabled             Boolean?          @default(false)
+  two_factor_backup_codes        Json?
+  two_factor_recovery_used       Int?              @default(0)
+  last_two_factor_at             DateTime?         @db.Timestamptz(6)
+  two_factor_method              String?           @default("app") @db.VarChar(10)
+  email_otp_code                 String?           @db.VarChar(6)
+  email_otp_expires_at           DateTime?         @db.Timestamp(6)
   organizations                  Organization[]
   search_logs                    Search_Log[]
   payment                        payment[]
@@ -42,6 +50,8 @@ model User {
   @@index([billing_country], map: "idx_user_billing_country")
   @@index([phone_number], map: "idx_user_phone_number")
   @@index([profile_completed], map: "idx_user_profile_completed")
+  @@index([email_otp_expires_at], map: "idx_user_email_otp_expires_at")
+  @@index([is_active, role, created_at(sort: Desc)], map: "idx_user_active_role_created_at")
   @@map("User")
 }
 
@@ -62,6 +72,7 @@ model Organization {
   @@map("Organization")
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Event {
   event_id         Int               @id @default(autoincrement())
   organization_id  Int?
@@ -85,6 +96,11 @@ model Event {
   payment          payment[]
   ticket_purchase  ticket_purchase[]
 
+  @@index([status, start_time], map: "idx_event_active_start_time")
+  @@index([category], map: "idx_event_category")
+  @@index([organization_id], map: "idx_event_organization_id")
+  @@index([start_time], map: "idx_event_start_time")
+  @@index([status], map: "idx_event_status")
   @@map("Event")
 }
 
@@ -145,6 +161,19 @@ model ticket_purchase {
   Event         Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade, onUpdate: NoAction)
   payment       payment? @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade, onUpdate: NoAction)
   User          User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model guest_user {
+  id           String   @id @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  name         String   @db.VarChar
+  email        String   @db.VarChar
+  street       String?  @db.VarChar
+  city         String?  @db.VarChar
+  postal_code  String?  @db.VarChar
+  telephone_no String?  @db.VarChar
+  payment_id   String?  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 }
 
 enum status {

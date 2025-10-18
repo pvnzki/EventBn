@@ -1,21 +1,29 @@
-# Use a Node.js image with Debian base (build tools friendly)
-FROM node:18-bullseye
+# Use a more secure and updated Node.js image
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Install required build tools for bcrypt & Prisma
-RUN apt-get update && apt-get install -y \
+# Install required build tools for bcrypt & Prisma (Alpine Linux)
+RUN apk add --no-cache \
     python3 \
     make \
     g++ \
     openssl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    git
 
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install --production
+
+# Copy Prisma schemas for services
+COPY services/*/prisma ./prisma/
+COPY services/core-service/package*.json ./services/core-service/
+COPY services/post-service/package*.json ./services/post-service/
+
+# Install dependencies for each service
+RUN cd services/core-service && npm install --production
+RUN cd services/post-service && npm install --production
 
 # Copy the rest of the backend code
 COPY . .
