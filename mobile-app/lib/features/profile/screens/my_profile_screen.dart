@@ -606,14 +606,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _showThemeDialog(context,
                         Provider.of<ThemeProvider>(context, listen: false));
                   }),
-                  _buildSettingsOption(
-                      context, Icons.help_outline, 'Help & Support', () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Help & Support coming soon!')),
-                    );
-                  }),
+                  // Help & Support removed until implemented
                   const SizedBox(height: 16),
                 ],
               ),
@@ -676,15 +669,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   const SizedBox(height: 16),
                   _buildSettingsOption(
-                      context, Icons.notifications_outlined, 'Notifications',
-                      () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Notifications settings coming soon!')),
-                    );
-                  }),
-                  _buildSettingsOption(
                       context, Icons.location_on_outlined, 'Billing Address',
                       () {
                     Navigator.pop(context);
@@ -701,14 +685,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Navigator.pop(context);
                     _showCommunicationPreferencesModal(context);
                   }),
-                  _buildSettingsOption(
-                      context, Icons.privacy_tip_outlined, 'Privacy', () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Privacy settings coming soon!')),
-                    );
-                  }),
+                  // Notifications and Privacy removed until implemented
                   _buildSettingsOption(
                       context, Icons.security_outlined, 'Security', () {
                     Navigator.pop(context);
@@ -866,8 +843,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   children: [
                     _buildStatColumn(
                         '${_userPosts.length}', 'Posts', colorScheme),
-                    _buildStatColumn('0', 'Followers', colorScheme),
-                    _buildStatColumn('0', 'Following', colorScheme),
+                    // Followers & Following removed until backend is implemented
                   ],
                 ),
               ),
