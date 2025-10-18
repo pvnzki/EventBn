@@ -12,8 +12,6 @@ class EventAttendeesScreen extends StatefulWidget {
 }
 
 class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
-  String selectedTab = 'All';
-  final List<String> tabs = ['All', 'Friends', 'Following'];
   final EventService _eventService = EventService();
 
   List<Map<String, dynamic>> attendees = [];
@@ -187,14 +185,9 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
     }
 
     try {
-      final filtered = switch (selectedTab) {
-        'Friends' => attendees.where((a) => a['isFriend'] == true).toList(),
-        'Following' =>
-          attendees.where((a) => a['isFollowing'] == true).toList(),
-        _ => List<Map<String, dynamic>>.from(attendees),
-      };
-      print(
-          '🔍 filteredAttendees: ${filtered.length} items for tab: $selectedTab');
+      // Always return all attendees since we removed tabs
+      final filtered = List<Map<String, dynamic>>.from(attendees);
+      print('🔍 filteredAttendees: ${filtered.length} items (all attendees)');
       return filtered;
     } catch (e) {
       print('❌ Error in filteredAttendees: $e');
@@ -228,7 +221,6 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
       body: Column(
         children: [
           _buildHeader(theme),
-          _buildTabBar(theme),
           Expanded(
             child: _buildAttendeesList(theme),
           ),
@@ -306,44 +298,6 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        children: tabs.map((tab) {
-          final isSelected = selectedTab == tab;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => selectedTab = tab),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? theme.primaryColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Text(
-                  tab,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -483,67 +437,11 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${attendee['mutualFriends']} mutual friends',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
               ],
             ),
           ),
-          _buildActionButton(attendee, theme),
         ],
       ),
     );
-  }
-
-  Widget _buildActionButton(Map<String, dynamic> attendee, ThemeData theme) {
-    if (attendee['isFollowing']) {
-      return ElevatedButton(
-        onPressed: () {
-          setState(() {
-            attendee['isFollowing'] = false;
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.surface,
-          foregroundColor: theme.primaryColor,
-          side: BorderSide(color: theme.primaryColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          minimumSize: Size.zero,
-        ),
-        child: const Text(
-          'Following',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      );
-    } else {
-      return ElevatedButton(
-        onPressed: () {
-          setState(() {
-            attendee['isFollowing'] = true;
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          minimumSize: Size.zero,
-        ),
-        child: const Text(
-          'Follow',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      );
-    }
   }
 }

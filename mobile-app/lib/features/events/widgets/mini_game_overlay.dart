@@ -28,16 +28,16 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
   bool _isSpinning = false;
   String? _selectedReward;
 
-  // TEMU-style wheel rewards (8 segments)
+  // TEMU-style wheel rewards (8 segments) - More "Try Again" for backend implementation
   final List<String> _wheelRewards = [
-    '\$100',
-    '59 Freespins',
-    '\$200',
-    'Gift',
-    '\$300',
-    '59 Freespins',
-    '\$500',
-    '\$700',
+    'Free Ticket',
+    'Try Again',
+    '10% Discount',
+    'Try Again',
+    'LKR 500 Cashback',
+    'Try Again',
+    'LKR 1000 Cashback',
+    'Try Again',
   ];
 
   // TEMU-style colors (deep blues and golds)
@@ -84,26 +84,47 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
     // Strong haptic feedback for spin start
     HapticFeedback.heavyImpact();
 
-    // Store starting angle
-    _startAngle = _wheelAngle;
+    // Store starting angle - normalize it to prevent accumulation issues
+    _startAngle = _wheelAngle % (2 * pi);
 
     // Realistic spin physics - start fast, slow down gradually
     final Random random = Random();
-    final double baseSpins = 12 +
-        random.nextDouble() * 8; // 12-20 full rotations for dramatic effect
-    final double randomOffset =
-        random.nextDouble() * 2 * pi; // Random final position
-    final double totalRotation = baseSpins * 2 * pi + randomOffset;
+    final double baseSpins = 15 +
+        random.nextDouble() * 5; // 15-20 full rotations for dramatic effect
 
-    // Calculate target angle
-    _targetAngle = _startAngle + totalRotation;
-
-    // Determine winning segment based on final position
-    final double normalizedAngle = (_targetAngle % (2 * pi));
+    // Calculate the segment angle
     final double segmentAngle = (2 * pi) / _wheelRewards.length;
+
+    // Always land on "Try Again" - choose index 1 for consistency
     final int winningSegment =
-        ((2 * pi - normalizedAngle) / segmentAngle).floor() %
+        1; // This will always select "Try Again" at index 1
+
+    // Calculate the exact center angle where we want to land
+    // Segments start at (i * segmentAngle - π/2), center is at start + segmentAngle/2
+    final double segmentStartAngle = (winningSegment * segmentAngle) - (pi / 2);
+    final double segmentCenterAngle = segmentStartAngle + (segmentAngle / 2);
+
+    // Calculate how much we need to rotate to align segment center with pointer (top = 0)
+    // We want: wheelAngle + rotation = -segmentCenterAngle (mod 2π)
+    double targetRotation = -segmentCenterAngle - _startAngle;
+
+    // Normalize to positive and add full spins
+    while (targetRotation < 0) targetRotation += 2 * pi;
+    targetRotation += baseSpins * 2 * pi;
+
+    // Calculate final target angle
+    _targetAngle = _startAngle + targetRotation;
+
+    // Debug: Verify the target will land on "Try Again"
+    final double finalNormalizedAngle = _targetAngle % (2 * pi);
+    final double pointerAngle = 0; // Pointer is at top
+    final double relativeAngle =
+        (finalNormalizedAngle - pointerAngle + 2 * pi) % (2 * pi);
+    final int calculatedSegment =
+        ((2 * pi - relativeAngle + pi / 2) / segmentAngle).floor() %
             _wheelRewards.length;
+    print(
+        'Target segment: $winningSegment, Calculated segment: $calculatedSegment, Reward: ${_wheelRewards[calculatedSegment]}');
 
     // Reset and start animation
     _wheelController.reset();
@@ -118,7 +139,8 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
 
     // Update final state
     setState(() {
-      _wheelAngle = _targetAngle;
+      // Normalize the wheel angle to prevent drift over multiple spins
+      _wheelAngle = _targetAngle % (2 * pi);
       _selectedReward = _wheelRewards[winningSegment];
       _isSpinning = false;
     });
@@ -524,12 +546,14 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                               ),
                             ),
 
-                            // Casino-style pointer
+                            // Casino-style pointer - positioned at exact middle top
                             Positioned(
-                              top: 20,
+                              top: 0, // Position at exact top
+                              left:
+                                  140, // Center horizontally (320/2 - 20 = 140 for pointer width ~40)
                               child: SizedBox(
-                                width: 0,
-                                height: 0,
+                                width: 40,
+                                height: 40,
                                 child: CustomPaint(
                                   painter: CasinoPointerPainter(isDark),
                                 ),
@@ -930,7 +954,9 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                 child: Column(
                                   children: [
                                     Text(
-                                      'You Won',
+                                      _selectedReward == 'Try Again'
+                                          ? 'Better Luck Next Time!'
+                                          : 'You Won',
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: Colors.white.withOpacity(0.8),
@@ -970,19 +996,29 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                 width: 200,
                                 height: 56,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF4CAF50),
-                                      Color(0xFF2E7D32),
-                                      Color(0xFF4CAF50),
-                                    ],
+                                  gradient: LinearGradient(
+                                    colors: _selectedReward == 'Try Again'
+                                        ? [
+                                            const Color(0xFFFF9800), // Orange
+                                            const Color(
+                                                0xFFE65100), // Dark orange
+                                            const Color(0xFFFF9800), // Orange
+                                          ]
+                                        : [
+                                            const Color(0xFF4CAF50), // Green
+                                            const Color(
+                                                0xFF2E7D32), // Dark green
+                                            const Color(0xFF4CAF50), // Green
+                                          ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.circular(28),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF4CAF50)
+                                      color: (_selectedReward == 'Try Again'
+                                              ? const Color(0xFFFF9800)
+                                              : const Color(0xFF4CAF50))
                                           .withOpacity(0.4),
                                       blurRadius: 15,
                                       spreadRadius: 2,
@@ -1020,10 +1056,12 @@ class _SpinningWheelScreenState extends State<SpinningWheelScreen>
                                       ),
                                     ),
                                     // Button text
-                                    const Center(
+                                    Center(
                                       child: Text(
-                                        'Collect Reward',
-                                        style: TextStyle(
+                                        _selectedReward == 'Try Again'
+                                            ? 'Continue'
+                                            : 'Collect Reward',
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
