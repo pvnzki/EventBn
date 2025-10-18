@@ -4,16 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/prisma/schema.prisma" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/api.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/common_widgets/bottom_nav_bar.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/common_widgets/bottom_nav_bar.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/auth/providers/auth_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/auth/providers/auth_provider.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/auth/screens/login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/auth/screens/login_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/payment_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/payment_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/payment/screens/seat_selection_screen.dart" afterDir="false" />
-    </list>
+    <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
