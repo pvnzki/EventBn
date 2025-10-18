@@ -9,7 +9,7 @@ module.exports = {
   async getUserById(id) {
     try {
       console.log(`👤 [Users] Getting user by ID: ${id} (type: ${typeof id})`);
-      
+
       // Parse ID to ensure it's a number
       const userId = parseInt(id);
       if (isNaN(userId)) {
@@ -215,15 +215,21 @@ module.exports = {
       if (updateData.date_of_birth) {
         try {
           updateData.date_of_birth = new Date(updateData.date_of_birth);
-          console.log(`🔍 [UPDATE_USER] Parsed date_of_birth:`, updateData.date_of_birth);
+          console.log(
+            `🔍 [UPDATE_USER] Parsed date_of_birth:`,
+            updateData.date_of_birth
+          );
         } catch (dateError) {
-          console.error(`❌ [UPDATE_USER] Invalid date format for date_of_birth:`, updateData.date_of_birth);
+          console.error(
+            `❌ [UPDATE_USER] Invalid date format for date_of_birth:`,
+            updateData.date_of_birth
+          );
           delete updateData.date_of_birth; // Remove invalid date
         }
       }
 
       // **FIX**: Remove null values to prevent overwriting existing data
-      Object.keys(updateData).forEach(key => {
+      Object.keys(updateData).forEach((key) => {
         if (updateData[key] === null || updateData[key] === undefined) {
           console.log(`🗑️ [UPDATE_USER] Removing null field: ${key}`);
           delete updateData[key];
@@ -234,7 +240,7 @@ module.exports = {
         fieldsCount: Object.keys(updateData).length,
         hasDateOfBirth: !!updateData.date_of_birth,
         hasPhoneNumber: !!updateData.phone_number,
-        hasBillingAddress: !!updateData.billing_address
+        hasBillingAddress: !!updateData.billing_address,
       });
 
       // Hash new password if provided

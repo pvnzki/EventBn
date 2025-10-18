@@ -28,7 +28,7 @@ router.get("/:id", async (req, res) => {
   try {
     console.log(`👤 [Users Route] GET /api/users/${req.params.id}`);
     console.log(`👤 [Users Route] Request headers:`, req.headers);
-    
+
     const user = await usersService.getUserById(req.params.id);
     if (!user) {
       console.log(`❌ [Users Route] User not found for ID: ${req.params.id}`);
@@ -37,14 +37,17 @@ router.get("/:id", async (req, res) => {
         message: "User not found",
       });
     }
-    
+
     console.log(`✅ [Users Route] User found, returning data`);
     res.json({
       success: true,
       data: user,
     });
   } catch (error) {
-    console.error(`❌ [Users Route] Error in GET /api/users/${req.params.id}:`, error);
+    console.error(
+      `❌ [Users Route] Error in GET /api/users/${req.params.id}:`,
+      error
+    );
     res.status(500).json({
       success: false,
       message: error.message,
@@ -73,13 +76,21 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     console.log(`🔄 [USER UPDATE] Updating user ${req.params.id}`);
-    console.log(`🔍 [USER UPDATE] Request body:`, JSON.stringify(req.body, null, 2));
+    console.log(
+      `🔍 [USER UPDATE] Request body:`,
+      JSON.stringify(req.body, null, 2)
+    );
     console.log(`🔍 [USER UPDATE] User ID from token:`, req.userId);
-    console.log(`🔍 [USER UPDATE] Raw request headers:`, req.headers.authorization?.slice(0, 20) + '...');
+    console.log(
+      `🔍 [USER UPDATE] Raw request headers:`,
+      req.headers.authorization?.slice(0, 20) + "..."
+    );
 
     // Ensure user can only update their own profile
     if (req.userId && req.params.id !== req.userId.toString()) {
-      console.log(`❌ [USER UPDATE] Authorization failed: ${req.userId} trying to update ${req.params.id}`);
+      console.log(
+        `❌ [USER UPDATE] Authorization failed: ${req.userId} trying to update ${req.params.id}`
+      );
       return res.status(403).json({
         success: false,
         message: "You can only update your own profile",
@@ -87,21 +98,21 @@ router.put("/:id", async (req, res) => {
     }
 
     const updateData = { ...req.body };
-    
+
     console.log(`🔍 [USER UPDATE] Processing update data:`, {
       phone_number: updateData.phone_number,
       date_of_birth: updateData.date_of_birth,
       billing_address: updateData.billing_address,
-      fieldsCount: Object.keys(updateData).length
+      fieldsCount: Object.keys(updateData).length,
     });
 
     const user = await usersService.updateUser(req.params.id, updateData);
-    
+
     console.log(`✅ [USER UPDATE] User updated successfully:`, {
       user_id: user.user_id,
       phone_number: user.phone_number,
       date_of_birth: user.date_of_birth,
-      billing_address: user.billing_address
+      billing_address: user.billing_address,
     });
 
     res.json({
@@ -110,7 +121,10 @@ router.put("/:id", async (req, res) => {
       data: user,
     });
   } catch (error) {
-    console.error(`❌ [USER UPDATE] Error updating user ${req.params.id}:`, error.message);
+    console.error(
+      `❌ [USER UPDATE] Error updating user ${req.params.id}:`,
+      error.message
+    );
     res.status(400).json({
       success: false,
       message: error.message,

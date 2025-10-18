@@ -18,7 +18,8 @@ class PaymentSuccessScreen extends StatelessWidget {
 
     // Debug logging
     print('🎉 [PAYMENT_SUCCESS] Screen loaded with booking data:');
-    print('🎉 [PAYMENT_SUCCESS] All booking data keys: ${bookingData.keys.toList()}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] All booking data keys: ${bookingData.keys.toList()}');
     print('🎉 [PAYMENT_SUCCESS] Full booking data: $bookingData');
     print('🎉 [PAYMENT_SUCCESS] Event: ${_getEventName()}');
     print('🎉 [PAYMENT_SUCCESS] Location: ${_getEventLocation()}');
@@ -120,9 +121,9 @@ class PaymentSuccessScreen extends StatelessWidget {
     final selectedSeats =
         (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
-    final total = bookingData['totalAmount'] != null 
-        ? (bookingData['totalAmount'] is double 
-            ? bookingData['totalAmount'] 
+    final total = bookingData['totalAmount'] != null
+        ? (bookingData['totalAmount'] is double
+            ? bookingData['totalAmount']
             : double.tryParse(bookingData['totalAmount'].toString()) ?? 0.0)
         : _calculateSubtotal();
 
@@ -406,11 +407,11 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   String _getEventName() {
     // Try multiple possible field names for event name
-    return bookingData['eventName'] ?? 
-           bookingData['event_name'] ?? 
-           bookingData['title'] ?? 
-           bookingData['event_title'] ?? 
-           'Event Details Unavailable';
+    return bookingData['eventName'] ??
+        bookingData['event_name'] ??
+        bookingData['title'] ??
+        bookingData['event_title'] ??
+        'Event Details Unavailable';
   }
 
   String _getEventDate() {
@@ -420,37 +421,50 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   String _getEventLocation() {
     // Try multiple possible field names for event location
-    return bookingData['eventLocation'] ?? 
-           bookingData['event_location'] ?? 
-           bookingData['venue'] ?? 
-           bookingData['event_venue'] ?? 
-           bookingData['location'] ?? 
-           'Venue TBD';
+    return bookingData['eventLocation'] ??
+        bookingData['event_location'] ??
+        bookingData['venue'] ??
+        bookingData['event_venue'] ??
+        bookingData['location'] ??
+        'Venue TBD';
   }
 
   String _formatEventDate() {
     // Try to format from booking data
-    final eventDateString = bookingData['eventStartDate'] ?? bookingData['eventDate'];
-    
+    final eventDateString =
+        bookingData['eventStartDate'] ?? bookingData['eventDate'];
+
     if (eventDateString != null) {
       try {
         final eventDate = DateTime.parse(eventDateString);
         final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+
         final dayName = days[eventDate.weekday - 1];
         final monthName = months[eventDate.month - 1];
         final day = eventDate.day;
         final hour = eventDate.hour.toString().padLeft(2, '0');
         final minute = eventDate.minute.toString().padLeft(2, '0');
-        
+
         return '$dayName, $monthName $day • $hour:$minute';
       } catch (e) {
         print('Error parsing event date: $e');
       }
     }
-    
+
     return 'TBD';
   }
 

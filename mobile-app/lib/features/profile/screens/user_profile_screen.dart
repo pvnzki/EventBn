@@ -93,7 +93,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
       // Fallback to UserService if AuthService didn't work or it's not the current user
       if (fetchedUserData == null) {
-        print('👤 [UserProfile] Loading user data from UserService for userId: ${widget.userId}');
+        print(
+            '👤 [UserProfile] Loading user data from UserService for userId: ${widget.userId}');
         fetchedUserData = await _userService.getUserById(widget.userId);
         print('👤 [UserProfile] UserService returned: $fetchedUserData');
       }
@@ -102,13 +103,15 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         print('👤 [UserProfile] Processing user data: $fetchedUserData');
         setState(() {
           userData = {
-            'id': fetchedUserData!['user_id']?.toString() ?? fetchedUserData['id']?.toString() ?? widget.userId,
-            'name': fetchedUserData['name'] ?? 
+            'id': fetchedUserData!['user_id']?.toString() ??
+                fetchedUserData['id']?.toString() ??
+                widget.userId,
+            'name': fetchedUserData['name'] ??
                 fetchedUserData['fullName'] ??
                 'Unknown User',
             'username':
                 '@${fetchedUserData['username'] ?? fetchedUserData['email']?.split('@')[0] ?? 'user'}',
-            'avatar': fetchedUserData['profile_picture'] ?? 
+            'avatar': fetchedUserData['profile_picture'] ??
                 fetchedUserData['profileImageUrl'] ??
                 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
             'coverImage': fetchedUserData['coverImageUrl'] ??
@@ -120,7 +123,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             'following': fetchedUserData['followingCount']?.toString() ?? '0',
             'location': fetchedUserData['location'],
             'website': fetchedUserData['website'],
-            'joinedDate': _formatJoinDate(fetchedUserData['created_at'] ?? fetchedUserData['createdAt']),
+            'joinedDate': _formatJoinDate(
+                fetchedUserData['created_at'] ?? fetchedUserData['createdAt']),
             'isVerified': fetchedUserData['isVerified'] ?? false,
             'interests':
                 fetchedUserData['interests'] ?? ['Events', 'Networking'],

@@ -1323,8 +1323,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.brightness == Brightness.dark 
-            ? colorScheme.surfaceContainerHighest 
+        color: theme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerHighest
             : colorScheme.surface,
         border: Border(
           top: BorderSide(
@@ -1372,12 +1372,11 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                             '${selectedSeats.length} seat${selectedSeats.length > 1 ? 's' : ''} selected',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: theme.brightness == Brightness.dark 
-                                  ? Colors.white 
+                              color: theme.brightness == Brightness.dark
+                                  ? Colors.white
                                   : colorScheme.onSurface,
                             ),
                           ),
-
                         ],
                       ),
                       Container(
@@ -1424,8 +1423,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                         Text(
                           'Selected Seats',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.brightness == Brightness.dark 
-                                ? Colors.white.withValues(alpha: 0.8) 
+                            color: theme.brightness == Brightness.dark
+                                ? Colors.white.withValues(alpha: 0.8)
                                 : colorScheme.onSurface.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3,
@@ -1437,8 +1436,8 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                               .map((id) => _getSeatLabel(id))
                               .join(' • '),
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.brightness == Brightness.dark 
-                                ? Colors.white 
+                            color: theme.brightness == Brightness.dark
+                                ? Colors.white
                                 : colorScheme.onSurface,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2,
@@ -1461,7 +1460,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                     ? colorScheme.outline.withValues(alpha: 0.3)
                     : colorScheme.primary,
                 foregroundColor: selectedSeats.isEmpty
-                    ? (theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.7))
+                    ? (theme.brightness == Brightness.dark
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : Colors.black.withValues(alpha: 0.7))
                     : colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -1476,7 +1477,9 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen>
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: selectedSeats.isEmpty
-                      ? (theme.brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.7))
+                      ? (theme.brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : Colors.black.withValues(alpha: 0.7))
                       : colorScheme.onPrimary,
                 ),
               ),

@@ -28,7 +28,7 @@ class UserService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('👤 [UserService] Parsed data: $data');
-        
+
         if (data['success'] == true && data['data'] != null) {
           print('✅ [UserService] User data fetched successfully');
           print('👤 [UserService] User data: ${data['data']}');

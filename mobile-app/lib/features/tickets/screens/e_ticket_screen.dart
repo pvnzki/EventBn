@@ -547,7 +547,7 @@ class _ETicketScreenState extends State<ETicketScreen> {
                 child: _buildTicketInfo(
                   context,
                   'Amount',
-                  'LKR ${(_ticket!.price*100).toStringAsFixed(2)}',
+                  'LKR ${(_ticket!.price * 100).toStringAsFixed(2)}',
                 ),
               ),
               const SizedBox(width: 16),
