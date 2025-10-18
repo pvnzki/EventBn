@@ -649,9 +649,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   Future<void> _performCancellation(BuildContext context, PaymentGroup paymentGroup) async {
     final ticketProvider = context.read<TicketProvider>();
     
-    print('🎫 MyTicketsScreen: Starting cancellation for payment: ${paymentGroup.paymentId}');
     final result = await ticketProvider.cancelTicketsByPayment(paymentGroup.paymentId);
-    print('🎫 MyTicketsScreen: Cancellation result: $result');
     
     if (!context.mounted) return;
     
@@ -733,13 +731,5 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   String _getWeekdayName(int weekday) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return weekdays[weekday - 1];
-  }
-
-
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

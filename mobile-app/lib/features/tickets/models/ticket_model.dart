@@ -20,6 +20,7 @@ class Ticket {
   final DateTime eventStartDate;
   final String venue;
   final String address;
+  final String paymentId; // Added payment ID
 
   const Ticket({
     required this.id,
@@ -38,6 +39,7 @@ class Ticket {
     required this.eventStartDate,
     required this.venue,
     required this.address,
+    required this.paymentId,
   });
 
   // Temporary JSON methods
@@ -66,6 +68,7 @@ class Ticket {
           : DateTime.now(),
       venue: json['venue'] ?? '',
       address: json['address'] ?? '',
+      paymentId: json['paymentId'] ?? '',
     );
   }
 
@@ -87,12 +90,52 @@ class Ticket {
       'eventStartDate': eventStartDate.toIso8601String(),
       'venue': venue,
       'address': address,
+      'paymentId': paymentId,
     };
   }
 
   bool get isUpcoming => eventStartDate.isAfter(DateTime.now());
   bool get isPast => eventStartDate.isBefore(DateTime.now());
   bool get isActive => status == TicketStatus.active;
+  bool get isCancelled => status == TicketStatus.cancelled;
+}
+
+// Model to group tickets by payment
+class PaymentGroup {
+  final String paymentId;
+  final List<Ticket> tickets;
+  final double totalAmount;
+  final DateTime purchaseDate;
+  final String paymentMethod;
+  final String paymentStatus;
+
+  const PaymentGroup({
+    required this.paymentId,
+    required this.tickets,
+    required this.totalAmount,
+    required this.purchaseDate,
+    required this.paymentMethod,
+    required this.paymentStatus,
+  });
+
+  bool get canBeCancelled {
+    // Can be cancelled if not all tickets are cancelled and no tickets are used
+    final nonCancelledTickets = tickets.where((t) => !t.isCancelled).toList();
+    final usedTickets = tickets.where((t) => t.status == TicketStatus.used).toList();
+    final upcomingTickets = tickets.where((t) => t.isUpcoming).toList();
+    
+    return nonCancelledTickets.isNotEmpty && 
+           usedTickets.isEmpty && 
+           upcomingTickets.isNotEmpty;
+  }
+
+  bool get isFullyCancelled {
+    return tickets.every((t) => t.isCancelled);
+  }
+
+  bool get hasUsedTickets {
+    return tickets.any((t) => t.status == TicketStatus.used);
+  }
 }
 
 enum TicketStatus {

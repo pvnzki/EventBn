@@ -52,7 +52,9 @@ class TicketService {
               qrCode: ticketData['qr_code'] ?? '',
               status: ticketData['attended'] == true
                   ? TicketStatus.used
-                  : TicketStatus.active,
+                  : (ticketData['status'] == 'CANCELLED' 
+                      ? TicketStatus.cancelled 
+                      : TicketStatus.active),
               purchaseDate: ticketData['purchase_date'] != null
                   ? DateTime.parse(ticketData['purchase_date'])
                   : DateTime.now(),
@@ -61,6 +63,7 @@ class TicketService {
                   : DateTime.now(),
               venue: ticketData['event']?['venue'] ?? '',
               address: ticketData['event']?['location'] ?? '',
+              paymentId: ticketData['payment_id']?.toString() ?? '',
             );
           }).toList();
 
@@ -168,7 +171,9 @@ class TicketService {
             qrCode: ticketData['qr_code'] ?? '',
             status: ticketData['attended'] == true
                 ? TicketStatus.used
-                : TicketStatus.active,
+                : (ticketData['status'] == 'CANCELLED' 
+                    ? TicketStatus.cancelled 
+                    : TicketStatus.active),
             purchaseDate: ticketData['purchase_date'] != null
                 ? DateTime.parse(ticketData['purchase_date'])
                 : DateTime.now(),
@@ -177,6 +182,7 @@ class TicketService {
                 : DateTime.now(),
             venue: ticketData['event']?['venue'] ?? '',
             address: ticketData['event']?['location'] ?? '',
+            paymentId: ticketData['payment_id']?.toString() ?? '',
           );
 
           return {
@@ -291,7 +297,9 @@ class TicketService {
             qrCode: ticketData['qr_code'] ?? '',
             status: ticketData['attended'] == true
                 ? TicketStatus.used
-                : TicketStatus.active,
+                : (ticketData['status'] == 'CANCELLED' 
+                    ? TicketStatus.cancelled 
+                    : TicketStatus.active),
             purchaseDate: ticketData['purchase_date'] != null
                 ? DateTime.parse(ticketData['purchase_date'])
                 : DateTime.now(),
@@ -300,6 +308,7 @@ class TicketService {
                 : DateTime.now(),
             venue: ticketData['event']?['venue'] ?? '',
             address: ticketData['event']?['location'] ?? '',
+            paymentId: ticketData['payment_id']?.toString() ?? '',
           );
 
           return {
@@ -326,6 +335,71 @@ class TicketService {
         };
       }
     } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error occurred: ${e.toString()}',
+      };
+    }
+  }
+
+  // Cancel all tickets for a specific payment
+  Future<Map<String, dynamic>> cancelTicketsByPayment(String paymentId) async {
+    try {
+      final token = await _authService.getStoredToken();
+
+      if (token == null) {
+        print('🚨 TicketService: User not authenticated');
+        return {
+          'success': false,
+          'message': 'User not authenticated',
+        };
+      }
+
+      print('🎫 TicketService: Starting cancellation for payment: $paymentId');
+      print('🔗 TicketService: API URL: $baseUrl/api/tickets/payment/$paymentId/cancel');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/tickets/payment/$paymentId/cancel'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('🎫 TicketService: Response status: ${response.statusCode}');
+      print('🎫 TicketService: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ TicketService: Cancellation successful');
+        return {
+          'success': data['success'] ?? false,
+          'message': data['message'] ?? 'Tickets cancelled successfully',
+          'tickets': data['tickets'],
+          'cancelledCount': data['cancelledCount'],
+        };
+      } else if (response.statusCode == 400) {
+        final data = jsonDecode(response.body);
+        print('❌ TicketService: Bad request - ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Unable to cancel tickets',
+        };
+      } else if (response.statusCode == 404) {
+        print('❌ TicketService: Payment not found');
+        return {
+          'success': false,
+          'message': 'Payment not found',
+        };
+      } else {
+        print('❌ TicketService: Unexpected status code: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to cancel tickets. Status: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('🚨 TicketService: Network error during cancellation: $e');
       return {
         'success': false,
         'message': 'Network error occurred: ${e.toString()}',
