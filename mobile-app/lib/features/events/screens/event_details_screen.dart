@@ -34,7 +34,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   final EventService _eventService = EventService();
 
   // State variables
-  bool isBookmarked = false;
   bool isAboutExpanded = false;
 
   // Seat map cache
@@ -613,31 +612,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ),
       ),
       actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: Icon(
-              isBookmarked ? Icons.favorite : Icons.favorite_border,
-              color: isBookmarked ? Colors.red : theme.colorScheme.onSurface,
-            ),
-            onPressed: () => setState(() => isBookmarked = !isBookmarked),
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: Icon(Icons.share, color: theme.colorScheme.onSurface),
-            onPressed: () => _showShareModal(context, theme),
-          ),
-        ),
+        // Removed like and share buttons as they are not implemented yet
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
@@ -1320,103 +1295,4 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  void _showShareModal(BuildContext context, ThemeData theme) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        margin: const EdgeInsets.only(
-            bottom: 90), // Account for bottom nav height + padding
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Share',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 30),
-            GridView.count(
-              crossAxisCount: 4,
-              shrinkWrap: true,
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 20,
-              children: [
-                _buildShareOption('WhatsApp', Icons.chat, Colors.green, theme),
-                _buildShareOption('Twitter', Icons.alternate_email,
-                    const Color(0xFF1DA1F2), theme),
-                _buildShareOption(
-                    'Facebook', Icons.facebook, const Color(0xFF1877F2), theme),
-                _buildShareOption('Instagram', Icons.camera_alt,
-                    const Color(0xFFE4405F), theme),
-                _buildShareOption(
-                    'Yahoo', Icons.email, const Color(0xFF6B46C1), theme),
-                _buildShareOption(
-                    'TikTok', Icons.music_note, Colors.black, theme),
-                _buildShareOption(
-                    'Chat', Icons.chat_bubble, const Color(0xFF007AFF), theme),
-                _buildShareOption(
-                    'WeChat', Icons.chat, const Color(0xFF07C160), theme),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShareOption(
-      String name, IconData icon, Color color, ThemeData theme) {
-    return GestureDetector(
-      onTap: () {
-        // Handle share
-        Navigator.pop(context);
-        HapticFeedback.lightImpact();
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

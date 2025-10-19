@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -846,16 +847,47 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CircleAvatar(
                   radius: 45,
                   backgroundColor: colorScheme.surfaceContainerHighest,
-                  backgroundImage: user?.profileImageUrl != null
-                      ? CachedNetworkImageProvider(user!.profileImageUrl!)
-                      : null,
-                  child: user?.profileImageUrl == null
-                      ? Icon(
+                  child: user?.profileImageUrl != null &&
+                          user!.profileImageUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: user!.profileImageUrl!.startsWith('file://')
+                              ? Image.file(
+                                  File(user!.profileImageUrl!
+                                      .replaceFirst('file://', '')
+                                      .split('?')[0]), // Remove query parameters
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: colorScheme.onSurfaceVariant,
+                                    );
+                                  },
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: user!.profileImageUrl!,
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                        )
+                      : Icon(
                           Icons.person,
                           size: 45,
                           color: colorScheme.onSurfaceVariant,
-                        )
-                      : null,
+                        ),
                 ),
               ),
 
@@ -1374,14 +1406,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                         () {
                       Navigator.pop(context);
                       context.push('/create-post');
-                    }),
-                    _buildCreateOption(
-                        context, Icons.video_call_outlined, 'Reel', () {
-                      Navigator.pop(context);
-                    }),
-                    _buildCreateOption(
-                        context, Icons.add_circle_outline, 'Story', () {
-                      Navigator.pop(context);
                     }),
                   ],
                 ),

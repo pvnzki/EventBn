@@ -62,9 +62,9 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
         if (widget.autoPlay) {
           _controller
-              .setVolume(0.0); // Start muted for autoplay (common UX pattern)
+              .setVolume(1.0); // Start unmuted for autoplay
           _controller.play();
-          print('🎥 Video started autoplaying (muted)');
+          print('🎥 Video started autoplaying (unmuted)');
         }
 
         print(

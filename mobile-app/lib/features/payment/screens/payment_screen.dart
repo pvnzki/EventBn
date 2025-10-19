@@ -91,6 +91,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _currentUserEmail = '';
   String _currentUserPhone = '';
 
+  // Event details fetched from API
+  String _actualEventName = '';
+  String _actualEventDate = '';
+  bool _isLoadingEventDetails = true;
+
   @override
   void dispose() {
     // Release locks if user leaves payment screen without completing
@@ -105,6 +110,56 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _extendSeatLocks();
     _loadUserProfile();
+    _loadEventDetails();
+  }
+
+  /// Load event details from the backend
+  Future<void> _loadEventDetails() async {
+    try {
+      setState(() {
+        _isLoadingEventDetails = true;
+      });
+
+      final token = await _authService.getStoredToken();
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/events/${widget.eventId}'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final eventData = responseData['data'] ?? responseData;
+
+        setState(() {
+          _actualEventName = eventData['event_name'] ?? eventData['name'] ?? widget.eventName;
+          _actualEventDate = eventData['event_date'] ?? eventData['date'] ?? widget.eventDate;
+          _isLoadingEventDetails = false;
+        });
+
+        print('✅ Event details loaded: $_actualEventName on $_actualEventDate');
+      } else {
+        // Fallback to widget parameters if API fails
+        setState(() {
+          _actualEventName = widget.eventName;
+          _actualEventDate = widget.eventDate;
+          _isLoadingEventDetails = false;
+        });
+        print('⚠️ Failed to load event details from API, using fallback values');
+      }
+    } catch (e) {
+      // Fallback to widget parameters if there's an error
+      setState(() {
+        _actualEventName = widget.eventName;
+        _actualEventDate = widget.eventDate;
+        _isLoadingEventDetails = false;
+      });
+      print('❌ Error loading event details: $e');
+    }
   }
 
   /// Load user profile data for payment
@@ -574,7 +629,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_isLoadingProfile) {
+    if (_isLoadingProfile || _isLoadingEventDetails) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
@@ -676,8 +731,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     fontSize: 16,
                     color: theme.colorScheme.onSurface)),
             const SizedBox(height: 12),
-            _buildSummaryRow('Event', widget.eventName, theme),
-            _buildSummaryRow('Date', widget.eventDate, theme),
+            _buildSummaryRow('Event', _actualEventName.isNotEmpty ? _actualEventName : widget.eventName, theme),
+            _buildSummaryRow('Date', _actualEventDate.isNotEmpty ? _actualEventDate : widget.eventDate, theme),
             _buildSummaryRow('Seats', seatLabels.join(', '), theme),
 
             const SizedBox(height: 16),

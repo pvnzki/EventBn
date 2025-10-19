@@ -912,40 +912,6 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
         const SizedBox(height: 24),
 
-        // Share button
-        GestureDetector(
-          onTap: () {
-            // Handle share
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Share functionality coming soon!'),
-                backgroundColor: Colors.black87,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          child: const Column(
-            children: [
-              Icon(
-                Icons.share_outlined,
-                color: Colors.white,
-                size: 32,
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Share',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
         // Go to Event / Bookmark button
         currentPost.relatedEventId != null
             ? GestureDetector(
@@ -1039,47 +1005,25 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  print('👤 Navigating to user profile: ${currentPost.userId}');
-                  context.push('/user/${currentPost.userId}');
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      currentPost.userDisplayName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentPost.userDisplayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Text(
-                      '2 hours ago', // In real app, format the actual timestamp
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
+                  ),
+                  Text(
+                    '2 hours ago', // In real app, format the actual timestamp
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12,
                     ),
-                  ],
-                ),
-              ),
-            ),
-            // Follow button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Follow',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                  ),
+                ],
               ),
             ),
           ],

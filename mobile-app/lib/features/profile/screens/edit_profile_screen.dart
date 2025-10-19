@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
-import 'dart:convert';
 import 'dart:io';
-import '../../../core/config/app_config.dart';
 import '../../auth/models/user_model.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -265,125 +262,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      print('🔄 [EDIT_PROFILE] Starting backend image upload...');
+      print('🔄 [EDIT_PROFILE] Frontend-only profile picture update...');
 
-      // Get authentication token
-      final token = await _authService.getStoredToken();
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
+      // Generate a unique image URL using the file path and timestamp for demo purposes
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final demoImageUrl = 'file://${_selectedImage!.path}?t=$timestamp';
 
-      // Use the backend endpoint instead of direct Cloudinary upload
-      final uri = Uri.parse(
-          '${AppConfig.baseUrl}/api/users/${_currentUser!.id}/upload-profile-image');
-      final request = http.MultipartRequest('POST', uri);
+      print('✅ [EDIT_PROFILE] Using frontend-only image: $demoImageUrl');
 
-      // Add authentication header
-      request.headers['Authorization'] = 'Bearer $token';
+      // Simulate a brief upload delay for better UX
+      await Future.delayed(const Duration(milliseconds: 500));
 
-      // Add the image file
-      final file =
-          await http.MultipartFile.fromPath('image', _selectedImage!.path);
-      request.files.add(file);
+      // Update the current user state immediately with the selected image
+      setState(() {
+        _currentUser = _currentUser!.copyWith(profileImageUrl: demoImageUrl);
+        // Keep the selected image for display purposes
+      });
 
-      print('🔄 [EDIT_PROFILE] Sending upload request to backend...');
-      final response = await request.send();
+      print('🔄 [EDIT_PROFILE] Updated current user with new image URL: $demoImageUrl');
 
-      print(
-          '🔍 [EDIT_PROFILE] Backend upload response status: ${response.statusCode}');
+      // Update the auth provider with the new user data
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.updateUserData(_currentUser!);
 
-      final responseBody = await response.stream.bytesToString();
-      print('🔍 [EDIT_PROFILE] Backend upload response body: $responseBody');
+      print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(responseBody);
-
-        if (jsonResponse['success'] == true) {
-          final imageUrl = jsonResponse['imageUrl'];
-          print(
-              '✅ [EDIT_PROFILE] Image uploaded successfully via backend: $imageUrl');
-
-          // Add cache-busting parameter to force image reload
-          final cacheBustedUrl =
-              '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
-
-          // Update the current user state immediately
-          setState(() {
-            _currentUser =
-                _currentUser!.copyWith(profileImageUrl: cacheBustedUrl);
-            _selectedImage =
-                null; // Clear the selected image since it's now uploaded
-          });
-
-          print(
-              '🔄 [EDIT_PROFILE] Updated current user with new image URL: $cacheBustedUrl');
-
-          // Update the auth provider with the new user data
-          final authProvider =
-              Provider.of<AuthProvider>(context, listen: false);
-          authProvider.updateUserData(_currentUser!);
-
-          print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
-
-          _showSuccessSnackBar('Profile picture updated successfully!');
-        } else {
-          throw Exception('Backend upload failed: ${jsonResponse['message']}');
-        }
-      } else {
-        throw Exception(
-            'Backend upload failed with status: ${response.statusCode}');
-      }
+      _showSuccessSnackBar('Profile picture updated successfully! (Frontend demo mode)');
     } catch (e) {
-      print('❌ [EDIT_PROFILE] Error uploading via backend: $e');
-
-      // Fallback to placeholder for testing
-      try {
-        print('⚠️ [EDIT_PROFILE] Using fallback placeholder image...');
-        const placeholderImageUrl =
-            'https://ui-avatars.com/api/?name=User&background=FF6B6B&color=FFFFFF&size=200';
-        await _updateProfileImage(placeholderImageUrl);
-        _showSuccessSnackBar(
-            'Profile picture updated successfully! (Demo mode)');
-      } catch (fallbackError) {
-        _showErrorSnackBar('Failed to upload image: $e');
-      }
+      print('❌ [EDIT_PROFILE] Error in frontend image update: $e');
+      _showErrorSnackBar('Failed to update profile picture: $e');
     } finally {
       setState(() {
         _isUploadingImage = false;
       });
-    }
-  }
-
-  Future<void> _updateProfileImage(String imageUrl) async {
-    try {
-      print('🔄 [EDIT_PROFILE] Updating profile image: $imageUrl');
-
-      final result = await _authService.updateProfileImage(imageUrl: imageUrl);
-
-      if (result['success'] == true) {
-        print('✅ [EDIT_PROFILE] Profile image updated successfully');
-
-        // Update the local state
-        setState(() {
-          _currentUser = result['user'];
-        });
-
-        // Update the provider if available
-        if (mounted) {
-          final authProvider =
-              Provider.of<AuthProvider>(context, listen: false);
-          authProvider.updateUser(result['user']);
-        }
-
-        _showSuccessSnackBar('Profile picture updated successfully!');
-      } else {
-        print(
-            '❌ [EDIT_PROFILE] Profile image update failed: ${result['message']}');
-        throw Exception(result['message'] ?? 'Failed to update profile image');
-      }
-    } catch (e) {
-      print('❌ [EDIT_PROFILE] Error updating profile image: $e');
-      throw Exception('Failed to update profile image: $e');
     }
   }
 
@@ -468,43 +379,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 fit: BoxFit.cover,
                               ),
                             )
-                          : _currentUser?.profileImageUrl != null
+                          : _currentUser?.profileImageUrl != null &&
+                                  _currentUser!.profileImageUrl!.isNotEmpty
                               ? ClipOval(
-                                  child: Image.network(
-                                    _currentUser!.profileImageUrl!,
-                                    width: 120,
-                                    height: 120,
-                                    fit: BoxFit.cover,
-                                    key: ValueKey(_currentUser!
-                                        .profileImageUrl), // Force rebuild when URL changes
-                                    errorBuilder: (context, error, stackTrace) {
-                                      print(
-                                          '🖼️ [EDIT_PROFILE] Failed to load profile image: $error');
-                                      return Icon(
-                                        Icons.person,
-                                        size: 60,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      );
-                                    },
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
+                                  child: _currentUser!.profileImageUrl!
+                                          .startsWith('file://')
+                                      ? Image.file(
+                                          File(_currentUser!.profileImageUrl!
+                                              .replaceFirst('file://', '')
+                                              .split('?')[0]), // Remove query parameters
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            print(
+                                                '🖼️ [EDIT_PROFILE] Failed to load local profile image: $error');
+                                            return Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            );
+                                          },
+                                        )
+                                      : Image.network(
+                                          _currentUser!.profileImageUrl!,
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                          key: ValueKey(_currentUser!
+                                              .profileImageUrl), // Force rebuild when URL changes
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            print(
+                                                '🖼️ [EDIT_PROFILE] Failed to load network profile image: $error');
+                                            return Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            );
+                                          },
+                                          loadingBuilder: (context, child,
+                                              loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        loadingProgress
+                                                            .expectedTotalBytes!
+                                                    : null,
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
                                 )
                               : Icon(
                                   Icons.person,

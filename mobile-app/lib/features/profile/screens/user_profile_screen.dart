@@ -53,7 +53,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     _loadCurrentUserId();
     _loadUserData();
     _loadUserPosts();
@@ -547,8 +547,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   indicatorColor: colorScheme.primary,
                   tabs: const [
                     Tab(text: 'Posts'),
-                    Tab(text: 'Events'),
-                    Tab(text: 'About'),
                   ],
                 ),
               ),
@@ -559,8 +557,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           controller: _tabController,
           children: [
             _buildPostsTab(),
-            _buildEventsTab(),
-            _buildAboutTab(),
           ],
         ),
       ),
@@ -911,85 +907,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEventsTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100',
-              ),
-            ),
-            title: Text('Event ${index + 1}'),
-            subtitle: const Text('Event description'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navigate to event details
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAboutTab() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Interests
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Interests',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: userInterests.map<Widget>((interest) {
-                    return Chip(
-                      label: Text(interest),
-                      backgroundColor: colorScheme.primaryContainer,
-                      labelStyle:
-                          TextStyle(color: colorScheme.onPrimaryContainer),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Contact Info
-        if (userWebsite != null)
-          Card(
-            child: ListTile(
-              leading: Icon(Icons.language, color: colorScheme.primary),
-              title: Text(userWebsite!),
-              trailing: const Icon(Icons.open_in_new, size: 16),
-              onTap: () {
-                // Open website
-              },
-            ),
-          ),
-      ],
     );
   }
 

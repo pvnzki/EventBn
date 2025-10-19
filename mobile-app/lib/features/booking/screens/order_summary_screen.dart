@@ -42,14 +42,21 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
         _error = null;
       });
 
+      print('🎪 [OrderSummary] Loading event data for ID: ${widget.eventId}');
+      
       final eventService = EventService();
       final event = await eventService.getEventById(widget.eventId);
+
+      print('🎪 [OrderSummary] Event loaded: ${event.title}');
+      print('🎪 [OrderSummary] Event date: ${event.startDateTime}');
+      print('🎪 [OrderSummary] Event venue: ${event.venue}');
 
       setState(() {
         _event = event;
         _isLoading = false;
       });
     } catch (e) {
+      print('❌ [OrderSummary] Error loading event: $e');
       setState(() {
         _error = e.toString();
         _isLoading = false;

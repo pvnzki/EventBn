@@ -54,6 +54,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final double _minPrice = 0;
   final double _maxPrice = 10000;
 
+  // User data
+  String? _userName;
+
   final List<String> _bannerImages = [
     'assets/images/manobhawa banner.jpg',
     'assets/images/alokana banner.png',
@@ -68,6 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
     for (int i = 0; i < _bannerImages.length; i++) {
       print('Banner $i: ${_bannerImages[i]}');
     }
+
+    // Load user data
+    _loadUserData();
 
     // Add focus listener to trigger rebuilds for search bar styling
     _searchFocusNode.addListener(() {
@@ -104,6 +110,23 @@ class _HomeScreenState extends State<HomeScreen> {
         _imagesPreloaded = true;
       });
       print('All banner images preloaded successfully');
+    }
+  }
+
+  // Load user data for greeting
+  Future<void> _loadUserData() async {
+    try {
+      final authService = AuthService();
+      final userData = await authService.getCurrentUser();
+      if (userData != null && mounted) {
+        setState(() {
+          _userName = userData.firstName.isNotEmpty 
+              ? userData.firstName 
+              : 'User';
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
     }
   }
 
@@ -232,7 +255,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildFilterModal(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => _buildFilterModal(setState),
+      ),
     );
   }
 
@@ -243,6 +268,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedPriceRange = null;
       _selectedLocation = 'All';
     });
+    
+    // Show feedback when filters are cleared
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All filters cleared'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // Apply filters
@@ -255,6 +289,27 @@ class _HomeScreenState extends State<HomeScreen> {
       // Just refresh the UI to show filtered events
       setState(() {});
     }
+    
+    // Show feedback message when filters are applied
+    final filterCount = _getActiveFilterCount();
+    if (filterCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Applied $filterCount filter${filterCount > 1 ? 's' : ''}'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  // Get count of active filters for better UX feedback
+  int _getActiveFilterCount() {
+    int count = 0;
+    if (_selectedDateRange != null) count++;
+    if (_selectedPriceRange != null) count++;
+    if (_selectedLocation != 'All') count++;
+    return count;
   }
 
   // Select date range
@@ -888,35 +943,51 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
         children: [
-          // Header Logo - Theme aware (restored from original)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SizedBox(
-              height: 30,
-              child: Image.asset(
-                isDark
-                    ? 'assets/images/White Header logo.png'
-                    : 'assets/images/Black header logo.png',
-                height: 30,
-                width: 120,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Text(
-                    'EventBn',
+          // Header Logo with greeting
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Logo
+                SizedBox(
+                  height: 30,
+                  child: Image.asset(
+                    isDark
+                        ? 'assets/images/White Header logo.png'
+                        : 'assets/images/Black header logo.png',
+                    height: 30,
+                    width: 120,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Text(
+                        'EventBn',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: theme.primaryColor,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Greeting text
+                if (_userName != null) ...[
+                  const SizedBox(height: 9),
+                  Text(
+                    '    Hi, $_userName👋',
                     style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const Spacer(),
           // Notification icon (kept modern style)
           Container(
             width: 44,
@@ -1193,17 +1264,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _selectedCategory == 'All'
+                    _selectedCategory == 'All' && !_hasActiveFilters()
                         ? 'No events found'
+                        : _hasActiveFilters()
+                        ? 'No events match your filters'
                         : 'No $_selectedCategory events found',
                     style: TextStyle(
                       fontSize: 16,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  if (_selectedCategory != 'All') ...[
-                    const SizedBox(height: 8),
-                    TextButton(
+                  const SizedBox(height: 8),
+                  Text(
+                    _hasActiveFilters()
+                        ? 'Try adjusting your filters to see more events'
+                        : 'Try checking back later for new events',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_selectedCategory != 'All' || _hasActiveFilters()) ...[
+                    ElevatedButton(
                       onPressed: () {
                         setState(() {
                           // Reset to "All" category
@@ -1211,8 +1294,28 @@ class _HomeScreenState extends State<HomeScreen> {
                             cat['isSelected'] = cat['name'] == 'All';
                           }
                           _selectedCategory = 'All';
+                          // Clear all filters
+                          _selectedDateRange = null;
+                          _selectedPriceRange = null;
+                          _selectedLocation = 'All';
                         });
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Filters and category reset'),
+                            duration: Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       child: const Text('Show All Events'),
                     ),
                   ],
@@ -1646,7 +1749,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFilterModal() {
+  Widget _buildFilterModal(StateSetter setModalState) {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
@@ -1707,19 +1810,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Date range filter
                   _buildFilterSection(
                     'Date Range',
-                    _buildDateRangeFilter(theme),
+                    _buildDateRangeFilter(theme, setModalState),
                   ),
                   const SizedBox(height: 24),
                   // Location filter
                   _buildFilterSection(
                     'Location',
-                    _buildLocationFilter(theme),
+                    _buildLocationFilter(theme, setModalState),
                   ),
                   const SizedBox(height: 24),
                   // Price range filter
                   _buildFilterSection(
                     'Price Range (LKR)',
-                    _buildPriceRangeFilter(theme),
+                    _buildPriceRangeFilter(theme, setModalState),
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -1775,7 +1878,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDateRangeFilter(ThemeData theme) {
+  Widget _buildDateRangeFilter(ThemeData theme, [StateSetter? setModalState]) {
     return InkWell(
       onTap: _selectDateRange,
       borderRadius: BorderRadius.circular(12),
@@ -1811,9 +1914,16 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_selectedDateRange != null)
               InkWell(
                 onTap: () {
+                  // Update the main widget state
                   setState(() {
                     _selectedDateRange = null;
                   });
+                  // Also update the modal state if available
+                  if (setModalState != null) {
+                    setModalState(() {
+                      _selectedDateRange = null;
+                    });
+                  }
                 },
                 child: Icon(
                   Icons.close_rounded,
@@ -1827,7 +1937,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLocationFilter(ThemeData theme) {
+  Widget _buildLocationFilter(ThemeData theme, [StateSetter? setModalState]) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -1835,9 +1945,16 @@ class _HomeScreenState extends State<HomeScreen> {
         final isSelected = _selectedLocation == location;
         return InkWell(
           onTap: () {
+            // Update the main widget state
             setState(() {
               _selectedLocation = location;
             });
+            // Also update the modal state if available
+            if (setModalState != null) {
+              setModalState(() {
+                _selectedLocation = location;
+              });
+            }
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(
@@ -1869,7 +1986,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPriceRangeFilter(ThemeData theme) {
+  Widget _buildPriceRangeFilter(ThemeData theme, [StateSetter? setModalState]) {
     return Column(
       children: [
         if (_selectedPriceRange != null) ...[
@@ -1911,18 +2028,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 )
               : null,
           onChanged: (RangeValues values) {
+            // Update the main widget state
             setState(() {
               _selectedPriceRange = values;
             });
+            // Also update the modal state if available
+            if (setModalState != null) {
+              setModalState(() {
+                _selectedPriceRange = values;
+              });
+            }
           },
         ),
         if (_selectedPriceRange != null) ...[
           const SizedBox(height: 8),
           TextButton(
             onPressed: () {
+              // Update the main widget state
               setState(() {
                 _selectedPriceRange = null;
               });
+              // Also update the modal state if available
+              if (setModalState != null) {
+                setModalState(() {
+                  _selectedPriceRange = null;
+                });
+              }
             },
             child: Text(
               'Clear Price Filter',
