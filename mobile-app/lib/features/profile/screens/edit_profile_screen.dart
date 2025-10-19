@@ -279,7 +279,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         // Keep the selected image for display purposes
       });
 
-      print('🔄 [EDIT_PROFILE] Updated current user with new image URL: $demoImageUrl');
+      print(
+          '🔄 [EDIT_PROFILE] Updated current user with new image URL: $demoImageUrl');
 
       // Update the auth provider with the new user data
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -287,7 +288,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       print('✅ [EDIT_PROFILE] Updated AuthProvider with new user data');
 
-      _showSuccessSnackBar('Profile picture updated successfully! (Frontend demo mode)');
+      _showSuccessSnackBar(
+          'Profile picture updated successfully! (Frontend demo mode)');
     } catch (e) {
       print('❌ [EDIT_PROFILE] Error in frontend image update: $e');
       _showErrorSnackBar('Failed to update profile picture: $e');
@@ -386,8 +388,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                           .startsWith('file://')
                                       ? Image.file(
                                           File(_currentUser!.profileImageUrl!
-                                              .replaceFirst('file://', '')
-                                              .split('?')[0]), // Remove query parameters
+                                                  .replaceFirst('file://', '')
+                                                  .split('?')[
+                                              0]), // Remove query parameters
                                           width: 120,
                                           height: 120,
                                           fit: BoxFit.cover,

@@ -854,7 +854,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ? Image.file(
                                   File(user!.profileImageUrl!
                                       .replaceFirst('file://', '')
-                                      .split('?')[0]), // Remove query parameters
+                                      .split(
+                                          '?')[0]), // Remove query parameters
                                   width: 90,
                                   height: 90,
                                   fit: BoxFit.cover,

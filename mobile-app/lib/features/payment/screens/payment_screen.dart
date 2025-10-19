@@ -136,8 +136,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final eventData = responseData['data'] ?? responseData;
 
         setState(() {
-          _actualEventName = eventData['event_name'] ?? eventData['name'] ?? widget.eventName;
-          _actualEventDate = eventData['event_date'] ?? eventData['date'] ?? widget.eventDate;
+          _actualEventName =
+              eventData['event_name'] ?? eventData['name'] ?? widget.eventName;
+          _actualEventDate =
+              eventData['event_date'] ?? eventData['date'] ?? widget.eventDate;
           _isLoadingEventDetails = false;
         });
 
@@ -149,7 +151,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           _actualEventDate = widget.eventDate;
           _isLoadingEventDetails = false;
         });
-        print('⚠️ Failed to load event details from API, using fallback values');
+        print(
+            '⚠️ Failed to load event details from API, using fallback values');
       }
     } catch (e) {
       // Fallback to widget parameters if there's an error
@@ -731,8 +734,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     fontSize: 16,
                     color: theme.colorScheme.onSurface)),
             const SizedBox(height: 12),
-            _buildSummaryRow('Event', _actualEventName.isNotEmpty ? _actualEventName : widget.eventName, theme),
-            _buildSummaryRow('Date', _actualEventDate.isNotEmpty ? _actualEventDate : widget.eventDate, theme),
+            _buildSummaryRow(
+                'Event',
+                _actualEventName.isNotEmpty
+                    ? _actualEventName
+                    : widget.eventName,
+                theme),
+            _buildSummaryRow(
+                'Date',
+                _actualEventDate.isNotEmpty
+                    ? _actualEventDate
+                    : widget.eventDate,
+                theme),
             _buildSummaryRow('Seats', seatLabels.join(', '), theme),
 
             const SizedBox(height: 16),

@@ -36,17 +36,17 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
         _error = null;
       });
 
-      final eventId = widget.bookingData['event_id']?.toString() ?? 
-                     widget.bookingData['eventId']?.toString();
-      
+      final eventId = widget.bookingData['event_id']?.toString() ??
+          widget.bookingData['eventId']?.toString();
+
       if (eventId != null) {
         print('🎪 [PaymentSuccess] Loading event data for ID: $eventId');
-        
+
         final eventService = EventService();
         final event = await eventService.getEventById(eventId);
 
         print('🎪 [PaymentSuccess] Event loaded: ${event.title}');
-        
+
         setState(() {
           _event = event;
           _isLoading = false;
@@ -83,7 +83,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
         '🎉 [PAYMENT_SUCCESS] Selected seats: ${widget.bookingData['selectedSeats']}');
     print(
         '🎉 [PAYMENT_SUCCESS] Seat data type: ${widget.bookingData['selectedSeatData'].runtimeType}');
-    print('🎉 [PAYMENT_SUCCESS] Total amount: ${widget.bookingData['totalAmount']}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] Total amount: ${widget.bookingData['totalAmount']}');
     print(
         '🎉 [PAYMENT_SUCCESS] Current route: ${GoRouterState.of(context).uri.toString()}');
 
@@ -178,7 +179,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
     final total = widget.bookingData['totalAmount'] != null
         ? (widget.bookingData['totalAmount'] is double
             ? widget.bookingData['totalAmount']
-            : double.tryParse(widget.bookingData['totalAmount'].toString()) ?? 0.0)
+            : double.tryParse(widget.bookingData['totalAmount'].toString()) ??
+                0.0)
         : _calculateSubtotal();
 
     return Container(
@@ -259,7 +261,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                     : null,
                 image: widget.bookingData['eventImageUrl'] != null
                     ? DecorationImage(
-                        image: NetworkImage(widget.bookingData['eventImageUrl']),
+                        image:
+                            NetworkImage(widget.bookingData['eventImageUrl']),
                         fit: BoxFit.cover,
                       )
                     : null,
@@ -464,7 +467,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
     if (_event != null) {
       return _event!.title;
     }
-    
+
     // Try multiple possible field names for event name from booking data
     return widget.bookingData['eventName'] ??
         widget.bookingData['event_name'] ??
@@ -478,17 +481,17 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
     if (_event != null) {
       return _formatDateTime(_event!.startDateTime);
     }
-    
+
     // Use the formatted date method for booking data
     return _formatEventDate();
   }
 
   String _getEventLocation() {
-    // Use loaded event data first, then fall back to booking data  
+    // Use loaded event data first, then fall back to booking data
     if (_event != null) {
       return _event!.venue;
     }
-    
+
     // Try multiple possible field names for event location from booking data
     return widget.bookingData['eventLocation'] ??
         widget.bookingData['event_location'] ??
@@ -499,7 +502,20 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   }
 
   String _formatDateTime(DateTime dateTime) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     final day = days[dateTime.weekday - 1];
@@ -589,7 +605,8 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           'bookingData': widget.bookingData,
           'paymentId': paymentId,
           'bookingId': bookingId,
-          'tickets': widget.bookingData['tickets'], // Pass ticket data if available
+          'tickets':
+              widget.bookingData['tickets'], // Pass ticket data if available
         },
       );
     } catch (e) {

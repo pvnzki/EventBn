@@ -120,9 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final userData = await authService.getCurrentUser();
       if (userData != null && mounted) {
         setState(() {
-          _userName = userData.firstName.isNotEmpty 
-              ? userData.firstName 
-              : 'User';
+          _userName =
+              userData.firstName.isNotEmpty ? userData.firstName : 'User';
         });
       }
     } catch (e) {
@@ -268,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _selectedPriceRange = null;
       _selectedLocation = 'All';
     });
-    
+
     // Show feedback when filters are cleared
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -289,13 +288,14 @@ class _HomeScreenState extends State<HomeScreen> {
       // Just refresh the UI to show filtered events
       setState(() {});
     }
-    
+
     // Show feedback message when filters are applied
     final filterCount = _getActiveFilterCount();
     if (filterCount > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Applied $filterCount filter${filterCount > 1 ? 's' : ''}'),
+          content:
+              Text('Applied $filterCount filter${filterCount > 1 ? 's' : ''}'),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -1267,8 +1267,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _selectedCategory == 'All' && !_hasActiveFilters()
                         ? 'No events found'
                         : _hasActiveFilters()
-                        ? 'No events match your filters'
-                        : 'No $_selectedCategory events found',
+                            ? 'No events match your filters'
+                            : 'No $_selectedCategory events found',
                     style: TextStyle(
                       fontSize: 16,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -1281,7 +1281,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         : 'Try checking back later for new events',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1299,7 +1302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _selectedPriceRange = null;
                           _selectedLocation = 'All';
                         });
-                        
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Filters and category reset'),
@@ -1310,8 +1313,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

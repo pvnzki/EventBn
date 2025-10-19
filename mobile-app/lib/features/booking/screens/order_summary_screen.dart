@@ -43,7 +43,7 @@ class _OrderSummaryScreenState extends State<OrderSummaryScreen> {
       });
 
       print('🎪 [OrderSummary] Loading event data for ID: ${widget.eventId}');
-      
+
       final eventService = EventService();
       final event = await eventService.getEventById(widget.eventId);
 
