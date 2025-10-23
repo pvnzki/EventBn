@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { authenticateToken } = require("../middleware/auth");
+const { authenticateToken } = require("../auth/index.js");
 const prisma = require("../lib/database");
 const { Status } = require("@prisma/client");
 const emailService = require("../email");

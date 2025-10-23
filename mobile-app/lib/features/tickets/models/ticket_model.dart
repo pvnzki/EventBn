@@ -108,6 +108,14 @@ class PaymentGroup {
   final DateTime purchaseDate;
   final String paymentMethod;
   final String paymentStatus;
+  final String? eventTitle;
+  final DateTime? eventStartTime;
+  final String? eventVenue;
+  final String? eventLocation;
+  final String? coverImageUrl;
+  final int ticketCount;
+  final bool canCancel;
+  final double? hoursUntilEvent;
 
   const PaymentGroup({
     required this.paymentId,
@@ -116,17 +124,19 @@ class PaymentGroup {
     required this.purchaseDate,
     required this.paymentMethod,
     required this.paymentStatus,
+    this.eventTitle,
+    this.eventStartTime,
+    this.eventVenue,
+    this.eventLocation,
+    this.coverImageUrl,
+    this.ticketCount = 0,
+    this.canCancel = false,
+    this.hoursUntilEvent,
   });
 
   bool get canBeCancelled {
-    // Can be cancelled if not all tickets are cancelled and no tickets are used
-    final nonCancelledTickets = tickets.where((t) => !t.isCancelled).toList();
-    final usedTickets = tickets.where((t) => t.status == TicketStatus.used).toList();
-    final upcomingTickets = tickets.where((t) => t.isUpcoming).toList();
-    
-    return nonCancelledTickets.isNotEmpty && 
-           usedTickets.isEmpty && 
-           upcomingTickets.isNotEmpty;
+    // Use the backend-provided canCancel flag, which includes time-based logic
+    return canCancel;
   }
 
   bool get isFullyCancelled {

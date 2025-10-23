@@ -190,7 +190,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     children: [
                       _buildPaymentGroupsList(context, ticketProvider.upcomingPaymentGroups, 'upcoming'),
                       _buildPaymentGroupsList(context, ticketProvider.pastPaymentGroups, 'completed'),
-                      _buildPaymentGroupsList(context, _getCancelledPaymentGroups(ticketProvider.paymentGroups), 'cancelled'),
+                      _buildPaymentGroupsList(context, _buildCancelledFromTickets(ticketProvider.cancelledTickets), 'cancelled'),
                     ],
                   );
                 },
@@ -202,10 +202,35 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     );
   }
 
-  List<PaymentGroup> _getCancelledPaymentGroups(List<PaymentGroup> paymentGroups) {
-    return paymentGroups.where((group) => 
-      group.isFullyCancelled
-    ).toList();
+  // Build PaymentGroup list from cancelled tickets supplied by the provider
+  List<PaymentGroup> _buildCancelledFromTickets(List<Ticket> cancelledTickets) {
+    final Map<String, List<Ticket>> grouped = {};
+    for (final t in cancelledTickets) {
+      final pid = t.paymentId;
+      if (pid.isEmpty) continue;
+      grouped.putIfAbsent(pid, () => []);
+      grouped[pid]!.add(t);
+    }
+
+    return grouped.entries.map((e) {
+      final tickets = e.value;
+      final first = tickets.first;
+      return PaymentGroup(
+        paymentId: e.key,
+        tickets: tickets,
+        totalAmount: tickets.fold(0.0, (s, t) => s + t.totalAmount),
+        purchaseDate: first.purchaseDate,
+        paymentMethod: 'Card',
+        paymentStatus: 'refunded',
+        eventTitle: first.eventTitle,
+        eventStartTime: first.eventStartDate,
+        eventVenue: first.venue,
+        eventLocation: first.address,
+        coverImageUrl: first.eventImageUrl,
+        ticketCount: tickets.length,
+        canCancel: false,
+      );
+    }).toList();
   }
 
   Widget _buildPaymentGroupsList(BuildContext context, List<PaymentGroup> paymentGroups, String tabType) {

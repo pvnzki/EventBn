@@ -450,7 +450,11 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    // Map userId to user_id for backward compatibility
+    req.user = {
+      ...decoded,
+      user_id: decoded.userId
+    };
     next();
   } catch (error) {
     return res.status(403).json({

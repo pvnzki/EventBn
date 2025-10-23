@@ -4,6 +4,12 @@ import '../services/ticket_service.dart';
 
 class TicketProvider extends ChangeNotifier {
   List<Ticket> _tickets = [];
+  List<PaymentGroup> _upcomingPaymentGroups = [];
+  List<Ticket> _completedTickets = [];
+  List<Ticket> _cancelledTickets = [];
+  int _upcomingCount = 0;
+  int _completedCount = 0;
+  int _cancelledCount = 0;
   bool _isLoading = false;
   String? _error;
   final TicketService _ticketService = TicketService();
@@ -13,10 +19,16 @@ class TicketProvider extends ChangeNotifier {
   List<Ticket> get upcomingTickets =>
       _tickets.where((t) => t.isUpcoming).toList();
   List<Ticket> get pastTickets => _tickets.where((t) => t.isPast).toList();
+  List<PaymentGroup> get upcomingPaymentGroups => _upcomingPaymentGroups;
+  List<Ticket> get completedTickets => _completedTickets;
+  List<Ticket> get cancelledTickets => _cancelledTickets;
+  int get upcomingCount => _upcomingCount;
+  int get completedCount => _completedCount;
+  int get cancelledCount => _cancelledCount;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Group tickets by payment ID
+  // Group tickets by payment ID (fallback for backward compatibility)
   List<PaymentGroup> get paymentGroups {
     final Map<String, List<Ticket>> groupedTickets = {};
     
@@ -38,19 +50,19 @@ class TicketProvider extends ChangeNotifier {
         purchaseDate: firstTicket.purchaseDate,
         paymentMethod: 'Card', // This should come from payment data
         paymentStatus: 'Completed', // This should come from payment data
+        eventTitle: firstTicket.eventTitle,
+        eventStartTime: firstTicket.eventStartDate,
+        eventVenue: firstTicket.venue,
+        eventLocation: firstTicket.address,
+        coverImageUrl: firstTicket.eventImageUrl,
+        ticketCount: tickets.length,
+        canCancel: false, // Will be determined by backend
       );
     }).toList()
       ..sort((a, b) => b.purchaseDate.compareTo(a.purchaseDate)); // Sort by newest first
   }
 
-  // Get upcoming payment groups
-  List<PaymentGroup> get upcomingPaymentGroups {
-    return paymentGroups.where((group) => 
-      group.tickets.any((ticket) => ticket.isUpcoming)
-    ).toList();
-  }
-
-  // Get past payment groups
+  // Get past payment groups (fallback)
   List<PaymentGroup> get pastPaymentGroups {
     return paymentGroups.where((group) => 
       group.tickets.every((ticket) => ticket.isPast)
@@ -79,6 +91,12 @@ class TicketProvider extends ChangeNotifier {
       
       if (result['success'] == true) {
         _tickets = result['tickets'] ?? [];
+        _upcomingPaymentGroups = result['upcoming_payment_groups'] ?? [];
+        _completedTickets = result['completed_tickets'] ?? [];
+        _cancelledTickets = result['cancelled_tickets'] ?? [];
+        _upcomingCount = result['upcoming_count'] ?? 0;
+        _completedCount = result['completed_count'] ?? 0;
+        _cancelledCount = result['cancelled_count'] ?? 0;
       } else {
         _setError(result['message'] ?? 'Failed to fetch tickets');
       }
@@ -116,33 +134,8 @@ class TicketProvider extends ChangeNotifier {
       print('🎫 TicketProvider: Service returned: $result');
       
       if (result['success'] == true) {
-        // Update local ticket statuses for this payment
-        _tickets = _tickets.map((ticket) {
-          if (ticket.paymentId == paymentId && !ticket.isCancelled) {
-            return Ticket(
-              id: ticket.id,
-              eventId: ticket.eventId,
-              eventTitle: ticket.eventTitle,
-              eventImageUrl: ticket.eventImageUrl,
-              userId: ticket.userId,
-              ticketTypeId: ticket.ticketTypeId,
-              ticketTypeName: ticket.ticketTypeName,
-              price: ticket.price,
-              quantity: ticket.quantity,
-              totalAmount: ticket.totalAmount,
-              qrCode: ticket.qrCode,
-              status: TicketStatus.cancelled,
-              purchaseDate: ticket.purchaseDate,
-              eventStartDate: ticket.eventStartDate,
-              venue: ticket.venue,
-              address: ticket.address,
-              paymentId: ticket.paymentId,
-            );
-          }
-          return ticket;
-        }).toList();
-        
-        notifyListeners();
+        // After successful cancellation, refresh the ticket data to get updated state
+        await fetchUserTickets();
         
         return {
           'success': true,

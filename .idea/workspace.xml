@@ -6,12 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="45a0267a-976c-4b0b-8772-eb94badd12da" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/auth/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/auth/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/payments.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/payments.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/queueRoutes.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/queueRoutes.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/routes/tickets.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/routes/tickets.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend-api/services/core-service/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend-api/services/core-service/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/android/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/android/local.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/models/ticket_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/models/ticket_model.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/providers/ticket_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/providers/ticket_provider.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/screens/my_tickets_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/screens/my_tickets_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mobile-app/lib/features/tickets/services/ticket_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile-app/lib/features/tickets/services/ticket_service.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
