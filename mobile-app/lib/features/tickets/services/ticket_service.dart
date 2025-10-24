@@ -5,8 +5,17 @@ import '../../auth/services/auth_service.dart';
 import '../models/ticket_model.dart';
 
 class TicketService {
-  final String baseUrl = AppConfig.baseUrl;
-  final AuthService _authService = AuthService();
+  late final String baseUrl;
+  late final AuthService _authService;
+  final http.Client? _client;
+
+  TicketService({http.Client? client, String? baseUrl, AuthService? authService})
+      : _client = client {
+    this.baseUrl = baseUrl ?? AppConfig.baseUrl;
+    _authService = authService ?? AuthService();
+  }
+
+  http.Client get client => _client ?? http.Client();
 
   // Fetch user's tickets
   Future<Map<String, dynamic>> getUserTickets() async {
@@ -20,7 +29,7 @@ class TicketService {
         };
       }
 
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/tickets/my-tickets'),
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +163,7 @@ class TicketService {
         };
       }
 
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/tickets/qr/$qrCode'),
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +200,7 @@ class TicketService {
         };
       }
 
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/tickets/$ticketId'),
         headers: {
           'Content-Type': 'application/json',
@@ -279,7 +288,7 @@ class TicketService {
         };
       }
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/tickets/$ticketId/attend'),
         headers: {
           'Content-Type': 'application/json',
@@ -317,7 +326,7 @@ class TicketService {
         };
       }
 
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/tickets/by-payment/$paymentId'),
         headers: {
           'Content-Type': 'application/json',
@@ -409,7 +418,7 @@ class TicketService {
       print('🎫 TicketService: Starting cancellation for payment: $paymentId');
       print('🔗 TicketService: API URL: $baseUrl/api/tickets/payment/$paymentId/cancel');
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/tickets/payment/$paymentId/cancel'),
         headers: {
           'Content-Type': 'application/json',

@@ -13,7 +13,7 @@ void main() {
 
   setUp(() {
     mockTicketService = MockTicketService();
-    ticketProvider = TicketProvider();
+    ticketProvider = TicketProvider(ticketService: mockTicketService);
   });
 
   tearDown(() {

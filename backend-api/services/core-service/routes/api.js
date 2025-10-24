@@ -1005,10 +1005,11 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
 });
 
 // Public Events routes (no authentication required)
-// GET /events (public)
+// GET / (public) - for /api/events mount point
+// GET /events (public) - for /api/auth/events, /api/users/events, etc. mount points
 // Mobile app expects: { success: true, data: [ ... ] }
 // Previously we returned { events: [...] }. We now return both for backward compatibility.
-router.get("/events", async (req, res) => {
+const handleGetEvents = async (req, res) => {
   try {
     const { page = 1, limit = 20, category, location } = req.query;
     const pageNum = parseInt(page);
@@ -1086,10 +1087,15 @@ router.get("/events", async (req, res) => {
       error: error.message,
     });
   }
-});
+};
 
-// GET /events/:eventId (public)
-router.get("/events/:eventId", async (req, res) => {
+// Register the event listing handler for both / and /events paths
+router.get("/", handleGetEvents);
+router.get("/events", handleGetEvents);
+
+// GET /:eventId (public) - for /api/events/:id mount point
+// GET /events/:eventId (public) - for other mount points
+const handleGetEventById = async (req, res) => {
   try {
     const { eventId } = req.params;
     const eventIdNum = parseInt(eventId);
@@ -1146,7 +1152,11 @@ router.get("/events/:eventId", async (req, res) => {
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
-});
+};
+
+// Register the event by ID handler for both /:eventId and /events/:eventId paths
+router.get("/:eventId", handleGetEventById);
+router.get("/events/:eventId", handleGetEventById);
 
 // --- Additional public event endpoints to match mobile client expectations ---
 

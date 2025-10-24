@@ -4,7 +4,7 @@ import '../models/event_model.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
 
-// Get event attendees
+// Get event attendees (standalone function - kept for backward compatibility)
 Future<List<dynamic>> getEventAttendees(String eventId) async {
   final String baseUrl = AppConfig.baseUrl;
   try {
@@ -36,23 +36,34 @@ Future<List<dynamic>> getEventAttendees(String eventId) async {
 }
 
 class EventService {
-  final String baseUrl = AppConfig.baseUrl;
-  final AuthService _authService = AuthService();
+  late final String baseUrl;
+  final http.Client? _client;
+  final AuthService? _authService;
 
-  EventService() {
-    print('🔧 EventService initialized with baseUrl: $baseUrl');
+  // DI constructor for testing
+  EventService({http.Client? client, String? baseUrl, AuthService? authService})
+      : _client = client,
+        _authService = authService,
+        baseUrl = baseUrl ?? AppConfig.baseUrl {
+    print('🔧 EventService initialized with baseUrl: ${this.baseUrl}');
   }
+
+  // Get http client (injected or default)
+  http.Client get client => _client ?? http.Client();
+
+  // Get auth service (injected or default)
+  AuthService get authService => _authService ?? AuthService();
 
   // Get event attendees
   Future<List<dynamic>> getEventAttendees(String eventId) async {
     try {
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
       
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/events/$eventId/attendees'),
         headers: headers,
       );
@@ -78,13 +89,13 @@ class EventService {
       final url = '$baseUrl/api/events';
       print('🌐 EventService: Making API call to: $url');
 
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
-      final response = await http
+      final response = await client
           .get(
             Uri.parse(url),
             headers: headers,
@@ -143,12 +154,12 @@ class EventService {
   // Get featured events
   Future<List<Event>> getFeaturedEvents() async {
     try {
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/events/featured'),
         headers: headers,
       );
@@ -168,12 +179,12 @@ class EventService {
   // Get event by ID
   Future<Event> getEventById(String eventId) async {
     try {
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/events/$eventId'),
         headers: headers,
       );
@@ -198,12 +209,12 @@ class EventService {
   // Search events
   Future<List<Event>> searchEvents(String query) async {
     try {
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/events/search/${Uri.encodeComponent(query)}'),
         headers: headers,
       );
@@ -227,12 +238,12 @@ class EventService {
   // Get events by category
   Future<List<Event>> getEventsByCategory(String category) async {
     try {
-      final token = await _authService.getStoredToken();
+      final token = await authService.getStoredToken();
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl/api/events/category/$category'),
         headers: headers,
       );

@@ -14,8 +14,13 @@ import '../../auth/services/auth_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
+  final bool isGuestMode;
 
-  const EventDetailsScreen({super.key, required this.eventId});
+  const EventDetailsScreen({
+    super.key, 
+    required this.eventId,
+    this.isGuestMode = false,
+  });
 
   @override
   State<EventDetailsScreen> createState() => _EventDetailsScreenState();
@@ -1341,6 +1346,33 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () async {
+          // Check if in guest mode - show login prompt
+          if (widget.isGuestMode) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Login Required'),
+                content: const Text(
+                  'Please login or create an account to book tickets.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.go('/login');
+                    },
+                    child: const Text('Login'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+          
           if (_videoController != null && _videoController!.value.isPlaying) {
             _videoController?.pause();
           }

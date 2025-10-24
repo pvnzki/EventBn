@@ -84,6 +84,13 @@ class AppRouter {
           );
         },
       ),
+      
+      // Guest Mode Route (no bottom nav)
+      GoRoute(
+        path: '/guest-home',
+        name: 'guest-home',
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: '/register',
         name: 'register',
@@ -140,6 +147,17 @@ class AppRouter {
           final eventId = state.pathParameters['eventId']!;
           print('Router: Building EventDetailsScreen for eventId: $eventId');
           return EventDetailsScreen(eventId: eventId);
+        },
+      ),
+      
+      // Guest Event Detail Route
+      GoRoute(
+        path: '/guest/events/:eventId',
+        name: 'guest-event-details',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          print('Router: Building EventDetailsScreen (Guest) for eventId: $eventId');
+          return EventDetailsScreen(eventId: eventId, isGuestMode: true);
         },
       ),
 

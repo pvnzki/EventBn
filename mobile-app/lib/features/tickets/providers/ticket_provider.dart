@@ -12,7 +12,11 @@ class TicketProvider extends ChangeNotifier {
   int _cancelledCount = 0;
   bool _isLoading = false;
   String? _error;
-  final TicketService _ticketService = TicketService();
+  late final TicketService _ticketService;
+
+  TicketProvider({TicketService? ticketService}) {
+    _ticketService = ticketService ?? TicketService();
+  }
 
   // Getters
   List<Ticket> get tickets => _tickets;

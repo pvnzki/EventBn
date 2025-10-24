@@ -3,18 +3,34 @@ import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:event_booking_app/features/tickets/services/ticket_service.dart';
+import 'package:event_booking_app/features/auth/services/auth_service.dart';
 
 // Mock HTTP Client
 class MockHttpClient extends Mock implements http.Client {}
+class MockAuthService extends Mock implements AuthService {}
 
 void main() {
   late TicketService ticketService;
   late MockHttpClient mockClient;
+  late MockAuthService mockAuthService;
+
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(Uri());
+  });
 
   setUp(() {
     mockClient = MockHttpClient();
-    ticketService = TicketService();
-    // Note: TicketService would need to accept http.Client for proper testing
+    mockAuthService = MockAuthService();
+    ticketService = TicketService(
+      client: mockClient,
+      baseUrl: 'http://test-api.com',
+      authService: mockAuthService,
+    );
+    
+    // Default: return a token for authentication
+    when(() => mockAuthService.getStoredToken())
+        .thenAnswer((_) async => 'test-token');
   });
 
   group('TicketService - getUserTickets', () {
