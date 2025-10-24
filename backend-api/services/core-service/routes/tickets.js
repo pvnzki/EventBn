@@ -4,14 +4,6 @@ const { authenticateToken } = require("../auth/index.js");
 const prisma = require("../lib/database");
 const { validateUUID, ValidationError } = require("../lib/validation");
 
-// UUID validation helper
-function validateUUID(value, fieldName) {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!value || !uuidRegex.test(value)) {
-    throw new Error(`Invalid ${fieldName}: must be a valid UUID`);
-  }
-}
-
 console.log("✅ Tickets router loaded successfully");
 
 // Test route to verify routing is working
