@@ -1,0 +1,36 @@
+{
+  "myEvents": {
+    "success": true,
+    "tickets": [
+      {
+        "ticket_id": "T-001",
+        "event_id": 101,
+        "user_id": 999,
+        "purchase_date": "2030-01-05T12:00:00.000Z",
+        "price": 50,
+        "attended": false,
+        "user": {"name": "Jane Doe", "email": "jane@example.com"},
+        "event": {"event_id": 101, "title": "Tech Summit", "start_time": "2030-01-10T09:00:00.000Z", "end_time": "2030-01-10T17:00:00.000Z", "venue": "Main Hall", "location": "City", "capacity": 500},
+        "payment": {"payment_id": "P-001", "status": "completed", "payment_method": "card", "payment_date": "2030-01-05T12:00:00.000Z"}
+      }
+    ],
+    "events": [
+      {"event_id": 101, "title": "Tech Summit", "start_time": "2030-01-10T09:00:00.000Z", "end_time": "2030-01-10T17:00:00.000Z", "venue": "Main Hall", "location": "City", "capacity": 500}
+    ],
+    "ticketsByEvent": [
+      {"event": {"event_id": 101, "title": "Tech Summit", "start_time": "2030-01-10T09:00:00.000Z", "end_time": "2030-01-10T17:00:00.000Z", "venue": "Main Hall", "location": "City", "capacity": 500}, "tickets": [
+        {
+          "ticket_id": "T-001",
+          "event_id": 101,
+          "user_id": 999,
+          "purchase_date": "2030-01-05T12:00:00.000Z",
+          "price": 50,
+          "attended": false,
+          "user": {"name": "Jane Doe", "email": "jane@example.com"},
+          "payment": {"payment_id": "P-001", "status": "completed", "payment_method": "card", "payment_date": "2030-01-05T12:00:00.000Z"}
+        }
+      ], "ticketCount": 1, "eventRevenue": 50, "attendedCount": 0}
+    ],
+    "statistics": {"totalTicketsSold": 1, "totalRevenue": 50, "totalEvents": 1, "averageTicketPrice": 50}
+  }
+}

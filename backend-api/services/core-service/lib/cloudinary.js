@@ -10,14 +10,17 @@ cloudinary.config({
 // Helper to use upload_stream as a promise
 function uploadStream(buffer, options = {}) {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(options, (error, result) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
       if (error) {
         reject(error);
       } else {
         resolve(result);
       }
     });
-  }).end(buffer);
+    
+    // Write the buffer to the stream
+    stream.end(buffer);
+  });
 }
 
 module.exports = {

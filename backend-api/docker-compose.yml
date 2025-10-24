@@ -15,8 +15,10 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: eventbn-rabbitmq
     ports:
-      - "8672:5672"      # AMQP port (using 8672 to avoid Windows restrictions)
-      - "18672:15672"    # Management UI port (using 18672)
+      # - "8672:5672"      # AMQP port (using 8672 to avoid Windows restrictions)
+      # - "18672:15672"    # Management UI port (using 18672)
+      - "15672:5672"     # AMQP port (using 15672 to avoid Windows dynamic port range)
+      - "15673:15672"    # Management UI port (using 15673)
     environment:
       RABBITMQ_DEFAULT_USER: eventbn
       RABBITMQ_DEFAULT_PASS: eventbn123

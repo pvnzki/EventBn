@@ -140,17 +140,80 @@ const setupTestDatabase = async () => {
     return testData.events.get(where.event_id) || null;
   });
 
+  // Add missing event operations
+  prisma.event.update.mockImplementation(async ({ where, data }) => {
+    const event = testData.events.get(where.event_id);
+    if (!event) return null;
+    
+    const updatedEvent = {
+      ...event,
+      ...data,
+      updated_at: new Date()
+    };
+    testData.events.set(where.event_id, updatedEvent);
+    return updatedEvent;
+  });
+
+  prisma.event.delete.mockImplementation(async ({ where }) => {
+    const event = testData.events.get(where.event_id);
+    if (!event) return null;
+    
+    testData.events.delete(where.event_id);
+    return event;
+  });
+
   prisma.event.findMany.mockImplementation(async ({ where = {}, skip = 0, take = 10 }) => {
     let events = Array.from(testData.events.values());
     
+    // Apply status filter
     if (where.status) {
       events = events.filter(e => e.status === where.status);
     }
+    
+    // Apply event_type filter
     if (where.event_type) {
       events = events.filter(e => e.event_type === where.event_type);
     }
     
-    return events.slice(skip, skip + take);
+    // Apply title search (case insensitive)
+    if (where.title && where.title.contains) {
+      const searchTerm = where.title.contains.toLowerCase();
+      events = events.filter(e => e.title && e.title.toLowerCase().includes(searchTerm));
+    }
+    
+    // Apply OR search filter
+    if (where.OR && Array.isArray(where.OR)) {
+      events = events.filter(e => {
+        return where.OR.some(condition => {
+          if (condition.title && condition.title.contains) {
+            const searchTerm = condition.title.contains.toLowerCase();
+            return e.title && e.title.toLowerCase().includes(searchTerm);
+          }
+          if (condition.description && condition.description.contains) {
+            const searchTerm = condition.description.contains.toLowerCase();
+            return e.description && e.description.toLowerCase().includes(searchTerm);
+          }
+          if (condition.category && condition.category.contains) {
+            const searchTerm = condition.category.contains.toLowerCase();
+            return e.category && e.category.toLowerCase().includes(searchTerm);
+          }
+          if (condition.venue && condition.venue.contains) {
+            const searchTerm = condition.venue.contains.toLowerCase();
+            return e.venue && e.venue.toLowerCase().includes(searchTerm);
+          }
+          if (condition.location && condition.location.contains) {
+            const searchTerm = condition.location.contains.toLowerCase();
+            return e.location && e.location.toLowerCase().includes(searchTerm);
+          }
+          return false;
+        });
+      });
+    }
+    
+    // Apply pagination (ensure we respect the take limit)
+    const result = events.slice(skip, skip + take);
+    
+    return result;
   });
 
   // Mock database health check

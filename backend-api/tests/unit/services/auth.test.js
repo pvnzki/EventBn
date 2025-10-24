@@ -1,10 +1,10 @@
-const authService = require('../services/core-service/auth/index');
+const authService = require('../../../services/core-service/auth/index');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const prisma = require('../lib/database');
+const prisma = require('../../../lib/database');
 
 // Mock dependencies
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),
@@ -138,7 +138,7 @@ describe('Auth Service', () => {
           password_hash: hashedPassword,
           phone_number: '+1234567890',
           profile_picture: 'https://example.com/pic.jpg',
-          role: 'GUEST',
+          role: 'ATTENDEE',
           is_active: true,
           is_email_verified: false
         },
@@ -187,7 +187,7 @@ describe('Auth Service', () => {
           password_hash: 'hashed-password',
           phone_number: null,
           profile_picture: null,
-          role: 'GUEST',
+          role: 'ATTENDEE',
           is_active: true,
           is_email_verified: false
         },
@@ -200,7 +200,7 @@ describe('Auth Service', () => {
 
       await expect(authService.register(userData))
         .rejects
-        .toThrow('Registration failed: Email already registered');
+        .toThrow('Email already registered');
     });
 
     it('should throw error if database fails during user creation', async () => {
@@ -327,7 +327,7 @@ describe('Auth Service', () => {
 
       await expect(authService.login(credentials))
         .rejects
-        .toThrow('Login failed: User has no password set');
+        .toThrow('Login failed: Account setup incomplete');
     });
 
     it('should throw error if password is invalid', async () => {

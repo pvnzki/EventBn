@@ -29,6 +29,7 @@ class UserService {
   Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       print('👤 [UserService] Fetching user data for ID: $userId');
+      print('👤 [UserService] Full URL: $baseUrl/api/users/$userId');
 
       final response = await _client.get(
         Uri.parse('$baseUrl/api/users/$userId'),
@@ -38,19 +39,23 @@ class UserService {
       );
 
       print('👤 [UserService] Response status: ${response.statusCode}');
+      print('👤 [UserService] Response headers: ${response.headers}');
       print('👤 [UserService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('👤 [UserService] Parsed data: $data');
+
         if (data['success'] == true && data['data'] != null) {
           print('✅ [UserService] User data fetched successfully');
+          print('👤 [UserService] User data: ${data['data']}');
           return data['data'];
         } else {
           print('❌ [UserService] Invalid response format: $data');
           return null;
         }
       } else if (response.statusCode == 404) {
-        print('❌ [UserService] User not found');
+        print('❌ [UserService] User not found (404)');
         return null;
       } else {
         print(
@@ -59,6 +64,7 @@ class UserService {
       }
     } catch (e) {
       print('❌ [UserService] Exception occurred: $e');
+      print('❌ [UserService] Stack trace: ${StackTrace.current}');
       return null;
     }
   }

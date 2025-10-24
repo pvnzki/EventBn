@@ -18,7 +18,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Fetch tickets when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TicketProvider>().fetchUserTickets();
@@ -116,7 +116,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: theme.colorScheme.onPrimary,
-                unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                unselectedLabelColor:
+                    theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,

@@ -225,6 +225,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String phoneNumber,
+    DateTime? dateOfBirth,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -237,6 +238,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
         phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
       );
 
       if (result['success'] == true && result['user'] != null) {

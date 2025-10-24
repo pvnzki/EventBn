@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../events/services/event_service.dart';
+import '../../events/models/event_model.dart';
 import '../../../common_widgets/custom_notification.dart';
 
-class PaymentSuccessScreen extends StatelessWidget {
+class PaymentSuccessScreen extends StatefulWidget {
   final Map<String, dynamic> bookingData;
 
   const PaymentSuccessScreen({
@@ -10,7 +12,59 @@ class PaymentSuccessScreen extends StatelessWidget {
     required this.bookingData,
   });
 
-  String get paymentId => bookingData['paymentId'] ?? '';
+  @override
+  State<PaymentSuccessScreen> createState() => _PaymentSuccessScreenState();
+}
+
+class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
+  Event? _event;
+  bool _isLoading = true;
+  String? _error;
+
+  String get paymentId => widget.bookingData['paymentId'] ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEventData();
+  }
+
+  Future<void> _loadEventData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final eventId = widget.bookingData['event_id']?.toString() ??
+          widget.bookingData['eventId']?.toString();
+
+      if (eventId != null) {
+        print('🎪 [PaymentSuccess] Loading event data for ID: $eventId');
+
+        final eventService = EventService();
+        final event = await eventService.getEventById(eventId);
+
+        print('🎪 [PaymentSuccess] Event loaded: ${event.title}');
+
+        setState(() {
+          _event = event;
+          _isLoading = false;
+        });
+      } else {
+        print('⚠️ [PaymentSuccess] No event ID found in booking data');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ [PaymentSuccess] Error loading event: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,13 +72,19 @@ class PaymentSuccessScreen extends StatelessWidget {
 
     // Debug logging
     print('🎉 [PAYMENT_SUCCESS] Screen loaded with booking data:');
-    print('🎉 [PAYMENT_SUCCESS] Event: ${bookingData['eventName']}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] All booking data keys: ${widget.bookingData.keys.toList()}');
+    print('🎉 [PAYMENT_SUCCESS] Full booking data: ${widget.bookingData}');
+    print('🎉 [PAYMENT_SUCCESS] Event: ${_getEventName()}');
+    print('🎉 [PAYMENT_SUCCESS] Location: ${_getEventLocation()}');
+    print('🎉 [PAYMENT_SUCCESS] Date: ${_getEventDate()}');
     print('🎉 [PAYMENT_SUCCESS] Payment ID: $paymentId');
     print(
-        '🎉 [PAYMENT_SUCCESS] Selected seats: ${bookingData['selectedSeats']}');
+        '🎉 [PAYMENT_SUCCESS] Selected seats: ${widget.bookingData['selectedSeats']}');
     print(
-        '🎉 [PAYMENT_SUCCESS] Seat data type: ${bookingData['selectedSeatData'].runtimeType}');
-    print('🎉 [PAYMENT_SUCCESS] Total amount: ${bookingData['totalAmount']}');
+        '🎉 [PAYMENT_SUCCESS] Seat data type: ${widget.bookingData['selectedSeatData'].runtimeType}');
+    print(
+        '🎉 [PAYMENT_SUCCESS] Total amount: ${widget.bookingData['totalAmount']}');
     print(
         '🎉 [PAYMENT_SUCCESS] Current route: ${GoRouterState.of(context).uri.toString()}');
 
@@ -114,11 +174,14 @@ class PaymentSuccessScreen extends StatelessWidget {
   Widget _buildPaymentDetailsCard(BuildContext context) {
     final theme = Theme.of(context);
     final selectedSeats =
-        (bookingData['selectedSeats'] as List<String>?) ?? <String>[];
+        (widget.bookingData['selectedSeats'] as List<String>?) ?? <String>[];
     final seatCount = selectedSeats.length;
-    final subtotal = _calculateSubtotal();
-    final tax = subtotal * 0.1;
-    final total = subtotal + tax;
+    final total = widget.bookingData['totalAmount'] != null
+        ? (widget.bookingData['totalAmount'] is double
+            ? widget.bookingData['totalAmount']
+            : double.tryParse(widget.bookingData['totalAmount'].toString()) ??
+                0.0)
+        : _calculateSubtotal();
 
     return Container(
       decoration: BoxDecoration(
@@ -151,7 +214,7 @@ class PaymentSuccessScreen extends StatelessWidget {
             _buildDetailRow(context, 'Date', _getCurrentDate()),
             const SizedBox(height: 12),
             _buildDetailRow(context, 'Seats',
-                '$seatCount x ${bookingData['ticketType'] ?? 'Economy'}'),
+                '$seatCount x ${widget.bookingData['ticketType'] ?? 'Economy'}'),
             const SizedBox(height: 12),
             _buildDetailRow(
                 context, 'Amount', 'LKR ${total.toStringAsFixed(2)}'),
@@ -186,22 +249,33 @@ class PaymentSuccessScreen extends StatelessWidget {
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary
-                  ],
-                ),
+                gradient: widget.bookingData['eventImageUrl'] == null
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary
+                        ],
+                      )
+                    : null,
+                image: widget.bookingData['eventImageUrl'] != null
+                    ? DecorationImage(
+                        image:
+                            NetworkImage(widget.bookingData['eventImageUrl']),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.music_note,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
+              child: widget.bookingData['eventImageUrl'] == null
+                  ? const Center(
+                      child: Icon(
+                        Icons.event,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 16),
 
@@ -211,7 +285,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    bookingData['eventName'] ?? 'National Music Festival 2024',
+                    _getEventName(),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -222,8 +296,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    bookingData['eventDate'] ??
-                        'Mon, Dec 24 • 18.00 - 23.00 PM',
+                    _getEventDate(),
                     style: TextStyle(
                       fontSize: 14,
                       color: theme.colorScheme.primary,
@@ -239,11 +312,14 @@ class PaymentSuccessScreen extends StatelessWidget {
                         size: 14,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        'Grand Park, New York',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      Expanded(
+                        child: Text(
+                          _getEventLocation(),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -359,7 +435,7 @@ class PaymentSuccessScreen extends StatelessWidget {
 
   double _calculateSubtotal() {
     double total = 0.0;
-    final seatDataRaw = bookingData['selectedSeatData'];
+    final seatDataRaw = widget.bookingData['selectedSeatData'];
 
     if (seatDataRaw != null && seatDataRaw is List) {
       final seatData = List<Map<String, dynamic>>.from(seatDataRaw.map(
@@ -370,7 +446,7 @@ class PaymentSuccessScreen extends StatelessWidget {
       }
     } else {
       // Fallback: use total amount from booking data if seat data is not available
-      final totalAmount = bookingData['totalAmount'];
+      final totalAmount = widget.bookingData['totalAmount'];
       if (totalAmount != null) {
         total = (totalAmount is double)
             ? totalAmount
@@ -386,10 +462,113 @@ class PaymentSuccessScreen extends StatelessWidget {
     return '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
   }
 
+  String _getEventName() {
+    // Use loaded event data first, then fall back to booking data
+    if (_event != null) {
+      return _event!.title;
+    }
+
+    // Try multiple possible field names for event name from booking data
+    return widget.bookingData['eventName'] ??
+        widget.bookingData['event_name'] ??
+        widget.bookingData['title'] ??
+        widget.bookingData['event_title'] ??
+        'Event Details Unavailable';
+  }
+
+  String _getEventDate() {
+    // Use loaded event data first, then fall back to booking data
+    if (_event != null) {
+      return _formatDateTime(_event!.startDateTime);
+    }
+
+    // Use the formatted date method for booking data
+    return _formatEventDate();
+  }
+
+  String _getEventLocation() {
+    // Use loaded event data first, then fall back to booking data
+    if (_event != null) {
+      return _event!.venue;
+    }
+
+    // Try multiple possible field names for event location from booking data
+    return widget.bookingData['eventLocation'] ??
+        widget.bookingData['event_location'] ??
+        widget.bookingData['venue'] ??
+        widget.bookingData['event_venue'] ??
+        widget.bookingData['location'] ??
+        'Venue TBD';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    final day = days[dateTime.weekday - 1];
+    final month = months[dateTime.month - 1];
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+
+    return '$day, $month ${dateTime.day} • $hour:$minute';
+  }
+
+  String _formatEventDate() {
+    // Try to format from booking data
+    final eventDateString =
+        widget.bookingData['eventStartDate'] ?? widget.bookingData['eventDate'];
+
+    if (eventDateString != null) {
+      try {
+        final eventDate = DateTime.parse(eventDateString);
+        final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec'
+        ];
+
+        final dayName = days[eventDate.weekday - 1];
+        final monthName = months[eventDate.month - 1];
+        final day = eventDate.day;
+        final hour = eventDate.hour.toString().padLeft(2, '0');
+        final minute = eventDate.minute.toString().padLeft(2, '0');
+
+        return '$dayName, $monthName $day • $hour:$minute';
+      } catch (e) {
+        print('Error parsing event date: $e');
+      }
+    }
+
+    return 'TBD';
+  }
+
   void _navigateToETicket(BuildContext context) {
     try {
       // Extract bookingId from the booking data
-      final bookingId = bookingData['bookingId']?.toString();
+      final bookingId = widget.bookingData['bookingId']?.toString();
 
       if (bookingId == null || bookingId.isEmpty) {
         print(
@@ -423,10 +602,11 @@ class PaymentSuccessScreen extends StatelessWidget {
         'e-ticket',
         pathParameters: {'ticketId': bookingId},
         extra: {
-          'bookingData': bookingData,
+          'bookingData': widget.bookingData,
           'paymentId': paymentId,
           'bookingId': bookingId,
-          'tickets': bookingData['tickets'], // Pass ticket data if available
+          'tickets':
+              widget.bookingData['tickets'], // Pass ticket data if available
         },
       );
     } catch (e) {

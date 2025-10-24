@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/payment/screens/seat_selection_screen.dart';
 import '../../features/payment/screens/ticket_type_selection_screen.dart';
@@ -33,6 +34,7 @@ import '../../features/tickets/screens/my_tickets_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/my_profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
+import '../../features/profile/screens/organizer_profile_screen.dart';
 import '../../features/profile/screens/profile_posts_feed_screen.dart';
 import '../../features/explore/screens/post_detail_screen.dart';
 import '../../features/explore/screens/create_post_screen.dart';
@@ -225,6 +227,45 @@ class AppRouter {
           final userId = state.pathParameters['userId']!;
           print('🛣️ Router: Building UserProfileScreen for userId: $userId');
           return UserProfileScreen(userId: userId);
+        },
+      ),
+
+      // Organizer Profile Route
+      GoRoute(
+        path: '/organizer/:organizerId',
+        name: 'organizer-profile',
+        builder: (context, state) {
+          final organizerId = state.pathParameters['organizerId']!;
+          print(
+              '🛣️ Router: Building OrganizerProfileScreen for organizerId: $organizerId');
+          return OrganizerProfileScreen(organizerId: organizerId);
+        },
+      ),
+
+      // Fallback route for organizer without ID
+      GoRoute(
+        path: '/organizer',
+        name: 'organizer-fallback',
+        builder: (context, state) {
+          print(
+              '⚠️ Router: Accessed /organizer without ID, redirecting to home');
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.orange),
+                  SizedBox(height: 16),
+                  Text(
+                    'Organizer Not Found',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('Unable to load organizer profile.'),
+                ],
+              ),
+            ),
+          );
         },
       ),
 
@@ -451,10 +492,7 @@ class AppRouter {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => ExplorePostsPage(
-              focusSearch: state.extra is Map &&
-                  (state.extra as Map)['focusSearch'] == true,
-            ),
+            builder: (context, state) => const ExplorePostsPage(),
           ),
           GoRoute(
             path: '/tickets',

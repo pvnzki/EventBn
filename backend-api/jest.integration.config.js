@@ -16,6 +16,9 @@ module.exports = {
   forceExit: true,
   detectOpenHandles: true,
   
+  // CRITICAL: Set test environment variables
+  setupFiles: ['<rootDir>/tests/integration/env.setup.js'],
+  
   // Global setup and teardown
   globalSetup: '<rootDir>/tests/integration/global-setup.js',
   globalTeardown: '<rootDir>/tests/integration/global-teardown.js',

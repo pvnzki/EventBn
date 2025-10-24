@@ -4,12 +4,14 @@ const seatLockService = require('../services/core-service/seat-locks/seatLockSer
 const hybridSeatLockService = require('../services/core-service/seat-locks/hybridSeatLockService');
 const queueService = require('../services/core-service/seat-locks/queueService');
 const { authenticateToken } = require('../middleware/auth');
+const { connectRedis } = require('../lib/redis');
 
 // HYBRID ENDPOINTS (recommended for high-concurrency events)
 
 // Hybrid seat lock (automatically uses queue when needed)
 router.post('/events/:eventId/seats/:seatId/hybrid/lock', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -39,6 +41,7 @@ router.post('/events/:eventId/seats/:seatId/hybrid/lock', authenticateToken, asy
 // Hybrid seat lock extension
 router.put('/events/:eventId/seats/:seatId/hybrid/extend', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -66,6 +69,7 @@ router.put('/events/:eventId/seats/:seatId/hybrid/extend', authenticateToken, as
 // Hybrid seat lock release
 router.delete('/events/:eventId/seats/:seatId/hybrid/release', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -93,6 +97,7 @@ router.delete('/events/:eventId/seats/:seatId/hybrid/release', authenticateToken
 // Get load statistics and queue status
 router.get('/events/:eventId/hybrid/stats', async (req, res) => {
   try {
+    await connectRedis();
     const { eventId } = req.params;
     
     const stats = await hybridSeatLockService.getLoadStats(eventId);
@@ -116,6 +121,7 @@ router.get('/events/:eventId/hybrid/stats', async (req, res) => {
 // Poll for queued request result
 router.get('/hybrid/requests/:requestId/result', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { requestId } = req.params;
     const timeout = parseInt(req.query.timeout) || 30000; // Default 30 seconds
     
@@ -162,6 +168,7 @@ router.get('/hybrid/requests/:requestId/result', authenticateToken, async (req, 
 // Lock a seat
 router.post('/events/:eventId/seats/:seatId/lock', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -201,7 +208,7 @@ router.post('/events/:eventId/seats/:seatId/lock', authenticateToken, async (req
     
     if (lockStatus.locked) {
       // If it's locked by the same user, return success (idempotent)
-      if (lockStatus.userId === userId) {
+      if (String(lockStatus.userId) === String(userId)) {
         console.log(`✅ Seat already locked by requesting user: ${eventId}:${seatId}`);
         return res.json({
           success: true,
@@ -267,6 +274,7 @@ router.post('/events/:eventId/seats/:seatId/lock', authenticateToken, async (req
 // Check seat lock status
 router.get('/events/:eventId/seats/:seatId/lock', async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     
     const lockStatus = await seatLockService.isSeatLocked(eventId, seatId);
@@ -295,6 +303,7 @@ router.get('/events/:eventId/seats/:seatId/lock', async (req, res) => {
 // Extend seat lock (for payment process)
 router.put('/events/:eventId/seats/:seatId/lock/extend', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -325,6 +334,7 @@ router.put('/events/:eventId/seats/:seatId/lock/extend', authenticateToken, asyn
 // Release seat lock
 router.delete('/events/:eventId/seats/:seatId/lock', authenticateToken, async (req, res) => {
   try {
+    await connectRedis();
     const { eventId, seatId } = req.params;
     const userId = req.user.user_id; // Fixed: use user_id from middleware
 
@@ -354,6 +364,7 @@ router.delete('/events/:eventId/seats/:seatId/lock', authenticateToken, async (r
 // Get all locked seats for an event
 router.get('/events/:eventId/locks', async (req, res) => {
   try {
+    await connectRedis();
     const { eventId } = req.params;
     
     const lockedSeats = await seatLockService.getEventLockedSeats(eventId);
