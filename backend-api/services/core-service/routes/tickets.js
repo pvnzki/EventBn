@@ -3,6 +3,14 @@ const router = express.Router();
 const { authenticateToken } = require("../auth/index.js");
 const prisma = require("../lib/database");
 
+// UUID validation helper
+function validateUUID(value, fieldName) {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!value || !uuidRegex.test(value)) {
+    throw new Error(`Invalid ${fieldName}: must be a valid UUID`);
+  }
+}
+
 console.log("✅ Tickets router loaded successfully");
 
 // Test route to verify routing is working
@@ -203,6 +211,17 @@ router.get("/:ticketId", authenticateToken, async (req, res) => {
     const { ticketId } = req.params;
     const user_id = req.user.user_id;
 
+    // Validate that ticketId is a proper UUID
+    try {
+      validateUUID(ticketId, 'Ticket ID');
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+        error: "INVALID_TICKET_ID"
+      });
+    }
+
     const ticket = await prisma.ticket_purchase.findFirst({
       where: {
         ticket_id: ticketId,
@@ -387,6 +406,17 @@ router.get("/by-payment/:paymentId", authenticateToken, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const user_id = req.user.user_id;
+
+    // Validate that paymentId is a proper UUID
+    try {
+      validateUUID(paymentId, 'Payment ID');
+    } catch (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError.message,
+        error: "INVALID_PAYMENT_ID"
+      });
+    }
 
     const ticket = await prisma.ticket_purchase.findFirst({
       where: {
