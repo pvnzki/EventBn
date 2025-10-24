@@ -7,14 +7,21 @@ import '../../../core/config/app_config.dart';
 import '../../../core/constants.dart';
 
 class AuthService {
-  final String baseUrl = AppConfig.baseUrl;
+  late final String baseUrl;
+  final http.Client? _client;
+
+  AuthService({http.Client? client, String? baseUrl})
+      : _client = client,
+        baseUrl = baseUrl ?? AppConfig.baseUrl;
+
+  http.Client get client => _client ?? http.Client();
 
   // Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       print('🔄 [AUTH_SERVICE] Logging in user: $email');
 
-      final response = await http.post(
+      final response = await client.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
@@ -136,7 +143,7 @@ class AuthService {
 
       print('🔄 [AUTH_SERVICE] Request body: $requestBody');
 
-      final response = await http.post(
+      final response = await client.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
@@ -206,7 +213,7 @@ class AuthService {
       }
 
       print('🔍 [AUTH_SERVICE] Token found, calling /me endpoint');
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl${Constants.authEndpoint}/me'),
         headers: {
           'Content-Type': 'application/json',
@@ -273,7 +280,7 @@ class AuthService {
 
       for (final url in services) {
         try {
-          final response = await http.get(
+          final response = await client.get(
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
           ).timeout(const Duration(seconds: 5));
@@ -398,7 +405,7 @@ class AuthService {
       if (lastName != null) body['lastName'] = lastName;
       if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl${Constants.authEndpoint}/profile'),
         headers: {
           'Content-Type': 'application/json',
@@ -505,7 +512,7 @@ class AuthService {
       print('🔍 [AUTH_SERVICE] Sending profile data: $body');
 
       // **CRITICAL FIX**: Use proper user endpoint instead of non-existent auth/profile
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/users/${currentUser.id}'),
         headers: {
           'Content-Type': 'application/json',
@@ -598,7 +605,7 @@ class AuthService {
         'avatarUrl': imageUrl,
       };
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/users/${user.id}/profile'),
         headers: {
           'Content-Type': 'application/json',
@@ -647,7 +654,7 @@ class AuthService {
         return {'success': false, 'message': 'Not authenticated'};
       }
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl${Constants.authEndpoint}/change-password'),
         headers: {
           'Content-Type': 'application/json',

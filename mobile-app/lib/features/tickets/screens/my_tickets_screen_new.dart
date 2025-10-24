@@ -202,10 +202,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                           context,
                           _getCompletedTickets(ticketProvider.tickets),
                           'completed'),
-                      _buildTicketsList(
-                          context,
-                          _getCancelledTickets(ticketProvider.tickets),
-                          'cancelled'),
+            _buildTicketsList(
+              context,
+              ticketProvider.cancelledTickets,
+              'cancelled'),
                     ],
                   );
                 },
@@ -225,13 +225,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
         .toList();
   }
 
-  List<Ticket> _getCancelledTickets(List<Ticket> tickets) {
-    return tickets
-        .where((ticket) =>
-            ticket.status == TicketStatus.cancelled ||
-            ticket.status == TicketStatus.refunded)
-        .toList();
-  }
+  // Cancelled tickets are provided by the TicketProvider via `cancelledTickets`.
 
   Widget _buildTicketsList(
       BuildContext context, List<Ticket> tickets, String tabType) {

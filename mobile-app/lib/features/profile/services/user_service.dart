@@ -3,18 +3,35 @@ import 'dart:convert';
 import '../../../core/config/app_config.dart';
 
 class UserService {
-  static final UserService _instance = UserService._internal();
-  factory UserService() => _instance;
-  UserService._internal();
+  static UserService? _instance;
 
-  final String baseUrl = AppConfig.baseUrl;
+  // Dependency-injected client/baseUrl for testability
+  final http.Client _client;
+  final String baseUrl;
+
+  factory UserService({http.Client? client, String? baseUrl}) {
+    // Preserve singleton behavior by default, but allow test configuration
+    _instance ??=
+        UserService._internal(client ?? http.Client(), baseUrl ?? AppConfig.baseUrl);
+    return _instance!;
+  }
+
+  UserService._internal(this._client, this.baseUrl);
+
+  // Testing hook to reset/configure the singleton
+  static void configureForTest({http.Client? client, String? baseUrl}) {
+    _instance = UserService._internal(
+      client ?? http.Client(),
+      baseUrl ?? AppConfig.baseUrl,
+    );
+  }
 
   Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       print('👤 [UserService] Fetching user data for ID: $userId');
       print('👤 [UserService] Full URL: $baseUrl/api/users/$userId');
 
-      final response = await http.get(
+      final response = await _client.get(
         Uri.parse('$baseUrl/api/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +89,7 @@ class UserService {
 
       print('👥 [UserService] Fetching users: $uri');
 
-      final response = await http.get(
+      final response = await _client.get(
         uri,
         headers: {
           'Content-Type': 'application/json',

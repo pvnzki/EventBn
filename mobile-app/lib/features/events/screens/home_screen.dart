@@ -11,6 +11,7 @@ import '../providers/event_provider.dart';
 import '../models/event_model.dart';
 import '../../../core/config/app_config.dart';
 import '../../auth/services/auth_service.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -700,7 +701,14 @@ class _HomeScreenState extends State<HomeScreen> {
           itemBuilder: (context, index) {
             final event = _searchResults[index];
             return GestureDetector(
-              onTap: () => context.push('/events/${event.id}'),
+              onTap: () {
+                final authProvider = context.read<AuthProvider>();
+                if (authProvider.isGuestMode) {
+                  context.push('/guest/events/${event.id}');
+                } else {
+                  context.push('/events/${event.id}');
+                }
+              },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -941,6 +949,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final authProvider = context.watch<AuthProvider>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
@@ -988,47 +997,62 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Notification icon (kept modern style)
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(13),
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.1),
+          const Spacer(),
+          
+          // Show Login button for guests, notification icon for logged in users
+          if (authProvider.isGuestMode)
+            ElevatedButton.icon(
+              onPressed: () => context.go('/login'),
+              icon: const Icon(Icons.login, size: 18),
+              label: const Text('Login'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-            ),
-            child: IconButton(
-              onPressed: () => context.push('/notifications'),
-              icon: Stack(
-                children: [
-                  Icon(
-                    Icons.notifications_outlined,
-                    size: 24,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
+            )
+          else
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.1),
+                ),
+              ),
+              child: IconButton(
+                onPressed: () => context.push('/notifications'),
+                icon: Stack(
+                  children: [
+                    Icon(
+                      Icons.notifications_outlined,
+                      size: 24,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              style: IconButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ],
+                ),
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -1488,7 +1512,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return GestureDetector(
-      onTap: () => context.push('/events/${event.id}'),
+      onTap: () {
+        final authProvider = context.read<AuthProvider>();
+        if (authProvider.isGuestMode) {
+          context.push('/guest/events/${event.id}');
+        } else {
+          context.push('/events/${event.id}');
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),

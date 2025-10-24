@@ -18,7 +18,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
+    
     // Fetch tickets when the screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TicketProvider>().fetchUserTickets();
@@ -116,8 +116,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: theme.colorScheme.onPrimary,
-                unselectedLabelColor:
-                    theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -191,7 +190,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     children: [
                       _buildPaymentGroupsList(context, ticketProvider.upcomingPaymentGroups, 'upcoming'),
                       _buildPaymentGroupsList(context, ticketProvider.pastPaymentGroups, 'completed'),
-                      _buildPaymentGroupsList(context, _buildCancelledFromTickets(ticketProvider.cancelledTickets), 'cancelled'),
+                      _buildPaymentGroupsList(context, _getCancelledPaymentGroups(ticketProvider.paymentGroups), 'cancelled'),
                     ],
                   );
                 },
@@ -203,35 +202,10 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     );
   }
 
-  // Build PaymentGroup list from cancelled tickets supplied by the provider
-  List<PaymentGroup> _buildCancelledFromTickets(List<Ticket> cancelledTickets) {
-    final Map<String, List<Ticket>> grouped = {};
-    for (final t in cancelledTickets) {
-      final pid = t.paymentId;
-      if (pid.isEmpty) continue;
-      grouped.putIfAbsent(pid, () => []);
-      grouped[pid]!.add(t);
-    }
-
-    return grouped.entries.map((e) {
-      final tickets = e.value;
-      final first = tickets.first;
-      return PaymentGroup(
-        paymentId: e.key,
-        tickets: tickets,
-        totalAmount: tickets.fold(0.0, (s, t) => s + t.totalAmount),
-        purchaseDate: first.purchaseDate,
-        paymentMethod: 'Card',
-        paymentStatus: 'refunded',
-        eventTitle: first.eventTitle,
-        eventStartTime: first.eventStartDate,
-        eventVenue: first.venue,
-        eventLocation: first.address,
-        coverImageUrl: first.eventImageUrl,
-        ticketCount: tickets.length,
-        canCancel: false,
-      );
-    }).toList();
+  List<PaymentGroup> _getCancelledPaymentGroups(List<PaymentGroup> paymentGroups) {
+    return paymentGroups.where((group) => 
+      group.isFullyCancelled
+    ).toList();
   }
 
   Widget _buildPaymentGroupsList(BuildContext context, List<PaymentGroup> paymentGroups, String tabType) {
@@ -675,9 +649,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   Future<void> _performCancellation(BuildContext context, PaymentGroup paymentGroup) async {
     final ticketProvider = context.read<TicketProvider>();
     
-    print('🎫 MyTicketsScreen: Starting cancellation for payment: ${paymentGroup.paymentId}');
     final result = await ticketProvider.cancelTicketsByPayment(paymentGroup.paymentId);
-    print('🎫 MyTicketsScreen: Cancellation result: $result');
     
     if (!context.mounted) return;
     
@@ -759,13 +731,5 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
   String _getWeekdayName(int weekday) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return weekdays[weekday - 1];
-  }
-
-
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

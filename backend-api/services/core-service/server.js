@@ -227,6 +227,7 @@ app.get("/test-analytics/:organizationId", async (req, res) => {
 const apiRoutes = require("./routes/api");
 const authRoutes = require("./routes/auth");
 const internalRoutes = require("./routes/internal");
+const ticketsRoutes = require("./routes/tickets");
 
 // Initialize email service
 const emailService = require("./email");
@@ -283,7 +284,7 @@ app.use("/api/v1", apiRoutes); // Versioned API for clients
 app.use("/api/users", apiRoutes); // User-related API routes
 app.use("/api/events", apiRoutes); // Event-related API routes
 app.use("/api/organizations", apiRoutes); // Organization-related API routes
-app.use("/api/tickets", apiRoutes); // Ticket-related API routes
+app.use("/api/tickets", ticketsRoutes); // Ticket-related API routes - uses dedicated tickets router
 app.use("/api/payments", apiRoutes); // Payment-related API routes
 app.use("/internal/v1", internalRoutes); // Inter-service communication
 
