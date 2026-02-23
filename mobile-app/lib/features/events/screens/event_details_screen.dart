@@ -255,10 +255,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   radius: 7,
                   backgroundColor: Colors.grey[300],
                   backgroundImage: _getAttendeeAvatarImage(index),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    print(
-                        'Error loading avatar for attendee $index: $exception');
-                  },
+                  onBackgroundImageError: _getAttendeeAvatarImage(index) != null
+                      ? (exception, stackTrace) {
+                          print(
+                              'Error loading avatar for attendee $index: $exception');
+                        }
+                      : null,
                   child: _getAttendeeAvatarImage(index) == null
                       ? Icon(
                           Icons.person,

@@ -55,22 +55,20 @@ class RedisClient {
         console.log("🔑 Using Redis AUTH token");
       }
 
-      // Configuration optimized for AWS ElastiCache with controlled reconnection
+      // Configuration optimized for local/AWS ElastiCache with controlled reconnection
       const redisConfig = {
-        retryDelayOnFailover: 100,
         enableReadyCheck: true,
-        maxRetriesPerRequest: 2, // Reduced from 3
-        lazyConnect: false,
+        maxRetriesPerRequest: 2,
+        lazyConnect: true, // We call .connect() explicitly below
         connectTimeout: 10000,
         commandTimeout: 5000,
-        retryDelayOnClusterDown: 300,
-        enableOfflineQueue: false,
+        enableOfflineQueue: true, // Allow queuing commands until connection is ready
         keepAlive: 30000,
         family: 4,
-        // Limit automatic reconnection attempts
-        maxRetriesPerRequest: 2,
-        retryDelayOnFailover:
-          this.retryBackoffBase * Math.pow(2, this.connectionAttempts - 1), // Exponential backoff
+        retryStrategy(times) {
+          if (times > 5) return null; // stop retrying after 5 attempts
+          return Math.min(times * 200, 2000);
+        },
         ...(authToken && { password: authToken }),
       };
 
@@ -114,16 +112,10 @@ class RedisClient {
         console.log(
           `🔄 Redis client reconnecting in ${time}ms (attempt ${this.connectionAttempts}/${this.maxRetries})`
         );
-
-        // Stop automatic reconnection if we've hit the limit
-        if (this.connectionAttempts >= this.maxRetries) {
-          console.log(
-            "🛑 Max Redis reconnection attempts reached, stopping automatic reconnection"
-          );
-          this.client.disconnect(false); // Disconnect without triggering reconnect
-          this.isCircuitBreakerOpen = true;
-        }
       });
+
+      // Explicitly connect and wait for ready
+      await this.client.connect();
 
       // Test the connection with ping
       await this.client.ping();

@@ -758,11 +758,11 @@ router.get("/posts/:postId", verifyJWT, async (req, res) => {
     const currentUserId = req.user.userId;
 
     const post = await prisma.post.findUnique({
-      where: { id: postId },
+      where: { post_id: parseInt(postId, 10) },
       include: {
         likes: {
           select: {
-            userId: true,
+            user_id: true,
           },
         },
       },

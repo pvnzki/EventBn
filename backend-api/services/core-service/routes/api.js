@@ -2812,7 +2812,7 @@ router.delete(
           .status(400)
           .json({ success: false, message: "eventId & seatId required" });
       }
-      const unlocked = await seatLockService.unlockSeat(
+      const unlocked = await seatLockService.releaseLock(
         eventId,
         seatId,
         userId

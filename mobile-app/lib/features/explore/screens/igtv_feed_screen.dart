@@ -7,6 +7,7 @@ import '../services/explore_post_service.dart';
 import '../widgets/smart_comments_bottom_sheet.dart';
 import '../widgets/feed_video_player.dart'; // Add video player import
 import '../../events/screens/event_details_screen.dart';
+import '../../../core/config/app_config.dart';
 
 class IGTVFeedScreen extends StatefulWidget {
   final String postId;
@@ -121,7 +122,7 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
 
       // Try to reach the health endpoint
       final response = await http.get(
-        Uri.parse('http://localhost:3002/health'),
+        Uri.parse('${AppConfig.postServiceUrl}/health'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 5));
 
@@ -989,6 +990,9 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
               backgroundImage: (currentPost.userAvatarUrl.isNotEmpty)
                   ? NetworkImage(currentPost.userAvatarUrl)
                   : null,
+              onBackgroundImageError: currentPost.userAvatarUrl.isNotEmpty
+                  ? (exception, stackTrace) => {}
+                  : null,
               child: (currentPost.userAvatarUrl.isEmpty)
                   ? Text(
                       currentPost.userDisplayName.isNotEmpty
@@ -1001,7 +1005,6 @@ class _IGTVFeedScreenState extends State<IGTVFeedScreen>
                       ),
                     )
                   : null,
-              onBackgroundImageError: (exception, stackTrace) => {},
             ),
             const SizedBox(width: 12),
             Expanded(
