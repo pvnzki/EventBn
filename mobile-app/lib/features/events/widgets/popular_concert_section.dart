@@ -114,17 +114,21 @@ class PopularConcertSection extends StatelessWidget {
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       context.push(seeAllRoute);
                     },
-                    child: Text(
-                      'See all',
-                      style: TextStyle(
-                        fontFamily: kFontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text(
+                        'See all',
+                        style: TextStyle(
+                          fontFamily: kFontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -139,6 +143,7 @@ class PopularConcertSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 physics: const BouncingScrollPhysics(),
                 addAutomaticKeepAlives: false,
+                cacheExtent: 500,
                 itemCount: displayEvents.length,
                 itemBuilder: (context, index) {
                   final event = displayEvents[index];

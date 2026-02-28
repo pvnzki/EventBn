@@ -186,17 +186,19 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
   // ── Build ───────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.background : AppColors.bgLight;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Consumer<EventProvider>(
           builder: (context, eventProvider, child) {
             final events = _filteredEvents(eventProvider.events);
             return Column(
               children: [
-                _buildTopBar(context),
+                _buildTopBar(context, isDark),
                 const SizedBox(height: 16),
                 HomeCategories(
                   categories: _categories,
@@ -205,7 +207,7 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
                 const SizedBox(height: 20),
                 Expanded(
                   child: events.isEmpty
-                      ? _buildEmptyState()
+                      ? _buildEmptyState(isDark)
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: events.length,
@@ -229,24 +231,26 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
   }
 
   // ── Top bar ─────────────────────────────────────────────────────────────
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar(BuildContext context, bool isDark) {
+    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final iconColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     return Padding(
       padding: const EdgeInsets.only(left: 8, right: 16, top: 8),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: AppColors.white, size: 20),
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: iconColor, size: 20),
             onPressed: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 4),
           Text(
             widget.screenTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: kFontFamily,
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.white,
+              color: textColor,
             ),
           ),
         ],
@@ -256,30 +260,33 @@ class _AllEventsScreenState extends State<AllEventsScreen> {
 
 
   // ── Empty state ─────────────────────────────────────────────────────────
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
+    final iconColor = isDark ? AppColors.grey.withOpacity(0.5) : AppColors.textSecondaryLight.withOpacity(0.5);
+    final titleColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final subtitleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.event_busy,
-              size: 64, color: AppColors.grey.withOpacity(0.5)),
+              size: 64, color: iconColor),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No Events Found',
             style: TextStyle(
               fontFamily: kFontFamily,
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.white,
+              color: titleColor,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Try selecting a different category',
             style: TextStyle(
               fontFamily: kFontFamily,
               fontSize: 14,
-              color: AppColors.grey200,
+              color: subtitleColor,
             ),
           ),
         ],

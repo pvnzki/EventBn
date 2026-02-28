@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../common_widgets/app_colors.dart';
+import '../../../core/theme/design_tokens.dart';
 import '../models/event_model.dart';
 import '../../auth/providers/auth_provider.dart';
 
@@ -63,16 +64,7 @@ class PopularEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GestureDetector(
-      onTap: () {
-        final authProvider = context.read<AuthProvider>();
-        if (authProvider.isGuestMode) {
-          context.push('/guest/events/${event.id}');
-        } else {
-          context.push('/events/${event.id}');
-        }
-      },
-      child: Container(
+    return Container(
         width: width,
         height: height,
         margin: EdgeInsets.only(right: rightMargin, bottom: bottomMargin),
@@ -133,8 +125,10 @@ class PopularEventCard extends StatelessWidget {
                   ),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xBB000000), // black ~73% — looks like frosted glass on dark poster
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xBB000000) // black ~73% — frosted glass on dark poster
+                          : const Color(0xF0FFFFFF), // white ~94% — light frosted glass
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,11 +137,11 @@ class PopularEventCard extends StatelessWidget {
                           // Event title
                           Text(
                             event.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: kFontFamily,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: isDark ? Colors.white : AppColors.textPrimaryLight,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -160,7 +154,7 @@ class PopularEventCard extends StatelessWidget {
                                 'assets/icons/event card/location.png',
                                 width: 12,
                                 height: 12,
-                                color: Colors.white70,
+                                color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                               ),
                               const SizedBox(width: 5),
                               Expanded(
@@ -168,11 +162,11 @@ class PopularEventCard extends StatelessWidget {
                                   event.venue.isNotEmpty
                                       ? event.venue
                                       : event.address,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: kFontFamily,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w400,
-                                    color: Colors.white70,
+                                    color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -188,16 +182,16 @@ class PopularEventCard extends StatelessWidget {
                                 'assets/icons/event card/date-time.png',
                                 width: 12,
                                 height: 12,
-                                color: Colors.white70,
+                                color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                               ),
                               const SizedBox(width: 5),
                               Text(
                                 _formatDate(event.startDateTime),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: kFontFamily,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w400,
-                                  color: Colors.white70,
+                                  color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                                 ),
                               ),
                             ],
@@ -232,10 +226,27 @@ class PopularEventCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              // Tap overlay for instant visual feedback
+              Positioned.fill(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      final authProvider = context.read<AuthProvider>();
+                      if (authProvider.isGuestMode) {
+                        context.push('/guest/events/${event.id}');
+                      } else {
+                        context.push('/events/${event.id}');
+                      }
+                    },
+                    splashColor: AppColors.primary.withOpacity(0.08),
+                    highlightColor: Colors.white.withOpacity(0.05),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-      ),
     );
   }
 

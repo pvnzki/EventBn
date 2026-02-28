@@ -35,15 +35,17 @@ class AppBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetColor = isDark ? AppColors.background : Colors.white;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          decoration: BoxDecoration(
+            color: sheetColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: SafeArea(
             top: false,

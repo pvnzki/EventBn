@@ -29,81 +29,54 @@ class HomeSearchBar extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final authProvider = context.watch<AuthProvider>();
 
+    final inputBg = isDark ? AppColors.surface : Colors.grey[100]!;
+    final iconColor = isDark ? AppColors.grey200 : Colors.grey[500]!;
+    final hintColor = isDark ? AppColors.grey200 : Colors.grey[500]!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // Search field
+          // Tappable fake search field → navigates to SearchScreen
           Expanded(
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surface : Colors.grey[100],
+            child: Material(
+              color: inputBg,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () => context.push('/search-screen'),
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                onChanged: onChanged,
-                cursorColor: theme.primaryColor,
-                style: TextStyle(
-                  fontFamily: kFontFamily,
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Search event',
-                  hintStyle: TextStyle(
-                    fontFamily: kFontFamily,
-                    color: isDark
-                        ? AppColors.grey
-                        : Colors.grey[500],
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Image.asset(
-                      'assets/icons/search.png',
-                      width: 20,
-                      height: 20,
-                      color: isDark
-                          ? AppColors.grey
-                          : Colors.grey[500],
-                    ),
-                  ),
-                  suffixIcon: controller.text.isNotEmpty
-                      ? IconButton(
-                          onPressed: onClear,
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: isDark
-                                ? AppColors.grey
-                                : Colors.grey[500],
-                            size: 20,
-                          ),
-                        )
-                      : IconButton(
-                          onPressed: onFilterTap,
-                          icon: Icon(
-                            Icons.tune_rounded,
-                            color: hasActiveFilters
-                                ? theme.primaryColor
-                                : (isDark
-                                    ? AppColors.grey
-                                    : Colors.grey[500]),
-                            size: 20,
+                splashColor: AppColors.primary.withOpacity(0.08),
+                highlightColor: AppColors.primary.withOpacity(0.04),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/icons/search.png',
+                        width: 24,
+                        height: 24,
+                        color: iconColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Search event',
+                          style: TextStyle(
+                            fontFamily: kFontFamily,
+                            color: hintColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           // Bell notification button (or Login for guests)
           if (authProvider.isGuestMode)
             _GuestLoginButton(isDark: isDark)
@@ -121,19 +94,20 @@ class _GuestLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.go('/onboarding'),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.bg01 : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          Icons.login_rounded,
-          color: isDark ? AppColors.white : Colors.grey[800],
-          size: 22,
+    return Material(
+      color: isDark ? AppColors.bg01 : Colors.grey[200],
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => context.go('/onboarding'),
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 50,
+          height: 50,
+          child: Icon(
+            Icons.login_rounded,
+            color: isDark ? AppColors.white : Colors.grey[800],
+            size: 22,
+          ),
         ),
       ),
     );
@@ -146,40 +120,41 @@ class _NotificationBellButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/notifications'),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.bg01 : Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(13),
-              child: Image.asset(
-                'assets/icons/bell.png',
-                width: 22,
-                height: 22,
-                color: isDark ? AppColors.white : Colors.grey[800],
-              ),
-            ),
-            Positioned(
-              right: 14,
-              top: 12,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+    return Material(
+      color: isDark ? AppColors.bg01 : Colors.grey[200],
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => context.push('/notifications'),
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 50,
+          height: 50,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(13),
+                child: Image.asset(
+                  'assets/icons/bell.png',
+                  width: 22,
+                  height: 22,
+                  color: isDark ? AppColors.white : Colors.grey[800],
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                right: 14,
+                top: 12,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

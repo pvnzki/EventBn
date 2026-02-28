@@ -25,50 +25,42 @@ class PromotionalBanner extends StatelessWidget {
         child: PageView.builder(
           controller: controller,
           onPageChanged: onPageChanged,
-          physics: const BouncingScrollPhysics(),
+          physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+          allowImplicitScrolling: true, // pre-renders adjacent pages
           itemCount: bannerImages.length,
           itemBuilder: (context, index) {
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 600),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: Container(
-                key: ValueKey(index),
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: imagesPreloaded
-                        ? Image.asset(
-                            bannerImages[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _BannerError(index: index);
-                            },
-                          )
-                        : const _BannerLoading(),
+            return Container(
+              key: ValueKey('banner_$index'),
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                    spreadRadius: 2,
                   ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: imagesPreloaded
+                      ? Image.asset(
+                          bannerImages[index],
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          // Keep decoded image in memory for instant display
+                          cacheWidth: 800,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _BannerError(index: index);
+                          },
+                        )
+                      : const _BannerLoading(),
                 ),
               ),
             );

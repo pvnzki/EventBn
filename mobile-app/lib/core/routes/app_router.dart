@@ -8,7 +8,6 @@ import '../../features/booking/screens/user_details_screen.dart';
 import '../../features/booking/screens/payment_method_screen.dart';
 import '../../features/booking/screens/order_summary_screen.dart';
 import '../../features/booking/screens/payment_success_screen.dart';
-import '../../features/tickets/screens/e_ticket_screen.dart' as tickets;
 import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/explore/screens/igtv_feed_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
@@ -35,7 +34,9 @@ import '../../features/events/screens/event_attendees_screen.dart';
 import '../../features/events/screens/organization_profile_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/all_events_screen.dart';
-import '../../features/tickets/screens/my_tickets_screen.dart';
+import '../../features/events/screens/search_screen.dart';
+import '../../features/tickets/screens/my_tickets_screen_figma.dart';
+import '../../features/tickets/screens/ticket_detail_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
 import '../../features/profile/screens/my_profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
@@ -216,6 +217,11 @@ class AppRouter {
             initialFilter: initialFilter,
           );
         },
+      ),
+      GoRoute(
+        path: '/search-screen',
+        name: 'search-screen',
+        builder: (context, state) => const SearchScreen(),
       ),
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
@@ -541,7 +547,7 @@ class AppRouter {
         },
       ),
 
-      // E-Ticket View
+      // E-Ticket View (new Figma design)
       GoRoute(
         path: '/ticket/:ticketId',
         name: 'e-ticket',
@@ -550,7 +556,7 @@ class AppRouter {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           final ticket = extra['ticket'];
 
-          return tickets.ETicketScreen(
+          return TicketDetailScreen(
             ticketId: ticketId,
             initialTicket: ticket,
           );

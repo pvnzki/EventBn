@@ -53,6 +53,9 @@ dependencies:
   # QR Code generation
   qr_flutter: ^4.1.0
 
+  # Share
+  share_plus: ^7.2.2
+
   # SVG support
   flutter_svg: ^2.0.9
 

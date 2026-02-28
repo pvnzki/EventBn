@@ -18,6 +18,7 @@ import '../widgets/popular_concert_section.dart';
 import '../widgets/home_event_grid.dart';
 import '../widgets/home_filter_modal.dart';
 import '../widgets/home_search_results.dart';
+import '../widgets/home_skeleton_loading.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,7 +29,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with AutomaticKeepAliveClientMixin {
-  final PageController _bannerController = PageController();
+  final PageController _bannerController = PageController(
+    viewportFraction: 1.0,
+    keepPage: true,
+  );
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   List<Event> _searchResults = [];
@@ -173,8 +177,8 @@ class _HomeScreenState extends State<HomeScreen>
         _bannerIndexNotifier.value = _currentBannerIndex;
         _bannerController.animateToPage(
           _currentBannerIndex,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOutCubic,
         );
       }
     });
@@ -593,32 +597,12 @@ class _HomeScreenState extends State<HomeScreen>
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
         bottom: false,
-        child: _searchController.text.isNotEmpty
-            ? Column(
-                children: [
-                  const SizedBox(height: 16),
-                  HomeSearchBar(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    onChanged: _onSearchChanged,
-                    onClear: _clearSearch,
-                    onFilterTap: _showFilterModal,
-                    hasActiveFilters: _hasActiveFilters(),
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: HomeSearchResults(
-                        isSearching: _isSearching,
-                        searchResults: _searchResults,
-                        selectedCategory: _selectedCategory,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : SingleChildScrollView(
+        child: Consumer<EventProvider>(
+          builder: (context, eventProvider, _) {
+            if (eventProvider.isLoading) {
+              return const HomeSkeletonLoading();
+            }
+            return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,7 +681,9 @@ class _HomeScreenState extends State<HomeScreen>
                     const SizedBox(height: 16),
                   ],
                 ),
-              ),
+              );
+          },
+        ),
       ),
     );
   }

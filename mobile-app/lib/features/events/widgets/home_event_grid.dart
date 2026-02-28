@@ -36,10 +36,7 @@ class HomeEventGrid extends StatelessWidget {
     return Consumer<EventProvider>(
       builder: (context, eventProvider, child) {
         if (eventProvider.isLoading) {
-          return const Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const SizedBox.shrink();
         }
 
         if (eventProvider.error != null) {
@@ -74,17 +71,21 @@ class HomeEventGrid extends StatelessWidget {
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  GestureDetector(
+                  InkWell(
                     onTap: () {
                       context.push('/all-events?title=Event%20this%20Month');
                     },
-                    child: Text(
-                      'See all',
-                      style: TextStyle(
-                        fontFamily: kFontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Text(
+                        'See all',
+                        style: TextStyle(
+                          fontFamily: kFontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -139,25 +140,27 @@ class _EventListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GestureDetector(
-      onTap: () {
-        final authProvider = context.read<AuthProvider>();
-        if (authProvider.isGuestMode) {
-          context.push('/guest/events/${event.id}');
-        } else {
-          context.push('/events/${event.id}');
-        }
-      },
-      child: Container(
-        height: 104,
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : Colors.white,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            final authProvider = context.read<AuthProvider>();
+            if (authProvider.isGuestMode) {
+              context.push('/guest/events/${event.id}');
+            } else {
+              context.push('/events/${event.id}');
+            }
+          },
           borderRadius: BorderRadius.circular(AppRadius.card),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+          child: SizedBox(
+            height: 104,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               // Event image — flush with card edges (top, bottom, left)
               ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -165,7 +168,7 @@ class _EventListItem extends StatelessWidget {
                   bottomLeft: Radius.circular(AppRadius.card),
                 ),
                 child: SizedBox(
-                  width: 120,
+                  width: 104,
                   child: event.imageUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: event.imageUrl,
@@ -213,76 +216,79 @@ class _EventListItem extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(0, 10, 12, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                  // Title + location (flexible top section)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                  // Title
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      fontFamily: kFontFamily,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  // Location + Date row
-                  Row(
-                    children: [
-                      // Location
-                      Image.asset(
-                        'assets/icons/event card/location.png',
-                        width: 13,
-                        height: 13,
-                        color: isDark
-                            ? AppColors.grey300
-                            : Colors.grey[500],
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          event.venue.isNotEmpty ? event.venue : event.address,
-                          style: TextStyle(
-                            fontFamily: kFontFamily,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: isDark
-                                ? AppColors.grey300
-                                : Colors.grey[600],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // Date
-                      Image.asset(
-                        'assets/icons/event card/date-time.png',
-                        width: 13,
-                        height: 13,
-                        color: isDark
-                            ? AppColors.grey300
-                            : Colors.grey[500],
-                      ),
-                      const SizedBox(width: 4),
+                      // Title — shows up to 2 lines
                       Text(
-                        _formatDate(event.startDateTime),
+                        event.title,
                         style: TextStyle(
                           fontFamily: kFontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: isDark
-                              ? AppColors.grey300
-                              : Colors.grey[600],
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Location + Date row
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/icons/event card/location.png',
+                            width: 13,
+                            height: 13,
+                            color: isDark
+                                ? AppColors.grey300
+                                : Colors.grey[500],
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              event.venue.isNotEmpty ? event.venue : event.address,
+                              style: TextStyle(
+                                fontFamily: kFontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: isDark
+                                    ? AppColors.grey300
+                                    : Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Image.asset(
+                            'assets/icons/event card/date-time.png',
+                            width: 13,
+                            height: 13,
+                            color: isDark
+                                ? AppColors.grey300
+                                : Colors.grey[500],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDate(event.startDateTime),
+                            style: TextStyle(
+                              fontFamily: kFontFamily,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: isDark
+                                  ? AppColors.grey300
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  // Price + Tickets available
+                  // Price + Tickets available — pinned to bottom
                   Row(
                     children: [
                       Text(
@@ -311,6 +317,8 @@ class _EventListItem extends StatelessWidget {
             ),
             ),
           ],
+        ),
+        ),
         ),
       ),
     );
