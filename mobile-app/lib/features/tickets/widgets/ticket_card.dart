@@ -88,21 +88,55 @@ class TicketCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Event title
+                        // Event title + details
                         Expanded(
-                          child: Text(
-                            ticket.eventTitle,
-                            style: TextStyle(
-                              fontFamily: kFontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              height: 1.2,
-                              color: isDark
-                                  ? AppColors.white
-                                  : AppColors.textPrimaryLight,
-                            ),
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ticket.eventTitle,
+                                style: TextStyle(
+                                  fontFamily: kFontFamily,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.2,
+                                  color: isDark
+                                      ? AppColors.white
+                                      : AppColors.textPrimaryLight,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              // Ticket type + quantity
+                              Text(
+                                '${ticket.ticketTypeName.isNotEmpty ? ticket.ticketTypeName : 'Standard'}'
+                                '${ticket.quantity > 1 ? ' × ${ticket.quantity}' : ''}',
+                                style: TextStyle(
+                                  fontFamily: kFontFamily,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: isDark
+                                      ? AppColors.grey300
+                                      : AppColors.textSecondaryLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              // Price
+                              Text(
+                                'LKR ${ticket.totalAmount.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontFamily: kFontFamily,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.primary
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

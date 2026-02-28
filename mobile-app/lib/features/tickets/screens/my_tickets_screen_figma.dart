@@ -6,6 +6,7 @@ import '../../../core/theme/design_tokens.dart';
 import '../models/ticket_model.dart';
 import '../providers/ticket_provider.dart';
 import '../widgets/ticket_card.dart';
+import '../widgets/ticket_skeleton_loading.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  My Tickets screen — Figma nodes 2131:23613 (empty) & 2131:23655 (list).
@@ -153,7 +154,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
               child: Consumer<TicketProvider>(
                 builder: (context, ticketProvider, child) {
                   if (ticketProvider.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const TicketListSkeletonLoading();
                   }
 
                   if (ticketProvider.error != null) {

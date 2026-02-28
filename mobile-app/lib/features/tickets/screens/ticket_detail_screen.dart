@@ -11,6 +11,7 @@ import '../../../core/theme/design_tokens.dart';
 import '../models/ticket_model.dart';
 import '../services/ticket_service.dart';
 import '../widgets/ticket_shape_clipper.dart';
+import '../widgets/ticket_skeleton_loading.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Ticket detail screen — Figma nodes 2131:23701, 2131:23733, 2131:23816.
@@ -117,7 +118,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             // ── Body ────────────────────────────────────────────────────
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const TicketDetailSkeletonLoading()
                   : _error != null
                       ? _ErrorBody(
                           error: _error!, onRetry: _fetchTicket)
