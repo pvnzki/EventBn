@@ -195,7 +195,19 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const { user, token } = await authService.login({ email, password });
+    const loginResult = await authService.login({ email, password });
+
+    // Check if 2FA is required before completing login
+    if (loginResult.requiresTwoFactor) {
+      return res.status(200).json({
+        success: false,
+        requiresTwoFactor: true,
+        twoFactorMethod: loginResult.twoFactorMethod || 'app',
+        message: loginResult.message || '2FA required',
+      });
+    }
+
+    const { user, token } = loginResult;
 
     return res.status(200).json({
       success: true,

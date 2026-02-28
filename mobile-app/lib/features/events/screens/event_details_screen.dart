@@ -1249,7 +1249,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      context.go('/login');
+                      context.go('/onboarding');
                     },
                     child: const Text('Login'),
                   ),

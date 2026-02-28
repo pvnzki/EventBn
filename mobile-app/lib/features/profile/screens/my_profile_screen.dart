@@ -351,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.of(context).pop();
                 await authProvider.logout();
                 if (context.mounted) {
-                  context.go('/login');
+                  context.go('/onboarding');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Logged out successfully'),

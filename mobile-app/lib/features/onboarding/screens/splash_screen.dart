@@ -74,8 +74,8 @@ class _SplashScreenState extends State<SplashScreen>
           print('SplashScreen: User is authenticated, navigating to home');
           context.go('/home');
         } else {
-          print('SplashScreen: User is not authenticated, navigating to login');
-          context.go('/login');
+          print('SplashScreen: User is not authenticated, navigating to onboarding');
+          context.go('/onboarding');
         }
       }
     });

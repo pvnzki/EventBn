@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Font utility class for San Francisco font styles
+import '../theme/design_tokens.dart';
+
+/// Font utility class — delegates to [kFontFamily] from design_tokens.dart.
 class SFFont {
-  // Font families - Using SF Pro Display for all text since that's what we have
-  static const String display = 'SF Pro Display';
-  static const String text =
-      'SF Pro Display'; // Same as display since we only have SF Pro Display
+  // Font families — single source of truth in design_tokens.dart.
+  static const String display = kFontFamily;
+  static const String text = kFontFamily;
 
   // Quick access to common text styles with San Francisco fonts
 

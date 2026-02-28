@@ -93,18 +93,39 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/icons/navbar/
+    - assets/icons/categories/
+    - assets/icons/event card/
     - assets/seat_map.json
     - .env
 
-  # Custom fonts - San Francisco (No italic variants)
+  # Custom fonts - Satoshi
   fonts:
-    - family: SF Pro Display
+    - family: Satoshi
       fonts:
-        - asset: assets/fonts/SFPRODISPLAYREGULAR.OTF
-        - asset: assets/fonts/SFPRODISPLAYMEDIUM.OTF
+        - asset: assets/fonts/satoshi/Satoshi-Regular.otf
+        - asset: assets/fonts/satoshi/Satoshi-Light.otf
+          weight: 300
+        - asset: assets/fonts/satoshi/Satoshi-Medium.otf
           weight: 500
-        - asset: assets/fonts/SFPRODISPLAYBOLD.OTF
+        - asset: assets/fonts/satoshi/Satoshi-Bold.otf
           weight: 700
+        - asset: assets/fonts/satoshi/Satoshi-Black.otf
+          weight: 900
+        - asset: assets/fonts/satoshi/Satoshi-Italic.otf
+          style: italic
+        - asset: assets/fonts/satoshi/Satoshi-LightItalic.otf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/satoshi/Satoshi-MediumItalic.otf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/satoshi/Satoshi-BoldItalic.otf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/satoshi/Satoshi-BlackItalic.otf
+          weight: 900
+          style: italic
 
 # Flutter Launcher Icons configuration
 flutter_launcher_icons:

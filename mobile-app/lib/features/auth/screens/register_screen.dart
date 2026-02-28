@@ -162,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await Future.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
       // Use GoRouter for navigation (MaterialApp.router)
-      context.go('/login');
+      context.go('/onboarding');
     }
   }
 
@@ -356,7 +356,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         TextButton(
                           onPressed: () {
                             // Use GoRouter for navigation
-                            context.go('/login');
+                            context.go('/onboarding');
                           },
                           child: const Text('Sign In'),
                         ),

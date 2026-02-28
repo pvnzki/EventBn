@@ -24,6 +24,11 @@ import '../../features/auth/screens/congratulations_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/create_new_password_screen.dart';
+import '../../features/auth/screens/signup_verification_screen.dart';
+import '../../features/auth/screens/signup_phone_screen.dart';
+import '../../features/auth/screens/signup_password_screen.dart';
+import '../../features/auth/screens/signup_profile_screen.dart';
+import '../../features/auth/screens/signup_success_screen.dart';
 import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/event_attendees_screen.dart';
@@ -56,6 +61,71 @@ class AppRouter {
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(), // Removed const
+      ),
+
+      // Sign-up Flow Routes
+      GoRoute(
+        path: '/signup/verification',
+        name: 'signup-verification',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpVerificationScreen(
+            verificationType: extra['type'] as String? ?? 'email',
+            destination: extra['destination'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/password',
+        name: 'signup-password',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpPasswordScreen(
+            email: extra['email'] as String? ?? '',
+            phone: extra['phone'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/phone',
+        name: 'signup-phone',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpPhoneScreen(
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/phone-verification',
+        name: 'signup-phone-verification',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpVerificationScreen(
+            verificationType: 'phone',
+            destination: extra['phone'] as String? ?? '',
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/profile',
+        name: 'signup-profile',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpProfileScreen(
+            email: extra['email'] as String? ?? '',
+            phone: extra['phone'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/success',
+        name: 'signup-success',
+        builder: (context, state) => const SignUpSuccessScreen(),
       ),
 
       // Authentication Routes
@@ -138,7 +208,14 @@ class AppRouter {
       GoRoute(
         path: '/all-events',
         name: 'all-events',
-        builder: (context, state) => const AllEventsScreen(),
+        builder: (context, state) {
+          final title = state.uri.queryParameters['title'] ?? 'All Events';
+          final initialFilter = state.uri.queryParameters['filter'] ?? 'All';
+          return AllEventsScreen(
+            screenTitle: title,
+            initialFilter: initialFilter,
+          );
+        },
       ),
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
