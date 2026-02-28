@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -122,28 +120,26 @@ class PopularEventCard extends StatelessWidget {
                 ),
               ),
 
-              // Blurred bottom content area – RepaintBoundary isolates
-              // the expensive BackdropFilter from the rest of the tree.
+              // Bottom content area — lightweight semi-transparent overlay
+              // instead of BackdropFilter (which is extremely GPU-expensive
+              // and was causing frame drops during scrolling/banner animation).
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: RepaintBoundary(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(16),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                    decoration: const BoxDecoration(
+                      color: Color(0xBB000000), // black ~73% — looks like frosted glass on dark poster
                     ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.35),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                           // Event title
                           Text(
                             event.title,
@@ -236,8 +232,6 @@ class PopularEventCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-              ),
             ],
           ),
         ),
