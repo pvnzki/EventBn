@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/design_tokens.dart';
 import '../../auth/services/auth_service.dart';
+import '../widgets/event_details_skeleton_loading.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Event Details Screen — Figma node 2131:21654
@@ -57,6 +58,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   // State variables
   bool isAboutExpanded = false;
 
+  // Collapse tracking for title in pinned header (ValueNotifier avoids full rebuild)
+  final ValueNotifier<bool> _isCollapsedNotifier = ValueNotifier(false);
+
   // Seat map cache
   bool? _hasCustomSeating;
   bool _seatMapLoaded = false;
@@ -74,7 +78,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Video controller lifecycle — driven by provider changes, not build()
+    final event = Provider.of<EventProvider>(context).currentEvent;
+    _ensureVideoController(event);
+  }
+
+  @override
   void dispose() {
+    _isCollapsedNotifier.dispose();
     _videoController?.dispose();
     super.dispose();
   }
@@ -219,6 +232,41 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  Video controller lifecycle
+  // ══════════════════════════════════════════════════════════════════════════
+
+  void _ensureVideoController(Event? event) {
+    if (event != null && event.videoUrl.isNotEmpty) {
+      if (_videoController == null ||
+          _videoController!.dataSource != event.videoUrl) {
+        _videoController?.dispose();
+        _videoInitialized = false;
+        final controller = event.videoUrl.startsWith('http')
+            ? VideoPlayerController.networkUrl(Uri.parse(event.videoUrl))
+            : VideoPlayerController.asset(event.videoUrl);
+        _videoController = controller;
+        controller
+          ..setLooping(true)
+          ..initialize().then((_) {
+            // Only proceed if this controller is still the active one
+            if (mounted && _videoController == controller) {
+              setState(() {
+                _videoInitialized = true;
+                controller.play();
+                _userPausedVideo = false;
+              });
+            }
+          });
+      }
+    } else if (_videoController != null) {
+      _videoController?.dispose();
+      _videoController = null;
+      _videoInitialized = false;
+      _userPausedVideo = false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  Build
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -231,39 +279,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final isLoading = eventProvider.isLoading;
     final errorMessage = eventProvider.error;
 
-    // ── Video controller setup ────────────────────────────────────────────
-    if (event != null && event.videoUrl.isNotEmpty) {
-      if (_videoController == null ||
-          _videoController!.dataSource != event.videoUrl) {
-        _videoController?.dispose();
-        _videoController = event.videoUrl.startsWith('http')
-            ? VideoPlayerController.networkUrl(Uri.parse(event.videoUrl))
-            : VideoPlayerController.asset(event.videoUrl);
-        _videoController!
-          ..setLooping(true)
-          ..initialize().then((_) {
-            if (mounted) {
-              setState(() {
-                _videoInitialized = true;
-                _videoController?.play();
-                _userPausedVideo = false;
-              });
-            }
-          });
-      }
-    } else if (_videoController != null) {
-      _videoController?.dispose();
-      _videoController = null;
-      _videoInitialized = false;
-      _userPausedVideo = false;
-    }
-
     // ── Loading / error guards ────────────────────────────────────────────
     if (isLoading) {
-      return Scaffold(
-        backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const EventDetailsSkeletonLoading();
     }
     if (errorMessage != null) {
       return Scaffold(
@@ -297,6 +315,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         value: SystemUiOverlayStyle.light,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
+            // Track collapse for pinned header title (ValueNotifier — no setState)
+            final double collapseThreshold = 326 - kToolbarHeight - MediaQuery.of(context).padding.top;
+            final bool collapsed = notification.metrics.pixels >= collapseThreshold;
+            if (collapsed != _isCollapsedNotifier.value) {
+              _isCollapsedNotifier.value = collapsed;
+            }
+
             if (isVideoExpanded && notification.metrics.pixels > 10) {
               setState(() => isVideoExpanded = false);
             }
@@ -321,32 +346,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 slivers: [
                   _buildHeroSection(context, isDark, event),
                   SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Rounded transition that scrolls with content
-                        Container(
-                          height: 14,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.background : AppColors.bgLight,
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12)),
-                            border: Border(
-                              top: BorderSide(
-                                color: isDark
-                                    ? const Color(0xFF393939)
-                                    : Colors.grey.withValues(alpha: 0.15),
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                               _buildSchedulePrice(isDark, event),
                           const SizedBox(height: 20),
                           _buildOrganizerCard(isDark, event),
@@ -357,10 +361,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           const SizedBox(height: 20),
                           _buildMapCard(isDark, event),
                               const SizedBox(height: 100),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -397,6 +399,51 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       pinned: true,
       backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
       automaticallyImplyLeading: false,
+      titleSpacing: 0,
+      title: ValueListenableBuilder<bool>(
+        valueListenable: _isCollapsedNotifier,
+        builder: (_, isCollapsed, child) => AnimatedOpacity(
+          opacity: isCollapsed ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: child,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: _MarqueeText(
+            text: event.title,
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+        ),
+      ),
+      centerTitle: true,
+      leading: ValueListenableBuilder<bool>(
+        valueListenable: _isCollapsedNotifier,
+        builder: (_, isCollapsed, child) => IgnorePointer(
+          ignoring: !isCollapsed,
+          child: AnimatedOpacity(
+            opacity: isCollapsed ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: child,
+          ),
+        ),
+        child: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new,
+              color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              size: 18),
+          onPressed: () {
+            if (_videoController != null &&
+                _videoController!.value.isPlaying) {
+              _videoController?.pause();
+            }
+            context.pop();
+          },
+        ),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -428,9 +475,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         child: const Icon(Icons.image_not_supported,
                             size: 48)),
                   ),
-                  if (_videoInitialized &&
-                      _videoController != null &&
-                      (_videoController!.value.isPlaying || isVideoExpanded))
+                  if (_videoInitialized && _videoController != null)
                     SizedBox.expand(
                       child: FittedBox(
                         fit: BoxFit.cover,
@@ -504,7 +549,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
             // ── Bottom overlays (title, category, avatars) ───────────
             Positioned(
-              bottom: 24,
+              bottom: 30,
               left: 16,
               right: 80,
               child: Column(
@@ -554,7 +599,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(width: 10),
                       // Attendee avatars
-                      _buildAttendeeAvatars(),
+                      GestureDetector(
+                        onTap: () => context
+                            .push('/event/${widget.eventId}/attendees'),
+                        child: _buildAttendeeAvatars(),
+                      ),
                       const SizedBox(width: 6),
                       GestureDetector(
                         onTap: () => context
@@ -570,13 +619,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 4),
                       // Arrow icon
                       GestureDetector(
                         onTap: () => context
                             .push('/event/${widget.eventId}/attendees'),
                         child: const Icon(Icons.arrow_forward_ios,
-                            color: Colors.white, size: 14),
+                            color: Colors.white, size: 12),
                       ),
                     ],
                   ),
@@ -642,6 +691,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
 
 
+            // ── Bottom sheet transition ──────────────────────────────
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.background : AppColors.bgLight,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF393939)
+                          : Colors.grey.withValues(alpha: 0.15),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -1566,6 +1637,7 @@ class _MarqueeTextState extends State<_MarqueeText>
   late final AnimationController _animController;
   bool _needsScroll = false;
   double _maxExtent = 0;
+  bool _checkedOnce = false;
 
   @override
   void initState() {
@@ -1581,6 +1653,8 @@ class _MarqueeTextState extends State<_MarqueeText>
     if (oldWidget.text != widget.text) {
       _animController.stop();
       _scrollController.jumpTo(0);
+      _checkedOnce = false;
+      _needsScroll = false;
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
     }
   }
@@ -1588,13 +1662,18 @@ class _MarqueeTextState extends State<_MarqueeText>
   void _checkOverflow() {
     if (!_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
-    if (maxScroll > 0) {
-      setState(() {
-        _needsScroll = true;
-        _maxExtent = maxScroll;
+    if (maxScroll > 0 && !_checkedOnce) {
+      // First check: single text overflows → trigger rebuild with duplicate
+      _checkedOnce = true;
+      setState(() => _needsScroll = true);
+      // After rebuild with duplicate, recalculate maxExtent
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients || !mounted) return;
+        final newMax = _scrollController.position.maxScrollExtent;
+        _maxExtent = newMax;
+        _startAnimation();
       });
-      _startAnimation();
-    } else {
+    } else if (maxScroll <= 0) {
       setState(() => _needsScroll = false);
     }
   }
@@ -1665,11 +1744,24 @@ class _MarqueeTextState extends State<_MarqueeText>
           controller: _scrollController,
           scrollDirection: Axis.horizontal,
           physics: const NeverScrollableScrollPhysics(),
-          child: Text(
-            widget.text,
-            style: widget.style,
-            maxLines: 1,
-            softWrap: false,
+          child: Row(
+            children: [
+              Text(
+                widget.text,
+                style: widget.style,
+                maxLines: 1,
+                softWrap: false,
+              ),
+              if (_needsScroll) ...[
+                const SizedBox(width: 30),
+                Text(
+                  widget.text,
+                  style: widget.style,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+              ],
+            ],
           ),
         ),
       ),
