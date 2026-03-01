@@ -10,14 +10,30 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/theme/design_tokens.dart';
 import '../../auth/services/auth_service.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Event Details Screen — Figma node 2131:21654
+//
+//  Upgraded layout with card-style sections:
+//    1. Hero (video / photo) with frosted-glass back / love / share buttons
+//    2. Date+Time / Price row
+//    3. Organizer card with rating
+//    4. "Detail concert" card (about with read-more)
+//    5. Posts card (horizontal scroll, dummy data for now)
+//    6. Map card
+//    7. Fixed "Book Now" button at bottom
+//
+//  Header video/photo implementation kept from existing codebase.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
   final bool isGuestMode;
 
   const EventDetailsScreen({
-    super.key, 
+    super.key,
     required this.eventId,
     this.isGuestMode = false,
   });
@@ -49,7 +65,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch event details using Provider
     Future.microtask(() {
       Provider.of<EventProvider>(context, listen: false)
           .fetchEventById(widget.eventId);
@@ -64,26 +79,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     super.dispose();
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Data loading
+  // ══════════════════════════════════════════════════════════════════════════
+
   Future<void> _loadSeatMapInfo() async {
     try {
       final url = '${AppConfig.baseUrl}/api/events/${widget.eventId}/seatmap';
-
-      // Get authentication token
       final authService = AuthService();
       final token = await authService.getStoredToken();
 
-      final headers = {'Content-Type': 'application/json'};
+      final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
-        print('🔑 Using auth token for seat map info request');
-      } else {
-        print('⚠️ No auth token available for seat map info request');
       }
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -95,82 +106,51 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           _seatMapLoaded = true;
         });
       } else {
-        print('❌ Failed to load seat map. Status: ${response.statusCode}');
-        setState(() {
-          _seatMapLoaded = true;
-        });
+        setState(() => _seatMapLoaded = true);
       }
     } catch (e) {
-      print('❌ Error loading seat map info: $e');
-      setState(() {
-        _seatMapLoaded = true;
-      });
+      setState(() => _seatMapLoaded = true);
     }
   }
 
   Future<void> _fetchAttendees() async {
     try {
-      print('🔄 Fetching attendees for event: ${widget.eventId}');
       final response = await _eventService.getEventAttendees(widget.eventId);
-
       if (mounted) {
         setState(() {
           attendees = response;
           _attendeesLoading = false;
-          print('✅ Loaded ${attendees.length} attendees');
         });
       }
     } catch (e) {
-      print('❌ Error fetching attendees: $e');
-      // Provide fallback attendee data when API fails
       if (mounted) {
         setState(() {
           attendees = [
-            {
-              'id': '1',
-              'username': 'Alex Johnson',
-              'avatar': 'https://i.pravatar.cc/100?img=1'
-            },
-            {
-              'id': '2',
-              'username': 'Sarah Wilson',
-              'avatar': 'https://i.pravatar.cc/100?img=2'
-            },
-            {
-              'id': '3',
-              'username': 'Mike Chen',
-              'avatar': 'https://i.pravatar.cc/100?img=3'
-            },
-            {
-              'id': '4',
-              'username': 'Emma Davis',
-              'avatar': 'https://i.pravatar.cc/100?img=4'
-            },
-            {
-              'id': '5',
-              'username': 'John Smith',
-              'avatar': 'https://i.pravatar.cc/100?img=5'
-            },
+            {'id': '1', 'avatar': 'https://i.pravatar.cc/100?img=1'},
+            {'id': '2', 'avatar': 'https://i.pravatar.cc/100?img=2'},
+            {'id': '3', 'avatar': 'https://i.pravatar.cc/100?img=3'},
+            {'id': '4', 'avatar': 'https://i.pravatar.cc/100?img=4'},
+            {'id': '5', 'avatar': 'https://i.pravatar.cc/100?img=5'},
           ];
           _attendeesLoading = false;
-          print('📦 Using ${attendees.length} fallback attendees');
         });
       }
     }
   }
 
-  // Helper method to safely get attendee avatar image
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Helpers
+  // ══════════════════════════════════════════════════════════════════════════
+
   ImageProvider? _getAttendeeAvatarImage(int index) {
     try {
-      if (attendees.isEmpty || index >= attendees.length || index < 0)
+      if (attendees.isEmpty || index >= attendees.length || index < 0) {
         return null;
-
+      }
       final attendee = attendees[index];
       if (attendee == null) return null;
 
       String? avatarUrl;
-
-      // Try different possible avatar field names
       if (attendee is Map) {
         avatarUrl = attendee['avatar'] ??
             attendee['profilePicture'] ??
@@ -178,108 +158,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             attendee['profile_picture'];
       }
 
-      // Return NetworkImage only if URL is valid
       if (avatarUrl != null &&
           avatarUrl.isNotEmpty &&
           Uri.tryParse(avatarUrl) != null) {
         return NetworkImage(avatarUrl);
       }
-
       return null;
     } catch (e) {
-      print('Error loading attendee avatar: $e');
       return null;
     }
-  }
-
-  // Helper method to build attendee avatars safely
-  Widget _buildAttendeeAvatars() {
-    if (_attendeesLoading) {
-      return SizedBox(
-        width: 70,
-        height: 22,
-        child: Row(
-          children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-                color: Colors.grey[300],
-              ),
-              child: const SizedBox(
-                width: 12,
-                height: 12,
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (attendees.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final displayCount = attendees.length > 5 ? 5 : attendees.length;
-    if (displayCount <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      width: 70,
-      height: 22,
-      child: Stack(
-        children: List.generate(
-          displayCount,
-          (index) {
-            if (index >= attendees.length) return const SizedBox.shrink();
-
-            return Positioned(
-              left: index * 14.0,
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: CircleAvatar(
-                  radius: 7,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: _getAttendeeAvatarImage(index),
-                  onBackgroundImageError: _getAttendeeAvatarImage(index) != null
-                      ? (exception, stackTrace) {
-                          print(
-                              'Error loading avatar for attendee $index: $exception');
-                        }
-                      : null,
-                  child: _getAttendeeAvatarImage(index) == null
-                      ? Icon(
-                          Icons.person,
-                          size: 8,
-                          color: Colors.grey[600],
-                        )
-                      : null,
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   double? _getLowestPriceFromSeatMap() {
     if (_seatMapData.isEmpty) return null;
-
     try {
       List<double> prices = [];
       for (var seat in _seatMapData) {
@@ -287,140 +178,136 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           prices.add((seat['price'] as num).toDouble());
         }
       }
-
       if (prices.isEmpty) return null;
-      final lowestPrice = prices.reduce((a, b) => a < b ? a : b);
-      return lowestPrice;
+      return prices.reduce((a, b) => a < b ? a : b);
     } catch (e) {
-      print('❌ Error calculating lowest price: $e');
       return null;
     }
   }
 
-  String _formatDate(DateTime date) {
-    // Example: Dec 23, 2024
-    return '${_monthName(date.month)} ${date.day}, ${date.year}';
-  }
-
-  String _formatTime(DateTime start, DateTime end) {
-    // Example: 19:00 - 23:00 PM
-    String startStr =
-        '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
-    String endStr =
-        '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-    return '$startStr - $endStr';
-  }
-
-  String _monthName(int month) {
+  String _formatDateLong(DateTime date) {
     const months = [
       '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
+      'January',
+      'February',
+      'March',
+      'April',
       'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
-    return months[month];
+    return '${months[date.month]} ${date.day}, ${date.year}';
   }
+
+  String _getPriceText(Event event) {
+    final lowestPrice = _getLowestPriceFromSeatMap();
+    if (lowestPrice != null) {
+      return 'LKR ${lowestPrice.toStringAsFixed(0)}';
+    }
+    if (event.ticketTypes.isNotEmpty) {
+      final ticketPrice = event.ticketTypes
+          .map((t) => t.price)
+          .reduce((a, b) => a < b ? a : b);
+      return 'LKR ${ticketPrice.toStringAsFixed(0)}';
+    }
+    return 'Free';
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Build
+  // ══════════════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final eventProvider = Provider.of<EventProvider>(context);
     final event = eventProvider.currentEvent;
     final isLoading = eventProvider.isLoading;
     final errorMessage = eventProvider.error;
 
-    // Always reset video controller when event changes to avoid wrong video playing
+    // ── Video controller setup ────────────────────────────────────────────
     if (event != null && event.videoUrl.isNotEmpty) {
       if (_videoController == null ||
           _videoController!.dataSource != event.videoUrl) {
         _videoController?.dispose();
-        if (event.videoUrl.startsWith('http')) {
-          _videoController = VideoPlayerController.network(event.videoUrl)
-            ..setLooping(true)
-            ..initialize().then((_) {
-              if (mounted) {
-                setState(() {
-                  _videoInitialized = true;
-                  _videoController?.play();
-                  _userPausedVideo = false;
-                });
-              }
-            });
-        } else {
-          _videoController = VideoPlayerController.asset(event.videoUrl)
-            ..setLooping(true)
-            ..initialize().then((_) {
-              if (mounted) {
-                setState(() {
-                  _videoInitialized = true;
-                  _videoController?.play();
-                  _userPausedVideo = false;
-                });
-              }
-            });
-        }
+        _videoController = event.videoUrl.startsWith('http')
+            ? VideoPlayerController.networkUrl(Uri.parse(event.videoUrl))
+            : VideoPlayerController.asset(event.videoUrl);
+        _videoController!
+          ..setLooping(true)
+          ..initialize().then((_) {
+            if (mounted) {
+              setState(() {
+                _videoInitialized = true;
+                _videoController?.play();
+                _userPausedVideo = false;
+              });
+            }
+          });
       }
-    } else {
-      // If no video, dispose controller
-      if (_videoController != null) {
-        _videoController?.dispose();
-        _videoController = null;
-        _videoInitialized = false;
-        _userPausedVideo = false;
-      }
+    } else if (_videoController != null) {
+      _videoController?.dispose();
+      _videoController = null;
+      _videoInitialized = false;
+      _userPausedVideo = false;
     }
 
+    // ── Loading / error guards ────────────────────────────────────────────
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (errorMessage != null) {
       return Scaffold(
-        body: Center(child: Text('Error: $errorMessage')),
+        backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
+        body: Center(
+          child: Text('Error: $errorMessage',
+              style: TextStyle(
+                  color: isDark
+                      ? AppColors.white
+                      : AppColors.textPrimaryLight)),
+        ),
       );
     }
     if (event == null) {
-      return const Scaffold(
-        body: Center(child: Text('Event not found')),
+      return Scaffold(
+        backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
+        body: Center(
+          child: Text('Event not found',
+              style: TextStyle(
+                  color: isDark
+                      ? AppColors.white
+                      : AppColors.textPrimaryLight)),
+        ),
       );
     }
 
+    // ── Main scaffold ─────────────────────────────────────────────────────
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: theme.brightness == Brightness.dark
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            // Collapse video if expanded and user scrolls
             if (isVideoExpanded && notification.metrics.pixels > 10) {
-              setState(() {
-                isVideoExpanded = false;
-              });
+              setState(() => isVideoExpanded = false);
             }
-            // Pause/play video only when cover is visible
             if (_videoController != null && _videoInitialized) {
               if (notification.metrics.pixels > 250) {
                 if (_videoController!.value.isPlaying) {
                   _videoController?.pause();
                 }
-              } else {
-                // Only auto-play if user hasn't manually paused
-                if (!_videoController!.value.isPlaying && !_userPausedVideo) {
-                  _videoController?.play();
-                }
+              } else if (!_videoController!.value.isPlaying &&
+                  !_userPausedVideo) {
+                _videoController?.play();
               }
             }
             return false;
@@ -428,167 +315,70 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           child: Stack(
             children: [
               CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
                 slivers: [
-                  _buildHeroSection(context, theme, event),
+                  _buildHeroSection(context, isDark, event),
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildEventHeader(theme, event),
-                        _buildOrganizerSection(theme, event),
-                        _buildAboutSection(theme, event),
-                        _buildGallerySection(theme, event),
-                        _buildLocationSection(theme, event),
-                        const SizedBox(height: 100), // Space for bottom button
+                        // Rounded transition that scrolls with content
+                        Container(
+                          height: 14,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.background : AppColors.bgLight,
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12)),
+                            border: Border(
+                              top: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF393939)
+                                    : Colors.grey.withValues(alpha: 0.15),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSchedulePrice(isDark, event),
+                          const SizedBox(height: 20),
+                          _buildOrganizerCard(isDark, event),
+                          const SizedBox(height: 20),
+                          _buildDetailCard(isDark, event),
+                          const SizedBox(height: 20),
+                          _buildPostsCard(isDark),
+                          const SizedBox(height: 20),
+                          _buildMapCard(isDark, event),
+                              const SizedBox(height: 100),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
-              // Expanded video overlay
+
+              // ── Fullscreen video overlay ──────────────────────────────
               if (isVideoExpanded &&
                   event.videoUrl.isNotEmpty &&
                   _videoController != null &&
                   _videoInitialized)
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOut,
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    color: Colors.black,
-                    child: Stack(
-                      children: [
-                        Center(
-                          child: AspectRatio(
-                            aspectRatio: _videoController!.value.aspectRatio,
-                            child: VideoPlayer(_videoController!),
-                          ),
-                        ),
-                        // Controls: progress bar, play, mute
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 32,
-                          child: Column(
-                            children: [
-                              VideoProgressIndicator(
-                                _videoController!,
-                                allowScrubbing: true,
-                                colors: VideoProgressColors(
-                                  playedColor: theme.primaryColor,
-                                  backgroundColor: Colors.white24,
-                                  bufferedColor: Colors.white38,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Mute button
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (_videoController!.value.volume > 0) {
-                                        _videoController?.setVolume(0);
-                                      } else {
-                                        _videoController?.setVolume(1);
-                                      }
-                                      setState(() {});
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      padding: const EdgeInsets.all(12),
-                                      child: Icon(
-                                        _videoController!.value.volume > 0
-                                            ? Icons.volume_up
-                                            : Icons.volume_off,
-                                        color: Colors.white,
-                                        size: 28,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 32),
-                                  // Play/pause button
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (_videoController!.value.isPlaying) {
-                                        _videoController?.pause();
-                                        _userPausedVideo = true;
-                                      } else {
-                                        _videoController?.play();
-                                        _userPausedVideo = false;
-                                      }
-                                      setState(() {});
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.5),
-                                        borderRadius: BorderRadius.circular(32),
-                                      ),
-                                      padding: const EdgeInsets.all(16),
-                                      child: Icon(
-                                        _videoController!.value.isPlaying
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        color: Colors.white,
-                                        size: 36,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Close button (top right)
-                        Positioned(
-                          top: 32,
-                          right: 24,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isVideoExpanded = false;
-                              });
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: const Icon(Icons.close,
-                                  color: Colors.white, size: 28),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              // Fixed bottom Book button
+                _buildFullscreenVideo(),
+
+              // ── Fixed bottom button ───────────────────────────────────
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withOpacity(0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: _buildBookEventButton(theme, event),
-                ),
+                child: _buildBottomBar(isDark, event),
               ),
             ],
           ),
@@ -597,54 +387,47 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildHeroSection(BuildContext context, ThemeData theme, Event event) {
+  // ══════════════════════════════════════════════════════════════════════════
+  //  HERO SECTION — SliverAppBar with video / photo
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildHeroSection(BuildContext context, bool isDark, Event event) {
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 326,
       pinned: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () {
-            if (_videoController != null && _videoController!.value.isPlaying) {
-              _videoController?.pause();
-            }
-            context.pop();
-          },
-        ),
-      ),
-      actions: [
-        // Removed like and share buttons as they are not implemented yet
-      ],
+      backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
+      automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
           children: [
+            // ── Image / Video ────────────────────────────────────────
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
-                setState(() {
-                  isVideoExpanded = true;
-                });
+                if (event.videoUrl.isNotEmpty &&
+                    _videoController != null &&
+                    _videoInitialized) {
+                  setState(() => isVideoExpanded = true);
+                }
               },
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Always show cover image as background
                   CachedNetworkImage(
                     imageUrl: event.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        const Center(child: CircularProgressIndicator()),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.image_not_supported),
+                    placeholder: (_, __) => Container(
+                        color: isDark
+                            ? AppColors.surface
+                            : Colors.grey[200]),
+                    errorWidget: (_, __, ___) => Container(
+                        color: isDark
+                            ? AppColors.surface
+                            : Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported,
+                            size: 48)),
                   ),
-                  // Show video above cover image if initialized and playing or expanded
                   if (_videoInitialized &&
                       _videoController != null &&
                       (_videoController!.value.isPlaying || isVideoExpanded))
@@ -658,127 +441,170 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         ),
                       ),
                     ),
-                  // 3. Gradient overlay (always above video)
+                  // Gradient overlay
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
+                          Colors.black.withValues(alpha: 0.3),
                           Colors.transparent,
-                          Colors.black.withOpacity(0.65),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
+                        stops: const [0.0, 0.35, 1.0],
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // 4. Overlays (title, category, attendees)
+
+            // ── Top bar: back + love + share ─────────────────────────
             Positioned(
-              bottom: 40,
-              left: 20,
-              right: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              right: 16,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IgnorePointer(
-                    child: Text(
-                      event.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black,
-                            offset: Offset(0, 2),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  _FrostedCircleButton(
+                    child: const Icon(Icons.arrow_back_ios_new,
+                        color: Colors.white, size: 18),
+                    onTap: () {
+                      if (_videoController != null &&
+                          _videoController!.value.isPlaying) {
+                        _videoController?.pause();
+                      }
+                      context.pop();
+                    },
                   ),
-                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.primaryColor,
-                          borderRadius: BorderRadius.circular(16),
+                      _FrostedCircleButton(
+                        child: Image.asset(
+                          'assets/icons/event-details/love.png',
+                          width: 20,
+                          height: 20,
+                          color: Colors.white,
                         ),
-                        child: IgnorePointer(
-                          child: Text(
-                            event.category,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black,
-                                  offset: Offset(0, 1),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        onTap: () {},
                       ),
                       const SizedBox(width: 10),
-                      _buildAttendeeAvatars(),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () =>
-                            context.push('/event/${widget.eventId}/attendees'),
-                        child: Row(
-                          children: [
-                            Text(
-                              _attendeesLoading
-                                  ? 'Loading...'
-                                  : '${attendees.length} going',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black,
-                                    offset: Offset(0, 1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.arrow_forward_ios,
-                                color: Colors.white, size: 14),
-                          ],
-                        ),
+                      _FrostedCircleButton(
+                        child: const Icon(Icons.share_outlined,
+                            color: Colors.white, size: 18),
+                        onTap: () {},
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            // 5. Mute and Play/Pause buttons (bottom right)
+
+            // ── Bottom overlays (title, category, avatars) ───────────
+            Positioned(
+              bottom: 24,
+              left: 16,
+              right: 80,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image counter badge
+                  _buildImageCounterBadge(event),
+                  const SizedBox(height: 8),
+                  // Event title — Spotify-style marquee for long titles
+                  _MarqueeText(
+                    text: event.title,
+                    style: const TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                            color: Colors.black,
+                            offset: Offset(0, 2),
+                            blurRadius: 8),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Category + attendees row
+                  Row(
+                    children: [
+                      // Category pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        child: Text(
+                          event.category,
+                          style: const TextStyle(
+                            fontFamily: kFontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1B1B1B),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Attendee avatars
+                      _buildAttendeeAvatars(),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () => context
+                            .push('/event/${widget.eventId}/attendees'),
+                        child: Text(
+                          _attendeesLoading
+                              ? ''
+                              : '+${attendees.length > 10 ? 10 : attendees.length} More',
+                          style: const TextStyle(
+                            fontFamily: kFontFamily,
+                            fontSize: 10,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // Arrow icon
+                      GestureDetector(
+                        onTap: () => context
+                            .push('/event/${widget.eventId}/attendees'),
+                        child: const Icon(Icons.arrow_forward_ios,
+                            color: Colors.white, size: 14),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Video controls (sound + play) ────────────────────────
             if (event.videoUrl.isNotEmpty &&
                 _videoController != null &&
                 _videoInitialized)
               Positioned(
-                // Align play button with attendee text (bottom: 40)
-                bottom: 40,
-                right: 24,
+                bottom: 24,
+                right: 16,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Mute/unmute button (top)
-                    GestureDetector(
+                    // Sound button
+                    _buildVideoControlButton(
+                      size: 32,
+                      child: Image.asset(
+                        _videoController!.value.volume > 0
+                            ? 'assets/icons/event-details/sound.png'
+                            : 'assets/icons/event-details/no sound.png',
+                        width: 12,
+                        height: 12,
+                        color: Colors.white,
+                      ),
                       onTap: () {
                         if (_videoController!.value.volume > 0) {
                           _videoController?.setVolume(0);
@@ -787,24 +613,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         }
                         setState(() {});
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          _videoController!.value.volume > 0
-                              ? Icons.volume_up
-                              : Icons.volume_off,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 12),
-                    // Play/pause button (bottom, bigger)
-                    GestureDetector(
+                    const SizedBox(height: 8),
+                    // Play/pause button
+                    _buildVideoControlButton(
+                      size: 42,
+                      child: Image.asset(
+                        _videoController!.value.isPlaying
+                            ? 'assets/icons/event-details/pause.png'
+                            : 'assets/icons/event-details/play.png',
+                        width: 22,
+                        height: 22,
+                        color: Colors.white,
+                      ),
                       onTap: () {
                         if (_videoController!.value.isPlaying) {
                           _videoController?.pause();
@@ -815,160 +636,423 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         }
                         setState(() {});
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        child: Icon(
-                          _videoController!.value.isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
                     ),
                   ],
                 ),
               ),
-            // 6. Bottom rounded container
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 20,
-                decoration: BoxDecoration(
-                  color: theme.scaffoldBackgroundColor,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-              ),
-            ),
+
+
           ],
         ),
       ),
     );
   }
 
-  // Widget _buildCircleIcon(BuildContext context,
-  //     {required IconData icon,
-  //     Color? iconColor,
-  //     required VoidCallback onTap,
-  //     required ThemeData theme}) {
-  //   final colorScheme = theme.colorScheme;
-  //   return Container(
-  //     margin: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       color: colorScheme.surface.withValues(alpha: 0.9),
-  //       borderRadius: BorderRadius.circular(12),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: colorScheme.shadow.withValues(alpha: 0.08),
-  //           blurRadius: 8,
-  //           offset: const Offset(0, 2),
-  //         ),
-  //       ],
-  //     ),
-  //     child: IconButton(
-  //       icon: Icon(icon, color: iconColor ?? colorScheme.onSurface),
-  //       onPressed: onTap,
-  //       tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-  //     ),
-  //   );
-  // }
+  Widget _buildImageCounterBadge(Event event) {
+    // Count available media (main image + other images)
+    int imageCount = 1; // main image always present
+    if (event.otherImagesUrl.isNotEmpty) {
+      // otherImagesUrl is a comma-separated string
+      final otherImages = event.otherImagesUrl
+          .split(',')
+          .where((url) => url.trim().isNotEmpty)
+          .toList();
+      imageCount += otherImages.length;
+    }
 
-  Widget _buildEventHeader(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        '1/$imageCount',
+        style: const TextStyle(
+          fontFamily: kFontFamily,
+          fontSize: 10,
+          color: AppColors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoControlButton({
+    required double size,
+    required Widget child,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+
+  // ── Attendee avatars (stacked circles) ─────────────────────────────────
+  Widget _buildAttendeeAvatars() {
+    if (_attendeesLoading || attendees.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final displayCount = attendees.length > 4 ? 4 : attendees.length;
+    return SizedBox(
+      width: displayCount * 14.0 + 7,
+      height: 21,
+      child: Stack(
+        children: List.generate(displayCount, (index) {
+          return Positioned(
+            left: index * 14.0,
+            child: Container(
+              width: 21,
+              height: 21,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: CircleAvatar(
+                radius: 9,
+                backgroundColor: Colors.grey[400],
+                backgroundImage: _getAttendeeAvatarImage(index),
+                child: _getAttendeeAvatarImage(index) == null
+                    ? Icon(Icons.person,
+                        size: 10, color: Colors.grey[600])
+                    : null,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  SCHEDULE + PRICE ROW
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildSchedulePrice(bool isDark, Event event) {
+    final priceStr = _getPriceText(event);
+    final isFree = priceStr == 'Free';
+
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.only(top: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Left: date & location
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _formatDate(event.startDateTime),
-                  style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                // Date row
+                Row(
+                  children: [
+                    Image.asset(
+                      'assets/icons/event card/date-time.png',
+                      width: 18,
+                      height: 18,
+                      color: isDark
+                          ? AppColors.grey200
+                          : AppColors.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _formatDateLong(event.startDateTime),
+                        style: TextStyle(
+                          fontFamily: kFontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? AppColors.grey200
+                              : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatTime(event.startDateTime, event.endDateTime),
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.7),
-                  ),
+                const SizedBox(height: 8),
+                // Location row
+                Row(
+                  children: [
+                    Image.asset(
+                      'assets/icons/event card/location.png',
+                      width: 18,
+                      height: 18,
+                      color: isDark
+                          ? AppColors.grey200
+                          : AppColors.textSecondaryLight,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        event.venue.isNotEmpty
+                            ? event.venue
+                            : event.address,
+                        style: TextStyle(
+                          fontFamily: kFontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? AppColors.grey200
+                              : AppColors.textSecondaryLight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Text(
-            () {
-              // First try to get price from seat map data
-              final lowestPrice = _getLowestPriceFromSeatMap();
-              if (lowestPrice != null) {
-                return 'From LKR ${lowestPrice.toStringAsFixed(0)}';
-              }
-
-              // Fallback to ticket types if available
-              if (event.ticketTypes.isNotEmpty) {
-                final ticketPrice = event.ticketTypes
-                    .map((t) => t.price)
-                    .reduce((a, b) => a < b ? a : b);
-                return 'From LKR ${ticketPrice.toStringAsFixed(0)}';
-              }
-
-              return 'Free';
-            }(),
-            style: textTheme.titleLarge?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(width: 12),
+          // Right: price
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isFree)
+                Text(
+                  'From',
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                    color: isDark
+                        ? AppColors.grey200
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              Text(
+                isFree ? 'Free' : priceStr,
+                style: const TextStyle(
+                  fontFamily: kFontFamily,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOrganizerSection(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ORGANIZER CARD
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildOrganizerCard(bool isDark, Event event) {
+    final orgLogoUrl = (event.organization != null &&
+            event.organization!['logo_url'] != null &&
+            event.organization!['logo_url'].toString().isNotEmpty)
+        ? event.organization!['logo_url'].toString()
+        : 'https://i.pravatar.cc/100?u=${event.organizationId}';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: CachedNetworkImageProvider(
-              (event.organization != null &&
-                      event.organization!['logo_url'] != null &&
-                      event.organization!['logo_url'].toString().isNotEmpty)
-                  ? event.organization!['logo_url']
-                  : 'https://i.pravatar.cc/100?u=${event.organizationId}',
+          // Avatar
+          ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: orgLogoUrl,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                  width: 48,
+                  height: 48,
+                  color: isDark ? AppColors.bg01 : Colors.grey[200]),
+              errorWidget: (_, __, ___) => Container(
+                width: 48,
+                height: 48,
+                color: isDark ? AppColors.bg01 : Colors.grey[200],
+                child: const Icon(Icons.person, size: 24),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
+          // Name + subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   event.organizerName,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                    color: isDark
+                        ? AppColors.white
+                        : AppColors.textPrimaryLight,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   'Organizer',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? const Color(0xFF8C9097)
+                        : AppColors.textTertiaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Rating
+          Text(
+            '4.8',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color:
+                  isDark ? AppColors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+          const SizedBox(width: 7),
+          Image.asset(
+            'assets/icons/event-details/icons8-star-96.png',
+            width: 19,
+            height: 19,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  DETAIL CONCERT CARD (about + read more)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildDetailCard(bool isDark, Event event) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Detail concert',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              color:
+                  isDark ? AppColors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+          const SizedBox(height: 16),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 250),
+            crossFadeState: isAboutExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.description,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                    color: isDark
+                        ? AppColors.grey200
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setState(
+                      () => isAboutExpanded = !isAboutExpanded),
+                  child: const Text(
+                    'read more',
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.description,
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                    color: isDark
+                        ? AppColors.grey200
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setState(
+                      () => isAboutExpanded = !isAboutExpanded),
+                  child: const Text(
+                    'show less',
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ],
@@ -979,203 +1063,96 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final aboutText = event.description;
+  // ══════════════════════════════════════════════════════════════════════════
+  //  POSTS CARD (horizontal scroll, dummy for now)
+  // ══════════════════════════════════════════════════════════════════════════
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
+  Widget _buildPostsCard(bool isDark) {
+    // Dummy posts data — replace with actual post-service fetch later
+    final dummyPosts = [
+      {'label': '#Video/Photo 01', 'image': null},
+      {'label': '#Video/Photo 02', 'image': null},
+      {'label': '#Video/Photo 03', 'image': null},
+      {'label': '#Video/Photo 04', 'image': null},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'About Event',
-            style: textTheme.titleLarge?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
+            'Posts',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              color:
+                  isDark ? AppColors.white : AppColors.textPrimaryLight,
             ),
           ),
-          const SizedBox(height: 12),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 250),
-            crossFadeState: isAboutExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            firstChild: Text(
-              aboutText,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.8),
-                height: 1.5,
-              ),
-            ),
-            secondChild: Text(
-              aboutText,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.8),
-                height: 1.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => setState(() => isAboutExpanded = !isAboutExpanded),
-            child: Text(
-              isAboutExpanded ? 'Show less' : 'Read more...',
-              style: TextStyle(color: colorScheme.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGallerySection(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    // Support multiple images: cover + other_images_url (comma-separated)
-    List<String> gallery = [];
-    if (event.imageUrl.isNotEmpty) gallery.add(event.imageUrl);
-    if (event.otherImagesUrl.isNotEmpty) {
-      // If backend sends comma-separated string
-      final otherImages = event.otherImagesUrl
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-      gallery.addAll(otherImages);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Gallery (Pre-Event)',
-                style: textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Optionally show all images in a dialog
-                  showDialog(
-                    context: context,
-                    builder: (context) => Dialog(
-                      backgroundColor: colorScheme.surface,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          itemCount: gallery.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12),
-                          itemBuilder: (context, index) => ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: gallery[index],
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator()),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.image_not_supported),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: Text(
-                  'See All',
-                  style: TextStyle(color: colorScheme.primary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
-            height: 100,
-            child: ListView.builder(
+            height: 189,
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: gallery.length + 1,
+              physics: const BouncingScrollPhysics(),
+              itemCount: dummyPosts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
-                if (index < gallery.length) {
-                  return GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => Dialog(
-                          backgroundColor: colorScheme.surface,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              gallery[index],
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 100,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.shadow.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        image: DecorationImage(
-                          image: CachedNetworkImageProvider(gallery[index]),
-                          fit: BoxFit.cover,
+                final post = dummyPosts[index];
+                return Container(
+                  width: 125,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF252525)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post['label'] as String,
+                        style: TextStyle(
+                          fontFamily: kFontFamily,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.textPrimaryLight,
                         ),
                       ),
-                    ),
-                  );
-                } else {
-                  return Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: colorScheme.outline.withOpacity(0.3)),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add,
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          Text(
-                            '20+',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      const Spacer(),
+                      // Placeholder icon for post content
+                      Center(
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          size: 36,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : Colors.grey.withValues(alpha: 0.3),
+                        ),
                       ),
-                    ),
-                  );
-                }
+                      const Spacer(),
+                    ],
+                  ),
+                );
               },
             ),
           ),
@@ -1184,148 +1161,552 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildLocationSection(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    return Padding(
-      padding: const EdgeInsets.all(20),
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MAP CARD
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildMapCard(bool isDark, Event event) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Location',
-            style: textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
+            'Map',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              color:
+                  isDark ? AppColors.white : AppColors.textPrimaryLight,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(height: 16),
+          // Map placeholder
+          Stack(
             children: [
-              Icon(
-                Icons.location_on,
-                color: colorScheme.primary,
-                size: 20,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  width: double.infinity,
+                  height: 180,
+                  color: isDark
+                      ? const Color(0xFF1A1A2E)
+                      : Colors.grey[200],
+                  child: isDark
+                      ? CustomPaint(
+                          painter: _DarkMapPainter(),
+                          size: const Size(double.infinity, 180),
+                        )
+                      : CustomPaint(
+                          painter: _LightMapPainter(),
+                          size: const Size(double.infinity, 180),
+                        ),
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  event.address,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.8),
+              // Location pin
+              Positioned.fill(
+                child: Center(
+                  child: Image.asset(
+                    'assets/icons/event-details/icons8-location-80.png',
+                    width: 32,
+                    height: 32,
                   ),
                 ),
               ),
             ],
           ),
+          if (event.address.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Image.asset(
+                  'assets/icons/event card/location.png',
+                  width: 18,
+                  height: 18,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    event.address,
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark
+                          ? AppColors.grey200
+                          : AppColors.textSecondaryLight,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildBookEventButton(ThemeData theme, Event event) {
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final buttonBg = isDark ? Colors.white : Colors.black;
-    final buttonFg = isDark ? Colors.black : Colors.white;
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () async {
-          // Check if in guest mode - show login prompt
-          if (widget.isGuestMode) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Login Required'),
-                content: const Text(
-                  'Please login or create an account to book tickets.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
+  // ══════════════════════════════════════════════════════════════════════════
+  //  FULLSCREEN VIDEO OVERLAY
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildFullscreenVideo() {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(
+        color: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: AspectRatio(
+                aspectRatio: _videoController!.value.aspectRatio,
+                child: VideoPlayer(_videoController!),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 32,
+              child: Column(
+                children: [
+                  VideoProgressIndicator(
+                    _videoController!,
+                    allowScrubbing: true,
+                    colors: const VideoProgressColors(
+                      playedColor: AppColors.primary,
+                      backgroundColor: Colors.white24,
+                      bufferedColor: Colors.white38,
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.go('/onboarding');
-                    },
-                    child: const Text('Login'),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildVideoControlButton(
+                        size: 48,
+                        child: Icon(
+                          _videoController!.value.volume > 0
+                              ? Icons.volume_up
+                              : Icons.volume_off,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                        onTap: () {
+                          if (_videoController!.value.volume > 0) {
+                            _videoController?.setVolume(0);
+                          } else {
+                            _videoController?.setVolume(1);
+                          }
+                          setState(() {});
+                        },
+                      ),
+                      const SizedBox(width: 32),
+                      _buildVideoControlButton(
+                        size: 56,
+                        child: Icon(
+                          _videoController!.value.isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                        onTap: () {
+                          if (_videoController!.value.isPlaying) {
+                            _videoController?.pause();
+                            _userPausedVideo = true;
+                          } else {
+                            _videoController?.play();
+                            _userPausedVideo = false;
+                          }
+                          setState(() {});
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
-            );
-            return;
-          }
-          
-          if (_videoController != null && _videoController!.value.isPlaying) {
-            _videoController?.pause();
-          }
-
-          // Wait for seat map info to be loaded if still loading
-          if (!_seatMapLoaded) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
+            ),
+            Positioned(
+              top: 32,
+              right: 24,
+              child: _buildVideoControlButton(
+                size: 40,
+                child: const Icon(Icons.close,
+                    color: Colors.white, size: 24),
+                onTap: () => setState(() => isVideoExpanded = false),
               ),
-            );
-
-            // Wait for seat map to load
-            while (!_seatMapLoaded) {
-              await Future.delayed(const Duration(milliseconds: 100));
-            }
-
-            if (mounted) Navigator.of(context).pop();
-          }
-
-          // Navigate based on cached seat map information
-          print(
-              '🔍 Book button pressed. _hasCustomSeating: $_hasCustomSeating');
-          if (_hasCustomSeating == true) {
-            // Event has seat map - go to seat selection
-            print('🎯 Navigating to seat selection screen');
-            if (mounted) {
-              context.pushNamed('booking-seat-selection', pathParameters: {
-                'eventId': widget.eventId,
-              });
-            }
-          } else {
-            // Event has no seat map - go directly to ticket type selection
-            print('🎯 Navigating to ticket type selection screen');
-            if (mounted) {
-              context.pushReplacement('/ticket-type-selection', extra: {
-                'eventId': widget.eventId,
-                'eventName': event.title,
-                'eventDate': event.startDateTime.toString(),
-                'venue': event.venue,
-                'ticketType': 'General', // Default ticket type
-                'initialCount': 1, // Default count
-              });
-            }
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: buttonBg,
-          foregroundColor: buttonFg,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          elevation: 4,
-          shadowColor: colorScheme.shadow.withOpacity(0.12),
+            ),
+          ],
         ),
-        child: const Text(
-          'Book Event',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  BOTTOM BAR — "Book Now" button
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildBottomBar(bool isDark, Event event) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bg01 : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: () => _handleBookEvent(event),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.dark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(40),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Book Now',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+
+  Future<void> _handleBookEvent(Event event) async {
+    // Guest mode → login prompt
+    if (widget.isGuestMode) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Login Required'),
+          content: const Text(
+              'Please login or create an account to book tickets.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.go('/onboarding');
+              },
+              child: const Text('Login'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (_videoController != null && _videoController!.value.isPlaying) {
+      _videoController?.pause();
+    }
+
+    // Wait for seat map info
+    if (!_seatMapLoaded) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) =>
+            const Center(child: CircularProgressIndicator()),
+      );
+      while (!_seatMapLoaded) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      if (mounted) Navigator.of(context).pop();
+    }
+
+    if (_hasCustomSeating == true) {
+      if (mounted) {
+        context.pushNamed('booking-seat-selection',
+            pathParameters: {'eventId': widget.eventId});
+      }
+    } else {
+      if (mounted) {
+        context.pushReplacement('/ticket-type-selection', extra: {
+          'eventId': widget.eventId,
+          'eventName': event.title,
+          'eventDate': event.startDateTime.toString(),
+          'venue': event.venue,
+          'ticketType': 'General',
+          'initialCount': 1,
+        });
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Frosted-glass circular button (hero overlay)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _FrostedCircleButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _FrostedCircleButton(
+      {required this.child, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.24),
+          shape: BoxShape.circle,
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Map painters (stylised dark / light placeholders)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _DarkMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.stroke;
+
+    // Draw "road" lines to simulate a dark map
+    paint
+      ..color = const Color(0xFF2A2A3E)
+      ..strokeWidth = 1.5;
+
+    // Horizontal roads
+    canvas.drawLine(Offset(0, size.height * 0.3),
+        Offset(size.width, size.height * 0.3), paint);
+    canvas.drawLine(Offset(0, size.height * 0.6),
+        Offset(size.width, size.height * 0.6), paint);
+    canvas.drawLine(Offset(0, size.height * 0.85),
+        Offset(size.width, size.height * 0.85), paint);
+
+    // Vertical roads
+    canvas.drawLine(Offset(size.width * 0.25, 0),
+        Offset(size.width * 0.25, size.height), paint);
+    canvas.drawLine(Offset(size.width * 0.5, 0),
+        Offset(size.width * 0.5, size.height), paint);
+    canvas.drawLine(Offset(size.width * 0.75, 0),
+        Offset(size.width * 0.75, size.height), paint);
+
+    // Diagonal
+    paint.color = const Color(0xFF353550);
+    canvas.drawLine(Offset(0, size.height),
+        Offset(size.width * 0.6, 0), paint);
+    canvas.drawLine(Offset(size.width * 0.4, size.height),
+        Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Spotify-style marquee text — scrolls left when text overflows
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _MarqueeText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _MarqueeText({required this.text, required this.style});
+
+  @override
+  State<_MarqueeText> createState() => _MarqueeTextState();
+}
+
+class _MarqueeTextState extends State<_MarqueeText>
+    with SingleTickerProviderStateMixin {
+  late final ScrollController _scrollController;
+  late final AnimationController _animController;
+  bool _needsScroll = false;
+  double _maxExtent = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _animController = AnimationController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
+  }
+
+  @override
+  void didUpdateWidget(covariant _MarqueeText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _animController.stop();
+      _scrollController.jumpTo(0);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
+    }
+  }
+
+  void _checkOverflow() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll > 0) {
+      setState(() {
+        _needsScroll = true;
+        _maxExtent = maxScroll;
+      });
+      _startAnimation();
+    } else {
+      setState(() => _needsScroll = false);
+    }
+  }
+
+  void _startAnimation() async {
+    if (!mounted || !_needsScroll) return;
+
+    // Speed: ~30px/s  →  feels smooth like Spotify
+    final forwardDuration =
+        Duration(milliseconds: (_maxExtent * 33).toInt());
+    final reverseDuration =
+        Duration(milliseconds: (_maxExtent * 20).toInt());
+
+    while (mounted && _needsScroll) {
+      // Pause at start
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted || !_scrollController.hasClients) return;
+
+      // Scroll to end
+      await _scrollController.animateTo(
+        _maxExtent,
+        duration: forwardDuration,
+        curve: Curves.linear,
+      );
+      if (!mounted) return;
+
+      // Pause at end
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted || !_scrollController.hasClients) return;
+
+      // Scroll back to start (faster)
+      await _scrollController.animateTo(
+        0,
+        duration: reverseDuration,
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: (widget.style.fontSize ?? 20) * (widget.style.height ?? 1.4),
+      child: ShaderMask(
+        // Fade edges when scrolling
+        shaderCallback: (bounds) {
+          return LinearGradient(
+            colors: _needsScroll
+                ? [
+                    Colors.transparent,
+                    Colors.white,
+                    Colors.white,
+                    Colors.transparent,
+                  ]
+                : [Colors.white, Colors.white],
+            stops: _needsScroll ? [0.0, 0.03, 0.92, 1.0] : [0.0, 1.0],
+          ).createShader(bounds);
+        },
+        blendMode: BlendMode.dstIn,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Text(
+            widget.text,
+            style: widget.style,
+            maxLines: 1,
+            softWrap: false,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LightMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.stroke;
+
+    paint
+      ..color = Colors.grey.withValues(alpha: 0.25)
+      ..strokeWidth = 1.5;
+
+    canvas.drawLine(Offset(0, size.height * 0.3),
+        Offset(size.width, size.height * 0.3), paint);
+    canvas.drawLine(Offset(0, size.height * 0.6),
+        Offset(size.width, size.height * 0.6), paint);
+    canvas.drawLine(Offset(0, size.height * 0.85),
+        Offset(size.width, size.height * 0.85), paint);
+
+    canvas.drawLine(Offset(size.width * 0.25, 0),
+        Offset(size.width * 0.25, size.height), paint);
+    canvas.drawLine(Offset(size.width * 0.5, 0),
+        Offset(size.width * 0.5, size.height), paint);
+    canvas.drawLine(Offset(size.width * 0.75, 0),
+        Offset(size.width * 0.75, size.height), paint);
+
+    paint.color = Colors.grey.withValues(alpha: 0.15);
+    canvas.drawLine(Offset(0, size.height),
+        Offset(size.width * 0.6, 0), paint);
+    canvas.drawLine(Offset(size.width * 0.4, size.height),
+        Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

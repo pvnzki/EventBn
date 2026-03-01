@@ -99,6 +99,7 @@ flutter:
     - assets/icons/navbar/
     - assets/icons/categories/
     - assets/icons/event card/
+    - assets/icons/event-details/
     - assets/seat_map.json
     - .env
 
