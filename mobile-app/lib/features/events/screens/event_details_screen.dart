@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
 import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../providers/event_provider.dart';
@@ -13,6 +14,9 @@ import '../../../core/config/app_config.dart';
 import '../../../core/theme/design_tokens.dart';
 import '../../auth/services/auth_service.dart';
 import '../widgets/event_details_skeleton_loading.dart';
+import '../../../common_widgets/app_bottom_sheet.dart';
+import '../../explore/services/explore_post_service.dart';
+import '../../explore/models/post_model.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Event Details Screen — Figma node 2131:21654
@@ -57,23 +61,40 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   // State variables
   bool isAboutExpanded = false;
+  bool _isLiked = false;
 
   // Collapse tracking for title in pinned header (ValueNotifier avoids full rebuild)
   final ValueNotifier<bool> _isCollapsedNotifier = ValueNotifier(false);
+
+  // Scroll controller for reliable video pause/play & collapse detection
+  final ScrollController _scrollController = ScrollController();
+  double? _collapseThreshold;
 
   // Seat map cache
   bool? _hasCustomSeating;
   bool _seatMapLoaded = false;
   List<dynamic> _seatMapData = [];
 
+  // Posts pagination
+  final ExplorePostService _postService = ExplorePostService();
+  List<ExplorePost> _eventPosts = [];
+  bool _postsLoading = true;
+  bool _hasMorePosts = true;
+  int _postPage = 1;
+  bool _postsLoadingMore = false;
+  final ScrollController _postsScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+    _postsScrollController.addListener(_onPostsScroll);
     Future.microtask(() {
       Provider.of<EventProvider>(context, listen: false)
           .fetchEventById(widget.eventId);
       _fetchAttendees();
       _loadSeatMapInfo();
+      _fetchEventPosts();
     });
   }
 
@@ -82,14 +103,67 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     super.didChangeDependencies();
     // Video controller lifecycle — driven by provider changes, not build()
     final event = Provider.of<EventProvider>(context).currentEvent;
+    // Guard: only initialise the video when the provider holds the event
+    // that THIS screen requested.  Without this check a stale event left
+    // over from the previous screen would briefly start its video.
+    if (event != null && event.id.toString() != widget.eventId) return;
     _ensureVideoController(event);
   }
 
   @override
+  void deactivate() {
+    // Immediately silence & pause video when this route is popped / replaced.
+    // deactivate() fires before dispose(), preventing audio bleed into the
+    // next screen while the old widget tree is still tearing down.
+    if (_videoController != null) {
+      _videoController!.setVolume(0);
+      _videoController!.pause();
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _postsScrollController.removeListener(_onPostsScroll);
+    _postsScrollController.dispose();
     _isCollapsedNotifier.dispose();
+    // Volume already silenced in deactivate(); safe to dispose now.
     _videoController?.dispose();
     super.dispose();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Scroll handler — video pause/play + collapse detection
+  // ══════════════════════════════════════════════════════════════════════════
+
+  void _onScroll() {
+    final pixels = _scrollController.position.pixels;
+
+    // Collapse threshold: hero fully collapsed
+    _collapseThreshold ??=
+        326 - kToolbarHeight - MediaQuery.of(context).padding.top;
+    final collapsed = pixels >= _collapseThreshold!;
+    if (collapsed != _isCollapsedNotifier.value) {
+      _isCollapsedNotifier.value = collapsed;
+    }
+
+    // Video auto-pause when scrolled past hero area
+    if (_videoController != null && _videoInitialized) {
+      if (pixels > 250) {
+        if (_videoController!.value.isPlaying) {
+          _videoController?.pause();
+        }
+      } else if (!_videoController!.value.isPlaying && !_userPausedVideo) {
+        _videoController?.play();
+      }
+    }
+
+    // Collapse fullscreen video overlay on any scroll
+    if (isVideoExpanded && pixels > 10) {
+      setState(() => isVideoExpanded = false);
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -148,6 +222,63 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           _attendeesLoading = false;
         });
       }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Posts fetching (paginated, 3 per call)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Future<void> _fetchEventPosts({bool loadMore = false}) async {
+    if (!loadMore && _postsLoading == false && _eventPosts.isNotEmpty) return;
+    if (loadMore && (_postsLoadingMore || !_hasMorePosts)) return;
+
+    if (loadMore) {
+      setState(() => _postsLoadingMore = true);
+      _postPage++;
+    }
+
+    try {
+      final result = await _postService.getPostsForEvent(
+        eventId: widget.eventId,
+        page: _postPage,
+        limit: 3,
+      );
+
+      if (mounted) {
+        final newPosts = result['posts'] as List<ExplorePost>;
+        setState(() {
+          if (loadMore) {
+            // Filter duplicates
+            final existingIds = _eventPosts.map((p) => p.id).toSet();
+            _eventPosts.addAll(
+              newPosts.where((p) => !existingIds.contains(p.id)),
+            );
+          } else {
+            _eventPosts = newPosts;
+          }
+          _hasMorePosts = result['hasMore'] as bool;
+          _postsLoading = false;
+          _postsLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _postsLoading = false;
+          _postsLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  void _onPostsScroll() {
+    if (!_postsScrollController.hasClients) return;
+    final maxScroll = _postsScrollController.position.maxScrollExtent;
+    final currentScroll = _postsScrollController.position.pixels;
+    // Trigger load more when near the end (within 100px)
+    if (currentScroll >= maxScroll - 100) {
+      _fetchEventPosts(loadMore: true);
     }
   }
 
@@ -232,6 +363,105 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  //  Share bottom sheet
+  // ══════════════════════════════════════════════════════════════════════════
+
+  void _showShareSheet(Event event) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    AppBottomSheet.show(
+      context: context,
+      builder: (_) {
+        final shareText =
+            'Check out "${event.title}" on EventBn!\n'
+            '📍 ${event.venue.isNotEmpty ? event.venue : 'TBA'}\n'
+            '📅 ${_formatDate(event.startDateTime)}\n\n'
+            '${event.description.length > 120 ? '${event.description.substring(0, 120)}...' : event.description}';
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Share Event',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _ShareOptionTile(
+              icon: Icons.copy_rounded,
+              label: 'Copy link',
+              isDark: isDark,
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: shareText));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Copied to clipboard'),
+                    backgroundColor: AppColors.primary,
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                );
+              },
+            ),
+            _ShareOptionTile(
+              icon: Icons.share_rounded,
+              label: 'Share via...',
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(context);
+                Share.share(shareText);
+              },
+            ),
+            _ShareOptionTile(
+              icon: Icons.message_rounded,
+              label: 'Send as message',
+              isDark: isDark,
+              onTap: () {
+                Navigator.pop(context);
+                Share.share(shareText);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  Attendees bottom sheet
+  // ══════════════════════════════════════════════════════════════════════════
+
+  void _showAttendeesSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    AppBottomSheet.show(
+      context: context,
+      builder: (_) => _AttendeeSheetContent(
+        eventId: widget.eventId,
+        attendees: attendees,
+        isLoading: _attendeesLoading,
+        isDark: isDark,
+        getAvatarImage: _getAttendeeAvatarImage,
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   //  Video controller lifecycle
   // ══════════════════════════════════════════════════════════════════════════
 
@@ -313,33 +543,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       backgroundColor: isDark ? AppColors.background : AppColors.bgLight,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            // Track collapse for pinned header title (ValueNotifier — no setState)
-            final double collapseThreshold = 326 - kToolbarHeight - MediaQuery.of(context).padding.top;
-            final bool collapsed = notification.metrics.pixels >= collapseThreshold;
-            if (collapsed != _isCollapsedNotifier.value) {
-              _isCollapsedNotifier.value = collapsed;
-            }
-
-            if (isVideoExpanded && notification.metrics.pixels > 10) {
-              setState(() => isVideoExpanded = false);
-            }
-            if (_videoController != null && _videoInitialized) {
-              if (notification.metrics.pixels > 250) {
-                if (_videoController!.value.isPlaying) {
-                  _videoController?.pause();
-                }
-              } else if (!_videoController!.value.isPlaying &&
-                  !_userPausedVideo) {
-                _videoController?.play();
-              }
-            }
-            return false;
-          },
-          child: Stack(
+        child: Stack(
             children: [
               CustomScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
@@ -384,7 +591,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -527,19 +733,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Row(
                     children: [
                       _FrostedCircleButton(
-                        child: Image.asset(
-                          'assets/icons/event-details/love.png',
-                          width: 20,
-                          height: 20,
-                          color: Colors.white,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder: (child, anim) =>
+                              ScaleTransition(scale: anim, child: child),
+                          child: Icon(
+                            _isLiked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            key: ValueKey(_isLiked),
+                            size: 20,
+                            color: _isLiked
+                                ? AppColors.primary
+                                : Colors.white,
+                          ),
                         ),
-                        onTap: () {},
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          setState(() => _isLiked = !_isLiked);
+                        },
                       ),
                       const SizedBox(width: 10),
                       _FrostedCircleButton(
                         child: const Icon(Icons.share_outlined,
                             color: Colors.white, size: 18),
-                        onTap: () {},
+                        onTap: () => _showShareSheet(event),
                       ),
                     ],
                   ),
@@ -598,34 +816,34 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Attendee avatars
-                      GestureDetector(
-                        onTap: () => context
-                            .push('/event/${widget.eventId}/attendees'),
-                        child: _buildAttendeeAvatars(),
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () => context
-                            .push('/event/${widget.eventId}/attendees'),
-                        child: Text(
-                          _attendeesLoading
-                              ? ''
-                              : '+${attendees.length > 10 ? 10 : attendees.length} More',
-                          style: const TextStyle(
-                            fontFamily: kFontFamily,
-                            fontSize: 10,
-                            color: AppColors.white,
+                      // Single large touch target for attendees
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _showAttendeesSheet(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                _buildAttendeeAvatars(),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _attendeesLoading
+                                      ? ''
+                                      : '+${attendees.length > 10 ? 10 : attendees.length} More',
+                                  style: const TextStyle(
+                                    fontFamily: kFontFamily,
+                                    fontSize: 10,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_forward_ios,
+                                    color: Colors.white, size: 12),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Arrow icon
-                      GestureDetector(
-                        onTap: () => context
-                            .push('/event/${widget.eventId}/attendees'),
-                        child: const Icon(Icons.arrow_forward_ios,
-                            color: Colors.white, size: 12),
                       ),
                     ],
                   ),
@@ -1030,6 +1248,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   Widget _buildDetailCard(bool isDark, Event event) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surface : Colors.white,
@@ -1047,16 +1266,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Detail concert',
-            style: TextStyle(
-              fontFamily: kFontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              color:
-                  isDark ? AppColors.white : AppColors.textPrimaryLight,
-            ),
+          Row(
+            children: [
+              Image.asset(
+                'assets/icons/event-details/more-details.png',
+                width: 14,
+                height: 14,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Detail concert',
+                style: TextStyle(
+                  fontFamily: kFontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                  color:
+                      isDark ? AppColors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           AnimatedCrossFade(
@@ -1135,18 +1365,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  POSTS CARD (horizontal scroll, dummy for now)
+  //  POSTS CARD (horizontal scroll, paginated — 3 per call)
   // ══════════════════════════════════════════════════════════════════════════
 
   Widget _buildPostsCard(bool isDark) {
-    // Dummy posts data — replace with actual post-service fetch later
-    final dummyPosts = [
-      {'label': '#Video/Photo 01', 'image': null},
-      {'label': '#Video/Photo 02', 'image': null},
-      {'label': '#Video/Photo 03', 'image': null},
-      {'label': '#Video/Photo 04', 'image': null},
-    ];
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1165,66 +1387,247 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Posts',
-            style: TextStyle(
-              fontFamily: kFontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              color:
-                  isDark ? AppColors.white : AppColors.textPrimaryLight,
-            ),
+          Row(
+            children: [
+              Image.asset(
+                'assets/icons/event-details/gallery.png',
+                width: 18,
+                height: 18,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Posts',
+                style: TextStyle(
+                  fontFamily: kFontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                  color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           SizedBox(
             height: 189,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: dummyPosts.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final post = dummyPosts[index];
-                return Container(
-                  width: 125,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF252525)
-                        : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(6),
+            child: _postsLoading
+                ? _buildPostsShimmer(isDark)
+                : _eventPosts.isEmpty
+                    ? _buildNoPostsPlaceholder(isDark)
+                    : ListView.separated(
+                        controller: _postsScrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount:
+                            _eventPosts.length + (_hasMorePosts ? 1 : 0),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          // Loading indicator at the end
+                          if (index == _eventPosts.length) {
+                            return _buildPostLoadingTile(isDark);
+                          }
+                          return _buildPostTile(
+                              _eventPosts[index], isDark);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostTile(ExplorePost post, bool isDark) {
+    // Determine thumbnail: prefer first image, then video thumbnail, else icon
+    final hasImage = post.imageUrls.isNotEmpty;
+    final hasVideoThumb = post.videoThumbnails.isNotEmpty;
+    final hasVideo = post.videoUrls.isNotEmpty;
+    final thumbUrl = hasImage
+        ? post.imageUrls.first
+        : hasVideoThumb
+            ? post.videoThumbnails.first
+            : null;
+
+    return GestureDetector(
+      onTap: () {
+        context.push('/explore/post/${post.id}');
+      },
+      child: Container(
+        width: 125,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF252525) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(6),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: thumbUrl != null
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: thumbUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      color: isDark
+                          ? const Color(0xFF252525)
+                          : Colors.grey[200],
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.3)
+                                : Colors.grey.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => _buildPostIconPlaceholder(
+                        isDark, hasVideo),
                   ),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post['label'] as String,
-                        style: TextStyle(
+                  // Play icon overlay for videos
+                  if (hasVideo && !hasImage)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  // Bottom gradient with content preview
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(8, 20, 8, 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
+                        ),
+                      ),
+                      child: Text(
+                        post.content.isNotEmpty
+                            ? post.content
+                            : post.userDisplayName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           fontFamily: kFontFamily,
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.textPrimaryLight,
+                          color: Colors.white,
                         ),
                       ),
-                      const Spacer(),
-                      // Placeholder icon for post content
-                      Center(
-                        child: Icon(
-                          Icons.play_circle_outline,
-                          size: 36,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.2)
-                              : Colors.grey.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
+                    ),
                   ),
-                );
-              },
+                ],
+              )
+            : _buildPostIconPlaceholder(isDark, hasVideo),
+      ),
+    );
+  }
+
+  Widget _buildPostIconPlaceholder(bool isDark, bool isVideo) {
+    return Container(
+      color: isDark ? const Color(0xFF252525) : Colors.grey[100],
+      child: Center(
+        child: Icon(
+          isVideo ? Icons.play_circle_outline : Icons.image_outlined,
+          size: 36,
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.2)
+              : Colors.grey.withValues(alpha: 0.3),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostLoadingTile(bool isDark) {
+    return Container(
+      width: 125,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252525) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: isDark
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.7),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostsShimmer(bool isDark) {
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 3,
+      separatorBuilder: (_, __) => const SizedBox(width: 12),
+      itemBuilder: (_, __) => Container(
+        width: 125,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF252525) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : Colors.grey.withValues(alpha: 0.3),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoPostsPlaceholder(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.photo_library_outlined,
+            size: 40,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.grey.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No posts yet',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 12,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : Colors.grey.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -1255,16 +1658,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Map',
-            style: TextStyle(
-              fontFamily: kFontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.2,
-              color:
-                  isDark ? AppColors.white : AppColors.textPrimaryLight,
-            ),
+          Row(
+            children: [
+              Image.asset(
+                'assets/icons/event-details/map.png',
+                width: 14,
+                height: 14,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Map',
+                style: TextStyle(
+                  fontFamily: kFontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                  color:
+                      isDark ? AppColors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           // Map placeholder
@@ -1576,6 +1990,72 @@ class _FrostedCircleButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  Share option tile (used in share bottom sheet)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _ShareOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ShareOptionTile({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : Colors.grey.withValues(alpha: 0.5),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 //  Map painters (stylised dark / light placeholders)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1619,6 +2099,8 @@ class _DarkMapPainter extends CustomPainter {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Spotify-style marquee text — scrolls left when text overflows
+//  Uses AnimationController (GPU-composited) instead of ScrollController
+//  async loops to avoid jank with video playback.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _MarqueeText extends StatefulWidget {
@@ -1639,6 +2121,9 @@ class _MarqueeTextState extends State<_MarqueeText>
   double _maxExtent = 0;
   bool _checkedOnce = false;
 
+  // Animation phases: pause → forward → pause → reverse → repeat
+  static const _pauseDuration = Duration(seconds: 2);
+
   @override
   void initState() {
     super.initState();
@@ -1652,7 +2137,11 @@ class _MarqueeTextState extends State<_MarqueeText>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
       _animController.stop();
-      _scrollController.jumpTo(0);
+      _animController.removeListener(_onAnimTick);
+      _animController.reset();
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
       _checkedOnce = false;
       _needsScroll = false;
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
@@ -1660,57 +2149,74 @@ class _MarqueeTextState extends State<_MarqueeText>
   }
 
   void _checkOverflow() {
-    if (!_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll > 0 && !_checkedOnce) {
-      // First check: single text overflows → trigger rebuild with duplicate
       _checkedOnce = true;
       setState(() => _needsScroll = true);
-      // After rebuild with duplicate, recalculate maxExtent
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_scrollController.hasClients || !mounted) return;
-        final newMax = _scrollController.position.maxScrollExtent;
-        _maxExtent = newMax;
-        _startAnimation();
+        _maxExtent = _scrollController.position.maxScrollExtent;
+        _kickOffAnimation();
       });
     } else if (maxScroll <= 0) {
-      setState(() => _needsScroll = false);
+      if (_needsScroll) setState(() => _needsScroll = false);
     }
   }
 
-  void _startAnimation() async {
-    if (!mounted || !_needsScroll) return;
+  void _kickOffAnimation() {
+    if (!mounted || !_needsScroll || _maxExtent <= 0) return;
 
-    // Speed: ~30px/s  →  feels smooth like Spotify
-    final forwardDuration =
-        Duration(milliseconds: (_maxExtent * 33).toInt());
-    final reverseDuration =
-        Duration(milliseconds: (_maxExtent * 20).toInt());
+    // ~30px/s forward, ~50px/s reverse — feels smooth like Spotify
+    final forwardMs = (_maxExtent * 33).toInt().clamp(500, 30000);
+    final reverseMs = (_maxExtent * 20).toInt().clamp(300, 15000);
+    final totalMs = forwardMs + reverseMs + (_pauseDuration.inMilliseconds * 2);
 
-    while (mounted && _needsScroll) {
-      // Pause at start
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted || !_scrollController.hasClients) return;
+    // Forward occupies [pause..pause+forward] then pause then reverse
+    final fwdStart = _pauseDuration.inMilliseconds / totalMs;
+    final fwdEnd = fwdStart + forwardMs / totalMs;
+    final revStart = fwdEnd + _pauseDuration.inMilliseconds / totalMs;
+    // revEnd = 1.0
 
-      // Scroll to end
-      await _scrollController.animateTo(
-        _maxExtent,
-        duration: forwardDuration,
-        curve: Curves.linear,
-      );
-      if (!mounted) return;
+    _animController.stop();
+    _animController.reset();
+    _animController.duration = Duration(milliseconds: totalMs);
 
-      // Pause at end
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted || !_scrollController.hasClients) return;
+    // Remove old listeners before adding a new one
+    _animController.removeListener(_onAnimTick);
 
-      // Scroll back to start (faster)
-      await _scrollController.animateTo(
-        0,
-        duration: reverseDuration,
-        curve: Curves.easeOut,
-      );
+    // Capture phase boundaries for the listener closure
+    _fwdStart = fwdStart;
+    _fwdEnd = fwdEnd;
+    _revStart = revStart;
+
+    _animController.addListener(_onAnimTick);
+    _animController.repeat();
+  }
+
+  // Phase boundaries (set before each animation cycle)
+  double _fwdStart = 0;
+  double _fwdEnd = 0;
+  double _revStart = 0;
+
+  void _onAnimTick() {
+    if (!_scrollController.hasClients || !mounted) return;
+    final t = _animController.value;
+    double scrollOffset;
+    if (t < _fwdStart) {
+      scrollOffset = 0;
+    } else if (t < _fwdEnd) {
+      final frac = (t - _fwdStart) / (_fwdEnd - _fwdStart);
+      scrollOffset = frac * _maxExtent;
+    } else if (t < _revStart) {
+      scrollOffset = _maxExtent;
+    } else {
+      final frac = (t - _revStart) / (1.0 - _revStart);
+      // easeOut curve for reverse
+      final curved = 1.0 - (1.0 - frac) * (1.0 - frac);
+      scrollOffset = _maxExtent * (1.0 - curved);
     }
+    _scrollController.jumpTo(scrollOffset.clamp(0, _maxExtent));
   }
 
   @override
@@ -1725,7 +2231,6 @@ class _MarqueeTextState extends State<_MarqueeText>
     return SizedBox(
       height: (widget.style.fontSize ?? 20) * (widget.style.height ?? 1.4),
       child: ShaderMask(
-        // Fade edges when scrolling
         shaderCallback: (bounds) {
           return LinearGradient(
             colors: _needsScroll
@@ -1765,6 +2270,176 @@ class _MarqueeTextState extends State<_MarqueeText>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Attendee list bottom sheet content
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _AttendeeSheetContent extends StatelessWidget {
+  final String eventId;
+  final List<dynamic> attendees;
+  final bool isLoading;
+  final bool isDark;
+  final ImageProvider? Function(int index) getAvatarImage;
+
+  const _AttendeeSheetContent({
+    required this.eventId,
+    required this.attendees,
+    required this.isLoading,
+    required this.isDark,
+    required this.getAvatarImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Text(
+              'Event Attendees',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+            const Spacer(),
+            if (!isLoading)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${attendees.length} Going',
+                  style: const TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (attendees.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Column(
+                children: [
+                  Icon(Icons.people_outline,
+                      size: 48,
+                      color: isDark
+                          ? AppColors.grey200
+                          : AppColors.textTertiaryLight),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No attendees yet',
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 14,
+                      color: isDark
+                          ? AppColors.grey200
+                          : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Be the first to join this event!',
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF8C9097)
+                          : AppColors.textTertiaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: attendees.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                color: isDark
+                    ? const Color(0xFF2A2A2A)
+                    : Colors.grey.withValues(alpha: 0.12),
+              ),
+              itemBuilder: (context, index) {
+                final attendee = attendees[index];
+                final name = attendee is Map
+                    ? (attendee['username'] ??
+                        attendee['name'] ??
+                        'Unknown User')
+                    : 'Unknown User';
+                final avatar = getAvatarImage(index);
+
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor:
+                            isDark ? AppColors.surface : Colors.grey[200],
+                        backgroundImage: avatar,
+                        child: avatar == null
+                            ? Icon(Icons.person,
+                                size: 20,
+                                color: isDark
+                                    ? AppColors.grey200
+                                    : Colors.grey[500])
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          name.toString(),
+                          style: TextStyle(
+                            fontFamily: kFontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? AppColors.white
+                                : AppColors.textPrimaryLight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }

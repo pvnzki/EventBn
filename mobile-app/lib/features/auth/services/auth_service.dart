@@ -472,6 +472,9 @@ class AuthService {
         phoneNumber: updatedUser.phoneNumber ?? currentUser.phoneNumber,
         profileImageUrl:
             updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
+        coverPhotoUrl:
+            updatedUser.coverPhotoUrl ?? currentUser.coverPhotoUrl,
+        gender: updatedUser.gender ?? currentUser.gender,
         billingAddress:
             updatedUser.billingAddress ?? currentUser.billingAddress,
         billingCity: updatedUser.billingCity ?? currentUser.billingCity,

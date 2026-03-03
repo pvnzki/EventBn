@@ -38,7 +38,10 @@ import '../../features/events/screens/search_screen.dart';
 import '../../features/tickets/screens/my_tickets_screen_figma.dart';
 import '../../features/tickets/screens/ticket_detail_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
-import '../../features/profile/screens/my_profile_screen.dart';
+import '../../features/profile/screens/account_screen.dart';
+import '../../features/profile/screens/edit_personal_info_screen.dart';
+import '../../features/profile/screens/notifications_preferences_screen.dart';
+import '../../features/profile/screens/password_security_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/profile/screens/organizer_profile_screen.dart';
 import '../../features/profile/screens/profile_posts_feed_screen.dart';
@@ -300,6 +303,23 @@ class AppRouter {
         path: '/games/spinning-wheel',
         name: 'spinning-wheel',
         builder: (context, state) => const SpinningWheelScreen(),
+      ),
+
+      // ── Account sub-screens (no bottom nav) ──────────────────────────
+      GoRoute(
+        path: '/account/edit-profile',
+        name: 'edit-personal-info',
+        builder: (context, state) => const EditPersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: '/account/notifications',
+        name: 'notifications-preferences',
+        builder: (context, state) => const NotificationsPreferencesScreen(),
+      ),
+      GoRoute(
+        path: '/account/security',
+        name: 'password-security',
+        builder: (context, state) => const PasswordSecurityScreen(),
       ),
 
       // User Profile Route
@@ -585,7 +605,7 @@ class AppRouter {
           GoRoute(
             path: '/profile',
             name: 'profile',
-            builder: (context, state) => const ProfileScreen(),
+            builder: (context, state) => const AccountScreen(),
           ),
         ],
       ),

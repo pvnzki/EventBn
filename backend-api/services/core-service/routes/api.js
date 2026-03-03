@@ -224,6 +224,10 @@ router.post("/auth/login", async (req, res) => {
           role: true,
           is_active: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
+          phone_number: true,
+          date_of_birth: true,
           two_factor_enabled: true,
         },
       });
@@ -241,6 +245,10 @@ router.post("/auth/login", async (req, res) => {
           role: true,
           is_active: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
+          phone_number: true,
+          date_of_birth: true,
           two_factor_enabled: true,
         },
       });
@@ -320,6 +328,10 @@ router.post("/auth/login", async (req, res) => {
       email: user.email,
       role: user.role,
       profile_picture: user.profile_picture,
+      cover_photo: user.cover_photo,
+      gender: user.gender,
+      phone_number: user.phone_number,
+      date_of_birth: user.date_of_birth,
     };
 
     res.status(200).json({
@@ -362,6 +374,10 @@ router.post("/auth/login/2fa", async (req, res) => {
         role: true,
         is_active: true,
         profile_picture: true,
+        cover_photo: true,
+        gender: true,
+        phone_number: true,
+        date_of_birth: true,
         two_factor_enabled: true,
         two_factor_secret: true,
       },
@@ -489,6 +505,10 @@ router.post("/auth/login/2fa", async (req, res) => {
       email: user.email,
       role: user.role,
       profile_picture: user.profile_picture,
+      cover_photo: user.cover_photo,
+      gender: user.gender,
+      phone_number: user.phone_number,
+      date_of_birth: user.date_of_birth,
     };
 
     res.status(200).json({
@@ -912,6 +932,10 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
         email_otp_expires_at: true,
         role: true,
         profile_picture: true,
+        cover_photo: true,
+        gender: true,
+        phone_number: true,
+        date_of_birth: true,
       },
     });
 
@@ -969,6 +993,10 @@ router.post("/auth/2fa/verify-email-otp", async (req, res) => {
       email: user.email,
       role: user.role,
       profile_picture: user.profile_picture,
+      cover_photo: user.cover_photo,
+      gender: user.gender,
+      phone_number: user.phone_number,
+      date_of_birth: user.date_of_birth,
     };
 
     res.json({

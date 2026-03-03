@@ -364,6 +364,8 @@ router.put("/profile", authenticateToken, async (req, res) => {
         email: true,
         phone_number: true,
         profile_picture: true,
+        cover_photo: true,
+        gender: true,
         role: true,
         is_active: true,
         is_email_verified: true,

@@ -27,6 +27,8 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -73,6 +75,8 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           password_hash: true, // needed for auth
           is_active: true,
           is_email_verified: true,
@@ -149,6 +153,8 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -277,7 +283,9 @@ module.exports = {
           name: true,
           email: true,
           phone_number: true,
-          profile_picture: true, // now holds file path
+          profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -433,8 +441,12 @@ module.exports = {
         updateData.name = profileData.fullName;
       if (profileData.avatarUrl !== undefined)
         updateData.profile_picture = profileData.avatarUrl;
+      if (profileData.coverPhotoUrl !== undefined)
+        updateData.cover_photo = profileData.coverPhotoUrl;
       if (profileData.phoneNumber !== undefined)
         updateData.phone_number = profileData.phoneNumber;
+      if (profileData.gender !== undefined)
+        updateData.gender = profileData.gender;
 
       // Protect immutable fields if provided accidentally
       delete updateData.user_id;
@@ -449,6 +461,9 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
+          role: true,
           updated_at: true,
         },
       });

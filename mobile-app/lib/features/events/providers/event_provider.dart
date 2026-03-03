@@ -61,6 +61,9 @@ class EventProvider extends ChangeNotifier {
 
   // Fetch event by ID
   Future<void> fetchEventById(String eventId) async {
+    // Clear stale event immediately so the previous screen's video
+    // doesn't briefly replay on the new screen.
+    _currentEvent = null;
     _setLoading(true);
     _setError(null);
 
