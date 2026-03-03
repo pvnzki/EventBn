@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/design_tokens.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../common_widgets/app_primary_button.dart';
 import '../../../common_widgets/custom_button.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -22,8 +23,34 @@ import 'password_security_screen.dart';
 // Edit Profile / Share Profile buttons, settings list, sign-out.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,204 +62,245 @@ class AccountScreen extends StatelessWidget {
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final user = authProvider.user;
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildCoverAndAvatar(context, user, isDark),
-                const SizedBox(height: 56), // space for avatar overlap
-                _buildUserInfo(context, user, isDark),
-                const SizedBox(height: 16),
-                _buildActionButtons(context, user, isDark),
-                const SizedBox(height: 28),
-                _buildSection(
-                  context,
-                  title: 'Account settings',
-                  isDark: isDark,
-                  items: [
-                    _SettingItem(
-                      icon: Icons.receipt_long_rounded,
-                      label: 'Billing Details',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) => const BillingDetailsScreen(),
+          return FadeTransition(
+            opacity: _fadeAnim,
+            child: Stack(
+            children: [
+              // ── Cover photo as full-width background ──
+              _buildCoverBackground(context, user, isDark),
+              // ── Scrollable content overlapping the cover ──
+              SingleChildScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                child: Column(
+                  children: [
+                    // Transparent spacer — cover photo visible through
+                    const SizedBox(height: 280),
+                    // Stack: gradient overlaps content from above
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Gradient fade — behind the content
+                        Positioned(
+                          top: -120,
+                          left: 0,
+                          right: 0,
+                          height: 120,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  bgColor.withOpacity(0),
+                                  bgColor,
+                                ],
+                              ),
+                            ),
                           ),
-                        );
-                      },
+                        ),
+                        // Solid dark BG — joins the gradient seamlessly
+                        Container(
+                          width: double.infinity,
+                          color: bgColor,
+                          padding: const EdgeInsets.only(top: 0),
+                          child: Column(
+                            children: [
+                              // Pull content back up so it doesn't move
+                              Transform.translate(
+                                offset: const Offset(0, -200),
+                                child: Column(
+                                  children: [
+                              _buildAvatarOverlay(context, user, isDark),
+                              _buildUserInfo(context, user, isDark),
+                              const SizedBox(height: 16),
+                              _buildActionButtons(context, user, isDark),
+                              const SizedBox(height: 28),
+                              _buildSection(
+                            context,
+                            title: 'Account settings',
+                            isDark: isDark,
+                            items: [
+                              _SettingItem(
+                                icon: Icons.receipt_long_rounded,
+                                label: 'Billing Details',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (_) =>
+                                          const BillingDetailsScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _SettingItem(
+                                icon: Icons.lock_outline_rounded,
+                                label: 'Password & Security',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (_) =>
+                                          const PasswordSecurityScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _SettingItem(
+                                icon: Icons.notifications_none_rounded,
+                                label: 'Notifications Preferences',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    CupertinoPageRoute(
+                                      builder: (_) =>
+                                          const NotificationsPreferencesScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildSection(
+                            context,
+                            title: 'Other',
+                            isDark: isDark,
+                            items: [
+                              _SettingItem(
+                                icon: Icons.help_outline_rounded,
+                                label: 'FAQs',
+                                onTap: () {},
+                              ),
+                              _SettingItem(
+                                icon: Icons.headset_mic_outlined,
+                                label: 'Help Center',
+                                onTap: () {},
+                              ),
+                              _SettingItem(
+                                icon: Icons.settings_outlined,
+                                label: 'Settings',
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildThemeToggle(context, isDark),
+                          const SizedBox(height: 8),
+                          _buildSignOutTile(context, isDark),
+                          const SizedBox(height: 40),
+                                  ],
+                                ),
+                              ),
+                        ],
+                      ),
                     ),
-                    _SettingItem(
-                      icon: Icons.lock_outline_rounded,
-                      label: 'Password & Security',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) => const PasswordSecurityScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _SettingItem(
-                      icon: Icons.notifications_none_rounded,
-                      label: 'Notifications Preferences',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (_) =>
-                                const NotificationsPreferencesScreen(),
-                          ),
-                        );
-                      },
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _buildSection(
-                  context,
-                  title: 'Other',
-                  isDark: isDark,
-                  items: [
-                    _SettingItem(
-                      icon: Icons.help_outline_rounded,
-                      label: 'FAQs',
-                      onTap: () {},
-                    ),
-                    _SettingItem(
-                      icon: Icons.headset_mic_outlined,
-                      label: 'Help Center',
-                      onTap: () {},
-                    ),
-                    _SettingItem(
-                      icon: Icons.settings_outlined,
-                      label: 'Settings',
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildSignOutTile(context, isDark),
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+            ],
+          ),
           );
         },
       ),
     );
   }
 
-  // ── Cover photo + avatar ─────────────────────────────────────────────────
-  Widget _buildCoverAndAvatar(BuildContext context, User? user, bool isDark) {
+  // ── Cover photo background (tall, sits behind everything) ─────────────
+  Widget _buildCoverBackground(BuildContext context, User? user, bool isDark) {
     final bgColor = isDark ? AppColors.background : AppColors.bgLight;
-    const coverHeight = 180.0;
-    const avatarRadius = 48.0;
+    const coverHeight = 320.0;
 
     return SizedBox(
-      height: coverHeight + avatarRadius, // cover + half avatar
+      height: coverHeight,
+      width: double.infinity,
       child: Stack(
-        clipBehavior: Clip.none,
+        fit: StackFit.expand,
         children: [
-          // Cover photo with gradient fade
-          SizedBox(
-            height: coverHeight,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Cover image
-                user?.coverPhotoUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: user!.coverPhotoUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          color: isDark
-                              ? const Color(0xFF252525)
-                              : const Color(0xFFE0E0E0),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          color: isDark
-                              ? const Color(0xFF252525)
-                              : const Color(0xFFE0E0E0),
-                          child: const Icon(Icons.image_outlined,
-                              size: 48, color: AppColors.grey),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isDark
-                                ? [
-                                    const Color(0xFF2A2A2A),
-                                    const Color(0xFF1A1A1A)
-                                  ]
-                                : [
-                                    const Color(0xFFE0E0E0),
-                                    const Color(0xFFC0C0C0)
-                                  ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-                // Gradient fade into background
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 80,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          bgColor.withOpacity(0),
-                          bgColor,
-                        ],
-                      ),
+          // Cover image
+          user?.coverPhotoUrl != null
+              ? CachedNetworkImage(
+                  imageUrl: user!.coverPhotoUrl!,
+                  fit: BoxFit.cover,
+                  fadeInDuration: const Duration(milliseconds: 300),
+                  fadeOutDuration: const Duration(milliseconds: 150),
+                  placeholder: (_, __) => Container(
+                    color: isDark
+                        ? const Color(0xFF252525)
+                        : const Color(0xFFE0E0E0),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    color: isDark
+                        ? const Color(0xFF252525)
+                        : const Color(0xFFE0E0E0),
+                    child: const Icon(Icons.image_outlined,
+                        size: 48, color: AppColors.grey),
+                  ),
+                )
+              : Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              const Color(0xFF2A2A2A),
+                              const Color(0xFF1A1A1A)
+                            ]
+                          : [
+                              const Color(0xFFE0E0E0),
+                              const Color(0xFFC0C0C0)
+                            ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Circular avatar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: bgColor, width: 4),
-                ),
-                child: CircleAvatar(
-                  radius: avatarRadius,
-                  backgroundColor:
-                      isDark ? const Color(0xFF252525) : const Color(0xFFE0E0E0),
-                  backgroundImage: user?.profileImageUrl != null
-                      ? CachedNetworkImageProvider(user!.profileImageUrl!)
-                      : null,
-                  child: user?.profileImageUrl == null
-                      ? Text(
-                          _initials(user),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.white,
-                            fontFamily: kFontFamily,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
+    );
+  }
+
+  // ── Avatar section (inside the solid-bg container) ──────────────────────
+  Widget _buildAvatarOverlay(BuildContext context, User? user, bool isDark) {
+    final bgColor = isDark ? AppColors.background : AppColors.bgLight;
+    const avatarRadius = 48.0;
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        // Circular avatar
+        Center(
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: bgColor, width: 4),
+            ),
+            child: CircleAvatar(
+              radius: avatarRadius,
+              backgroundColor:
+                  isDark ? const Color(0xFF252525) : const Color(0xFFE0E0E0),
+              backgroundImage: user?.profileImageUrl != null
+                  ? CachedNetworkImageProvider(user!.profileImageUrl!)
+                  : null,
+              child: user?.profileImageUrl == null
+                  ? Text(
+                      _initials(user),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                        fontFamily: kFontFamily,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
@@ -300,6 +368,7 @@ class AccountScreen extends StatelessWidget {
               isOutlined: true,
               textColor: AppColors.primary,
               height: 44,
+              fontSize: 14,
               borderRadius: BorderRadius.circular(10),
               onPressed: () {
                 Navigator.push(
@@ -319,6 +388,7 @@ class AccountScreen extends StatelessWidget {
               backgroundColor: AppColors.primary,
               textColor: AppColors.dark,
               height: 44,
+              fontSize: 14,
               borderRadius: BorderRadius.circular(10),
               onPressed: () => _shareProfile(user),
             ),
@@ -361,30 +431,53 @@ class AccountScreen extends StatelessWidget {
               color: isDark ? AppColors.surface : Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: items.asMap().entries.map((entry) {
                 final i = entry.key;
                 final item = entry.value;
                 final isLast = i == items.length - 1;
+                final isFirst = i == 0;
                 return Column(
                   children: [
-                    ListTile(
-                      leading: Icon(item.icon, color: iconColor, size: 22),
-                      title: Text(
-                        item.label,
-                        style: TextStyle(
-                          fontFamily: kFontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: itemColor,
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: item.onTap,
+                        splashColor: AppColors.primary.withOpacity(0.08),
+                        highlightColor: AppColors.primary.withOpacity(0.04),
+                        borderRadius: BorderRadius.vertical(
+                          top: isFirst
+                              ? const Radius.circular(12)
+                              : Radius.zero,
+                          bottom: isLast
+                              ? const Radius.circular(12)
+                              : Radius.zero,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 13),
+                          child: Row(
+                            children: [
+                              Icon(item.icon, color: iconColor, size: 22),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    fontFamily: kFontFamily,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: itemColor,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded,
+                                  color: chevronColor, size: 22),
+                            ],
+                          ),
                         ),
                       ),
-                      trailing: Icon(Icons.chevron_right_rounded,
-                          color: chevronColor, size: 22),
-                      onTap: item.onTap,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
-                      visualDensity: VisualDensity.compact,
                     ),
                     if (!isLast)
                       Divider(
@@ -404,6 +497,62 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
+  // ── Dark / Light mode toggle ──────────────────────────────────────────
+  Widget _buildThemeToggle(BuildContext context, bool isDark) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final itemColor = isDark ? AppColors.white : AppColors.dark;
+    final iconColor = isDark ? AppColors.grey300 : AppColors.textSecondaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Icon(
+                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: iconColor,
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Dark Mode',
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: itemColor,
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: 0.85,
+                child: Switch.adaptive(
+                  value: themeProvider.isDarkMode,
+                  activeColor: AppColors.primary,
+                  onChanged: (_) async {
+                    if (themeProvider.isDarkMode) {
+                      await themeProvider.setThemeMode(ThemeMode.light);
+                    } else {
+                      await themeProvider.setThemeMode(ThemeMode.dark);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Sign out tile ────────────────────────────────────────────────────────
   Widget _buildSignOutTile(BuildContext context, bool isDark) {
     return Padding(
@@ -413,21 +562,35 @@ class AccountScreen extends StatelessWidget {
           color: isDark ? AppColors.surface : Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: ListTile(
-          leading: const Icon(Icons.logout_rounded,
-              color: AppColors.dangerText, size: 22),
-          title: const Text(
-            'Sign out',
-            style: TextStyle(
-              fontFamily: kFontFamily,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.dangerText,
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _showSignOutDialog(context),
+            splashColor: AppColors.dangerText.withOpacity(0.08),
+            highlightColor: AppColors.dangerText.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              child: Row(
+                children: [
+                  const Icon(Icons.logout_rounded,
+                      color: AppColors.dangerText, size: 22),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Sign out',
+                    style: TextStyle(
+                      fontFamily: kFontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.dangerText,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          onTap: () => _showSignOutDialog(context),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          visualDensity: VisualDensity.compact,
         ),
       ),
     );
@@ -475,10 +638,11 @@ class AccountScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // "Yes" — text button
+                // "Yes" — outlined rounded button
                 SizedBox(
                   width: double.infinity,
-                  child: TextButton(
+                  height: 48,
+                  child: OutlinedButton(
                     onPressed: () async {
                       Navigator.of(ctx).pop();
                       final authProvider =
@@ -488,15 +652,15 @@ class AccountScreen extends StatelessWidget {
                         context.go('/onboarding');
                       }
                     },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: isDark
-                              ? AppColors.divider
-                              : const Color(0xFFE0E0E0),
-                        ),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      side: BorderSide(
+                        color: isDark
+                            ? AppColors.divider
+                            : const Color(0xFFE0E0E0),
                       ),
                     ),
                     child: Text(

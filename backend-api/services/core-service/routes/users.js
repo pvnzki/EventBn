@@ -260,12 +260,12 @@ router.post(
         size: req.file.size,
       });
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary — eager transform for faster response
       const uploadOptions = {
         folder: "eventbn/profile_pictures",
         transformation: [
           { width: 400, height: 400, crop: "fill", gravity: "face" },
-          { quality: "auto", fetch_format: "auto" },
+          { quality: 80, fetch_format: "auto" },
         ],
       };
 
@@ -346,8 +346,8 @@ router.post(
       const uploadOptions = {
         folder: "eventbn/cover_photos",
         transformation: [
-          { width: 1200, height: 600, crop: "fill", gravity: "center" },
-          { quality: "auto", fetch_format: "auto" },
+          { width: 1920, height: 960, crop: "fill", gravity: "center" },
+          { quality: 90, fetch_format: "auto" },
         ],
       };
 

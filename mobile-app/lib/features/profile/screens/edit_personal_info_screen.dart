@@ -125,7 +125,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
 
   // ── Header with cover photo, avatar, back, save ──────────────────────────
   Widget _buildHeader(BuildContext context, bool isDark, Color bgColor) {
-    const coverHeight = 170.0;
+    const coverHeight = 240.0;
     const avatarRadius = 44.0;
     final topPad = MediaQuery.of(context).padding.top;
 
@@ -134,44 +134,74 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Cover photo
-          SizedBox(
-            height: coverHeight + topPad,
-            width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _selectedCoverPhoto != null
-                    ? Image.file(
-                        _selectedCoverPhoto!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _defaultCover(isDark),
-                      )
-                    : _currentUser?.coverPhotoUrl != null
-                        ? Image.network(
-                            _currentUser!.coverPhotoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                _defaultCover(isDark),
-                          )
-                        : _defaultCover(isDark),
-                // Gradient fade
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 70,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [bgColor.withOpacity(0), bgColor],
+          // Cover photo — entire area tappable
+          GestureDetector(
+            onTap: _pickCoverPhoto,
+            child: SizedBox(
+              height: coverHeight + topPad,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _selectedCoverPhoto != null
+                      ? Image.file(
+                          _selectedCoverPhoto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _defaultCover(isDark),
+                        )
+                      : _currentUser?.coverPhotoUrl != null
+                          ? Image.network(
+                              _currentUser!.coverPhotoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  _defaultCover(isDark),
+                            )
+                          : _defaultCover(isDark),
+                  // Gradient fade
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 70,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [bgColor.withOpacity(0), bgColor],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  // Camera hint icon — centred, low opacity
+                  Center(
+                    child: Opacity(
+                      opacity: 0.35,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Image.asset(
+                            'assets/icons/camera icon.png',
+                            width: 22,
+                            height: 22,
+                            color: Colors.white,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 22,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -210,23 +240,39 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                   ),
                 ),
                 _isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primary,
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.primary,
+                          ),
                         ),
                       )
-                    : GestureDetector(
-                        onTap: _save,
-                        child: const Text(
-                          'Save',
-                          style: TextStyle(
-                            fontFamily: kFontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                    : Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: GestureDetector(
+                          onTap: _save,
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontFamily: kFontFamily,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -234,26 +280,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
             ),
           ),
 
-          // Camera icon on cover photo
-          Positioned(
-            top: topPad + 50,
-            right: 16,
-            child: _circleButton(
-              child: Image.asset(
-                'assets/icons/camera icon.png',
-                width: 20,
-                height: 20,
-                color: Colors.white,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 20,
-                  color: Colors.white,
-                ),
-              ),
-              onTap: _pickCoverPhoto,
-              isDark: isDark,
-            ),
-          ),
+          // Camera icon on cover photo — removed (cover is fully tappable)
 
           // Avatar with camera icon
           Positioned(
@@ -296,19 +323,21 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: Colors.white.withOpacity(0.24),
                           shape: BoxShape.circle,
                           border: Border.all(color: bgColor, width: 2),
                         ),
-                        child: Image.asset(
-                          'assets/icons/camera icon.png',
-                          width: 16,
-                          height: 16,
-                          color: AppColors.dark,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.camera_alt_rounded,
-                            size: 16,
-                            color: AppColors.dark,
+                        child: Center(
+                          child: Image.asset(
+                            'assets/icons/camera icon.png',
+                            width: 15,
+                            height: 15,
+                            color: Colors.white,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 15,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -521,9 +550,9 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
   Future<void> _pickCoverPhoto() async {
     final xfile = await _imagePicker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1200,
-      maxHeight: 600,
-      imageQuality: 85,
+      maxWidth: 2400,
+      maxHeight: 1200,
+      imageQuality: 100,
     );
     if (xfile != null) {
       setState(() => _selectedCoverPhoto = File(xfile.path));
@@ -547,11 +576,23 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
         }
       }
 
-      // Upload avatar if a new one was picked
+      // Upload avatar & cover photo in parallel for speed
       String? newAvatarUrl;
-      if (_selectedAvatar != null) {
-        final avatarResult =
-            await _authService.uploadProfileImageFile(_selectedAvatar!);
+      String? newCoverUrl;
+
+      final uploads = await Future.wait([
+        if (_selectedAvatar != null)
+          _authService.uploadProfileImageFile(_selectedAvatar!)
+        else
+          Future.value(<String, dynamic>{'skip': true}),
+        if (_selectedCoverPhoto != null)
+          _authService.uploadCoverPhotoFile(_selectedCoverPhoto!)
+        else
+          Future.value(<String, dynamic>{'skip': true}),
+      ]);
+
+      final avatarResult = uploads[0];
+      if (avatarResult['skip'] != true) {
         if (avatarResult['success'] == true) {
           newAvatarUrl = avatarResult['imageUrl'] as String?;
         } else {
@@ -559,11 +600,8 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
         }
       }
 
-      // Upload cover photo if a new one was picked
-      String? newCoverUrl;
-      if (_selectedCoverPhoto != null) {
-        final coverResult =
-            await _authService.uploadCoverPhotoFile(_selectedCoverPhoto!);
+      final coverResult = uploads[1];
+      if (coverResult['skip'] != true) {
         if (coverResult['success'] == true) {
           newCoverUrl = coverResult['imageUrl'] as String?;
         } else {
