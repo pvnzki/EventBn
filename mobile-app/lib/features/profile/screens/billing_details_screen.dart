@@ -40,9 +40,15 @@ class _BillingDetailsScreenState extends State<BillingDetailsScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
+          icon: Image.asset(
+            'assets/icons/arrow icon.png',
+            width: 24,
+            height: 24,
             color: isDark ? AppColors.white : AppColors.dark,
+            errorBuilder: (_, __, ___) => Icon(
+              Icons.chevron_left,
+              color: isDark ? AppColors.white : AppColors.dark,
+            ),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/design_tokens.dart';
 import '../../../common_widgets/app_primary_button.dart';
+import '../../../common_widgets/custom_button.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/models/user_model.dart';
 import 'edit_personal_info_screen.dart';
@@ -53,7 +55,7 @@ class AccountScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          CupertinoPageRoute(
                             builder: (_) => const BillingDetailsScreen(),
                           ),
                         );
@@ -65,7 +67,7 @@ class AccountScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          CupertinoPageRoute(
                             builder: (_) => const PasswordSecurityScreen(),
                           ),
                         );
@@ -77,7 +79,7 @@ class AccountScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          CupertinoPageRoute(
                             builder: (_) =>
                                 const NotificationsPreferencesScreen(),
                           ),
@@ -293,56 +295,32 @@ class AccountScreen extends StatelessWidget {
         children: [
           // Edit Profile — outlined green
           Expanded(
-            child: OutlinedButton(
+            child: CustomButton(
+              text: 'Edit Profile',
+              isOutlined: true,
+              textColor: AppColors.primary,
+              height: 44,
+              borderRadius: BorderRadius.circular(10),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  CupertinoPageRoute(
                     builder: (_) => const EditPersonalInfoScreen(),
                   ),
                 );
               },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text(
-                'Edit Profile',
-                style: TextStyle(
-                  fontFamily: kFontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
             ),
           ),
           const SizedBox(width: 12),
           // Share Profile — filled green
           Expanded(
-            child: ElevatedButton(
+            child: CustomButton(
+              text: 'Share Profile',
+              backgroundColor: AppColors.primary,
+              textColor: AppColors.dark,
+              height: 44,
+              borderRadius: BorderRadius.circular(10),
               onPressed: () => _shareProfile(user),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Share Profile',
-                style: TextStyle(
-                  fontFamily: kFontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.dark,
-                ),
-              ),
             ),
           ),
         ],

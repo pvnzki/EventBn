@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -57,7 +58,7 @@ class _PasswordSecurityScreenState extends State<PasswordSecurityScreen> {
 
   void _showTwoFactorSetup() {
     Navigator.of(context)
-        .push(MaterialPageRoute(
+        .push(CupertinoPageRoute(
           builder: (_) => const TwoFactorSetupScreen(),
         ))
         .then((_) => _loadSecuritySettings());
@@ -65,7 +66,7 @@ class _PasswordSecurityScreenState extends State<PasswordSecurityScreen> {
 
   void _showTwoFactorDisable() {
     Navigator.of(context)
-        .push(MaterialPageRoute(
+        .push(CupertinoPageRoute(
           builder: (_) => const TwoFactorDisableScreen(),
         ))
         .then((_) => _loadSecuritySettings());
@@ -84,9 +85,15 @@ class _PasswordSecurityScreenState extends State<PasswordSecurityScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
+          icon: Image.asset(
+            'assets/icons/arrow icon.png',
+            width: 24,
+            height: 24,
             color: isDark ? AppColors.white : AppColors.dark,
+            errorBuilder: (_, __, ___) => Icon(
+              Icons.chevron_left,
+              color: isDark ? AppColors.white : AppColors.dark,
+            ),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),

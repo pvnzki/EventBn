@@ -34,6 +34,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
 
   String? _selectedGender;
   File? _selectedAvatar;
+  File? _selectedCoverPhoto;
   bool _isSaving = false;
   User? _currentUser;
 
@@ -140,13 +141,20 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _currentUser?.coverPhotoUrl != null
-                    ? Image.network(
-                        _currentUser!.coverPhotoUrl!,
+                _selectedCoverPhoto != null
+                    ? Image.file(
+                        _selectedCoverPhoto!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _defaultCover(isDark),
                       )
-                    : _defaultCover(isDark),
+                    : _currentUser?.coverPhotoUrl != null
+                        ? Image.network(
+                            _currentUser!.coverPhotoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _defaultCover(isDark),
+                          )
+                        : _defaultCover(isDark),
                 // Gradient fade
                 Positioned(
                   bottom: 0,
@@ -175,7 +183,17 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
             child: Row(
               children: [
                 _circleButton(
-                  icon: Icons.arrow_back_rounded,
+                  child: Image.asset(
+                    'assets/icons/arrow icon.png',
+                    width: 20,
+                    height: 20,
+                    color: Colors.white,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.chevron_left,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
                   onTap: () => Navigator.of(context).pop(),
                   isDark: isDark,
                 ),
@@ -221,7 +239,17 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
             top: topPad + 50,
             right: 16,
             child: _circleButton(
-              icon: Icons.camera_alt_rounded,
+              child: Image.asset(
+                'assets/icons/camera icon.png',
+                width: 20,
+                height: 20,
+                color: Colors.white,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.camera_alt_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
               onTap: _pickCoverPhoto,
               isDark: isDark,
             ),
@@ -272,10 +300,16 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: bgColor, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          size: 16,
+                        child: Image.asset(
+                          'assets/icons/camera icon.png',
+                          width: 16,
+                          height: 16,
                           color: AppColors.dark,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.camera_alt_rounded,
+                            size: 16,
+                            color: AppColors.dark,
+                          ),
                         ),
                       ),
                     ),
@@ -485,14 +519,15 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
   }
 
   Future<void> _pickCoverPhoto() async {
-    // Cover photo picker — same flow as avatar for now
-    await _imagePicker.pickImage(
+    final xfile = await _imagePicker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1200,
       maxHeight: 600,
       imageQuality: 85,
     );
-    // TODO: Upload cover photo when backend supports it
+    if (xfile != null) {
+      setState(() => _selectedCoverPhoto = File(xfile.path));
+    }
   }
 
   Future<void> _save() async {
@@ -512,11 +547,37 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
         }
       }
 
+      // Upload avatar if a new one was picked
+      String? newAvatarUrl;
+      if (_selectedAvatar != null) {
+        final avatarResult =
+            await _authService.uploadProfileImageFile(_selectedAvatar!);
+        if (avatarResult['success'] == true) {
+          newAvatarUrl = avatarResult['imageUrl'] as String?;
+        } else {
+          _showError('Avatar upload failed: ${avatarResult['message']}');
+        }
+      }
+
+      // Upload cover photo if a new one was picked
+      String? newCoverUrl;
+      if (_selectedCoverPhoto != null) {
+        final coverResult =
+            await _authService.uploadCoverPhotoFile(_selectedCoverPhoto!);
+        if (coverResult['success'] == true) {
+          newCoverUrl = coverResult['imageUrl'] as String?;
+        } else {
+          _showError('Cover photo upload failed: ${coverResult['message']}');
+        }
+      }
+
       final updated = _currentUser!.copyWith(
         firstName: _firstNameCtrl.text.trim(),
         lastName: _lastNameCtrl.text.trim(),
         dateOfBirth: dob,
         gender: _selectedGender,
+        profileImageUrl: newAvatarUrl ?? _currentUser!.profileImageUrl,
+        coverPhotoUrl: newCoverUrl ?? _currentUser!.coverPhotoUrl,
         profileCompleted: true,
       );
 
@@ -559,7 +620,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
   }
 
   Widget _circleButton({
-    required IconData icon,
+    required Widget child,
     required VoidCallback onTap,
     required bool isDark,
   }) {
@@ -572,7 +633,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
           color: Colors.white.withOpacity(0.24),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
+        child: Center(child: child),
       ),
     );
   }

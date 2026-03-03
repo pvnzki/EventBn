@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
@@ -584,6 +586,104 @@ class AuthService {
           'message': 'Failed to save profile: $localError'
         };
       }
+    }
+  }
+
+  // Upload a profile image file to Cloudinary via the backend
+  Future<Map<String, dynamic>> uploadProfileImageFile(File imageFile) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final user = await getStoredUser();
+      if (user == null) {
+        return {'success': false, 'message': 'User not found'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Uploading profile image file...');
+
+      final uri =
+          Uri.parse('$baseUrl/api/users/${user.id}/upload-profile-image');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      print(
+          '🔍 [AUTH_SERVICE] Upload response: ${streamedResponse.statusCode}');
+
+      if (streamedResponse.statusCode == 200 && data['success'] == true) {
+        final imageUrl = data['imageUrl'] as String?;
+        print('✅ [AUTH_SERVICE] Profile image uploaded: $imageUrl');
+        return {'success': true, 'imageUrl': imageUrl};
+      } else {
+        print('❌ [AUTH_SERVICE] Upload failed: ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error uploading profile image: $e');
+      return {'success': false, 'message': 'Upload error: $e'};
+    }
+  }
+
+  // Upload a cover photo file to Cloudinary via the backend
+  Future<Map<String, dynamic>> uploadCoverPhotoFile(File imageFile) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final user = await getStoredUser();
+      if (user == null) {
+        return {'success': false, 'message': 'User not found'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Uploading cover photo file...');
+
+      final uri =
+          Uri.parse('$baseUrl/api/users/${user.id}/upload-cover-photo');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      print(
+          '🔍 [AUTH_SERVICE] Cover upload response: ${streamedResponse.statusCode}');
+
+      if (streamedResponse.statusCode == 200 && data['success'] == true) {
+        final imageUrl = data['imageUrl'] as String?;
+        print('✅ [AUTH_SERVICE] Cover photo uploaded: $imageUrl');
+        return {'success': true, 'imageUrl': imageUrl};
+      } else {
+        print('❌ [AUTH_SERVICE] Cover upload failed: ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error uploading cover photo: $e');
+      return {'success': false, 'message': 'Upload error: $e'};
     }
   }
 

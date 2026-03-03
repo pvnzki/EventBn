@@ -318,6 +318,88 @@ router.post(
   }
 );
 
+// Upload cover photo to Cloudinary
+router.post(
+  "/:id/upload-cover-photo",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      console.log(
+        "🖼️ [COVER_UPLOAD] Received cover photo upload request for user:",
+        req.params.id
+      );
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image file provided",
+        });
+      }
+
+      console.log("🖼️ [COVER_UPLOAD] File details:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      // Upload to Cloudinary
+      const uploadOptions = {
+        folder: "eventbn/cover_photos",
+        transformation: [
+          { width: 1200, height: 600, crop: "fill", gravity: "center" },
+          { quality: "auto", fetch_format: "auto" },
+        ],
+      };
+
+      console.log("☁️ [COVER_UPLOAD] Uploading to Cloudinary...");
+
+      const uploadResult = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              console.error(
+                "❌ [COVER_UPLOAD] Cloudinary upload error:",
+                error
+              );
+              reject(error);
+            } else {
+              console.log(
+                "✅ [COVER_UPLOAD] Cloudinary upload success:",
+                result.secure_url
+              );
+              resolve(result);
+            }
+          })
+          .end(req.file.buffer);
+      });
+
+      // Update user profile with the new cover photo URL
+      const updatedUser = await usersService.updateUserProfile(req.params.id, {
+        coverPhotoUrl: uploadResult.secure_url,
+      });
+
+      console.log(
+        "✅ [COVER_UPLOAD] User profile updated with new cover photo URL"
+      );
+
+      res.json({
+        success: true,
+        message: "Cover photo uploaded successfully",
+        data: updatedUser,
+        imageUrl: uploadResult.secure_url,
+      });
+    } catch (error) {
+      console.error("❌ [COVER_UPLOAD] Upload failed:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to upload cover photo: " +
+          (error.message || error.toString() || "Unknown error"),
+      });
+    }
+  }
+);
+
 // Delete user
 router.delete("/:id", async (req, res) => {
   try {
