@@ -188,6 +188,9 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/mobile-app"
 
+            # Create .env from GitHub secret
+            echo "${{ secrets.ENV_FILE }}" > .env
+
             flutter pub get
 
             if [ "$CONFIGURATION" = "Debug" ]; then
