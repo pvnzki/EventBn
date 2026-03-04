@@ -282,7 +282,7 @@ jobs:
           else
             # For unsigned builds, find .app and create IPA
             if [ "$PROJECT_TYPE" = "flutter" ]; then
-              APP_PATH=$(find "${GITHUB_WORKSPACE}" -name "Runner.app" -type d | head -1)
+              APP_PATH=$(find build/ios/iphonesimulator -name "*.app" -type d | head -1)
             else
               APP_PATH=$(find "$DERIVED_DATA_PATH/Build/Products/${CONFIGURATION}-iphoneos" -name "*.app" -type d | head -1)
             fi
@@ -294,7 +294,6 @@ jobs:
 
             echo "Found app at: $APP_PATH"
 
-            cd "$GITHUB_WORKSPACE"
             mkdir -p build/Payload
             cp -R "$APP_PATH" build/Payload/
 
