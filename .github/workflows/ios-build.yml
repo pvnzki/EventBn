@@ -11,7 +11,7 @@ on:
         description: 'Path to iOS project (e.g., "ios" for React Native)'
         required: false
         type: string
-        default: '.'
+        default: 'mobile-app/ios'
       scheme:
         description: 'Xcode scheme to build (auto-detected if empty)'
         required: false
@@ -37,6 +37,7 @@ jobs:
   build:
     runs-on: macos-latest
     timeout-minutes: 30
+    environment: Production
 
     steps:
       - name: Checkout repository
@@ -59,7 +60,7 @@ jobs:
       - name: Detect project type
         id: detect
         run: |
-          if [ -f "pubspec.yaml" ]; then
+          if [ -f "mobile-app/pubspec.yaml" ]; then
             echo "type=flutter" >> $GITHUB_OUTPUT
           elif [ -f "package.json" ] && grep -q '"expo"' package.json; then
             echo "type=expo" >> $GITHUB_OUTPUT
@@ -79,7 +80,9 @@ jobs:
 
       - name: Flutter pub get
         if: steps.detect.outputs.type == 'flutter'
-        run: flutter pub get
+        run: |
+          cd mobile-app
+          flutter pub get
 
       - name: Setup Node.js
         if: steps.detect.outputs.type == 'reactnative' || steps.detect.outputs.type == 'expo'
@@ -165,13 +168,6 @@ jobs:
           WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1)
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -1)
 
-          # Install pods if Podfile exists (always run to ensure sync with Podfile.lock)
-          if [ -f "Podfile" ]; then
-            echo "Running pod install..."
-            pod install
-            WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1)
-          fi
-
           # Determine scheme (only needed for native projects)
           if [ -z "$SCHEME" ] && [ "$PROJECT_TYPE" = "native" ]; then
             if [ -n "$WORKSPACE" ]; then
@@ -189,75 +185,51 @@ jobs:
           DERIVED_DATA_PATH="${GITHUB_WORKSPACE}/DerivedData"
 
           if [ "$PROJECT_TYPE" = "flutter" ]; then
-            cd ..
-            if [ "$CONFIGURATION" = "Debug" ]; then
-              echo "Building Flutter iOS Debug..."
-              flutter build ios --debug --no-codesign
-            else
-              echo "Building Flutter iOS Release..."
-              flutter build ios --release --no-codesign
-            fi
-            cd "$IOS_PATH"
+            echo "Detected Flutter project"
+
+            cd "$GITHUB_WORKSPACE/mobile-app"
+            printf "APP_NAME=%s\nAPP_VERSION=%s\nBASE_URL=%s\nDEBUG=%s\nPAYHERE_MERCHANT_ID=%s\nPAYHERE_MERCHANT_SECRET=%s\nPAYHERE_NOTIFY_URL=%s\nPAYHERE_SANDBOX=%s\nPOST_SERVICE_URL=%s\n" \
+            "${{ secrets.APP_NAME }}" \
+            "${{ secrets.APP_VERSION }}" \
+            "${{ secrets.BASE_URL }}" \
+            "${{ secrets.DEBUG }}" \
+            "${{ secrets.PAYHERE_MERCHANT_ID }}" \
+            "${{ secrets.PAYHERE_MERCHANT_SECRET }}" \
+            "${{ secrets.PAYHERE_NOTIFY_URL }}" \
+            "${{ secrets.PAYHERE_SANDBOX }}" \
+            "${{ secrets.POST_SERVICE_URL }}" > .env
+
+            flutter clean
+            flutter pub get
+
+            echo "Building Flutter iOS Device..."
+
+            flutter build ios --release --no-codesign
+
           elif [ "$PROJECT_TYPE" = "reactnative" ] || [ "$PROJECT_TYPE" = "expo" ]; then
-            # Use xcodebuild directly for React Native/Expo
-            echo "Building React Native iOS ($CONFIGURATION)..."
-            BUILD_CMD="xcodebuild"
-            if [ -n "$WORKSPACE" ]; then
-              BUILD_CMD="$BUILD_CMD -workspace $WORKSPACE"
-            elif [ -n "$PROJECT" ]; then
-              BUILD_CMD="$BUILD_CMD -project $PROJECT"
-            fi
+            echo "Detected React Native / Expo project"
 
-            # Auto-detect scheme from workspace name (e.g., MyApp.xcworkspace -> MyApp)
-            if [ -n "$WORKSPACE" ]; then
-              SCHEME=$(basename "$WORKSPACE" .xcworkspace)
-            elif [ -n "$PROJECT" ]; then
-              SCHEME=$(basename "$PROJECT" .xcodeproj)
-            fi
+            cd "$IOS_PATH"
 
-            BUILD_CMD="$BUILD_CMD -scheme $SCHEME"
-            BUILD_CMD="$BUILD_CMD -configuration $CONFIGURATION"
-            BUILD_CMD="$BUILD_CMD -destination 'generic/platform=iOS'"
-            BUILD_CMD="$BUILD_CMD -derivedDataPath $DERIVED_DATA_PATH"
-            BUILD_CMD="$BUILD_CMD CODE_SIGNING_ALLOWED=NO"
-            BUILD_CMD="$BUILD_CMD COMPILER_INDEX_STORE_ENABLE=NO"
-            BUILD_CMD="$BUILD_CMD -quiet build"
+            xcodebuild \
+              -workspace Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Release \
+              -destination 'generic/platform=iOS' \
+              CODE_SIGNING_ALLOWED=NO \
+              build
 
-            echo "Running: $BUILD_CMD"
-            eval $BUILD_CMD
           else
-            BUILD_CMD="xcodebuild"
-            if [ -n "$WORKSPACE" ]; then
-              BUILD_CMD="$BUILD_CMD -workspace $WORKSPACE"
-            elif [ -n "$PROJECT" ]; then
-              BUILD_CMD="$BUILD_CMD -project $PROJECT"
-            fi
+            echo "Detected Native iOS project"
 
-            BUILD_CMD="$BUILD_CMD -scheme $SCHEME"
-            BUILD_CMD="$BUILD_CMD -configuration $CONFIGURATION"
-            BUILD_CMD="$BUILD_CMD -destination 'generic/platform=iOS'"
-            BUILD_CMD="$BUILD_CMD -derivedDataPath $DERIVED_DATA_PATH"
+            cd "$IOS_PATH"
 
-            # Speed optimization flags
-            BUILD_CMD="$BUILD_CMD COMPILER_INDEX_STORE_ENABLE=NO"
-            BUILD_CMD="$BUILD_CMD DEBUG_INFORMATION_FORMAT=dwarf"
-            BUILD_CMD="$BUILD_CMD ONLY_ACTIVE_ARCH=YES"
-            BUILD_CMD="$BUILD_CMD -quiet"
-
-            # Xcode 16+ native compilation caching
-            BUILD_CMD="$BUILD_CMD SWIFT_ENABLE_COMPILE_CACHE=YES"
-            BUILD_CMD="$BUILD_CMD CLANG_ENABLE_COMPILE_CACHE=YES"
-
-            if [ "$USE_SIGNING" = "true" ]; then
-              # For signed builds, use archive
-              BUILD_CMD="$BUILD_CMD -archivePath ../build/App.xcarchive archive"
-            else
-              # For unsigned builds, use faster 'build' action
-              BUILD_CMD="$BUILD_CMD CODE_SIGNING_ALLOWED=NO build"
-            fi
-
-            echo "Running: $BUILD_CMD"
-            eval $BUILD_CMD
+            xcodebuild \
+              -scheme "$SCHEME" \
+              -configuration "$CONFIGURATION" \
+              -destination 'generic/platform=iOS' \
+              CODE_SIGNING_ALLOWED=NO \
+              build
           fi
 
           # Create IPA
@@ -286,10 +258,8 @@ jobs:
           else
             # For unsigned builds, find .app and create IPA
             if [ "$PROJECT_TYPE" = "flutter" ]; then
-              # Flutter outputs to build/ios/iphoneos/
-              APP_PATH=$(find "${GITHUB_WORKSPACE}/build/ios/iphoneos" -name "*.app" -type d | head -1)
+              APP_PATH=$(find build/ios/iphoneos -name "*.app" -type d | head -1)
             else
-              # Native and React Native/Expo use DerivedData
               APP_PATH=$(find "$DERIVED_DATA_PATH/Build/Products/${CONFIGURATION}-iphoneos" -name "*.app" -type d | head -1)
             fi
 
@@ -297,21 +267,33 @@ jobs:
               echo "Error: Could not find .app"
               exit 1
             fi
+
+            echo "Creating IPA..."
+
+            APP_PATH=$(find build/ios/iphoneos -name "*.app" -type d | head -1)
+
+            if [ -z "$APP_PATH" ]; then
+              echo "Error: Could not find .app"
+              exit 1
+            fi
+
             echo "Found app at: $APP_PATH"
-            cd ..
+
             mkdir -p build/Payload
             cp -R "$APP_PATH" build/Payload/
+
             cd build
             zip -rq "$BUILD_ID.ipa" Payload
             rm -rf Payload
-            echo "Created unsigned IPA: build/$BUILD_ID.ipa"
+
+            echo "IPA created successfully"
           fi
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: ipa
-          path: build/*.ipa
+          path: mobile-app/build/*.ipa
           retention-days: 7
           if-no-files-found: error
 
@@ -348,7 +330,7 @@ jobs:
           else
             echo "- **Signing:** Unsigned (sign locally with AltStore/Sideloadly)" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -f build/*.ipa ]; then
+          if [ -f mobile-app/build/*.ipa ]; then
             IPA_PATH=$(find build -name "*.ipa" -type f | head -1)
             echo "- **IPA Size:** $(ls -lh "$IPA_PATH" | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
           fi
