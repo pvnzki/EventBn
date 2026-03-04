@@ -188,17 +188,16 @@ jobs:
             echo "Detected Flutter project"
 
             cd "$GITHUB_WORKSPACE/mobile-app"
-            cat <<EOF > .env
-            APP_NAME=${{ secrets.APP_NAME }}
-            APP_VERSION=${{ secrets.APP_VERSION }}
-            BASE_URL=${{ secrets.BASE_URL }}
-            DEBUG=${{ secrets.DEBUG }}
-            PAYHERE_MERCHANT_ID=${{ secrets.PAYHERE_MERCHANT_ID }}
-            PAYHERE_MERCHANT_SECRET=${{ secrets.PAYHERE_MERCHANT_SECRET }}
-            PAYHERE_NOTIFY_URL=${{ secrets.PAYHERE_NOTIFY_URL }}
-            PAYHERE_SANDBOX=${{ secrets.PAYHERE_SANDBOX }}
-            POST_SERVICE_URL=${{ secrets.POST_SERVICE_URL }}
-            EOF
+            printf "APP_NAME=%s\nAPP_VERSION=%s\nBASE_URL=%s\nDEBUG=%s\nPAYHERE_MERCHANT_ID=%s\nPAYHERE_MERCHANT_SECRET=%s\nPAYHERE_NOTIFY_URL=%s\nPAYHERE_SANDBOX=%s\nPOST_SERVICE_URL=%s\n" \
+            "${{ secrets.APP_NAME }}" \
+            "${{ secrets.APP_VERSION }}" \
+            "${{ secrets.BASE_URL }}" \
+            "${{ secrets.DEBUG }}" \
+            "${{ secrets.PAYHERE_MERCHANT_ID }}" \
+            "${{ secrets.PAYHERE_MERCHANT_SECRET }}" \
+            "${{ secrets.PAYHERE_NOTIFY_URL }}" \
+            "${{ secrets.PAYHERE_SANDBOX }}" \
+            "${{ secrets.POST_SERVICE_URL }}" > .env
 
             flutter clean
             flutter pub get
