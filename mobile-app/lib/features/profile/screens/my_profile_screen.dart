@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +14,9 @@ import '../../auth/screens/security_settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showBillingAddress;
+
+  const ProfileScreen({super.key, this.showBillingAddress = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -121,6 +124,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     // Now load user posts
     _loadUserPosts();
+
+    // Show billing address modal if requested
+    if (widget.showBillingAddress) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showBillingAddressModal(context);
+      });
+    }
   }
 
   @override
@@ -341,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.of(context).pop();
                 await authProvider.logout();
                 if (context.mounted) {
-                  context.go('/login');
+                  context.go('/onboarding');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Logged out successfully'),
@@ -837,16 +847,48 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CircleAvatar(
                   radius: 45,
                   backgroundColor: colorScheme.surfaceContainerHighest,
-                  backgroundImage: user?.profileImageUrl != null
-                      ? CachedNetworkImageProvider(user!.profileImageUrl!)
-                      : null,
-                  child: user?.profileImageUrl == null
-                      ? Icon(
+                  child: user?.profileImageUrl != null &&
+                          user!.profileImageUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: user!.profileImageUrl!.startsWith('file://')
+                              ? Image.file(
+                                  File(user!.profileImageUrl!
+                                      .replaceFirst('file://', '')
+                                      .split(
+                                          '?')[0]), // Remove query parameters
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: colorScheme.onSurfaceVariant,
+                                    );
+                                  },
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: user!.profileImageUrl!,
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                        )
+                      : Icon(
                           Icons.person,
                           size: 45,
                           color: colorScheme.onSurfaceVariant,
-                        )
-                      : null,
+                        ),
                 ),
               ),
 
@@ -1366,14 +1408,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Navigator.pop(context);
                       context.push('/create-post');
                     }),
-                    _buildCreateOption(
-                        context, Icons.video_call_outlined, 'Reel', () {
-                      Navigator.pop(context);
-                    }),
-                    _buildCreateOption(
-                        context, Icons.add_circle_outline, 'Story', () {
-                      Navigator.pop(context);
-                    }),
                   ],
                 ),
               ),
@@ -1497,57 +1531,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         // This will trigger a rebuild and reload user data
       });
     }
-  }
-
-  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.photo_camera_outlined,
-            size: 80,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No Posts Yet',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'When you share photos and videos, they\'ll appear on your profile.',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: () {
-              // Navigate to create post screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Create Post coming soon!')),
-              );
-            },
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Share Your First Post'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              side: BorderSide(color: colorScheme.primary),
-              foregroundColor: colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

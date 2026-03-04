@@ -8,7 +8,6 @@ import '../../features/booking/screens/user_details_screen.dart';
 import '../../features/booking/screens/payment_method_screen.dart';
 import '../../features/booking/screens/order_summary_screen.dart';
 import '../../features/booking/screens/payment_success_screen.dart';
-import '../../features/tickets/screens/e_ticket_screen.dart' as tickets;
 import '../../features/explore/screens/explore_posts_page.dart';
 import '../../features/explore/screens/igtv_feed_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
@@ -24,15 +23,25 @@ import '../../features/auth/screens/congratulations_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/create_new_password_screen.dart';
+import '../../features/auth/screens/signup_verification_screen.dart';
+import '../../features/auth/screens/signup_phone_screen.dart';
+import '../../features/auth/screens/signup_password_screen.dart';
+import '../../features/auth/screens/signup_profile_screen.dart';
+import '../../features/auth/screens/signup_success_screen.dart';
 import '../../features/events/screens/home_screen.dart';
 import '../../features/events/screens/event_details_screen.dart';
 import '../../features/events/screens/event_attendees_screen.dart';
 import '../../features/events/screens/organization_profile_screen.dart';
 import '../../features/events/screens/notifications_screen.dart';
 import '../../features/events/screens/all_events_screen.dart';
-import '../../features/tickets/screens/my_tickets_screen.dart';
+import '../../features/events/screens/search_screen.dart';
+import '../../features/tickets/screens/my_tickets_screen_figma.dart';
+import '../../features/tickets/screens/ticket_detail_screen.dart';
 import '../../features/payment/screens/checkout_screen.dart';
-import '../../features/profile/screens/my_profile_screen.dart';
+import '../../features/profile/screens/account_screen.dart';
+import '../../features/profile/screens/edit_personal_info_screen.dart';
+import '../../features/profile/screens/notifications_preferences_screen.dart';
+import '../../features/profile/screens/password_security_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/profile/screens/organizer_profile_screen.dart';
 import '../../features/profile/screens/profile_posts_feed_screen.dart';
@@ -56,6 +65,71 @@ class AppRouter {
         path: '/onboarding',
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(), // Removed const
+      ),
+
+      // Sign-up Flow Routes
+      GoRoute(
+        path: '/signup/verification',
+        name: 'signup-verification',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpVerificationScreen(
+            verificationType: extra['type'] as String? ?? 'email',
+            destination: extra['destination'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/password',
+        name: 'signup-password',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpPasswordScreen(
+            email: extra['email'] as String? ?? '',
+            phone: extra['phone'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/phone',
+        name: 'signup-phone',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpPhoneScreen(
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/phone-verification',
+        name: 'signup-phone-verification',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpVerificationScreen(
+            verificationType: 'phone',
+            destination: extra['phone'] as String? ?? '',
+            email: extra['email'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/profile',
+        name: 'signup-profile',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return SignUpProfileScreen(
+            email: extra['email'] as String? ?? '',
+            phone: extra['phone'] as String? ?? '',
+            password: extra['password'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signup/success',
+        name: 'signup-success',
+        builder: (context, state) => const SignUpSuccessScreen(),
       ),
 
       // Authentication Routes
@@ -85,6 +159,13 @@ class AppRouter {
             twoFactorMethod: extra['twoFactorMethod'] as String?,
           );
         },
+      ),
+      
+      // Guest Mode Route (no bottom nav)
+      GoRoute(
+        path: '/guest-home',
+        name: 'guest-home',
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: '/register',
@@ -131,7 +212,19 @@ class AppRouter {
       GoRoute(
         path: '/all-events',
         name: 'all-events',
-        builder: (context, state) => const AllEventsScreen(),
+        builder: (context, state) {
+          final title = state.uri.queryParameters['title'] ?? 'All Events';
+          final initialFilter = state.uri.queryParameters['filter'] ?? 'All';
+          return AllEventsScreen(
+            screenTitle: title,
+            initialFilter: initialFilter,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/search-screen',
+        name: 'search-screen',
+        builder: (context, state) => const SearchScreen(),
       ),
 
       // Event Detail Routes (MUST be before ShellRoute - no bottom nav)
@@ -142,6 +235,17 @@ class AppRouter {
           final eventId = state.pathParameters['eventId']!;
           print('Router: Building EventDetailsScreen for eventId: $eventId');
           return EventDetailsScreen(eventId: eventId);
+        },
+      ),
+      
+      // Guest Event Detail Route
+      GoRoute(
+        path: '/guest/events/:eventId',
+        name: 'guest-event-details',
+        builder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          print('Router: Building EventDetailsScreen (Guest) for eventId: $eventId');
+          return EventDetailsScreen(eventId: eventId, isGuestMode: true);
         },
       ),
 
@@ -199,6 +303,23 @@ class AppRouter {
         path: '/games/spinning-wheel',
         name: 'spinning-wheel',
         builder: (context, state) => const SpinningWheelScreen(),
+      ),
+
+      // ── Account sub-screens (no bottom nav) ──────────────────────────
+      GoRoute(
+        path: '/account/edit-profile',
+        name: 'edit-personal-info',
+        builder: (context, state) => const EditPersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: '/account/notifications',
+        name: 'notifications-preferences',
+        builder: (context, state) => const NotificationsPreferencesScreen(),
+      ),
+      GoRoute(
+        path: '/account/security',
+        name: 'password-security',
+        builder: (context, state) => const PasswordSecurityScreen(),
       ),
 
       // User Profile Route
@@ -446,7 +567,7 @@ class AppRouter {
         },
       ),
 
-      // E-Ticket View
+      // E-Ticket View (new Figma design)
       GoRoute(
         path: '/ticket/:ticketId',
         name: 'e-ticket',
@@ -455,7 +576,7 @@ class AppRouter {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           final ticket = extra['ticket'];
 
-          return tickets.ETicketScreen(
+          return TicketDetailScreen(
             ticketId: ticketId,
             initialTicket: ticket,
           );
@@ -484,7 +605,7 @@ class AppRouter {
           GoRoute(
             path: '/profile',
             name: 'profile',
-            builder: (context, state) => const ProfileScreen(),
+            builder: (context, state) => const AccountScreen(),
           ),
         ],
       ),

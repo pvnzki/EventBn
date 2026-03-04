@@ -1,9 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
+import '../../../common_widgets/app_colors.dart';
+import '../../../common_widgets/app_screen_header.dart';
+import '../../../common_widgets/app_otp_field.dart';
+import '../../../common_widgets/app_primary_button.dart';
 import '../providers/auth_provider.dart';
 import '../services/two_factor_service.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TwoFactorLoginScreen — 2FA verification step during sign-in.
+//
+// Shown when the backend returns `requiresTwoFactor: true`.
+// Supports authenticator-app codes and email OTP (toggle).
+// Dark-themed, consistent with the new sign-up verification UI.
+// ─────────────────────────────────────────────────────────────────────────────
 class TwoFactorLoginScreen extends StatefulWidget {
   final String email;
   final String password;
@@ -21,31 +35,50 @@ class TwoFactorLoginScreen extends StatefulWidget {
 }
 
 class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
-  final _codeController = TextEditingController();
   final _twoFactorService = TwoFactorService();
+  String _code = '';
   bool _isLoading = false;
   bool _useEmailOTP = false;
+  String? _errorMessage;
   String? _developmentOTP;
+
+  // Resend timer for email OTP
+  int _resendSeconds = 0;
+  Timer? _resendTimer;
+
+  bool get _codeComplete => _code.length == 6;
 
   @override
   void dispose() {
-    _codeController.dispose();
+    _resendTimer?.cancel();
     super.dispose();
   }
 
-  void _handleVerification() async {
-    if (_codeController.text.trim().length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a 6-digit verification code'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+    _resendSeconds = 60;
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendSeconds <= 0) {
+        timer.cancel();
+      } else {
+        setState(() => _resendSeconds--);
+      }
+    });
+  }
+
+  String get _formattedTimer {
+    final m = (_resendSeconds ~/ 60).toString().padLeft(2, '0');
+    final s = (_resendSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  // ── Verify code ─────────────────────────────────────────────────────────
+  Future<void> _handleVerify() async {
+    if (!_codeComplete) return;
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
@@ -55,57 +88,42 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
         result = await _twoFactorService.verifyEmailOTP(
           widget.email,
           widget.password,
-          _codeController.text.trim(),
+          _code,
         );
       } else {
         result = await _twoFactorService.verifyTwoFactorLogin(
           widget.email,
           widget.password,
-          _codeController.text.trim(),
+          _code,
         );
       }
 
-      setState(() {
-        _isLoading = false;
-      });
+      if (!mounted) return;
 
       if (result['success'] == true) {
-        // Complete the login process
         final authProvider = context.read<AuthProvider>();
         await authProvider.completeTwoFactorLogin(result);
-
+        if (!mounted) return;
         context.go('/home');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful!'),
-            backgroundColor: Colors.green,
-          ),
-        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Invalid verification code'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _errorMessage = result['message'] ?? 'Invalid verification code';
+        });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
-        _isLoading = false;
+        _errorMessage = 'Network error. Please try again.';
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _sendEmailOTP() async {
+  // ── Send email OTP ──────────────────────────────────────────────────────
+  Future<void> _sendEmailOTP() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
@@ -114,205 +132,208 @@ class _TwoFactorLoginScreenState extends State<TwoFactorLoginScreen> {
         widget.password,
       );
 
-      setState(() {
-        _isLoading = false;
-        _useEmailOTP = true;
-        // In development, show the OTP
-        if (result['otp'] != null) {
-          _developmentOTP = result['otp'];
-        }
-      });
+      if (!mounted) return;
 
       if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'OTP sent to your email'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Failed to send OTP'),
-            backgroundColor: Colors.red,
-          ),
-        );
         setState(() {
-          _useEmailOTP = false;
+          _useEmailOTP = true;
+          if (result['otp'] != null) _developmentOTP = result['otp'];
+        });
+        _startResendTimer();
+      } else {
+        setState(() {
+          _errorMessage = result['message'] ?? 'Failed to send OTP';
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
-        _isLoading = false;
-        _useEmailOTP = false;
+        _errorMessage = 'Network error. Please try again.';
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ── Build ───────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Two-Factor Authentication'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.security,
-              size: 80,
-              color: theme.primaryColor,
-            ),
-
-            const SizedBox(height: 32),
-
-            Text(
-              'Enter Verification Code',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
+            // ── Header ────────────────────────────────────────────
+            const AppScreenHeader(title: 'Verification'),
             const SizedBox(height: 16),
 
-            Text(
-              _useEmailOTP
-                  ? 'Please enter the 6-digit code sent to your email address.'
-                  : 'Please enter the 6-digit code from your authenticator app to complete your login.',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            // Development OTP display
-            if (_developmentOTP != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue),
-                ),
-                child: Text(
-                  'Development OTP: $_developmentOTP',
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 32),
-
-            TextField(
-              controller: _codeController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              maxLength: 6,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
-              ),
-              decoration: InputDecoration(
-                hintText: '000000',
-                counterText: '',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 20),
-              ),
-              onChanged: (value) {
-                if (value.length == 6) {
-                  _handleVerification();
-                }
-              },
-            ),
-
-            const SizedBox(height: 32),
-
-            ElevatedButton(
-              onPressed: _isLoading ? null : _handleVerification,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Verify & Login',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Title ──────────────────────────────────────
+                    const Text(
+                      'Enter verification code',
+                      style: TextStyle(
+                        fontFamily: appFontFamily,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 20,
+                        height: 28 / 20,
+                        color: AppColors.white,
+                      ),
                     ),
-            ),
+                    const SizedBox(height: 8),
 
-            const SizedBox(height: 24),
+                    // ── Subtitle ───────────────────────────────────
+                    Text(
+                      _useEmailOTP
+                          ? 'Enter the 6-digit code sent to your email'
+                          : 'Enter the 6-digit code from your authenticator app',
+                      style: const TextStyle(
+                        fontFamily: appFontFamily,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        height: 1.2,
+                        color: AppColors.grey200,
+                      ),
+                    ),
+                    Text(
+                      widget.email,
+                      style: const TextStyle(
+                        fontFamily: appFontFamily,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        height: 1.2,
+                        color: AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
-            // Alternative method button
-            if (!_useEmailOTP)
-              TextButton(
-                onPressed: _isLoading ? null : _sendEmailOTP,
-                child: const Text(
-                  'Send code via Email instead',
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              )
-            else
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _useEmailOTP = false;
-                    _developmentOTP = null;
-                    _codeController.clear();
-                  });
-                },
-                child: const Text(
-                  'Use Authenticator App instead',
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  ),
+                    // ── Dev OTP display ────────────────────────────
+                    if (_developmentOTP != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          'Dev OTP: $_developmentOTP',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: appFontFamily,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── OTP Field ──────────────────────────────────
+                    AppOtpField(
+                      onChanged: (code) => setState(() {
+                        _code = code;
+                        if (_errorMessage != null) _errorMessage = null;
+                      }),
+                      onCompleted: (_) => _handleVerify(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Error message ──────────────────────────────
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontFamily: appFontFamily,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            height: 1.2,
+                            color: AppColors.dangerText,
+                          ),
+                        ),
+                      ),
+
+                    // ── Resend / method toggle ─────────────────────
+                    if (_useEmailOTP && _resendSeconds > 0)
+                      Text(
+                        'Resend Code in  $_formattedTimer',
+                        style: const TextStyle(
+                          fontFamily: appFontFamily,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          height: 1.2,
+                          color: AppColors.grey200,
+                        ),
+                      )
+                    else if (_useEmailOTP)
+                      GestureDetector(
+                        onTap: _isLoading ? null : _sendEmailOTP,
+                        child: const Text(
+                          'Resend Code',
+                          style: TextStyle(
+                            fontFamily: appFontFamily,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            height: 1.2,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Switch method ──────────────────────────────
+                    GestureDetector(
+                      onTap: _isLoading
+                          ? null
+                          : () {
+                              if (_useEmailOTP) {
+                                setState(() {
+                                  _useEmailOTP = false;
+                                  _developmentOTP = null;
+                                  _code = '';
+                                  _errorMessage = null;
+                                });
+                              } else {
+                                _sendEmailOTP();
+                              }
+                            },
+                      child: Text(
+                        _useEmailOTP
+                            ? 'Use Authenticator App instead'
+                            : 'Send code via Email instead',
+                        style: const TextStyle(
+                          fontFamily: appFontFamily,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                          height: 1.2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // ── Verify button ──────────────────────────────
+                    AppPrimaryButton(
+                      label: 'Verify & Login',
+                      onPressed: _codeComplete ? _handleVerify : null,
+                      isLoading: _isLoading,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-
-            const SizedBox(height: 16),
-
-            Text(
-              _useEmailOTP
-                  ? 'Check your email for the verification code. It may take a few minutes to arrive.'
-                  : 'Having trouble? Make sure your device time is correct and your authenticator app is up to date.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

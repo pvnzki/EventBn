@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -16,6 +16,8 @@ model User {
   password_hash                  String
   phone_number                   String?
   profile_picture                String?
+  cover_photo                    String?
+  gender                         String?           @db.VarChar(30)
   is_active                      Boolean           @default(true)
   is_email_verified              Boolean           @default(false)
   role                           String            @default("USER")

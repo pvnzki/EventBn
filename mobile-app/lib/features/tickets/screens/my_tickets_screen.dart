@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/ticket_provider.dart';
 import '../models/ticket_model.dart';
 
@@ -63,7 +62,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                   ),
                   const SizedBox(width: 16),
                   Text(
-                    'Tickets',
+                    'My Tickets',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -71,6 +70,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                     ),
                   ),
                   const Spacer(),
+                  // Refresh button
                   Consumer<TicketProvider>(
                     builder: (context, ticketProvider, child) {
                       return IconButton(
@@ -189,16 +189,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
                   return TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildTicketsList(
-                          context, ticketProvider.upcomingTickets, 'upcoming'),
-                      _buildTicketsList(
-                          context,
-                          _getCompletedTickets(ticketProvider.tickets),
-                          'completed'),
-                      _buildTicketsList(
-                          context,
-                          _getCancelledTickets(ticketProvider.tickets),
-                          'cancelled'),
+                      _buildPaymentGroupsList(context, ticketProvider.upcomingPaymentGroups, 'upcoming'),
+                      _buildPaymentGroupsList(context, ticketProvider.pastPaymentGroups, 'completed'),
+                      _buildPaymentGroupsList(context, _buildCancelledFromTickets(ticketProvider.cancelledTickets), 'cancelled'),
                     ],
                   );
                 },
@@ -210,27 +203,41 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
     );
   }
 
-  List<Ticket> _getCompletedTickets(List<Ticket> tickets) {
-    return tickets
-        .where((ticket) =>
-            ticket.status == TicketStatus.used ||
-            (ticket.isPast && ticket.status == TicketStatus.active))
-        .toList();
+  // Build PaymentGroup list from cancelled tickets supplied by the provider
+  List<PaymentGroup> _buildCancelledFromTickets(List<Ticket> cancelledTickets) {
+    final Map<String, List<Ticket>> grouped = {};
+    for (final t in cancelledTickets) {
+      final pid = t.paymentId;
+      if (pid.isEmpty) continue;
+      grouped.putIfAbsent(pid, () => []);
+      grouped[pid]!.add(t);
+    }
+
+    return grouped.entries.map((e) {
+      final tickets = e.value;
+      final first = tickets.first;
+      return PaymentGroup(
+        paymentId: e.key,
+        tickets: tickets,
+        totalAmount: tickets.fold(0.0, (s, t) => s + t.totalAmount),
+        purchaseDate: first.purchaseDate,
+        paymentMethod: 'Card',
+        paymentStatus: 'refunded',
+        eventTitle: first.eventTitle,
+        eventStartTime: first.eventStartDate,
+        eventVenue: first.venue,
+        eventLocation: first.address,
+        coverImageUrl: first.eventImageUrl,
+        ticketCount: tickets.length,
+        canCancel: false,
+      );
+    }).toList();
   }
 
-  List<Ticket> _getCancelledTickets(List<Ticket> tickets) {
-    return tickets
-        .where((ticket) =>
-            ticket.status == TicketStatus.cancelled ||
-            ticket.status == TicketStatus.refunded)
-        .toList();
-  }
-
-  Widget _buildTicketsList(
-      BuildContext context, List<Ticket> tickets, String tabType) {
+  Widget _buildPaymentGroupsList(BuildContext context, List<PaymentGroup> paymentGroups, String tabType) {
     final theme = Theme.of(context);
 
-    if (tickets.isEmpty) {
+    if (paymentGroups.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -242,11 +249,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No ${tabType.capitalize()} Tickets',
+              'No ${_getTabTitle(tabType)} Tickets',
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -254,7 +261,7 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
               _getEmptyMessage(tabType),
               style: TextStyle(
                 fontSize: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
               textAlign: TextAlign.center,
             ),
@@ -263,48 +270,24 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => context.read<TicketProvider>().refreshTickets(),
-      child: ListView.builder(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(context).padding.bottom +
-              kBottomNavigationBarHeight +
-              16,
-        ),
-        itemCount: tickets.length,
-        itemBuilder: (context, index) {
-          final ticket = tickets[index];
-          return _buildModernTicketCard(context, ticket, tabType);
-        },
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: paymentGroups.length,
+      itemBuilder: (context, index) {
+        final paymentGroup = paymentGroups[index];
+        return _buildPaymentGroupCard(context, paymentGroup, tabType);
+      },
     );
   }
 
-  String _getEmptyMessage(String tabType) {
-    switch (tabType) {
-      case 'upcoming':
-        return 'Book some events to see your upcoming tickets here';
-      case 'completed':
-        return 'Your attended events will appear here';
-      case 'cancelled':
-        return 'Your cancelled bookings will appear here';
-      default:
-        return 'Your tickets will appear here after purchase';
-    }
-  }
-
-  Widget _buildModernTicketCard(
-      BuildContext context, Ticket ticket, String tabType) {
+  Widget _buildPaymentGroupCard(BuildContext context, PaymentGroup paymentGroup, String tabType) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final colorScheme = theme.colorScheme;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
@@ -312,11 +295,9 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.5)
-                : Colors.black.withValues(alpha: 0.1),
+            color: theme.shadowColor.withValues(alpha: isDark ? 0.3 : 0.1),
             spreadRadius: 0,
-            blurRadius: isDark ? 10 : 8,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -324,678 +305,463 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Event Image and Title Section
+          // Payment Header
           Container(
-            height: 120,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              color: isDark ? Colors.grey[900] : Colors.grey[100],
-              image: ticket.eventImageUrl.isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(ticket.eventImageUrl),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.7),
-                  ],
-                ),
+              color: isDark ? Colors.grey[850] : Colors.grey[50],
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.payment,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          ticket.eventTitle,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        'Payment #${paymentGroup.paymentId.length > 8 ? paymentGroup.paymentId.substring(0, 8) : paymentGroup.paymentId}...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _buildStatusBadge(tabType, ticket.status, theme),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${paymentGroup.tickets.length} ticket(s) • LKR ${paymentGroup.totalAmount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                if (tabType == 'upcoming' && paymentGroup.canBeCancelled)
+                  _buildCancelButton(context, paymentGroup),
+              ],
             ),
           ),
 
-          // Content Section
-          Padding(
-            padding: const EdgeInsets.all(16),
+          // Tickets List
+          ...paymentGroup.tickets.asMap().entries.map((entry) {
+            final index = entry.key;
+            final ticket = entry.value;
+            final isLast = index == paymentGroup.tickets.length - 1;
+            
+            return _buildTicketItem(context, ticket, isLast);
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTicketItem(BuildContext context, Ticket ticket, bool isLast) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: isLast ? null : Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Event Image
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            ),
+            child: ticket.eventImageUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      ticket.eventImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.event,
+                        color: theme.colorScheme.primary,
+                        size: 30,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    Icons.event,
+                    color: theme.colorScheme.primary,
+                    size: 30,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Event Details
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Date and Time
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatEventDate(ticket.eventStartDate),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ],
+                Text(
+                  ticket.eventTitle,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-
-                const SizedBox(height: 8),
-
-                // Venue
+                const SizedBox(height: 4),
                 Row(
                   children: [
                     Icon(
                       Icons.location_on_outlined,
-                      size: 16,
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        ticket.venue.isNotEmpty ? ticket.venue : 'Venue TBA',
+                        ticket.venue,
                         style: TextStyle(
                           fontSize: 14,
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-
-                // Action Buttons
-                _buildActionButtons(context, ticket, tabType, theme),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatEventDate(ticket.eventStartDate),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+          
+          // Status Badge
+          _buildStatusBadge(context, ticket),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge(
-      String tabType, TicketStatus status, ThemeData theme) {
+  Widget _buildStatusBadge(BuildContext context, Ticket ticket) {
+    final theme = Theme.of(context);
+    
     Color backgroundColor;
+    Color textColor;
     String text;
+    IconData icon;
 
-    switch (tabType) {
-      case 'upcoming':
-        backgroundColor = Colors.blue;
-        text = 'Paid';
+    switch (ticket.status) {
+      case TicketStatus.active:
+        backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.1);
+        textColor = theme.colorScheme.primary;
+        text = 'Active';
+        icon = Icons.check_circle_outline;
         break;
-      case 'completed':
-        backgroundColor = Colors.green;
-        text = 'Completed';
+      case TicketStatus.used:
+        backgroundColor = Colors.green.withValues(alpha: 0.1);
+        textColor = Colors.green;
+        text = 'Used';
+        icon = Icons.verified;
         break;
-      case 'cancelled':
-        backgroundColor = Colors.red;
+      case TicketStatus.cancelled:
+        backgroundColor = Colors.red.withValues(alpha: 0.1);
+        textColor = Colors.red;
         text = 'Cancelled';
+        icon = Icons.cancel_outlined;
         break;
-      default:
-        backgroundColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
-        text = 'Unknown';
+      case TicketStatus.refunded:
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
+        textColor = Colors.orange;
+        text = 'Refunded';
+        icon = Icons.money_off;
+        break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(
-      BuildContext context, Ticket ticket, String tabType, ThemeData theme) {
-    final colorScheme = theme.colorScheme;
-
-    switch (tabType) {
-      case 'upcoming':
-        return Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _showCancelDialog(context, ticket),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: colorScheme.primary, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.transparent,
-                ),
-                child: Text(
-                  'Cancel Booking',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _navigateToTicketDetails(context, ticket),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'View E-Ticket',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
-        );
-
-      case 'completed':
-        return Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _showReviewDialog(context, ticket),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: colorScheme.primary, width: 1.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.transparent,
-                ),
-                child: Text(
-                  'Leave a Review',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _navigateToTicketDetails(context, ticket),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'View E-Ticket',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
-        );
-
-      case 'cancelled':
-      default:
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _navigateToTicketDetails(context, ticket),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              elevation: 0,
-            ),
-            child: const Text(
-              'View Details',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: textColor,
           ),
-        );
-    }
-  }
-
-  String _formatEventDate(DateTime date) {
-    final weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-
-    final weekday = weekdays[date.weekday % 7];
-    final month = months[date.month - 1];
-    final day = date.day;
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-
-    return '$weekday, $month $day • $hour:$minute PM';
-  }
-
-  void _showCancelDialog(BuildContext context, Ticket ticket) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Cancel Booking',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to cancel this event?',
-              style: TextStyle(color: colorScheme.onSurface),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textColor,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Only 80% of funds will be returned to your account according to our policy.',
-              style: TextStyle(
-                color: colorScheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'No, Don\'t Cancel',
-              style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showCancelReasonDialog(context, ticket);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-            child: const Text('Yes, Cancel'),
           ),
         ],
       ),
     );
   }
 
-  void _showCancelReasonDialog(BuildContext context, Ticket ticket) {
+  Widget _buildCancelButton(BuildContext context, PaymentGroup paymentGroup) {
+    return ElevatedButton.icon(
+      onPressed: () => _showCancelConfirmationDialog(context, paymentGroup),
+      icon: const Icon(Icons.cancel_outlined, size: 16),
+      label: const Text('Cancel'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        foregroundColor: Colors.red,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCancelConfirmationDialog(BuildContext context, PaymentGroup paymentGroup) async {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    String? selectedReason;
-    final TextEditingController otherReasonController = TextEditingController();
 
-    final List<String> cancelReasons = [
-      'I have another event, so it collides',
-      'I\'m sick, can\'t come',
-      'I have an urgent need',
-      'I have no transportation to come',
-      'I have no friends to come',
-      'I want to book another event',
-      'I just want to cancel',
-    ];
-
-    showDialog(
+    return showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: colorScheme.surface,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange,
+                size: 28,
               ),
+              const SizedBox(width: 12),
+              const Text('Cancel Tickets'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Cancel Booking',
+                'Are you sure you want to cancel all ${paymentGroup.tickets.length} ticket(s) for this payment?',
                 style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+                  fontSize: 16,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: theme.colorScheme.error,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Important Notice',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• This action cannot be undone\n• Refund processing may take 3-7 business days\n• Event organizer will be notified',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Please select the reason for cancellation:',
-                  style: TextStyle(color: colorScheme.onSurface),
-                ),
-                const SizedBox(height: 16),
-                ...cancelReasons.map((reason) => RadioListTile<String>(
-                      title: Text(
-                        reason,
-                        style: TextStyle(color: colorScheme.onSurface),
-                      ),
-                      value: reason,
-                      groupValue: selectedReason,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedReason = value;
-                        });
-                      },
-                      activeColor: colorScheme.primary,
-                      fillColor: WidgetStateProperty.resolveWith((states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return colorScheme.primary;
-                        }
-                        return colorScheme.onSurface.withValues(alpha: 0.5);
-                      }),
-                    )),
-                const SizedBox(height: 16),
-                Text(
-                  'Others',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: otherReasonController,
-                  style: TextStyle(color: colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    hintText: 'Others reason...',
-                    hintStyle: TextStyle(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.outline),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.outline),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.primary),
-                    ),
-                  ),
-                  maxLines: 3,
-                  onChanged: (value) {
-                    if (value.isNotEmpty) {
-                      setState(() {
-                        selectedReason = 'Other: $value';
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
           actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: selectedReason != null
-                    ? () {
-                        Navigator.of(context).pop();
-                        _showCancelSuccessDialog(context);
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  disabledBackgroundColor:
-                      colorScheme.onSurface.withValues(alpha: 0.12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Keep Tickets',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            Consumer<TicketProvider>(
+              builder: (context, ticketProvider, child) {
+                return ElevatedButton(
+                  onPressed: ticketProvider.isLoading
+                      ? null
+                      : () => _performCancellation(context, paymentGroup),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  'Cancel Booking',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
+                  child: ticketProvider.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Cancel Tickets'),
+                );
+              },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showCancelSuccessDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Success Animation
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check,
-                color: colorScheme.onPrimary,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Successful!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'You have successfully canceled the event. 80% of the funds will be returned to your account.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Refresh tickets
-                  context.read<TicketProvider>().refreshTickets();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showReviewDialog(BuildContext context, Ticket ticket) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Leave a Review',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'How was your experience at ${ticket.eventTitle}?',
-              style: TextStyle(color: colorScheme.onSurface),
-            ),
-            const SizedBox(height: 16),
-            // Star rating could be implemented here
-            const Text('⭐⭐⭐⭐⭐'),
-            const SizedBox(height: 16),
-            TextField(
-              style: TextStyle(color: colorScheme.onSurface),
-              decoration: InputDecoration(
-                hintText: 'Write your review...',
-                hintStyle: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.outline),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.outline),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.primary),
-                ),
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Submit review
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review submitted successfully!')),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-            child: const Text('Submit Review'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToTicketDetails(BuildContext context, Ticket ticket) {
-    // Navigate to ticket details/QR code screen
-    context.pushNamed(
-      'e-ticket',
-      pathParameters: {'ticketId': ticket.id},
-      extra: {
-        'ticket': ticket,
+        );
       },
     );
   }
+
+  Future<void> _performCancellation(BuildContext context, PaymentGroup paymentGroup) async {
+    final ticketProvider = context.read<TicketProvider>();
+    
+    print('🎫 MyTicketsScreen: Starting cancellation for payment: ${paymentGroup.paymentId}');
+    final result = await ticketProvider.cancelTicketsByPayment(paymentGroup.paymentId);
+    print('🎫 MyTicketsScreen: Cancellation result: $result');
+    
+    if (!context.mounted) return;
+    
+    Navigator.of(context).pop(); // Close dialog
+    
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Tickets cancelled successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Failed to cancel tickets'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
+  String _getTabTitle(String tabType) {
+    switch (tabType) {
+      case 'upcoming':
+        return 'Upcoming';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return '';
+    }
+  }
+
+  String _getEmptyMessage(String tabType) {
+    switch (tabType) {
+      case 'upcoming':
+        return 'Your upcoming event tickets will appear here';
+      case 'completed':
+        return 'Your completed event tickets will appear here';
+      case 'cancelled':
+        return 'Your cancelled tickets will appear here';
+      default:
+        return '';
+    }
+  }
+
+  String _formatEventDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = date.difference(now).inDays;
+
+    if (difference == 0) {
+      return 'Today, ${_formatTime(date)}';
+    } else if (difference == 1) {
+      return 'Tomorrow, ${_formatTime(date)}';
+    } else if (difference < 7 && difference > 0) {
+      return '${_getWeekdayName(date.weekday)}, ${_formatTime(date)}';
+    } else {
+      return '${date.day}/${date.month}/${date.year}, ${_formatTime(date)}';
+    }
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour > 12 ? date.hour - 12 : date.hour;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '${hour == 0 ? 12 : hour}:$minute $period';
+  }
+
+  String _getWeekdayName(int weekday) {
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return weekdays[weekday - 1];
+  }
+
+
 }
 
 extension StringExtension on String {

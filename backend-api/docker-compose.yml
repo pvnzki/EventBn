@@ -1,5 +1,25 @@
 services:
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: eventbn-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: eventbn
+      POSTGRES_PASSWORD: eventbn123
+      POSTGRES_DB: eventbn
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - eventbn-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventbn"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     ports:
@@ -76,6 +96,7 @@ services:
   #     - eventbn-net
 
 volumes:
+  postgres_data:
   redis_data:
   rabbitmq_data:
 

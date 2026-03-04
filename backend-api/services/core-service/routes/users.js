@@ -1,13 +1,10 @@
-const express = require('express');
-const multer =require('multer');
-const bcrypt = require('bcrypt');
+const express = require("express");
+const multer = require("multer");
+const bcrypt = require("bcrypt");
 const router = express.Router();
-const usersService = require('../users');
-const { uploadStream } = require('../lib/cloudinary');
+const usersService = require("../users");
+const { uploadStream } = require("../lib/cloudinary");
 const { cloudinary } = require("../lib/cloudinary");
-
-// Configure multer for memory storage
-const upload = multer({ storage: multer.memoryStorage() });
 
 // Get all users
 router.get("/", async (req, res) => {
@@ -28,18 +25,28 @@ router.get("/", async (req, res) => {
 // Get user by ID
 router.get("/:id", async (req, res) => {
   try {
+    console.log(`👤 [Users Route] GET /api/users/${req.params.id}`);
+    console.log(`👤 [Users Route] Request headers:`, req.headers);
+
     const user = await usersService.getUserById(req.params.id);
     if (!user) {
+      console.log(`❌ [Users Route] User not found for ID: ${req.params.id}`);
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
+
+    console.log(`✅ [Users Route] User found, returning data`);
     res.json({
       success: true,
       data: user,
     });
   } catch (error) {
+    console.error(
+      `❌ [Users Route] Error in GET /api/users/${req.params.id}:`,
+      error
+    );
     res.status(500).json({
       success: false,
       message: error.message,
@@ -66,23 +73,23 @@ router.post("/", async (req, res) => {
 
 // Configure Multer for memory storage (Cloudinary integration)
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
     // Only allow image files
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error("Only image files are allowed"), false);
     }
-  }
+  },
 });
 
 // Update user password
-router.put('/:id/password', async (req, res) => {
+router.put("/:id/password", async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const { currentPassword, newPassword } = req.body;
@@ -90,7 +97,7 @@ router.put('/:id/password', async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        error: 'Current password and new password are required'
+        error: "Current password and new password are required",
       });
     }
 
@@ -99,16 +106,19 @@ router.put('/:id/password', async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        error: 'User not found'
+        error: "User not found",
       });
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        error: 'Current password is incorrect'
+        error: "Current password is incorrect",
       });
     }
 
@@ -121,44 +131,52 @@ router.put('/:id/password', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password updated successfully'
+      message: "Password updated successfully",
     });
   } catch (error) {
-    console.error('Error updating password:', error);
+    console.error("Error updating password:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
-// Update user
+// Update user (with optional profile picture upload)
 router.put("/:id", upload.single("profile_picture"), async (req, res) => {
-// Update user (basic update without file upload)
-router.put("/:id", async (req, res) => {
   try {
     console.log(`🔄 [USER UPDATE] Updating user ${req.params.id}`);
-    console.log(`🔍 [USER UPDATE] Request body:`, JSON.stringify(req.body, null, 2));
+    console.log(
+      `🔍 [USER UPDATE] Request body:`,
+      JSON.stringify(req.body, null, 2)
+    );
     console.log(`🔍 [USER UPDATE] User ID from token:`, req.userId);
-    console.log(`🔍 [USER UPDATE] Raw request headers:`, req.headers.authorization?.slice(0, 20) + '...');
+    console.log(
+      `🔍 [USER UPDATE] Raw request headers:`,
+      req.headers.authorization?.slice(0, 20) + "..."
+    );
 
     // If a new profile picture is uploaded, upload to Cloudinary
     if (req.file) {
-      console.log('Uploading profile picture to Cloudinary...');
+      console.log("Uploading profile picture to Cloudinary...");
       const result = await uploadStream(req.file.buffer, {
-        folder: 'eventbn/profile_pictures',
-        resource_type: 'image',
+        folder: "eventbn/profile_pictures",
+        resource_type: "image",
         transformation: [
-          { width: 400, height: 400, crop: 'fill' },
-          { quality: 'auto' }
-        ]
+          { width: 400, height: 400, crop: "fill" },
+          { quality: "auto" },
+        ],
       });
-      
+
       updateData.profile_picture = result.secure_url;
-      console.log('Profile picture uploaded to Cloudinary:', result.secure_url);
+      console.log("Profile picture uploaded to Cloudinary:", result.secure_url);
+    }
+
     // Ensure user can only update their own profile
     if (req.userId && req.params.id !== req.userId.toString()) {
-      console.log(`❌ [USER UPDATE] Authorization failed: ${req.userId} trying to update ${req.params.id}`);
+      console.log(
+        `❌ [USER UPDATE] Authorization failed: ${req.userId} trying to update ${req.params.id}`
+      );
       return res.status(403).json({
         success: false,
         message: "You can only update your own profile",
@@ -166,21 +184,21 @@ router.put("/:id", async (req, res) => {
     }
 
     const updateData = { ...req.body };
-    
+
     console.log(`🔍 [USER UPDATE] Processing update data:`, {
       phone_number: updateData.phone_number,
       date_of_birth: updateData.date_of_birth,
       billing_address: updateData.billing_address,
-      fieldsCount: Object.keys(updateData).length
+      fieldsCount: Object.keys(updateData).length,
     });
 
     const user = await usersService.updateUser(req.params.id, updateData);
-    
+
     console.log(`✅ [USER UPDATE] User updated successfully:`, {
       user_id: user.user_id,
       phone_number: user.phone_number,
       date_of_birth: user.date_of_birth,
-      billing_address: user.billing_address
+      billing_address: user.billing_address,
     });
 
     res.json({
@@ -189,7 +207,10 @@ router.put("/:id", async (req, res) => {
       data: user,
     });
   } catch (error) {
-    console.error(`❌ [USER UPDATE] Error updating user ${req.params.id}:`, error.message);
+    console.error(
+      `❌ [USER UPDATE] Error updating user ${req.params.id}:`,
+      error.message
+    );
     res.status(400).json({
       success: false,
       message: error.message,
@@ -239,12 +260,12 @@ router.post(
         size: req.file.size,
       });
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary — eager transform for faster response
       const uploadOptions = {
         folder: "eventbn/profile_pictures",
         transformation: [
           { width: 400, height: 400, crop: "fill", gravity: "face" },
-          { quality: "auto", fetch_format: "auto" },
+          { quality: 80, fetch_format: "auto" },
         ],
       };
 
@@ -291,6 +312,88 @@ router.post(
         success: false,
         message:
           "Failed to upload profile image: " +
+          (error.message || error.toString() || "Unknown error"),
+      });
+    }
+  }
+);
+
+// Upload cover photo to Cloudinary
+router.post(
+  "/:id/upload-cover-photo",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      console.log(
+        "🖼️ [COVER_UPLOAD] Received cover photo upload request for user:",
+        req.params.id
+      );
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image file provided",
+        });
+      }
+
+      console.log("🖼️ [COVER_UPLOAD] File details:", {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      // Upload to Cloudinary
+      const uploadOptions = {
+        folder: "eventbn/cover_photos",
+        transformation: [
+          { width: 1920, height: 960, crop: "fill", gravity: "center" },
+          { quality: 90, fetch_format: "auto" },
+        ],
+      };
+
+      console.log("☁️ [COVER_UPLOAD] Uploading to Cloudinary...");
+
+      const uploadResult = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              console.error(
+                "❌ [COVER_UPLOAD] Cloudinary upload error:",
+                error
+              );
+              reject(error);
+            } else {
+              console.log(
+                "✅ [COVER_UPLOAD] Cloudinary upload success:",
+                result.secure_url
+              );
+              resolve(result);
+            }
+          })
+          .end(req.file.buffer);
+      });
+
+      // Update user profile with the new cover photo URL
+      const updatedUser = await usersService.updateUserProfile(req.params.id, {
+        coverPhotoUrl: uploadResult.secure_url,
+      });
+
+      console.log(
+        "✅ [COVER_UPLOAD] User profile updated with new cover photo URL"
+      );
+
+      res.json({
+        success: true,
+        message: "Cover photo uploaded successfully",
+        data: updatedUser,
+        imageUrl: uploadResult.secure_url,
+      });
+    } catch (error) {
+      console.error("❌ [COVER_UPLOAD] Upload failed:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to upload cover photo: " +
           (error.message || error.toString() || "Unknown error"),
       });
     }

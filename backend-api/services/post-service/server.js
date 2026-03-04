@@ -298,7 +298,7 @@ app.use("*", (req, res) => {
   });
 });
 
-const PORT = process.env.POST_SERVICE_PORT || 3002;
+const PORT = process.env.PORT || process.env.POST_SERVICE_PORT || 3002;
 const HOST = process.env.POST_SERVICE_HOST || "0.0.0.0";
 
 // Initialize RabbitMQ connections (optional)

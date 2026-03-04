@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
+
+import 'app_colors.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bottom navigation bar – matches the Figma design (node 2131:26443).
+//
+// • Background #141414 (dark) / white (light), height 67 + safe-area padding
+// • 4 items: Home, Explore, Ticket, Account
+// • Active  → green (#01DB5F) filled icon + Bold 12px label
+// • Inactive → grey (#928C97) outlined icon + Medium 12px label
+// • Smooth 250ms animated transitions (crossfade icons, color, weight)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class BottomNavBar extends StatefulWidget {
   final Widget child;
@@ -11,102 +22,52 @@ class BottomNavBar extends StatefulWidget {
   State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
-class _BottomNavBarState extends State<BottomNavBar>
-    with TickerProviderStateMixin {
+class _BottomNavBarState extends State<BottomNavBar> {
   int _selectedIndex = 0;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
-  final List<NavItem> _navItems = [
-    NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
+  static const _animDuration = Duration(milliseconds: 250);
+  static const _animCurve = Curves.easeInOut;
+
+  // Colors stay the same across themes — icons + green active color are fixed.
+  static const _darkNavBarColor = Color(0xFF141414);
+  static const _lightNavBarColor = Colors.white;
+  static const _activeColor = AppColors.primary; // #01DB5F
+  static const _inactiveColor = Color(0xFF928C97);
+
+  static const List<_NavItem> _navItems = [
+    _NavItem(
+      filledIcon: 'assets/icons/navbar/home filled.png',
+      outlinedIcon: 'assets/icons/navbar/home outlined.png',
       label: 'Home',
       route: '/home',
     ),
-    NavItem(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
+    _NavItem(
+      filledIcon: 'assets/icons/navbar/explore filled.png',
+      outlinedIcon: 'assets/icons/navbar/explore outlined.png',
       label: 'Explore',
       route: '/search',
     ),
-    NavItem(
-      icon: Icons.confirmation_number_outlined,
-      activeIcon: Icons.confirmation_number,
-      label: 'Tickets',
+    _NavItem(
+      filledIcon: 'assets/icons/navbar/ticket filled.png',
+      outlinedIcon: 'assets/icons/navbar/ticket outlined.png',
+      label: 'Ticket',
       route: '/tickets',
     ),
-    NavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
+    _NavItem(
+      filledIcon: 'assets/icons/navbar/account filled.png',
+      outlinedIcon: 'assets/icons/navbar/account outlined.png',
+      label: 'Account',
       route: '/profile',
     ),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _onItemTapped(int index) {
-    if (_selectedIndex != index) {
-      setState(() {
-        _selectedIndex = index;
-      });
-
-      // Trigger animation
-      _animationController.forward().then((_) {
-        _animationController.reverse();
-      });
-
-      // Navigate to the selected route
-      context.go(_navItems[index].route);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    // Get the current route more reliably
-    final routerState =
-        GoRouter.of(context).routerDelegate.currentConfiguration;
-    final currentLocation = routerState.uri.toString();
-
-    // Debug: Print current location
-    print('BottomNavBar - Current location: $currentLocation');
-    print(
-        'BottomNavBar - Route matches: ${routerState.matches.map((m) => m.matchedLocation).toList()}');
-
-    // Don't show bottom nav on event detail pages or other specific pages
-
-    if (currentLocation.startsWith('/events/') ||
-        currentLocation.startsWith('/checkout/') ||
-        currentLocation.startsWith('/organizer/') ||
-        routerState.matches
-            .any((match) => match.matchedLocation.startsWith('/events/'))) {
-      print('BottomNavBar - Hiding bottom nav for: $currentLocation');
-      return widget.child;
-    }
+  // ── Sync selected index from current route ───────────────────────────────
+  void _syncIndex(BuildContext context) {
+    final currentLocation = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .toString();
 
     for (int i = 0; i < _navItems.length; i++) {
       if (currentLocation.contains(_navItems[i].route)) {
@@ -114,268 +75,140 @@ class _BottomNavBarState extends State<BottomNavBar>
         break;
       }
     }
+  }
+
+  void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
+    context.go(_navItems[index].route);
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    _syncIndex(context);
+
+    // Hide bottom nav on event-detail / checkout / organizer pages
+    final currentLocation = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .uri
+        .toString();
+
+    if (currentLocation.startsWith('/events/') ||
+        currentLocation.startsWith('/checkout/') ||
+        currentLocation.startsWith('/organizer/')) {
+      return widget.child;
+    }
+
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBarColor = isDark ? _darkNavBarColor : _lightNavBarColor;
 
     return Scaffold(
-      extendBody: false,
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          widget.child,
-          // Floating bottom navigation
-          Positioned(
-            bottom: 20,
-            left: 16,
-            right: 16,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Main navigation bar background with floating effect
-                Container(
-                  height: 75,
-                  decoration: BoxDecoration(
-                    color: (isDark ? Colors.black : Colors.white).withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.black.withOpacity(0.4)
-                            : Colors.grey.withOpacity(0.25),
-                        blurRadius: 25,
-                        offset: const Offset(0, 8),
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.white.withOpacity(0.8),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                    border: Border.all(
-                      color: isDark 
-                          ? Colors.white.withOpacity(0.1) 
-                          : Colors.black.withOpacity(0.05),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: (isDark ? Colors.black : Colors.white).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNavItem(0), // Home
-                            _buildNavItem(1), // Search
-                            const SizedBox(width: 60), // Space for create button
-                            _buildNavItem(2), // Tickets
-                            _buildNavItem(3), // Profile
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Central create button that extends above (no clipping)
-                Positioned(
-                  top: -20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: _buildCreateButton(),
-                  ),
-                ),
-              ],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: widget.child,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: navBarColor,
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? const Color(0x14000000)
+                  : const Color(0x1A000000),
+              blurRadius: 20,
+              offset: const Offset(0, -2),
             ),
+          ],
+        ),
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: SizedBox(
+          height: 67,
+          child: Row(
+            children: List.generate(_navItems.length, (i) {
+              return Expanded(child: _buildNavItem(i));
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Single nav item with smooth transitions ─────────────────────────────
+  Widget _buildNavItem(int index) {
+    final item = _navItems[index];
+    final isSelected = _selectedIndex == index;
+    final color = isSelected ? _activeColor : _inactiveColor;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onItemTapped(index),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // ── Icon: crossfade between filled ↔ outlined ──────────────
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: AnimatedCrossFade(
+              duration: _animDuration,
+              firstCurve: _animCurve,
+              secondCurve: _animCurve,
+              sizeCurve: _animCurve,
+              crossFadeState: isSelected
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Image.asset(
+                item.filledIcon,
+                width: 24,
+                height: 24,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.circle,
+                  size: 24,
+                  color: _activeColor,
+                ),
+              ),
+              secondChild: Image.asset(
+                item.outlinedIcon,
+                width: 24,
+                height: 24,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.circle_outlined,
+                  size: 24,
+                  color: _inactiveColor,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // ── Label: animated color transition ──────────────────────
+          AnimatedDefaultTextStyle(
+            duration: _animDuration,
+            curve: _animCurve,
+            style: TextStyle(
+              fontFamily: appFontFamily,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+            ),
+            child: Text(item.label),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildNavItem(int index) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final item = _navItems[index];
-    final isSelected = _selectedIndex == index;
-
-    final selectedColor = isDark ? Colors.white : Colors.black;
-    final unselectedColor =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF6B7280);
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color:
-              isSelected ? selectedColor.withOpacity(0.08) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Add a small indicator line above selected items
-            if (isSelected)
-              Container(
-                width: 20,
-                height: 2,
-                margin: const EdgeInsets.only(bottom: 2),
-                decoration: BoxDecoration(
-                  color: selectedColor,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            AnimatedBuilder(
-              animation: _scaleAnimation,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: isSelected ? _scaleAnimation.value : 1.0,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(
-                        scale: animation,
-                        child: child,
-                      );
-                    },
-                    child: Icon(
-                      isSelected ? item.activeIcon : item.icon,
-                      key: ValueKey(isSelected),
-                      color: isSelected ? selectedColor : unselectedColor,
-                      size: 24,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                fontSize: isSelected ? 12 : 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? selectedColor : unselectedColor,
-              ),
-              child: Text(item.label),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreateButton() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = (isDark ? Colors.black : Colors.white).withOpacity(0.9);
-    final iconColor = isDark ? Colors.white : Colors.black;
-    return GestureDetector(
-      onTap: () {
-        _animationController.forward().then((_) {
-          _animationController.reverse();
-            context.push('/create-post'); // Use push for back navigation
-        });
-      },
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(29),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.black.withOpacity(0.5)
-                            : Colors.grey.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.white.withOpacity(0.9),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                    border: Border.all(
-                      color: isDark 
-                          ? Colors.white.withOpacity(0.15) 
-                          : Colors.black.withOpacity(0.08),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(29),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(29),
-                        ),
-                        child: Icon(
-                          Icons.add_circle,
-                          color: iconColor,
-                          size: 38,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: bgColor.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Post',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: iconColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
 
-class NavItem {
-  final IconData icon;
-  final IconData activeIcon;
+// ── Data class ──────────────────────────────────────────────────────────────
+class _NavItem {
+  final String filledIcon;
+  final String outlinedIcon;
   final String label;
   final String route;
 
-  NavItem({
-    required this.icon,
-    required this.activeIcon,
+  const _NavItem({
+    required this.filledIcon,
+    required this.outlinedIcon,
     required this.label,
     required this.route,
   });

@@ -1,0 +1,16 @@
+{
+  "project": "EventBn",
+  "platform": "ios",
+  "github": {
+    "owner": "pvnzki",
+    "repo": "EventBn"
+  },
+  "ios": {
+    "path": "mobile-app\\ios"
+  },
+  "flutter": {
+    "watch": {}
+  },
+  "reactNative": {},
+  "mobai": {}
+}

@@ -53,7 +53,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 1, vsync: this);
     _loadCurrentUserId();
     _loadUserData();
     _loadUserPosts();
@@ -77,6 +77,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
     try {
       print('👤 [UserProfile] Loading user data for ID: ${widget.userId}');
+      print('👤 [UserProfile] Current user ID: $_currentUserId');
 
       // Check if we're viewing the current user's profile
       Map<String, dynamic>? fetchedUserData;
@@ -86,25 +87,32 @@ class _UserProfileScreenState extends State<UserProfileScreen>
         final currentUser = await _authService.getCurrentUser();
         if (currentUser != null) {
           fetchedUserData = _convertUserModelToMap(currentUser);
+          print('👤 [UserProfile] AuthService data: $fetchedUserData');
         }
       }
 
       // Fallback to UserService if AuthService didn't work or it's not the current user
       if (fetchedUserData == null) {
-        print('👤 [UserProfile] Loading user data from UserService');
+        print(
+            '👤 [UserProfile] Loading user data from UserService for userId: ${widget.userId}');
         fetchedUserData = await _userService.getUserById(widget.userId);
+        print('👤 [UserProfile] UserService returned: $fetchedUserData');
       }
 
       if (fetchedUserData != null) {
+        print('👤 [UserProfile] Processing user data: $fetchedUserData');
         setState(() {
           userData = {
-            'id': fetchedUserData!['id'] ?? widget.userId,
-            'name': fetchedUserData['fullName'] ??
-                fetchedUserData['name'] ??
+            'id': fetchedUserData!['user_id']?.toString() ??
+                fetchedUserData['id']?.toString() ??
+                widget.userId,
+            'name': fetchedUserData['name'] ??
+                fetchedUserData['fullName'] ??
                 'Unknown User',
             'username':
                 '@${fetchedUserData['username'] ?? fetchedUserData['email']?.split('@')[0] ?? 'user'}',
-            'avatar': fetchedUserData['profileImageUrl'] ??
+            'avatar': fetchedUserData['profile_picture'] ??
+                fetchedUserData['profileImageUrl'] ??
                 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
             'coverImage': fetchedUserData['coverImageUrl'] ??
                 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
@@ -112,16 +120,17 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                 'Event enthusiast. Love exploring new places and meeting new people through amazing events.',
             'posts': 0, // Will be updated when posts are loaded
             'followers': fetchedUserData['followersCount']?.toString() ?? '0',
-            'following': fetchedUserData['followingCount'] ?? 0,
+            'following': fetchedUserData['followingCount']?.toString() ?? '0',
             'location': fetchedUserData['location'],
             'website': fetchedUserData['website'],
-            'joinedDate': _formatJoinDate(fetchedUserData['createdAt']),
+            'joinedDate': _formatJoinDate(
+                fetchedUserData['created_at'] ?? fetchedUserData['createdAt']),
             'isVerified': fetchedUserData['isVerified'] ?? false,
             'interests':
                 fetchedUserData['interests'] ?? ['Events', 'Networking'],
           };
         });
-        print('✅ [UserProfile] User data loaded successfully');
+        print('✅ [UserProfile] User data processed and set: $userData');
       } else {
         // Fallback to enhanced mock data based on userId
         print(
@@ -132,6 +141,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       }
     } catch (e) {
       print('❌ [UserProfile] Error loading user data: $e');
+      print('❌ [UserProfile] Stack trace: ${StackTrace.current}');
       setState(() {
         userData = _getEnhancedFallbackUserData(widget.userId);
       });
@@ -537,8 +547,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   indicatorColor: colorScheme.primary,
                   tabs: const [
                     Tab(text: 'Posts'),
-                    Tab(text: 'Events'),
-                    Tab(text: 'About'),
                   ],
                 ),
               ),
@@ -549,8 +557,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           controller: _tabController,
           children: [
             _buildPostsTab(),
-            _buildEventsTab(),
-            _buildAboutTab(),
           ],
         ),
       ),
@@ -901,85 +907,6 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEventsTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100',
-              ),
-            ),
-            title: Text('Event ${index + 1}'),
-            subtitle: const Text('Event description'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () {
-              // Navigate to event details
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAboutTab() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Interests
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Interests',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: userInterests.map<Widget>((interest) {
-                    return Chip(
-                      label: Text(interest),
-                      backgroundColor: colorScheme.primaryContainer,
-                      labelStyle:
-                          TextStyle(color: colorScheme.onPrimaryContainer),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Contact Info
-        if (userWebsite != null)
-          Card(
-            child: ListTile(
-              leading: Icon(Icons.language, color: colorScheme.primary),
-              title: Text(userWebsite!),
-              trailing: const Icon(Icons.open_in_new, size: 16),
-              onTap: () {
-                // Open website
-              },
-            ),
-          ),
-      ],
     );
   }
 

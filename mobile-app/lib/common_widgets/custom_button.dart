@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/design_tokens.dart';
+
 class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -10,6 +12,7 @@ class CustomButton extends StatelessWidget {
   final double height;
   final BorderRadius? borderRadius;
   final bool isOutlined;
+  final double? fontSize;
 
   const CustomButton({
     super.key,
@@ -22,12 +25,17 @@ class CustomButton extends StatelessWidget {
     this.height = 52,
     this.borderRadius,
     this.isOutlined = false,
+    this.fontSize,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    // Scale padding to fit the given height so text isn't clipped
+    final vertPad = (height - (fontSize ?? 16) - 4) / 2;
+    final clampedVertPad = vertPad.clamp(4.0, 16.0);
 
     return Container(
       width: width ?? double.infinity,
@@ -54,13 +62,15 @@ class CustomButton extends StatelessWidget {
                 foregroundColor: textColor ?? theme.primaryColor,
                 side: BorderSide(
                   color: textColor ?? theme.primaryColor,
-                  width: 2,
+                  width: 1.5,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: borderRadius ?? BorderRadius.circular(16),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: clampedVertPad,
+                ),
               ),
               child: _buildButtonContent(),
             )
@@ -73,8 +83,10 @@ class CustomButton extends StatelessWidget {
                   borderRadius: borderRadius ?? BorderRadius.circular(16),
                 ),
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: clampedVertPad,
+                ),
                 shadowColor: Colors.transparent,
               ),
               child: _buildButtonContent(),
@@ -94,10 +106,13 @@ class CustomButton extends StatelessWidget {
           )
         : Text(
             text,
-            style: const TextStyle(
-              fontSize: 16,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: fontSize ?? 16,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
             ),
           );
   }

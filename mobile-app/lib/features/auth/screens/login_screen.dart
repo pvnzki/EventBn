@@ -187,6 +187,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () => context.go('/register'),
                   child: const Text("Don't have an account? Sign up"),
                 ),
+                
+                const SizedBox(height: 8),
+                
+                // Divider
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Browse as Guest Button
+                OutlinedButton.icon(
+                  onPressed: () {
+                    final authProvider = context.read<AuthProvider>();
+                    authProvider.enterGuestMode();
+                    context.go('/guest-home');
+                  },
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text('Browse as Guest'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
               ],
             ),
           ),
