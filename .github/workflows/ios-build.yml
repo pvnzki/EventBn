@@ -188,18 +188,15 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/mobile-app"
 
-            # Create .env from GitHub secret
             echo "${{ secrets.ENV_FILE }}" > .env
 
             flutter pub get
 
-            if [ "$CONFIGURATION" = "Debug" ]; then
-              echo "Building Flutter iOS Debug (Simulator)..."
-              flutter build ios --debug --no-codesign --simulator
-            else
-              echo "Building Flutter iOS Release (Simulator)..."
-              flutter build ios --release --no-codesign --simulator
-            fi
+            echo "Building Flutter iOS Device..."
+
+            flutter build ios --release --no-codesign
+
+          fi
 
           elif [ "$PROJECT_TYPE" = "reactnative" ] || [ "$PROJECT_TYPE" = "expo" ]; then
             echo "Detected React Native / Expo project"
@@ -282,7 +279,7 @@ jobs:
           else
             # For unsigned builds, find .app and create IPA
             if [ "$PROJECT_TYPE" = "flutter" ]; then
-              APP_PATH=$(find build/ios/iphonesimulator -name "*.app" -type d | head -1)
+              APP_PATH=$(find build/ios/iphoneos -name "*.app" -type d | head -1)
             else
               APP_PATH=$(find "$DERIVED_DATA_PATH/Build/Products/${CONFIGURATION}-iphoneos" -name "*.app" -type d | head -1)
             fi
