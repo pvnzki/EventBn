@@ -135,7 +135,7 @@ flutter:
 # Flutter Launcher Icons configuration
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
+  ios: true
   image_path: "assets/images/eventbn logo bg black.png"
   min_sdk_android: 21
   remove_alpha_ios: true

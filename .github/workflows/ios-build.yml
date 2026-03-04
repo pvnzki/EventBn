@@ -37,6 +37,7 @@ jobs:
   build:
     runs-on: macos-latest
     timeout-minutes: 30
+    environment: Production
 
     steps:
       - name: Checkout repository
@@ -188,7 +189,17 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/mobile-app"
 
-            echo "${{ secrets.ENV_FILE }}" > .env
+            cat <<EOF > .env
+            APP_NAME=${{ secrets.APP_NAME }}
+            APP_VERSION=${{ secrets.APP_VERSION }}
+            BASE_URL=${{ secrets.BASE_URL }}
+            DEBUG=${{ secrets.DEBUG }}
+            PAYHERE_MERCHANT_ID=${{ secrets.PAYHERE_MERCHANT_ID }}
+            PAYHERE_MERCHANT_SECRET=${{ secrets.PAYHERE_MERCHANT_SECRET }}
+            PAYHERE_NOTIFY_URL=${{ secrets.PAYHERE_NOTIFY_URL }}
+            PAYHERE_SANDBOX=${{ secrets.PAYHERE_SANDBOX }}
+            POST_SERVICE_URL=${{ secrets.POST_SERVICE_URL }}
+            EOF
 
             flutter pub get
 
