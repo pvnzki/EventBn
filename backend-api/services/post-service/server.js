@@ -422,6 +422,40 @@ app.listen(PORT, HOST, async () => {
   }
 
   console.log("\x1b[32m🎉 Post Service is ready to accept requests!\x1b[0m");
+
+  // --- Keep-alive pinger to prevent Render free tier spin-down ---
+  const keepAliveTargets = [
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.CORE_SERVICE_URL,
+  ].filter(Boolean);
+
+  if (keepAliveTargets.length > 0) {
+    const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000; // 14 minutes (Render sleeps after 15)
+    const https = require("https");
+    const http = require("http");
+
+    const ping = (url) =>
+      new Promise((resolve) => {
+        const mod = url.startsWith("https") ? https : http;
+        const req = mod.get(`${url}/health`, { timeout: 10000 }, (res) => {
+          res.resume();
+          resolve(res.statusCode);
+        });
+        req.on("error", (err) => resolve(err.message));
+        req.on("timeout", () => { req.destroy(); resolve("timeout"); });
+      });
+
+    setInterval(async () => {
+      for (const baseUrl of keepAliveTargets) {
+        const result = await ping(baseUrl);
+        console.log(`[KEEP-ALIVE] Pinged ${baseUrl}/health -> ${result}`);
+      }
+    }, KEEP_ALIVE_INTERVAL);
+
+    console.log(
+      `\x1b[32m🏓 Keep-alive started (every 14 min, targets: ${keepAliveTargets.length})\x1b[0m`
+    );
+  }
 });
 
 module.exports = app;
