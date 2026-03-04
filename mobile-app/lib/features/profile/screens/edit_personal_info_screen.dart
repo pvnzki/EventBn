@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 import '../../../core/theme/design_tokens.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -543,7 +544,17 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
       imageQuality: 80,
     );
     if (xfile != null) {
-      setState(() => _selectedAvatar = File(xfile.path));
+      final cropped = await _cropImage(
+        sourcePath: xfile.path,
+        cropStyle: CropStyle.circle,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        maxWidth: 512,
+        maxHeight: 512,
+        title: 'Crop Profile Photo',
+      );
+      if (cropped != null) {
+        setState(() => _selectedAvatar = File(cropped.path));
+      }
     }
   }
 
@@ -555,8 +566,68 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
       imageQuality: 100,
     );
     if (xfile != null) {
-      setState(() => _selectedCoverPhoto = File(xfile.path));
+      final cropped = await _cropImage(
+        sourcePath: xfile.path,
+        cropStyle: CropStyle.rectangle,
+        aspectRatio: const CropAspectRatio(ratioX: 2, ratioY: 1),
+        maxWidth: 1920,
+        maxHeight: 960,
+        title: 'Crop Cover Photo',
+      );
+      if (cropped != null) {
+        setState(() => _selectedCoverPhoto = File(cropped.path));
+      }
     }
+  }
+
+  /// Shared cropper helper — themed to match the app
+  Future<CroppedFile?> _cropImage({
+    required String sourcePath,
+    required CropStyle cropStyle,
+    required CropAspectRatio aspectRatio,
+    required int maxWidth,
+    required int maxHeight,
+    required String title,
+  }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final toolbarColor =
+        isDark ? AppColors.surface : Colors.white;
+    final toolbarWidgetColor =
+        isDark ? AppColors.white : AppColors.dark;
+    final bgColor =
+        isDark ? AppColors.background : AppColors.bgLight;
+
+    return ImageCropper().cropImage(
+      sourcePath: sourcePath,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
+      aspectRatio: aspectRatio,
+      compressQuality: 90,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: title,
+          toolbarColor: toolbarColor,
+          toolbarWidgetColor: toolbarWidgetColor,
+          backgroundColor: bgColor,
+          activeControlsWidgetColor: AppColors.primary,
+          cropGridColor: AppColors.grey.withOpacity(0.3),
+          cropFrameColor: AppColors.primary,
+          dimmedLayerColor: Colors.black.withOpacity(0.6),
+          cropStyle: cropStyle,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+          initAspectRatio: CropAspectRatioPreset.original,
+        ),
+        IOSUiSettings(
+          title: title,
+          doneButtonTitle: 'Done',
+          cancelButtonTitle: 'Cancel',
+          cropStyle: cropStyle,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
   }
 
   Future<void> _save() async {
