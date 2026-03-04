@@ -79,7 +79,9 @@ jobs:
 
       - name: Flutter pub get
         if: steps.detect.outputs.type == 'flutter'
-        run: flutter pub get
+        run: |
+          cd mobile-app
+          flutter pub get
 
       - name: Setup Node.js
         if: steps.detect.outputs.type == 'reactnative' || steps.detect.outputs.type == 'expo'
@@ -189,7 +191,14 @@ jobs:
           DERIVED_DATA_PATH="${GITHUB_WORKSPACE}/DerivedData"
 
           if [ "$PROJECT_TYPE" = "flutter" ]; then
-            cd ..
+            echo "Detected Flutter project"
+
+            # move to Flutter root
+            cd "$GITHUB_WORKSPACE/mobile-app"
+
+            echo "Running flutter pub get"
+            flutter pub get
+
             if [ "$CONFIGURATION" = "Debug" ]; then
               echo "Building Flutter iOS Debug..."
               flutter build ios --debug --no-codesign
@@ -197,6 +206,10 @@ jobs:
               echo "Building Flutter iOS Release..."
               flutter build ios --release --no-codesign
             fi
+
+            # go back to ios folder
+            cd ios
+          fi
             cd "$IOS_PATH"
           elif [ "$PROJECT_TYPE" = "reactnative" ] || [ "$PROJECT_TYPE" = "expo" ]; then
             # Use xcodebuild directly for React Native/Expo
