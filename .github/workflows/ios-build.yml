@@ -167,13 +167,6 @@ jobs:
           WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1)
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -1)
 
-          # Install pods if Podfile exists (always run to ensure sync with Podfile.lock)
-          if [ -f "Podfile" ]; then
-            echo "Running pod install..."
-            pod install
-            WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1)
-          fi
-
           # Determine scheme (only needed for native projects)
           if [ -z "$SCHEME" ] && [ "$PROJECT_TYPE" = "native" ]; then
             if [ -n "$WORKSPACE" ]; then
