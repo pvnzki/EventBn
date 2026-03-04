@@ -201,6 +201,7 @@ jobs:
             POST_SERVICE_URL=${{ secrets.POST_SERVICE_URL }}
             EOF
 
+            flutter clean
             flutter pub get
 
             echo "Building Flutter iOS Device..."
