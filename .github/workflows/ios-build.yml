@@ -282,10 +282,9 @@ jobs:
           else
             # For unsigned builds, find .app and create IPA
             if [ "$PROJECT_TYPE" = "flutter" ]; then
-              # Flutter outputs to build/ios/iphoneos/
-              APP_PATH=$(find "${GITHUB_WORKSPACE}/build/ios/iphoneos" -name "*.app" -type d | head -1)
+              # Flutter simulator output
+              APP_PATH=$(find "${GITHUB_WORKSPACE}/build/ios/iphonesimulator" -name "*.app" -type d | head -1)
             else
-              # Native and React Native/Expo use DerivedData
               APP_PATH=$(find "$DERIVED_DATA_PATH/Build/Products/${CONFIGURATION}-iphoneos" -name "*.app" -type d | head -1)
             fi
 
@@ -293,13 +292,17 @@ jobs:
               echo "Error: Could not find .app"
               exit 1
             fi
+
             echo "Found app at: $APP_PATH"
-            cd ..
+
+            cd "$GITHUB_WORKSPACE"
             mkdir -p build/Payload
             cp -R "$APP_PATH" build/Payload/
+
             cd build
             zip -rq "$BUILD_ID.ipa" Payload
             rm -rf Payload
+
             echo "Created unsigned IPA: build/$BUILD_ID.ipa"
           fi
 
