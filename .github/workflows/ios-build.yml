@@ -283,7 +283,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ipa
-          path: build/*.ipa
+          path: mobile-app/build/*.ipa
           retention-days: 7
           if-no-files-found: error
 
