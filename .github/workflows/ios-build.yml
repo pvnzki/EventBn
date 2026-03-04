@@ -188,7 +188,6 @@ jobs:
             echo "Detected Flutter project"
 
             cd "$GITHUB_WORKSPACE/mobile-app"
-
             cat <<EOF > .env
             APP_NAME=${{ secrets.APP_NAME }}
             APP_VERSION=${{ secrets.APP_VERSION }}
@@ -332,7 +331,7 @@ jobs:
           else
             echo "- **Signing:** Unsigned (sign locally with AltStore/Sideloadly)" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -f build/*.ipa ]; then
+          if [ -f mobile-app/build/*.ipa ]; then
             IPA_PATH=$(find build -name "*.ipa" -type f | head -1)
             echo "- **IPA Size:** $(ls -lh "$IPA_PATH" | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
           fi
