@@ -6,7 +6,7 @@
     "repo": "EventBn"
   },
   "ios": {
-    "path": "mobile-app\\ios"
+    "path": "mobile-app/ios"
   },
   "flutter": {
     "watch": {}
