@@ -191,12 +191,13 @@ jobs:
             flutter pub get
 
             if [ "$CONFIGURATION" = "Debug" ]; then
-              echo "Building Flutter iOS Debug..."
-              flutter build ios --debug --no-codesign
+              echo "Building Flutter iOS Debug (Simulator)..."
+              flutter build ios --debug --no-codesign --simulator
             else
-              echo "Building Flutter iOS Release..."
-              flutter build ios --release --no-codesign
+              echo "Building Flutter iOS Release (Simulator)..."
+              flutter build ios --release --no-codesign --simulator
             fi
+          fi
 
           elif [ "$PROJECT_TYPE" = "reactnative" ] || [ "$PROJECT_TYPE" = "expo" ]; then
             echo "Detected React Native / Expo project"
