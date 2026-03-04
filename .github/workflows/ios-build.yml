@@ -258,6 +258,15 @@ jobs:
               exit 1
             fi
 
+            echo "Creating IPA..."
+
+            APP_PATH=$(find build/ios/iphoneos -name "*.app" -type d | head -1)
+
+            if [ -z "$APP_PATH" ]; then
+              echo "Error: Could not find .app"
+              exit 1
+            fi
+
             echo "Found app at: $APP_PATH"
 
             mkdir -p build/Payload
@@ -267,7 +276,7 @@ jobs:
             zip -rq "$BUILD_ID.ipa" Payload
             rm -rf Payload
 
-            echo "Created unsigned IPA: build/$BUILD_ID.ipa"
+            echo "IPA created successfully"
           fi
 
       - name: Upload IPA artifact
