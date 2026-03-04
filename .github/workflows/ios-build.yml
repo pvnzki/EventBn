@@ -282,8 +282,7 @@ jobs:
           else
             # For unsigned builds, find .app and create IPA
             if [ "$PROJECT_TYPE" = "flutter" ]; then
-              # Flutter simulator output
-              APP_PATH=$(find "${GITHUB_WORKSPACE}/build/ios/iphonesimulator" -name "*.app" -type d | head -1)
+              APP_PATH=$(find "${GITHUB_WORKSPACE}" -name "Runner.app" -type d | head -1)
             else
               APP_PATH=$(find "$DERIVED_DATA_PATH/Build/Products/${CONFIGURATION}-iphoneos" -name "*.app" -type d | head -1)
             fi
