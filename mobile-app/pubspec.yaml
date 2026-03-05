@@ -101,6 +101,7 @@ flutter:
     - assets/icons/categories/
     - assets/icons/event card/
     - assets/icons/event-details/
+    - assets/icons/explore/
     - assets/seat_map.json
     - .env
 
