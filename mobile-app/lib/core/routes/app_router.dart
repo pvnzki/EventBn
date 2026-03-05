@@ -339,9 +339,13 @@ class AppRouter {
         name: 'organizer-profile',
         builder: (context, state) {
           final organizerId = state.pathParameters['organizerId']!;
+          final extra = state.extra as Map<String, dynamic>?;
           print(
               '🛣️ Router: Building OrganizerProfileScreen for organizerId: $organizerId');
-          return OrganizerProfileScreen(organizerId: organizerId);
+          return OrganizerProfileScreen(
+            organizerId: organizerId,
+            initialOrgData: extra,
+          );
         },
       ),
 

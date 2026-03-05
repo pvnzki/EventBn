@@ -14,6 +14,7 @@ import '../providers/event_provider.dart';
 import '../models/event_model.dart';
 import '../widgets/popular_event_card.dart';
 import '../widgets/home_search_results.dart';
+import '../widgets/home_filter_modal.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Search Screen — Figma node 2131:17888
@@ -44,6 +45,21 @@ class _SearchScreenState extends State<SearchScreen> {
   // Price caching
   final Map<String, double> _priceCache = {};
   final Set<String> _loadingPrices = {};
+
+  // Filter state
+  DateTimeRange? _selectedDateRange;
+  RangeValues? _selectedPriceRange;
+  String _selectedLocation = 'All';
+  final List<String> _locationOptions = const [
+    'All',
+    'Colombo',
+    'Kandy',
+    'Galle',
+    'Jaffna',
+    'Other',
+  ];
+  final double _minPrice = 0;
+  final double _maxPrice = 10000;
 
   // Categories matching Figma design
   static const List<_CategoryItem> _categories = [
@@ -220,6 +236,71 @@ class _SearchScreenState extends State<SearchScreen> {
     return '...';
   }
 
+  // ── Filter modal ───────────────────────────────────────────────────────
+
+  bool get _hasActiveFilters =>
+      _selectedDateRange != null ||
+      _selectedPriceRange != null ||
+      _selectedLocation != 'All';
+
+  void _showFilterModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => HomeFilterModal(
+          selectedDateRange: _selectedDateRange,
+          selectedPriceRange: _selectedPriceRange,
+          selectedLocation: _selectedLocation,
+          locationOptions: _locationOptions,
+          minPrice: _minPrice,
+          maxPrice: _maxPrice,
+          setModalState: setModalState,
+          onClearAll: () {
+            setState(() {
+              _selectedDateRange = null;
+              _selectedPriceRange = null;
+              _selectedLocation = 'All';
+            });
+            setModalState(() {});
+          },
+          onApply: () {
+            Navigator.pop(context);
+            if (_searchController.text.isNotEmpty) {
+              _performSearch(_searchController.text);
+            }
+            setState(() {});
+          },
+          onSelectDateRange: () async {
+            final picked = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              initialDateRange: _selectedDateRange,
+            );
+            if (picked != null) {
+              setState(() => _selectedDateRange = picked);
+              setModalState(() {});
+            }
+          },
+          onDateRangeChanged: (value) {
+            setState(() => _selectedDateRange = value);
+            setModalState(() {});
+          },
+          onPriceRangeChanged: (value) {
+            setState(() => _selectedPriceRange = value);
+            setModalState(() {});
+          },
+          onLocationChanged: (value) {
+            setState(() => _selectedLocation = value);
+            setModalState(() {});
+          },
+        ),
+      ),
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -358,20 +439,23 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(width: 8),
           // Filter button (separate, per Figma)
           GestureDetector(
-            onTap: () {
-              // TODO: open filter modal
-            },
+            onTap: _showFilterModal,
             child: Container(
               width: 47,
               height: 44,
               decoration: BoxDecoration(
-                color: filterBg,
+                color: _hasActiveFilters
+                    ? AppColors.primary.withOpacity(0.15)
+                    : filterBg,
                 borderRadius: BorderRadius.circular(12),
+                border: _hasActiveFilters
+                    ? Border.all(color: AppColors.primary, width: 1.5)
+                    : null,
               ),
               child: Center(
                 child: Icon(
                   Icons.tune_rounded,
-                  color: iconColor,
+                  color: _hasActiveFilters ? AppColors.primary : iconColor,
                   size: 24,
                 ),
               ),
