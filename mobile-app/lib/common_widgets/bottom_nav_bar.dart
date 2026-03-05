@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'app_colors.dart';
+import '../features/auth/providers/auth_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bottom navigation bar – matches the Figma design (node 2131:26443).
@@ -140,6 +143,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
     final isSelected = _selectedIndex == index;
     final color = isSelected ? _activeColor : _inactiveColor;
 
+    // Account tab (index 3) — show profile pic if available
+    if (index == 3) {
+      return _buildAccountNavItem(isSelected, item, color);
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _onItemTapped(index),
@@ -182,6 +190,108 @@ class _BottomNavBarState extends State<BottomNavBar> {
           ),
           const SizedBox(height: 4),
           // ── Label: animated color transition ──────────────────────
+          AnimatedDefaultTextStyle(
+            duration: _animDuration,
+            curve: _animCurve,
+            style: TextStyle(
+              fontFamily: appFontFamily,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: color,
+            ),
+            child: Text(item.label),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Account nav item — profile pic or fallback icon ─────────────────────
+  Widget _buildAccountNavItem(bool isSelected, _NavItem item, Color color) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _onItemTapped(3),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, _) {
+              final user = authProvider.user;
+              final hasProfilePic = user?.profileImageUrl != null &&
+                  user!.profileImageUrl!.isNotEmpty;
+
+              if (!hasProfilePic) {
+                // No profile pic — use the default account icon
+                return SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: AnimatedCrossFade(
+                    duration: _animDuration,
+                    firstCurve: _animCurve,
+                    secondCurve: _animCurve,
+                    sizeCurve: _animCurve,
+                    crossFadeState: isSelected
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    firstChild: Image.asset(
+                      item.filledIcon,
+                      width: 24,
+                      height: 24,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.circle,
+                        size: 24,
+                        color: _activeColor,
+                      ),
+                    ),
+                    secondChild: Image.asset(
+                      item.outlinedIcon,
+                      width: 24,
+                      height: 24,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.circle_outlined,
+                        size: 24,
+                        color: _inactiveColor,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // Has profile pic — show circular image with green stroke when active
+              return AnimatedContainer(
+                duration: _animDuration,
+                curve: _animCurve,
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? _activeColor : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: user!.profileImageUrl!,
+                    width: 22,
+                    height: 22,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Image.asset(
+                      item.outlinedIcon,
+                      width: 22,
+                      height: 22,
+                    ),
+                    errorWidget: (_, __, ___) => Image.asset(
+                      isSelected ? item.filledIcon : item.outlinedIcon,
+                      width: 22,
+                      height: 22,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 4),
           AnimatedDefaultTextStyle(
             duration: _animDuration,
             curve: _animCurve,
