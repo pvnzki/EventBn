@@ -28,6 +28,13 @@ function initializeFirebase() {
       const serviceAccount = JSON.parse(
         Buffer.from(serviceAccountBase64, "base64").toString("utf-8")
       );
+      // Normalize private key line endings — Windows CRLF encoding can corrupt PEM
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key
+          .replace(/\\r\\n/g, "\\n")
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
+      }
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
