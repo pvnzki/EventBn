@@ -39,13 +39,21 @@ class NotificationProvider extends ChangeNotifier {
     // Immediate first fetch
     fetchUnreadCount();
 
-    // Register FCM token with backend
-    FcmService().registerToken();
+    // Register FCM token and listen for foreground pushes (requires Firebase)
+    _initFirebaseListeners();
+  }
 
-    // Listen for foreground push messages — refresh unread count
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      fetchUnreadCount();
-    });
+  /// Safely set up FCM listeners — must not crash if Firebase is unavailable.
+  Future<void> _initFirebaseListeners() async {
+    try {
+      await FcmService().registerToken();
+      FirebaseMessaging.onMessage.listen(
+        (RemoteMessage message) => fetchUnreadCount(),
+        onError: (e) => print('⚠️ [NOTIFICATION_PROVIDER] onMessage error: $e'),
+      );
+    } catch (e) {
+      print('⚠️ [NOTIFICATION_PROVIDER] Firebase not available: $e');
+    }
   }
 
   /// Stop polling (e.g., on logout or dispose).
