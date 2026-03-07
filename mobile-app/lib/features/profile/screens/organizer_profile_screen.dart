@@ -1,14 +1,33 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../../core/theme/design_tokens.dart';
 import '../../events/models/event_model.dart';
 import '../../events/services/event_service.dart';
 import '../services/user_service.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ORGANIZER PROFILE SCREEN
+//
+// Reuses the Account Screen's cover-photo → gradient → avatar layout.
+// No settings, no edit/share buttons.  Shows organizer info, stats,
+// bio, and a list of their events.
+// ─────────────────────────────────────────────────────────────────────────────
+
 class OrganizerProfileScreen extends StatefulWidget {
   final String organizerId;
 
-  const OrganizerProfileScreen({super.key, required this.organizerId});
+  /// Optional pre-populated data from the event's `organization` map
+  /// so the screen can render instantly while the API call completes.
+  final Map<String, dynamic>? initialOrgData;
+
+  const OrganizerProfileScreen({
+    super.key,
+    required this.organizerId,
+    this.initialOrgData,
+  });
 
   @override
   State<OrganizerProfileScreen> createState() => _OrganizerProfileScreenState();
@@ -16,245 +35,251 @@ class OrganizerProfileScreen extends StatefulWidget {
 
 class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fadeAnim;
+
   final EventService _eventService = EventService();
   final UserService _userService = UserService();
 
+  Map<String, dynamic>? _orgData;
   List<Event> _organizerEvents = [];
-  bool _isLoadingEvents = false;
-  bool _isLoadingUser = false;
+  bool _isLoadingProfile = true;
+  bool _isLoadingEvents = true;
 
-  // Organizer data - will be fetched from API
-  Map<String, dynamic>? organizerData;
-
-  // Helper getters for safe access to organizerData
-  String get organizerName => organizerData?['name'] ?? 'Unknown Organizer';
-  String get organizerUsername => organizerData?['username'] ?? '@organizer';
-  String? get organizerAvatar =>
-      organizerData?['avatar'] ?? organizerData?['avatar_url'];
-  String? get organizerCoverImage =>
-      organizerData?['coverImage'] ?? organizerData?['cover_image'];
-  String? get organizerBio =>
-      organizerData?['bio'] ?? organizerData?['description'];
-  String? get organizerLocation => organizerData?['location'];
-  String? get organizerWebsite => organizerData?['website'];
-  String get organizerJoinedDate =>
-      organizerData?['joinedDate'] ??
-      organizerData?['created_at'] ??
-      'Recently';
-  bool get organizerIsVerified =>
-      organizerData?['isVerified'] ?? true; // Organizers are typically verified
-  String get organizerEventsCount => _organizerEvents.length.toString();
-  String get organizerFollowersCount =>
-      organizerData?['followers']?.toString() ?? '0';
-  String get organizerFollowingCount =>
-      organizerData?['following']?.toString() ?? '0';
+  // ── Convenience getters ──────────────────────────────────────────────
+  String get _name =>
+      _orgData?['name'] ?? _orgData?['firstName'] ?? 'Unknown Organizer';
+  String? get _avatarUrl =>
+      _orgData?['avatar'] ??
+      _orgData?['avatar_url'] ??
+      _orgData?['logo_url'];
+  String? get _coverUrl =>
+      _orgData?['cover_image'] ??
+      _orgData?['cover_image_url'] ??
+      _orgData?['coverImage'];
+  String? get _bio =>
+      _orgData?['bio'] ?? _orgData?['description'];
+  String? get _location =>
+      _orgData?['location'] ?? _orgData?['city'];
+  String? get _website =>
+      _orgData?['website'] ?? _orgData?['websiteUrl'];
+  bool get _isVerified => _orgData?['isVerified'] ?? true;
+  int get _followersCount =>
+      int.tryParse(_orgData?['followers']?.toString() ?? '') ?? 0;
+  int get _followingCount =>
+      int.tryParse(_orgData?['following']?.toString() ?? '') ?? 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 2, vsync: this); // Only Events and About tabs
-    _loadOrganizerData();
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+
+    // Use initial data for instant render, then fetch fresh data
+    if (widget.initialOrgData != null) {
+      _orgData = widget.initialOrgData;
+      _isLoadingProfile = false;
+    }
+
+    _loadProfile();
     _loadOrganizerEvents();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOrganizerData() async {
-    setState(() => _isLoadingUser = true);
-
+  // ── Fetch organizer profile ───────────────────────────────────────────
+  Future<void> _loadProfile() async {
     try {
-      print(
-          '👨‍💼 [OrganizerProfile] Loading organizer data for ID: ${widget.organizerId}');
-
-      // Fetch organizer data from the backend using UserService
-      final fetchedUserData =
-          await _userService.getUserById(widget.organizerId);
-
-      if (fetchedUserData != null) {
+      final fetched = await _userService.getUserById(widget.organizerId);
+      if (fetched != null && mounted) {
         setState(() {
-          organizerData = {
-            'id': fetchedUserData['id'] ?? widget.organizerId,
-            'name': fetchedUserData['name'] ??
-                fetchedUserData['firstName'] ??
+          _orgData = {
+            ...?_orgData,          // keep initial data as fallback
+            ...fetched,            // override with fresh API data
+            'name': fetched['name'] ??
+                fetched['firstName'] ??
+                _orgData?['name'] ??
                 'Unknown Organizer',
-            'username': '@${fetchedUserData['username'] ?? 'organizer'}',
-            'avatar': fetchedUserData['avatar'] ?? fetchedUserData['avatarUrl'],
-            'cover_image':
-                fetchedUserData['coverImage'] ?? fetchedUserData['cover_image'],
-            'bio': fetchedUserData['bio'] ??
-                fetchedUserData['description'] ??
-                'Professional event organizer creating amazing experiences',
-            'location': fetchedUserData['location'] ?? fetchedUserData['city'],
-            'website':
-                fetchedUserData['website'] ?? fetchedUserData['websiteUrl'],
-            'created_at': fetchedUserData['createdAt'] ??
-                fetchedUserData['created_at'] ??
-                '2023-01-01',
-            'isVerified': fetchedUserData['isVerified'] ?? true,
-            'followers': fetchedUserData['followers'] ?? 0,
-            'following': fetchedUserData['following'] ?? 0,
+            'avatar': fetched['avatar'] ??
+                fetched['avatarUrl'] ??
+                _orgData?['avatar'] ??
+                _orgData?['logo_url'],
+            'cover_image': fetched['coverImage'] ??
+                fetched['cover_image'] ??
+                _orgData?['cover_image'],
+            'bio': fetched['bio'] ??
+                fetched['description'] ??
+                _orgData?['bio'],
+            'location': fetched['location'] ??
+                fetched['city'] ??
+                _orgData?['location'],
+            'website': fetched['website'] ??
+                fetched['websiteUrl'] ??
+                _orgData?['website'],
+            'isVerified': fetched['isVerified'] ?? true,
+            'followers': fetched['followers'] ?? 0,
+            'following': fetched['following'] ?? 0,
           };
-          _isLoadingUser = false;
+          _isLoadingProfile = false;
         });
-      } else {
-        // Fallback: Create organizer profile based on organization data
-        // Check if this looks like a generated ID (large number from hash)
-        final isGeneratedId = widget.organizerId.length > 8 &&
-            RegExp(r'^\d+$').hasMatch(widget.organizerId);
-
-        setState(() {
-          organizerData = {
-            'id': widget.organizerId,
-            'name': isGeneratedId ? 'EventBn Productions' : 'Event Organizer',
-            'username':
-                '@${isGeneratedId ? 'eventbn_productions' : 'organizer'}',
-            'avatar': null,
-            'cover_image': null,
-            'bio': isGeneratedId
-                ? 'Professional event production company creating memorable experiences'
-                : 'Professional event organizer creating amazing experiences',
-            'location': 'Event City',
-            'website': isGeneratedId
-                ? 'www.eventbnproductions.com'
-                : 'www.eventorganizer.com',
-            'created_at': '2023-01-01',
-            'isVerified': true,
-            'followers': isGeneratedId ? 5240 : 1250,
-            'following': isGeneratedId ? 892 : 324,
-          };
-          _isLoadingUser = false;
-        });
+      } else if (mounted) {
+        setState(() => _isLoadingProfile = false);
       }
     } catch (e) {
-      print('❌ [OrganizerProfile] Error loading organizer data: $e');
-      setState(() {
-        // Fallback to mock data on error
-        organizerData = {
-          'id': widget.organizerId,
-          'name': 'Event Organizer',
-          'username': '@organizer',
-          'avatar': null,
-          'cover_image': null,
-          'bio': 'Professional event organizer creating amazing experiences',
-          'location': 'Event City',
-          'website': 'www.eventorganizer.com',
-          'created_at': '2023-01-01',
-          'isVerified': true,
-          'followers': 1250,
-          'following': 324,
-        };
-        _isLoadingUser = false;
-      });
+      debugPrint('❌ [OrganizerProfile] Error loading profile: $e');
+      if (mounted) setState(() => _isLoadingProfile = false);
     }
   }
 
+  // ── Fetch organizer events ────────────────────────────────────────────
   Future<void> _loadOrganizerEvents() async {
-    setState(() => _isLoadingEvents = true);
-
     try {
-      print(
-          '🎪 [OrganizerProfile] Loading events for organizer ID: ${widget.organizerId}');
-
-      // Fetch all events and filter by organizer
       final allEvents = await _eventService.getAllEvents();
-
-      // Check if this is a generated ID (from organization name hash)
-      final isGeneratedId = widget.organizerId.length > 8 &&
-          RegExp(r'^\d+$').hasMatch(widget.organizerId);
-
-      // Filter events by organizer ID
-      final organizerEvents = allEvents.where((event) {
-        // Check if the event's organizationId matches the organizer ID
-        bool isOrganizerEvent = event.organizationId == widget.organizerId;
-
-        if (!isOrganizerEvent && event.organization != null) {
+      final matched = allEvents.where((event) {
+        if (event.organizationId == widget.organizerId) return true;
+        if (event.organization != null) {
           final org = event.organization!;
-
-          // Check additional fields in organization data
-          isOrganizerEvent =
-              org['creator_id']?.toString() == widget.organizerId ||
-                  org['user_id']?.toString() == widget.organizerId ||
-                  org['organization_id']?.toString() == widget.organizerId;
-
-          // If this is a generated ID, also check if the organization name matches
-          if (!isOrganizerEvent && isGeneratedId && org['name'] != null) {
-            final orgNameHash =
-                org['name'].toString().hashCode.abs().toString();
-            isOrganizerEvent = orgNameHash == widget.organizerId;
-
-            if (isOrganizerEvent) {
-              print(
-                  '🎯 [OrganizerProfile] Matched event by organization name: ${org['name']}');
-            }
+          if (org['creator_id']?.toString() == widget.organizerId ||
+              org['user_id']?.toString() == widget.organizerId ||
+              org['organization_id']?.toString() == widget.organizerId) {
+            return true;
+          }
+          // Hash-based match for generated IDs
+          if (widget.organizerId.length > 8 &&
+              RegExp(r'^\d+$').hasMatch(widget.organizerId) &&
+              org['name'] != null) {
+            return org['name'].toString().hashCode.abs().toString() ==
+                widget.organizerId;
           }
         }
-
-        // Additional debug logging
-        if (isOrganizerEvent) {
-          print('✅ [OrganizerProfile] Event matched: ${event.title}');
-        }
-
-        return isOrganizerEvent;
+        return false;
       }).toList();
 
-      print(
-          '✅ [OrganizerProfile] Found ${organizerEvents.length} events for organizer');
-
-      // Debug: Print details about all events for troubleshooting
-      print('🔍 [OrganizerProfile] Debug - All events:');
-      for (int i = 0; i < allEvents.length && i < 3; i++) {
-        final event = allEvents[i];
-        print('  Event ${i + 1}: ${event.title}');
-        print('    organizationId: "${event.organizationId}"');
-        print('    organization: ${event.organization}');
-        if (event.organization != null && event.organization!['name'] != null) {
-          final orgNameHash =
-              event.organization!['name'].toString().hashCode.abs().toString();
-          print('    organization name hash: $orgNameHash');
-        }
+      if (mounted) {
+        setState(() {
+          _organizerEvents = matched;
+          _isLoadingEvents = false;
+        });
       }
-
-      setState(() {
-        _organizerEvents = organizerEvents;
-        _isLoadingEvents = false;
-      });
     } catch (e) {
-      print('❌ [OrganizerProfile] Error loading organizer events: $e');
-      setState(() {
-        _organizerEvents = [];
-        _isLoadingEvents = false;
-      });
+      debugPrint('❌ [OrganizerProfile] Error loading events: $e');
+      if (mounted) {
+        setState(() {
+          _organizerEvents = [];
+          _isLoadingEvents = false;
+        });
+      }
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  //  BUILD
+  // ════════════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.background : AppColors.bgLight;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          _buildSliverAppBar(theme, colorScheme),
-        ],
-        body: Column(
+      backgroundColor: bgColor,
+      body: FadeTransition(
+        opacity: _fadeAnim,
+        child: Stack(
           children: [
-            _buildProfileHeader(theme, colorScheme),
-            _buildTabBar(theme, colorScheme),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+            // ── Cover photo background ──
+            _buildCoverBackground(isDark),
+
+            // ── Scrollable content ──
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              child: Column(
                 children: [
-                  _buildEventsTab(theme, colorScheme),
-                  _buildAboutTab(theme, colorScheme),
+                  const SizedBox(height: 280),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Gradient fade
+                      Positioned(
+                        top: -120,
+                        left: 0,
+                        right: 0,
+                        height: 120,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                bgColor.withValues(alpha: 0),
+                                bgColor,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Solid bg container
+                      Container(
+                        width: double.infinity,
+                        color: bgColor,
+                        child: Transform.translate(
+                          offset: const Offset(0, -200),
+                          child: Column(
+                            children: [
+                              _buildAvatar(isDark, bgColor),
+                              _buildOrgInfo(isDark),
+                              const SizedBox(height: 20),
+                              _buildStats(isDark),
+                              if (_bio != null && _bio!.isNotEmpty) ...[
+                                const SizedBox(height: 20),
+                                _buildBioCard(isDark),
+                              ],
+                              if (_location != null || _website != null) ...[
+                                const SizedBox(height: 16),
+                                _buildDetailsCard(isDark),
+                              ],
+                              const SizedBox(height: 24),
+                              _buildEventsSection(isDark),
+                              const SizedBox(height: 60),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
+              ),
+            ),
+
+            // ── Back button ──
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.arrow_back_ios_new,
+                        color: Colors.white, size: 18),
+                  ),
+                ),
               ),
             ),
           ],
@@ -263,74 +288,187 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
     );
   }
 
-  Widget _buildSliverAppBar(ThemeData theme, ColorScheme colorScheme) {
-    return SliverAppBar(
-      expandedHeight: 200,
-      floating: false,
-      pinned: true,
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
+  // ── Cover photo (same style as Account Screen) ────────────────────────
+  Widget _buildCoverBackground(bool isDark) {
+    const coverHeight = 320.0;
+
+    return SizedBox(
+      height: coverHeight,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _coverUrl != null && _coverUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: _coverUrl!,
+                  fit: BoxFit.cover,
+                  fadeInDuration: const Duration(milliseconds: 300),
+                  fadeOutDuration: const Duration(milliseconds: 150),
+                  placeholder: (_, __) => Container(
+                    color: isDark
+                        ? const Color(0xFF252525)
+                        : const Color(0xFFE0E0E0),
+                  ),
+                  errorWidget: (_, __, ___) => _coverPlaceholder(isDark),
+                )
+              : _coverPlaceholder(isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _coverPlaceholder(bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF2A2A2A), const Color(0xFF1A1A1A)]
+              : [const Color(0xFFE0E0E0), const Color(0xFFC0C0C0)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+    );
+  }
+
+  // ── Avatar (same ring + circle style as Account Screen) ───────────────
+  Widget _buildAvatar(bool isDark, Color bgColor) {
+    const avatarRadius = 48.0;
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Center(
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: bgColor, width: 4),
+            ),
+            child: CircleAvatar(
+              radius: avatarRadius,
+              backgroundColor:
+                  isDark ? const Color(0xFF252525) : const Color(0xFFE0E0E0),
+              backgroundImage:
+                  _avatarUrl != null && _avatarUrl!.isNotEmpty
+                      ? CachedNetworkImageProvider(_avatarUrl!)
+                      : null,
+              child: _avatarUrl == null || _avatarUrl!.isEmpty
+                  ? Text(
+                      _initials,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                        fontFamily: kFontFamily,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  String get _initials {
+    final parts = _name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return _name.isNotEmpty ? _name[0].toUpperCase() : '?';
+  }
+
+  // ── Name + Organizer badge ────────────────────────────────────────────
+  Widget _buildOrgInfo(bool isDark) {
+    final nameColor = isDark ? AppColors.white : AppColors.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          // Name row with verified icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  _name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: kFontFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: nameColor,
+                  ),
+                ),
+              ),
+              if (_isVerified) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.verified,
+                    color: AppColors.primary, size: 20),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Organizer badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Organizer',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Stats row (Events · Followers · Following) ────────────────────────
+  Widget _buildStats(bool isDark) {
+    final numColor = isDark ? AppColors.white : AppColors.dark;
+    final labelColor = isDark ? AppColors.grey : AppColors.textSecondaryLight;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: colorScheme.surface.withOpacity(0.9),
+          color: isDark ? AppColors.surface : Colors.white,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => context.pop(),
-        ),
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: IconButton(
-            icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
-            onPressed: () => _showMoreOptions(context),
-          ),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            organizerCoverImage != null
-                ? CachedNetworkImage(
-                    imageUrl: organizerCoverImage!,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: colorScheme.surfaceVariant,
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: colorScheme.surfaceVariant,
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : Container(
-                    color: colorScheme.surfaceVariant,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    colorScheme.surface.withOpacity(0.8),
-                  ],
-                ),
-              ),
+            _statColumn(
+              _isLoadingEvents ? '–' : '${_organizerEvents.length}',
+              'Events',
+              numColor,
+              labelColor,
+            ),
+            Container(width: 1, height: 32, color: isDark ? AppColors.divider : const Color(0xFFE8E9EA)),
+            _statColumn(
+              _formatCount(_followersCount),
+              'Followers',
+              numColor,
+              labelColor,
+            ),
+            Container(width: 1, height: 32, color: isDark ? AppColors.divider : const Color(0xFFE8E9EA)),
+            _statColumn(
+              _formatCount(_followingCount),
+              'Following',
+              numColor,
+              labelColor,
             ),
           ],
         ),
@@ -338,372 +476,329 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
     );
   }
 
-  Widget _buildProfileHeader(ThemeData theme, ColorScheme colorScheme) {
-    if (_isLoadingUser) {
-      return const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 40,
-                backgroundImage: organizerAvatar != null
-                    ? CachedNetworkImageProvider(organizerAvatar!)
-                    : null,
-                backgroundColor: colorScheme.surfaceVariant,
-                child: organizerAvatar == null
-                    ? Icon(
-                        Icons.person,
-                        size: 40,
-                        color: colorScheme.onSurfaceVariant,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            organizerName,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // ORGANIZER TAG
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'ORGANIZER',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onPrimary,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        if (organizerIsVerified) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.verified,
-                            color: colorScheme.primary,
-                            size: 20,
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      organizerUsername,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (organizerBio != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              organizerBio!,
-              style: TextStyle(
-                fontSize: 16,
-                color: colorScheme.onSurface,
-                height: 1.4,
-              ),
-            ),
-          ],
-          if (organizerLocation != null || organizerWebsite != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (organizerLocation != null) ...[
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    organizerLocation!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (organizerLocation != null && organizerWebsite != null) ...[
-                  const SizedBox(width: 16),
-                ],
-                if (organizerWebsite != null) ...[
-                  Icon(
-                    Icons.link,
-                    size: 16,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    organizerWebsite!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildStatItem('Events', organizerEventsCount, colorScheme),
-              const SizedBox(width: 24),
-              _buildStatItem('Followers', organizerFollowersCount, colorScheme),
-              const SizedBox(width: 24),
-              _buildStatItem('Following', organizerFollowingCount, colorScheme),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String count, ColorScheme colorScheme) {
+  Widget _statColumn(
+      String value, String label, Color numColor, Color labelColor) {
     return Column(
       children: [
         Text(
-          count,
+          value,
           style: TextStyle(
+            fontFamily: kFontFamily,
             fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+            color: numColor,
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
-            color: colorScheme.onSurfaceVariant,
+            fontFamily: kFontFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: labelColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTabBar(ThemeData theme, ColorScheme colorScheme) {
-    return Container(
-      color: colorScheme.surface,
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: colorScheme.primary,
-        labelColor: colorScheme.primary,
-        unselectedLabelColor: colorScheme.onSurfaceVariant,
-        labelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
-        ),
-        tabs: const [
-          Tab(text: 'Events'),
-          Tab(text: 'About'),
-        ],
-      ),
-    );
+  String _formatCount(int count) {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return count.toString();
   }
 
-  Widget _buildEventsTab(ThemeData theme, ColorScheme colorScheme) {
-    if (_isLoadingEvents) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_organizerEvents.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.event_busy,
-              size: 64,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No Events Yet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This organizer hasn\'t created any events yet.',
-              style: TextStyle(
-                fontSize: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  // ── Bio card ──────────────────────────────────────────────────────────
+  Widget _buildBioCard(bool isDark) {
+    final textColor = isDark ? AppColors.grey : AppColors.textSecondaryLight;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.8,
-        ),
-        itemCount: _organizerEvents.length,
-        itemBuilder: (context, index) {
-          final event = _organizerEvents[index];
-          return _buildEventCard(event, theme, colorScheme);
-        },
-      ),
-    );
-  }
-
-  Widget _buildEventCard(
-      Event event, ThemeData theme, ColorScheme colorScheme) {
-    return GestureDetector(
-      onTap: () {
-        context.push('/event/${event.id}');
-      },
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: isDark ? AppColors.surface : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outline.withOpacity(0.2),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
-                child: CachedNetworkImage(
-                  imageUrl: event.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: colorScheme.surfaceVariant,
-                    child: Center(
-                      child: Icon(
-                        Icons.image,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+            Text(
+              'About',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.white : AppColors.dark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _bio!,
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: textColor,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Details card (location, website) ──────────────────────────────────
+  Widget _buildDetailsCard(bool isDark) {
+    final iconColor = isDark ? AppColors.grey300 : AppColors.textSecondaryLight;
+    final textColor = isDark ? AppColors.white : AppColors.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            if (_location != null && _location!.isNotEmpty)
+              _detailRow(
+                Icons.location_on_outlined,
+                _location!,
+                iconColor,
+                textColor,
+              ),
+            if (_location != null &&
+                _location!.isNotEmpty &&
+                _website != null &&
+                _website!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Divider(
+                  height: 1,
+                  color: isDark
+                      ? AppColors.divider
+                      : const Color(0xFFE8E9EA),
+                ),
+              ),
+            if (_website != null && _website!.isNotEmpty)
+              _detailRow(
+                Icons.link_rounded,
+                _website!,
+                iconColor,
+                AppColors.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(
+      IconData icon, String text, Color iconColor, Color textColor) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: iconColor),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Events section ────────────────────────────────────────────────────
+  Widget _buildEventsSection(bool isDark) {
+    final headerColor = isDark ? AppColors.white : AppColors.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Events',
+            style: TextStyle(
+              fontFamily: kFontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: headerColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_isLoadingEvents)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (_organizerEvents.isEmpty)
+          _buildEmptyEvents(isDark)
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _organizerEvents.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) =>
+                _buildEventTile(_organizerEvents[index], isDark),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyEvents(bool isDark) {
+    final color = isDark ? AppColors.grey : AppColors.textSecondaryLight;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.event_busy_rounded, size: 48, color: color),
+            const SizedBox(height: 12),
+            Text(
+              'No events yet',
+              style: TextStyle(
+                fontFamily: kFontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventTile(Event event, bool isDark) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => context.push('/event/${event.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: colorScheme.surfaceVariant,
-                    child: Icon(
-                      Icons.broken_image,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(12),
+              ),
+              child: CachedNetworkImage(
+                imageUrl: event.imageUrl,
+                width: 100,
+                height: 90,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  width: 100,
+                  height: 90,
+                  color: isDark
+                      ? const Color(0xFF252525)
+                      : const Color(0xFFE0E0E0),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  width: 100,
+                  height: 90,
+                  color: isDark
+                      ? const Color(0xFF252525)
+                      : const Color(0xFFE0E0E0),
+                  child: const Icon(Icons.image_outlined,
+                      size: 28, color: AppColors.grey),
                 ),
               ),
             ),
+            const SizedBox(width: 12),
+            // Info
             Expanded(
-              flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       event.title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: kFontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.white
+                            : AppColors.dark,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                        Icon(Icons.calendar_today_rounded,
+                            size: 12,
+                            color: isDark
+                                ? AppColors.grey
+                                : AppColors.textSecondaryLight),
                         const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            _formatEventDate(event.startDateTime),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          _formatDate(event.startDateTime),
+                          style: TextStyle(
+                            fontFamily: kFontFamily,
+                            fontSize: 12,
+                            color: isDark
+                                ? AppColors.grey
+                                : AppColors.textSecondaryLight,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                        Icon(Icons.location_on_outlined,
+                            size: 12,
+                            color: isDark
+                                ? AppColors.grey
+                                : AppColors.textSecondaryLight),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             event.venue,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: kFontFamily,
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppColors.grey
+                                  : AppColors.textSecondaryLight,
+                            ),
                           ),
                         ),
                       ],
@@ -712,168 +807,26 @@ class _OrganizerProfileScreenState extends State<OrganizerProfileScreen>
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAboutTab(ThemeData theme, ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'About ${organizerName}',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (organizerBio != null) ...[
-            Text(
-              organizerBio!,
-              style: TextStyle(
-                fontSize: 16,
-                color: colorScheme.onSurface,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-          _buildInfoRow(
-            Icons.calendar_today,
-            'Joined',
-            _formatJoinDate(organizerJoinedDate),
-            colorScheme,
-          ),
-          if (organizerLocation != null) ...[
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.location_on,
-              'Location',
-              organizerLocation!,
-              colorScheme,
-            ),
-          ],
-          if (organizerWebsite != null) ...[
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.link,
-              'Website',
-              organizerWebsite!,
-              colorScheme,
-            ),
-          ],
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.event,
-            'Events Organized',
-            organizerEventsCount,
-            colorScheme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-      IconData icon, String label, String value, ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          '$label: ',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatEventDate(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-  }
-
-  String _formatJoinDate(String joinDate) {
-    try {
-      final date = DateTime.parse(joinDate);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return joinDate;
-    }
-  }
-
-  void _showMoreOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant
-                    .withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            // Chevron
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.share),
-                    title: const Text('Share Profile'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Implement share functionality
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.report),
-                    title: const Text('Report'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Implement report functionality
-                    },
-                  ),
-                ],
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? AppColors.grey : AppColors.textSecondaryLight,
+                size: 22,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 }

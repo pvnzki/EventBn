@@ -101,6 +101,7 @@ flutter:
     - assets/icons/categories/
     - assets/icons/event card/
     - assets/icons/event-details/
+    - assets/icons/explore/
     - assets/seat_map.json
     - .env
 
@@ -136,6 +137,6 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/eventbn logo bg black.png"
+  image_path: "assets/images/EventBn_App_Icon.jpg"
   min_sdk_android: 21
   remove_alpha_ios: true
