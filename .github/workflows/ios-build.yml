@@ -188,7 +188,7 @@ jobs:
             echo "Detected Flutter project"
 
             cd "$GITHUB_WORKSPACE/mobile-app"
-            printf "APP_NAME=%s\nAPP_VERSION=%s\nBASE_URL=%s\nDEBUG=%s\nPAYHERE_MERCHANT_ID=%s\nPAYHERE_MERCHANT_SECRET=%s\nPAYHERE_NOTIFY_URL=%s\nPAYHERE_SANDBOX=%s\nPOST_SERVICE_URL=%s\n" \
+            printf "APP_NAME=%s\nAPP_VERSION=%s\nBASE_URL=%s\nDEBUG=%s\nPAYHERE_MERCHANT_ID=%s\nPAYHERE_MERCHANT_SECRET=%s\nPAYHERE_NOTIFY_URL=%s\nPAYHERE_SANDBOX=%s\nNOTIFICATION_SERVICE_URL=%s\nPOST_SERVICE_URL=%s\n" \
             "${{ secrets.APP_NAME }}" \
             "${{ secrets.APP_VERSION }}" \
             "${{ secrets.BASE_URL }}" \
