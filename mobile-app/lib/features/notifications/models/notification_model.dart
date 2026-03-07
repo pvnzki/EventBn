@@ -53,6 +53,10 @@ class NotificationModel {
         return '❌';
       case 'event_reminder':
         return '⏰';
+      case 'security':
+        return '🛡️';
+      case 'general':
+        return '📢';
       default:
         return '🔔';
     }

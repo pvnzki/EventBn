@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/notification_model.dart';
 import '../services/notification_api_service.dart';
+import '../services/fcm_service.dart';
 
 /// Notification Provider — ChangeNotifier that polls the Notification Service
 /// for new notifications and exposes state to the widget tree.
@@ -36,6 +38,14 @@ class NotificationProvider extends ChangeNotifier {
     );
     // Immediate first fetch
     fetchUnreadCount();
+
+    // Register FCM token with backend
+    FcmService().registerToken();
+
+    // Listen for foreground push messages — refresh unread count
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      fetchUnreadCount();
+    });
   }
 
   /// Stop polling (e.g., on logout or dispose).
@@ -175,6 +185,9 @@ class NotificationProvider extends ChangeNotifier {
     _totalPages = 1;
     _error = null;
     notifyListeners();
+
+    // Unregister FCM token from backend
+    FcmService().unregisterToken();
   }
 
   @override

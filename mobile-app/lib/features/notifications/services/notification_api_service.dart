@@ -143,6 +143,26 @@ class NotificationApiService {
     }
   }
 
+  /// Send a test push notification to verify FCM.
+  Future<bool> sendTestPush() async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await client
+          .post(
+            Uri.parse('$_notificationBaseUrl/api/notifications/test-push'),
+            headers: _headers(token),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ [NOTIFICATION_SERVICE] sendTestPush error: $e');
+      return false;
+    }
+  }
+
   /// Delete a notification.
   Future<bool> deleteNotification(int notificationId) async {
     final token = await _getToken();

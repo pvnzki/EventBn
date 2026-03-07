@@ -2,7 +2,7 @@
 const prisma = require("../lib/database");
 const bcrypt = require("bcrypt");
 
-const { publishUserEvent } = require("../utils/rabbitmq-publisher");
+const { publishUserEvent, publishNotificationEvent } = require("../utils/rabbitmq-publisher");
 
 module.exports = {
   // Get single user by ID
@@ -211,6 +211,9 @@ module.exports = {
       } catch (pubErr) {
         console.error("Failed to publish USER_CREATED event:", pubErr);
       }
+
+      // Welcome notification (fire-and-forget)
+      publishNotificationEvent("WELCOME", { userId: newUser.user_id, name: newUser.name }, { userId: newUser.user_id }).catch(() => {});
 
       return newUser;
     } catch (error) {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "110085153420",
+    "project_id": "eventbn-9883c",
+    "storage_bucket": "eventbn-9883c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110085153420:android:038942e57a3b7d0dd251a9",
+        "android_client_info": {
+          "package_name": "com.eventbn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUdfRzYZS1pXJoJEMU-yLgW2S84RsJGmk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

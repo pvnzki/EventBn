@@ -16,6 +16,9 @@ const {
   closeNotificationRabbitMQ,
 } = require("./utils/rabbitmq-consumer");
 
+// Firebase Admin SDK
+const { initializeFirebase } = require("./services/fcmSender");
+
 // Routes
 const notificationRoutes = require("./routes/notifications");
 
@@ -126,6 +129,15 @@ async function startServer() {
     // Test database connection
     await prisma.$queryRaw`SELECT 1`;
     console.log("✅ [NOTIFICATION-SERVICE] Database connected");
+
+    // Initialize Firebase Admin SDK for push notifications
+    try {
+      initializeFirebase();
+      console.log("✅ [NOTIFICATION-SERVICE] Firebase Admin SDK initialized");
+    } catch (fbError) {
+      console.warn("⚠️ [NOTIFICATION-SERVICE] Firebase not configured:", fbError.message);
+      console.warn("   Push notifications will be disabled");
+    }
 
     // Initialize RabbitMQ Consumer (Observer)
     if (process.env.RABBITMQ_ENABLED === "true") {
