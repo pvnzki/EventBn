@@ -97,6 +97,42 @@ class AppConfig {
     return fallback;
   }
 
+  static String get notificationServiceUrl {
+    final envVal = dotenv.env['NOTIFICATION_SERVICE_URL'];
+    if (envVal != null && envVal.isNotEmpty) {
+      final isAndroid = _isAndroidDevice();
+      if (!isAndroid && envVal.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3003';
+        print(
+            '🔧 AppConfig: Non-Android runtime overriding 10.0.2.2 NOTIFICATION_SERVICE_URL -> $adjusted');
+        return adjusted;
+      }
+      if (kIsWeb && envVal.contains('10.0.2.2')) {
+        const adjusted = 'http://localhost:3003';
+        print(
+            '🔧 AppConfig: Web runtime overriding 10.0.2.2 NOTIFICATION_SERVICE_URL -> $adjusted');
+        return adjusted;
+      }
+      print('🔧 AppConfig: Using NOTIFICATION_SERVICE_URL from .env: $envVal');
+      return envVal;
+    }
+    if (kIsWeb) {
+      const webUrl = 'http://localhost:3003';
+      print('🔧 AppConfig: kIsWeb notification service using $webUrl');
+      return webUrl;
+    }
+    try {
+      if (Platform.isAndroid) {
+        const androidEmu = 'http://10.0.2.2:3003';
+        print('🔧 AppConfig: Android platform notification service using $androidEmu');
+        return androidEmu;
+      }
+    } catch (_) {}
+    const fallback = 'http://localhost:3003';
+    print('🔧 AppConfig: Fallback notificationServiceUrl: $fallback');
+    return fallback;
+  }
+
   // Stripe Configuration
   static String get stripePublishableKey =>
       dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';

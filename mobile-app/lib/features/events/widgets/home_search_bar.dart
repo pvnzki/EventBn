@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/design_tokens.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/providers/notification_provider.dart';
 
 class HomeSearchBar extends StatelessWidget {
   final TextEditingController controller;
@@ -120,6 +121,8 @@ class _NotificationBellButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = context.watch<NotificationProvider>().unreadCount;
+
     return Material(
       color: isDark ? AppColors.bg01 : Colors.grey[200],
       borderRadius: BorderRadius.circular(12),
@@ -141,18 +144,32 @@ class _NotificationBellButton extends StatelessWidget {
                   color: isDark ? AppColors.white : Colors.grey[800],
                 ),
               ),
-              Positioned(
-                right: 14,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
+              if (unreadCount > 0)
+                Positioned(
+                  right: 10,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

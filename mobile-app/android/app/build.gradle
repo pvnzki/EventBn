@@ -2,6 +2,7 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
 }
 
 def localProperties = new Properties()
@@ -28,6 +29,7 @@ android {
     ndkVersion flutter.ndkVersion
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -42,7 +44,7 @@ android {
 
     defaultConfig {
         applicationId "com.eventbn"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -61,4 +63,8 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation platform('com.google.firebase:firebase-bom:34.10.0')
+    implementation 'com.google.firebase:firebase-messaging'
+}

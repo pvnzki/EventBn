@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +10,8 @@ import 'core/providers/theme_provider.dart';
 import 'features/events/providers/event_provider.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/tickets/providers/ticket_provider.dart';
+import 'features/notifications/providers/notification_provider.dart';
+import 'features/notifications/services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +28,16 @@ void main() async {
     print('⚠️ Using fallback configurations');
   }
 
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await FcmService().initialize();
+    print('✅ Firebase initialized');
+  } catch (e) {
+    print('❌ Firebase init error: $e');
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -31,6 +45,9 @@ void main() async {
         ChangeNotifierProvider(create: (context) => EventProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => TicketProvider()),
+        ChangeNotifierProvider(
+          create: (context) => NotificationProvider()..startPolling(),
+        ),
       ],
       child: const EventBookingApp(),
     ),
