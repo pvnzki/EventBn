@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../notifications/models/notification_model.dart';
+import '../../notifications/providers/notification_provider.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -8,95 +12,150 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  final List<Map<String, dynamic>> _notifications = [];
+  final ScrollController _scrollController = ScrollController();
 
-  void _markAsRead(String notificationId) {
-    setState(() {
-      final index = _notifications.indexWhere((n) => n['id'] == notificationId);
-      if (index != -1) {
-        _notifications[index]['isRead'] = true;
+  @override
+  void initState() {
+    super.initState();
+    // Fetch on open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().fetchNotifications();
+    });
+
+    // Infinite scroll
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        context.read<NotificationProvider>().loadMore();
       }
     });
   }
 
-  void _markAllAsRead() {
-    setState(() {
-      for (var notification in _notifications) {
-        notification['isRead'] = true;
-      }
-    });
-  }
-
-  void _deleteNotification(String notificationId) {
-    setState(() {
-      _notifications.removeWhere((n) => n['id'] == notificationId);
-    });
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unreadCount = _notifications.where((n) => !n['isRead']).length;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Notifications',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+    return Consumer<NotificationProvider>(
+      builder: (context, provider, _) {
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            elevation: 0,
+            leading: IconButton(
+              icon:
+                  Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            if (unreadCount > 0)
-              Text(
-                '$unreadCount new notifications',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 12,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Notifications',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-          ],
-        ),
-        actions: [
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: Text(
-                'Mark all read',
-                style: TextStyle(
-                  color: theme.primaryColor,
-                  fontWeight: FontWeight.w600,
+                if (provider.unreadCount > 0)
+                  Text(
+                    '${provider.unreadCount} new notifications',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              if (provider.unreadCount > 0)
+                TextButton(
+                  onPressed: () => provider.markAllAsRead(),
+                  child: Text(
+                    'Mark all read',
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-        ],
-      ),
-      body: _notifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _notifications.length,
-              itemBuilder: (context, index) {
-                final notification = _notifications[index];
-                return _buildNotificationItem(notification);
-              },
-            ),
+            ],
+          ),
+          body: _buildBody(provider, theme),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
-    final theme = Theme.of(context);
+  Widget _buildBody(NotificationProvider provider, ThemeData theme) {
+    if (provider.isLoading && provider.notifications.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.error != null && provider.notifications.isEmpty) {
+      return _buildErrorState(provider, theme);
+    }
+
+    if (provider.notifications.isEmpty) {
+      return _buildEmptyState(theme);
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => provider.fetchNotifications(),
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: provider.notifications.length + (provider.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == provider.notifications.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return _buildNotificationItem(
+              provider.notifications[index], provider, theme);
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(NotificationProvider provider, ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error.withValues(alpha: 0.7)),
+          const SizedBox(height: 16),
+          Text(
+            provider.error ?? 'Something went wrong',
+            style: TextStyle(
+              fontSize: 16,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => provider.fetchNotifications(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -129,10 +188,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationItem(Map<String, dynamic> notification) {
-    final theme = Theme.of(context);
+  Widget _buildNotificationItem(
+    NotificationModel notification,
+    NotificationProvider provider,
+    ThemeData theme,
+  ) {
     return Dismissible(
-      key: Key(notification['id']),
+      key: Key(notification.notificationId.toString()),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
@@ -142,34 +204,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           color: Colors.red,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.delete, color: Colors.white, size: 24),
       ),
-      onDismissed: (direction) {
-        _deleteNotification(notification['id']);
+      onDismissed: (_) {
+        provider.deleteNotification(notification.notificationId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${notification['title']} deleted'),
+            content: Text('${notification.title} deleted'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
         );
       },
       child: GestureDetector(
-        onTap: () => _markAsRead(notification['id']),
+        onTap: () {
+          if (!notification.isRead) {
+            provider.markAsRead(notification.notificationId);
+          }
+        },
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: notification['isRead']
+            color: notification.isRead
                 ? theme.colorScheme.surface
                 : theme.primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: notification['isRead']
+              color: notification.isRead
                   ? theme.colorScheme.outline.withValues(alpha: 0.2)
                   : theme.primaryColor.withValues(alpha: 0.2),
             ),
@@ -184,23 +246,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
+              // Type icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: notification['color'].withValues(alpha: 0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  notification['icon'],
-                  color: theme.primaryColor,
-                  size: 24,
+                child: Center(
+                  child: Text(
+                    notification.typeIcon,
+                    style: const TextStyle(fontSize: 24),
+                  ),
                 ),
               ),
-
               const SizedBox(width: 16),
-
               // Content
               Expanded(
                 child: Column(
@@ -210,17 +271,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            notification['title'],
+                            notification.title,
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: notification['isRead']
+                              fontWeight: notification.isRead
                                   ? FontWeight.w600
                                   : FontWeight.bold,
                               color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
-                        if (!notification['isRead'])
+                        if (!notification.isRead)
                           Container(
                             width: 8,
                             height: 8,
@@ -233,11 +294,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      notification['message'],
+                      notification.body,
                       style: TextStyle(
                         fontSize: 14,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.7),
                         height: 1.4,
                       ),
                       maxLines: 3,
@@ -245,36 +306,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      notification['time'],
+                      notification.timeAgo,
                       style: TextStyle(
                         fontSize: 12,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
               ),
-
               // More options
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  color:
+                      theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   size: 20,
                 ),
                 onSelected: (value) {
                   switch (value) {
                     case 'mark_read':
-                      _markAsRead(notification['id']);
+                      provider.markAsRead(notification.notificationId);
                       break;
                     case 'delete':
-                      _deleteNotification(notification['id']);
+                      provider
+                          .deleteNotification(notification.notificationId);
                       break;
                   }
                 },
                 itemBuilder: (context) => [
-                  if (!notification['isRead'])
+                  if (!notification.isRead)
                     const PopupMenuItem<String>(
                       value: 'mark_read',
                       child: Row(

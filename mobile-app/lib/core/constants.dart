@@ -5,6 +5,7 @@ class Constants {
   static const String ticketsEndpoint = '/tickets';
   static const String paymentsEndpoint = '/payments';
   static const String usersEndpoint = '/users';
+  static const String notificationsEndpoint = '/api/notifications';
 
   // Validation
   static const int minPasswordLength = 8;

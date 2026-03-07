@@ -6,6 +6,7 @@ const { Status } = require("@prisma/client");
 const crypto = require('crypto');
 const { validateUUID, ValidationError } = require("../lib/validation");
 const emailService = require("../email");
+const { publishNotificationEvent } = require("../utils/rabbitmq-publisher");
 
 // Create a new payment
 router.post("/", authenticateToken, async (req, res) => {
@@ -282,6 +283,21 @@ router.post("/", authenticateToken, async (req, res) => {
       console.error('❌ [EMAIL] Error sending ticket email:', emailError);
       console.error('❌ [EMAIL] Full error stack:', emailError.stack);
       // Don't fail the payment if email fails - just log it
+    }
+
+    // Publish notification event via RabbitMQ (Observer Pattern)
+    try {
+      await publishNotificationEvent("TICKET_PURCHASED", {
+        userId: user_id,
+        eventId: parseInt(event_id),
+        eventTitle: payment.event.title,
+        ticketCount: selected_seats.length,
+        totalAmount: parseFloat(amount),
+      }, { userId: user_id });
+      console.log('🔔 [NOTIFICATION] Published TICKET_PURCHASED notification event');
+    } catch (notifError) {
+      console.error('⚠️ [NOTIFICATION] Failed to publish notification event:', notifError.message);
+      // Don't fail the payment if notification fails
     }
 
     res.status(201).json({

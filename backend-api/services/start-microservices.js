@@ -34,6 +34,17 @@ const SERVICES = {
       INTER_SERVICE_KEY: process.env.INTER_SERVICE_KEY || "dev-service-key",
     },
   },
+  "notification-service": {
+    port: process.env.NOTIFICATION_SERVICE_PORT || 3003,
+    dir: path.join(__dirname, "notification-service"),
+    script: "server.js",
+    env: {
+      ...process.env,
+      NODE_ENV: process.env.NODE_ENV || "development",
+      NOTIFICATION_SERVICE_PORT: process.env.NOTIFICATION_SERVICE_PORT || 3003,
+      INTER_SERVICE_KEY: process.env.INTER_SERVICE_KEY || "dev-service-key",
+    },
+  },
 };
 
 const processes = new Map();
@@ -298,17 +309,44 @@ const startMicroservices = async () => {
       throw error;
     }
 
+    // Start notification-service
+    log("SYSTEM", "Starting notification-service...");
+    const notificationStarted = await startService("notification-service");
+
+    if (!notificationStarted) {
+      log("SYSTEM", "Failed to start notification-service", "error");
+      stopService("core-service");
+      stopService("post-service");
+      process.exit(1);
+    }
+
+    // Wait for notification-service to be ready
+    log("SYSTEM", "Waiting for notification-service to be ready...");
+    try {
+      await waitForService("http://localhost:3003/health");
+      log("SYSTEM", "Notification-service is ready!", "success");
+    } catch (error) {
+      log(
+        "SYSTEM",
+        `Notification-service health check failed: ${error.message}`,
+        "error"
+      );
+      throw error;
+    }
+
     console.log(`
-\x1b[32m╔════════════════════════════════════════╗\x1b[0m
-\x1b[32m║     🚀 All Services Started! 🚀       ║\x1b[0m
-\x1b[32m╠════════════════════════════════════════╣\x1b[0m
-\x1b[32m║ Core Service:  http://localhost:3001   ║\x1b[0m
-\x1b[32m║ Post Service:  http://localhost:3002   ║\x1b[0m
-\x1b[32m║                                        ║\x1b[0m
-\x1b[32m║ Health Checks:                         ║\x1b[0m
-\x1b[32m║ - Core: http://localhost:3001/health   ║\x1b[0m
-\x1b[32m║ - Post: http://localhost:3002/health   ║\x1b[0m
-\x1b[32m╚════════════════════════════════════════╝\x1b[0m
+\x1b[32m╔════════════════════════════════════════════╗\x1b[0m
+\x1b[32m║       🚀 All Services Started! 🚀         ║\x1b[0m
+\x1b[32m╠════════════════════════════════════════════╣\x1b[0m
+\x1b[32m║ Core Service:         http://localhost:3001║\x1b[0m
+\x1b[32m║ Post Service:         http://localhost:3002║\x1b[0m
+\x1b[32m║ Notification Service: http://localhost:3003║\x1b[0m
+\x1b[32m║                                            ║\x1b[0m
+\x1b[32m║ Health Checks:                             ║\x1b[0m
+\x1b[32m║ - Core:         /health on :3001           ║\x1b[0m
+\x1b[32m║ - Post:         /health on :3002           ║\x1b[0m
+\x1b[32m║ - Notification: /health on :3003           ║\x1b[0m
+\x1b[32m╚════════════════════════════════════════════╝\x1b[0m
 
 \x1b[33mPress Ctrl+C to stop all services\x1b[0m
 `);
