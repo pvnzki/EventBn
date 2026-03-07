@@ -1,0 +1,6 @@
+{
+  "list": {"success": true, "data": [
+    {"event_id": 101, "organization_id": 1, "title": "Tech Summit", "description": "Annual tech conference", "category": "conference", "venue": "Main Hall", "location": "City Center", "start_time": "2030-01-10T09:00:00.000Z", "end_time": "2030-01-10T17:00:00.000Z", "capacity": 500, "cover_image_url": "", "other_images_url": "", "video_url": "", "created_at": "2030-01-01T00:00:00.000Z", "updated_at": "2030-01-01T00:00:00.000Z", "status": "active"},
+    {"event_id": 102, "organization_id": 1, "title": "Music Fest", "description": "Live bands", "category": "music", "venue": "Open Grounds", "location": "Park", "start_time": "2030-02-20T14:00:00.000Z", "end_time": "2030-02-20T22:00:00.000Z", "capacity": 2000, "cover_image_url": "", "other_images_url": "", "video_url": "", "created_at": "2030-02-01T00:00:00.000Z", "updated_at": "2030-02-01T00:00:00.000Z", "status": "active"}
+  ]}
+}

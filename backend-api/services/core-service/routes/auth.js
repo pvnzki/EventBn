@@ -187,81 +187,38 @@ router.post("/signup", async (req, res) => {
 // Login user
 router.post("/login", async (req, res) => {
   try {
-    console.log("[AUTH] Login request received:", {
-      email: req.body.email,
-      hasPassword: !!req.body.password,
-    });
-
     const { email, password } = req.body;
-
-    // Input validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
-        errors: [
-          ...(!email ? [{ field: "email", message: "Email is required" }] : []),
-          ...(!password
-            ? [{ field: "password", message: "Password is required" }]
-            : []),
-        ],
+        message: "email and password are required",
       });
     }
 
-    // Use the auth service to login the user
-    const result = await authService.login({
-      email: email.toLowerCase().trim(),
-      password,
-    });
+    const loginResult = await authService.login({ email, password });
 
-    // Check if 2FA is required
-    if (result.requiresTwoFactor) {
-      console.log("[AUTH] 2FA required, returning 2FA response");
+    // Check if 2FA is required before completing login
+    if (loginResult.requiresTwoFactor) {
       return res.status(200).json({
         success: false,
         requiresTwoFactor: true,
-        twoFactorMethod: result.twoFactorMethod || "app",
-        message: result.message || "2FA required",
+        twoFactorMethod: loginResult.twoFactorMethod || 'app',
+        message: loginResult.message || '2FA required',
       });
     }
 
-    console.log("[AUTH] Login successful for:", result.user.email);
+    const { user, token } = loginResult;
 
-    res.json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
-      data: result.user,
-      token: result.token,
+      user,
+      token,
     });
   } catch (error) {
-    console.error("[AUTH] Login error:", error);
-
-    // Handle validation errors
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-        errors: error.errors || [
-          { field: error.field, message: error.message },
-        ],
-      });
-    }
-
-    // Handle invalid credentials
-    if (
-      error.message.includes("Invalid email or password") ||
-      error.message.includes("Account setup incomplete")
-    ) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-        errors: [
-          { field: "credentials", message: "Invalid email or password" },
-        ],
-      });
-    }
-
-    res.status(500).json({
+    console.error("[AUTH][LOGIN] Error:", error.message);
+    const status = /invalid email or password|validation|failed/i.test(error.message.toLowerCase()) ? 401 : 500;
+    return res.status(status).json({
       success: false,
       message: "Login failed",
       error:
@@ -407,6 +364,8 @@ router.put("/profile", authenticateToken, async (req, res) => {
         email: true,
         phone_number: true,
         profile_picture: true,
+        cover_photo: true,
+        gender: true,
         role: true,
         is_active: true,
         is_email_verified: true,

@@ -4,18 +4,24 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
+
+  AuthProvider({AuthService? authService}) {
+    _authService = authService ?? AuthService();
+  }
 
   User? _user;
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticated = false;
+  bool _isGuestMode = false;
 
   // Getters
   User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isGuestMode => _isGuestMode;
 
   // Set loading state
   void _setLoading(bool loading) {
@@ -96,11 +102,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Enter guest mode
+  Future<void> enterGuestMode() async {
+    print('👤 [AUTH_PROVIDER] Entering guest mode...');
+    _isGuestMode = true;
+    _isAuthenticated = false;
+    _user = null;
+    notifyListeners();
+    print('✅ [AUTH_PROVIDER] Guest mode enabled');
+  }
+
+  // Exit guest mode
+  Future<void> exitGuestMode() async {
+    print('👤 [AUTH_PROVIDER] Exiting guest mode...');
+    _isGuestMode = false;
+    notifyListeners();
+    print('✅ [AUTH_PROVIDER] Guest mode disabled');
+  }
+
   // Login
   Future<Map<String, dynamic>> login(String email, String password) async {
     print('🔄 [AUTH_PROVIDER] Starting login process for: $email');
     _setLoading(true);
     _setError(null);
+    
+    // Exit guest mode if user logs in
+    if (_isGuestMode) {
+      _isGuestMode = false;
+    }
 
     try {
       final result = await _authService.login(email, password);
@@ -196,6 +225,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String phoneNumber,
+    DateTime? dateOfBirth,
   }) async {
     _setLoading(true);
     _setError(null);
@@ -208,6 +238,7 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
         phoneNumber: phoneNumber,
+        dateOfBirth: dateOfBirth,
       );
 
       if (result['success'] == true && result['user'] != null) {

@@ -8,14 +8,27 @@ module.exports = {
   // Get single user by ID
   async getUserById(id) {
     try {
-      return await prisma.user.findUnique({
-        where: { user_id: parseInt(id) },
+      console.log(`👤 [Users] Getting user by ID: ${id} (type: ${typeof id})`);
+
+      // Parse ID to ensure it's a number
+      const userId = parseInt(id);
+      if (isNaN(userId)) {
+        console.log(`❌ [Users] Invalid user ID format: ${id}`);
+        throw new Error(`Invalid user ID format: ${id}`);
+      }
+
+      console.log(`👤 [Users] Parsed user ID: ${userId}`);
+
+      const user = await prisma.user.findUnique({
+        where: { user_id: userId },
         select: {
           user_id: true,
           name: true,
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -37,7 +50,16 @@ module.exports = {
           updated_at: true,
         },
       });
+
+      if (user) {
+        console.log(`✅ [Users] User found: ${JSON.stringify(user, null, 2)}`);
+      } else {
+        console.log(`❌ [Users] User not found for ID: ${userId}`);
+      }
+
+      return user;
     } catch (error) {
+      console.error(`❌ [Users] Error fetching user by ID ${id}:`, error);
       throw new Error(`Failed to fetch user: ${error.message}`);
     }
   },
@@ -53,6 +75,8 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           password_hash: true, // needed for auth
           is_active: true,
           is_email_verified: true,
@@ -77,6 +101,23 @@ module.exports = {
       });
     } catch (error) {
       throw new Error(`Failed to fetch user by email: ${error.message}`);
+    }
+  },
+
+  // Get user by ID with password hash (for password verification)
+  async getUserByIdWithPassword(id) {
+    try {
+      return await prisma.user.findUnique({
+        where: { user_id: parseInt(id) },
+        select: {
+          user_id: true,
+          name: true,
+          email: true,
+          password_hash: true,
+        },
+      });
+    } catch (error) {
+      throw new Error(`Failed to fetch user with password: ${error.message}`);
     }
   },
 
@@ -112,6 +153,8 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -184,7 +227,6 @@ module.exports = {
       const updateData = { ...data };
       delete updateData.user_id;
       delete updateData.created_at;
-      delete updateData.password_hash;
 
       // Handle email case conversion
       if (updateData.email) {
@@ -195,15 +237,21 @@ module.exports = {
       if (updateData.date_of_birth) {
         try {
           updateData.date_of_birth = new Date(updateData.date_of_birth);
-          console.log(`🔍 [UPDATE_USER] Parsed date_of_birth:`, updateData.date_of_birth);
+          console.log(
+            `🔍 [UPDATE_USER] Parsed date_of_birth:`,
+            updateData.date_of_birth
+          );
         } catch (dateError) {
-          console.error(`❌ [UPDATE_USER] Invalid date format for date_of_birth:`, updateData.date_of_birth);
+          console.error(
+            `❌ [UPDATE_USER] Invalid date format for date_of_birth:`,
+            updateData.date_of_birth
+          );
           delete updateData.date_of_birth; // Remove invalid date
         }
       }
 
       // **FIX**: Remove null values to prevent overwriting existing data
-      Object.keys(updateData).forEach(key => {
+      Object.keys(updateData).forEach((key) => {
         if (updateData[key] === null || updateData[key] === undefined) {
           console.log(`🗑️ [UPDATE_USER] Removing null field: ${key}`);
           delete updateData[key];
@@ -214,7 +262,7 @@ module.exports = {
         fieldsCount: Object.keys(updateData).length,
         hasDateOfBirth: !!updateData.date_of_birth,
         hasPhoneNumber: !!updateData.phone_number,
-        hasBillingAddress: !!updateData.billing_address
+        hasBillingAddress: !!updateData.billing_address,
       });
 
       // Hash new password if provided
@@ -222,6 +270,9 @@ module.exports = {
         const saltRounds = 12;
         updateData.password_hash = await bcrypt.hash(data.password, saltRounds);
         delete updateData.password;
+      } else {
+        // Only delete password_hash if we're not updating it
+        delete updateData.password_hash;
       }
 
       return await prisma.user.update({
@@ -232,7 +283,9 @@ module.exports = {
           name: true,
           email: true,
           phone_number: true,
-          profile_picture: true, // now holds file path
+          profile_picture: true,
+          cover_photo: true,
+          gender: true,
           is_active: true,
           is_email_verified: true,
           role: true,
@@ -388,8 +441,12 @@ module.exports = {
         updateData.name = profileData.fullName;
       if (profileData.avatarUrl !== undefined)
         updateData.profile_picture = profileData.avatarUrl;
+      if (profileData.coverPhotoUrl !== undefined)
+        updateData.cover_photo = profileData.coverPhotoUrl;
       if (profileData.phoneNumber !== undefined)
         updateData.phone_number = profileData.phoneNumber;
+      if (profileData.gender !== undefined)
+        updateData.gender = profileData.gender;
 
       // Protect immutable fields if provided accidentally
       delete updateData.user_id;
@@ -404,6 +461,9 @@ module.exports = {
           email: true,
           phone_number: true,
           profile_picture: true,
+          cover_photo: true,
+          gender: true,
+          role: true,
           updated_at: true,
         },
       });

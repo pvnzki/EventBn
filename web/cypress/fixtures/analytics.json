@@ -1,0 +1,7 @@
+{
+  "overview": {"success": true, "data": {"totalRevenue": 12345, "ticketsSold": 42, "conversionRate": 2.5, "pageViews": 1000, "totalPayments": 10, "totalEvents": 3}},
+  "trend": {"success": true, "data": [{"month":"Jan","revenue":5000,"tickets":20,"events":1}]},
+  "categories": {"success": true, "data": [{"name":"Conferences","value":40,"color":"#8884d8"}]},
+  "attendees": {"success": true, "data": [{"day":"Mon","attendees":15}]},
+  "topEvents": {"success": true, "data": [{"name":"Tech Summit","attendees":100,"revenue":8000,"conversion":85}]}
+}

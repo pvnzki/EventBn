@@ -1,0 +1,106 @@
+{
+  "stats": {
+    "suites": 1,
+    "tests": 1,
+    "passes": 1,
+    "pending": 0,
+    "failures": 0,
+    "start": "2025-10-12T14:41:47.990Z",
+    "end": "2025-10-12T14:41:49.310Z",
+    "duration": 1320,
+    "testsRegistered": 1,
+    "passPercent": 100,
+    "pendingPercent": 0,
+    "other": 0,
+    "hasOther": false,
+    "skipped": 0,
+    "hasSkipped": false
+  },
+  "results": [
+    {
+      "uuid": "20777d41-e499-4944-8bbe-1ec5b3aeecd0",
+      "title": "",
+      "fullFile": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "file": "cypress\\e2e\\06-responsive-sidebar.cy.ts",
+      "beforeHooks": [],
+      "afterHooks": [],
+      "tests": [],
+      "suites": [
+        {
+          "uuid": "aa56dfb0-f1ac-4bfe-9805-5248698bc346",
+          "title": "Responsive sidebar behavior",
+          "fullFile": "",
+          "file": "",
+          "beforeHooks": [],
+          "afterHooks": [],
+          "tests": [
+            {
+              "title": "sidebar hidden on mobile, visible on desktop",
+              "fullTitle": "Responsive sidebar behavior sidebar hidden on mobile, visible on desktop",
+              "timedOut": null,
+              "duration": 1292,
+              "state": "passed",
+              "speed": "fast",
+              "pass": true,
+              "fail": false,
+              "pending": false,
+              "context": null,
+              "code": "cy.viewport('iphone-6');\ncy.visit('/organizer/dashboard');\n// Mobile menu button visible\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('be.visible');\n// Sidebar off-canvas initially\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', '-translate-x-full');\n// Open menu and verify sidebar slides in\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').click();\ncy.get('div.fixed.inset-y-0.left-0').should('have.class', 'translate-x-0');\n// Desktop\ncy.viewport(1280, 800);\n// Toggle button hidden on desktop\ncy.get('button.fixed.top-4.left-4.lg\\\\:hidden').should('not.be.visible');\n// Sidebar has desktop-visible class\ncy.get('div.fixed.inset-y-0.left-0')\n    .should('have.class', 'lg:translate-x-0')\n    .and('be.visible');",
+              "err": {},
+              "uuid": "7c9371f1-a649-48f9-81b3-cdd9b1356bf6",
+              "parentUUID": "aa56dfb0-f1ac-4bfe-9805-5248698bc346",
+              "isHook": false,
+              "skipped": false
+            }
+          ],
+          "suites": [],
+          "passes": [
+            "7c9371f1-a649-48f9-81b3-cdd9b1356bf6"
+          ],
+          "failures": [],
+          "pending": [],
+          "skipped": [],
+          "duration": 1292,
+          "root": false,
+          "rootEmpty": false,
+          "_timeout": 2000
+        }
+      ],
+      "passes": [],
+      "failures": [],
+      "pending": [],
+      "skipped": [],
+      "duration": 0,
+      "root": true,
+      "rootEmpty": true,
+      "_timeout": 2000
+    }
+  ],
+  "meta": {
+    "mocha": {
+      "version": "7.0.1"
+    },
+    "mochawesome": {
+      "options": {
+        "quiet": true,
+        "reportFilename": "mochawesome",
+        "saveHtml": false,
+        "saveJson": true,
+        "consoleReporter": "spec",
+        "useInlineDiffs": false,
+        "code": true
+      },
+      "version": "7.1.4"
+    },
+    "marge": {
+      "options": {
+        "reportDir": "cypress/reports/mochawesome",
+        "overwrite": false,
+        "html": false,
+        "json": true,
+        "quiet": true
+      },
+      "version": "6.3.0"
+    }
+  }
+}

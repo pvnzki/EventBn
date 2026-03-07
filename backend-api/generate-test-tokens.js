@@ -11,15 +11,15 @@ if (!JWT_SECRET) {
 
 // Create tokens for test users
 const userA = {
-  userId: 1,
-  email: 'usera@test.com',
-  name: 'User A'
+  userId: 124,
+  email: 'organizer@eventbn.com',
+  name: 'John Event Organizer'
 };
 
 const userB = {
-  userId: 2,
-  email: 'userb@test.com',
-  name: 'User B'
+  userId: 125,
+  email: 'sarah.wilson@email.com',
+  name: 'Sarah Wilson'
 };
 
 const tokenA = jwt.sign(userA, JWT_SECRET, { expiresIn: '24h' });

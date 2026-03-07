@@ -1,7 +1,7 @@
 // Unit test for analyticsService.getAllAnalytics with mocked database
-const analyticsService = require('../services/core-service/analytics');
+const analyticsService = require('../../../services/core-service/analytics');
 
-jest.mock('../lib/database', () => ({
+jest.mock('../../../lib/database', () => ({
   monthlyAnalytics: {
     findMany: jest.fn().mockResolvedValue([
       { year: 2025, month: 9, value: 100 },
@@ -37,7 +37,7 @@ describe('analyticsService.createAnalytics', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthly_analytics.create.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.createAnalytics({})).rejects.toThrow('Failed to create analytics: DB error');
   });
@@ -51,7 +51,7 @@ describe('analyticsService.updateAnalytics', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthly_analytics.update.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.updateAnalytics(1, {})).rejects.toThrow('Failed to update analytics: DB error');
   });
@@ -64,7 +64,7 @@ describe('analyticsService.deleteAnalytics', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthly_analytics.delete.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.deleteAnalytics(1)).rejects.toThrow('Failed to delete analytics: DB error');
   });
@@ -79,7 +79,7 @@ describe('analyticsService.getAllAnalytics', () => {
     ]);
   });
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthlyAnalytics.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.getAllAnalytics()).rejects.toThrow('Failed to fetch analytics: DB error');
   });
@@ -99,7 +99,7 @@ describe('analyticsService.getAnalyticsByYear', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthly_analytics.findMany.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.getAnalyticsByYear(2025)).rejects.toThrow('Failed to fetch analytics by year: DB error');
   });
@@ -117,7 +117,7 @@ describe('analyticsService.getAnalyticsByMonth', () => {
   });
 
   it('should throw error if db fails', async () => {
-    const db = require('../lib/database');
+    const db = require('../../../lib/database');
     db.monthly_analytics.findUnique.mockRejectedValueOnce(new Error('DB error'));
     await expect(analyticsService.getAnalyticsByMonth(2025, 9)).rejects.toThrow('Failed to fetch analytics by month: DB error');
   });

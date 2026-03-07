@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiUrl } from "@/lib/api";
 import { Sidebar } from "@/components/layout/sidebar";
 import {
   Card,
@@ -80,7 +81,15 @@ export default function OrganizersPage() {
     const fetchOrganizers = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("http://localhost:3000/api/users");
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(apiUrl("api/users"), {
+          headers,
+        });
         const data = await response.json();
 
         if (data.success && Array.isArray(data.data)) {
@@ -122,12 +131,16 @@ export default function OrganizersPage() {
   // Function to handle organizer deletion
   const handleDeleteOrganizer = async (organizer: Organizer) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/users/${organizer.id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const token = localStorage.getItem("token");
+      const headers: HeadersInit = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(apiUrl(`api/users/${organizer.id}`), {
+        method: "DELETE",
+        headers,
+      });
 
       if (response.ok) {
         setOrganizers(organizers.filter((o) => o.id !== organizer.id));

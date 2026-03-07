@@ -501,57 +501,62 @@ class _CommentsContentState extends State<_CommentsContent> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final bgColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final textColor = isDarkMode ? const Color(0xFFFCFCFD) : const Color(0xFF070B0F);
+    final subtleColor = isDarkMode ? const Color(0xFF8C9097) : Colors.grey[600]!;
+    const accentColor = Color(0xFF01DB5F);
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
+      height: MediaQuery.of(context).size.height * 0.55,
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Column(
         children: [
           // Handle bar
           Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: isDarkMode ? Colors.grey[600] : Colors.grey[300],
+              color: isDarkMode ? const Color(0xFF3A3A3A) : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
 
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
                 Text(
                   'Comments',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontFamily: 'Satoshi',
+                    fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: theme.textTheme.headlineSmall?.color,
+                    color: textColor,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 6),
                 if (widget.isLoading)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                      strokeWidth: 1.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                     ),
                   )
                 else
                   Text(
                     '${_comments.length}',
                     style: TextStyle(
-                      fontSize: 16,
-                      color:
-                          theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+                      fontFamily: 'Satoshi',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: subtleColor,
                     ),
                   ),
               ],
@@ -559,192 +564,9 @@ class _CommentsContentState extends State<_CommentsContent> {
           ),
 
           Divider(
-            height: 1,
-            color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-          ),
-
-          // Comment input - Professional style
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              border: Border(
-                top: BorderSide(
-                  color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  // User avatar for input
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
-                      border: Border.all(
-                        color:
-                            isDarkMode ? Colors.grey[600]! : Colors.grey[300]!,
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Consumer<AuthProvider>(
-                      builder: (context, authProvider, child) {
-                        final currentUser = authProvider.user;
-                        return currentUser?.profileImageUrl != null &&
-                                currentUser!.profileImageUrl!.isNotEmpty
-                            ? ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: currentUser.profileImageUrl!,
-                                  width: 34,
-                                  height: 34,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
-                                    width: 34,
-                                    height: 34,
-                                    color: isDarkMode
-                                        ? Colors.grey[700]
-                                        : Colors.grey[300],
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 18,
-                                      color: isDarkMode
-                                          ? Colors.grey[400]
-                                          : theme.primaryColor,
-                                    ),
-                                  ),
-                                  errorWidget: (context, url, error) => Icon(
-                                    Icons.person,
-                                    size: 18,
-                                    color: isDarkMode
-                                        ? Colors.grey[400]
-                                        : theme.primaryColor,
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                Icons.person,
-                                size: 18,
-                                color: isDarkMode
-                                    ? Colors.grey[400]
-                                    : theme.primaryColor,
-                              );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.grey[700]!
-                              : Colors.grey[200]!,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _commentController,
-                        focusNode: _focusNode,
-                        style: TextStyle(
-                          color: theme.textTheme.bodyMedium?.color,
-                          fontSize: 15,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: _placeholderText,
-                          hintStyle: TextStyle(
-                            color: theme.textTheme.bodyMedium?.color
-                                ?.withOpacity(0.5),
-                            fontSize: 15,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _postComment(),
-                        enabled: !_isSubmitting,
-                        maxLines: null,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Cancel reply button (only show when replying)
-                  if (_replyingToComment != null)
-                    GestureDetector(
-                      onTap: _cancelReply,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 18,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  if (_replyingToComment != null) const SizedBox(width: 8),
-                  // Send button
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _commentController.text.trim().isEmpty ||
-                              _isSubmitting
-                          ? (isDarkMode ? Colors.grey[700] : Colors.grey[300])
-                          : theme.primaryColor,
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(17),
-                        onTap: _isSubmitting ||
-                                _commentController.text.trim().isEmpty
-                            ? null
-                            : _postComment,
-                        child: _isSubmitting
-                            ? SizedBox(
-                                width: 34,
-                                height: 34,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      isDarkMode
-                                          ? Colors.grey[400]!
-                                          : Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : Icon(
-                                Icons.send_rounded,
-                                size: 18,
-                                color: _commentController.text.trim().isEmpty
-                                    ? (isDarkMode
-                                        ? Colors.grey[500]
-                                        : Colors.grey[600])
-                                    : Colors.white,
-                              ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            height: 0.5,
+            thickness: 0.5,
+            color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[200],
           ),
 
           // Comments list
@@ -753,9 +575,13 @@ class _CommentsContentState extends State<_CommentsContent> {
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                      child: const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                        ),
                       ),
                     ),
                   )
@@ -768,26 +594,26 @@ class _CommentsContentState extends State<_CommentsContent> {
                             children: [
                               Icon(
                                 Icons.chat_bubble_outline,
-                                size: 48,
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withOpacity(0.4),
+                                size: 40,
+                                color: subtleColor.withOpacity(0.5),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               Text(
                                 'No comments yet',
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  color: theme.textTheme.bodyMedium?.color
-                                      ?.withOpacity(0.6),
+                                  fontFamily: 'Satoshi',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: subtleColor,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               Text(
                                 'Be the first to comment!',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: theme.textTheme.bodyMedium?.color
-                                      ?.withOpacity(0.4),
+                                  fontFamily: 'Satoshi',
+                                  fontSize: 13,
+                                  color: subtleColor.withOpacity(0.6),
                                 ),
                               ),
                             ],
@@ -795,13 +621,177 @@ class _CommentsContentState extends State<_CommentsContent> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         itemCount: _comments.length,
                         itemBuilder: (context, index) {
                           final comment = _comments[index];
                           return _buildCommentWithReplies(comment);
                         },
                       ),
+          ),
+
+          // Divider above input
+          Divider(
+            height: 0.5,
+            thickness: 0.5,
+            color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[200],
+          ),
+
+          // Comment input at the bottom
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            color: bgColor,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  // User avatar
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[200],
+                    ),
+                    child: Consumer<AuthProvider>(
+                      builder: (context, authProvider, child) {
+                        final currentUser = authProvider.user;
+                        return currentUser?.profileImageUrl != null &&
+                                currentUser!.profileImageUrl!.isNotEmpty
+                            ? ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: currentUser.profileImageUrl!,
+                                  width: 32,
+                                  height: 32,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Icon(
+                                    Icons.person,
+                                    size: 16,
+                                    color: subtleColor,
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.person,
+                                    size: 16,
+                                    color: subtleColor,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.person,
+                                size: 16,
+                                color: subtleColor,
+                              );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? const Color(0xFF1C1C1C) : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[200]!,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _commentController,
+                        focusNode: _focusNode,
+                        style: TextStyle(
+                          fontFamily: 'Satoshi',
+                          color: textColor,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: _placeholderText,
+                          hintStyle: TextStyle(
+                            fontFamily: 'Satoshi',
+                            color: subtleColor.withOpacity(0.6),
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                        ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _postComment(),
+                        enabled: !_isSubmitting,
+                        maxLines: null,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Cancel reply button
+                  if (_replyingToComment != null)
+                    GestureDetector(
+                      onTap: _cancelReply,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: subtleColor,
+                        ),
+                      ),
+                    ),
+                  if (_replyingToComment != null) const SizedBox(width: 6),
+                  // Send button
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _commentController.text.trim().isEmpty ||
+                              _isSubmitting
+                          ? (isDarkMode ? const Color(0xFF2A2A2A) : Colors.grey[300])
+                          : accentColor,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: _isSubmitting ||
+                                _commentController.text.trim().isEmpty
+                            ? null
+                            : _postComment,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: Padding(
+                                  padding: EdgeInsets.all(7.0),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.send_rounded,
+                                size: 16,
+                                color: _commentController.text.trim().isEmpty
+                                    ? (isDarkMode
+                                        ? Colors.grey[500]
+                                        : Colors.grey[600])
+                                    : Colors.white,
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

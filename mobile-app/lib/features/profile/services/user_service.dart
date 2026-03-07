@@ -3,17 +3,35 @@ import 'dart:convert';
 import '../../../core/config/app_config.dart';
 
 class UserService {
-  static final UserService _instance = UserService._internal();
-  factory UserService() => _instance;
-  UserService._internal();
+  static UserService? _instance;
 
-  final String baseUrl = AppConfig.baseUrl;
+  // Dependency-injected client/baseUrl for testability
+  final http.Client _client;
+  final String baseUrl;
+
+  factory UserService({http.Client? client, String? baseUrl}) {
+    // Preserve singleton behavior by default, but allow test configuration
+    _instance ??=
+        UserService._internal(client ?? http.Client(), baseUrl ?? AppConfig.baseUrl);
+    return _instance!;
+  }
+
+  UserService._internal(this._client, this.baseUrl);
+
+  // Testing hook to reset/configure the singleton
+  static void configureForTest({http.Client? client, String? baseUrl}) {
+    _instance = UserService._internal(
+      client ?? http.Client(),
+      baseUrl ?? AppConfig.baseUrl,
+    );
+  }
 
   Future<Map<String, dynamic>?> getUserById(String userId) async {
     try {
       print('👤 [UserService] Fetching user data for ID: $userId');
+      print('👤 [UserService] Full URL: $baseUrl/api/users/$userId');
 
-      final response = await http.get(
+      final response = await _client.get(
         Uri.parse('$baseUrl/api/users/$userId'),
         headers: {
           'Content-Type': 'application/json',
@@ -21,19 +39,23 @@ class UserService {
       );
 
       print('👤 [UserService] Response status: ${response.statusCode}');
+      print('👤 [UserService] Response headers: ${response.headers}');
       print('👤 [UserService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('👤 [UserService] Parsed data: $data');
+
         if (data['success'] == true && data['data'] != null) {
           print('✅ [UserService] User data fetched successfully');
+          print('👤 [UserService] User data: ${data['data']}');
           return data['data'];
         } else {
           print('❌ [UserService] Invalid response format: $data');
           return null;
         }
       } else if (response.statusCode == 404) {
-        print('❌ [UserService] User not found');
+        print('❌ [UserService] User not found (404)');
         return null;
       } else {
         print(
@@ -42,6 +64,7 @@ class UserService {
       }
     } catch (e) {
       print('❌ [UserService] Exception occurred: $e');
+      print('❌ [UserService] Stack trace: ${StackTrace.current}');
       return null;
     }
   }
@@ -66,7 +89,7 @@ class UserService {
 
       print('👥 [UserService] Fetching users: $uri');
 
-      final response = await http.get(
+      final response = await _client.get(
         uri,
         headers: {
           'Content-Type': 'application/json',

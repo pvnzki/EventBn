@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +14,9 @@ import '../../auth/screens/security_settings_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showBillingAddress;
+
+  const ProfileScreen({super.key, this.showBillingAddress = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -121,6 +124,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     // Now load user posts
     _loadUserPosts();
+
+    // Show billing address modal if requested
+    if (widget.showBillingAddress) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showBillingAddressModal(context);
+      });
+    }
   }
 
   @override
@@ -341,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.of(context).pop();
                 await authProvider.logout();
                 if (context.mounted) {
-                  context.go('/login');
+                  context.go('/onboarding');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Logged out successfully'),
@@ -801,8 +811,24 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileHeader(
       BuildContext context, dynamic user, ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -814,23 +840,55 @@ class _ProfileScreenState extends State<ProfileScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.2),
-                    width: 1,
+                    color: colorScheme.primary.withOpacity(0.2),
+                    width: 2,
                   ),
                 ),
                 child: CircleAvatar(
-                  radius: 42,
+                  radius: 45,
                   backgroundColor: colorScheme.surfaceContainerHighest,
-                  backgroundImage: user?.profileImageUrl != null
-                      ? CachedNetworkImageProvider(user!.profileImageUrl!)
-                      : null,
-                  child: user?.profileImageUrl == null
-                      ? Icon(
-                          Icons.person,
-                          size: 40,
-                          color: colorScheme.onSurfaceVariant,
+                  child: user?.profileImageUrl != null &&
+                          user!.profileImageUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: user!.profileImageUrl!.startsWith('file://')
+                              ? Image.file(
+                                  File(user!.profileImageUrl!
+                                      .replaceFirst('file://', '')
+                                      .split(
+                                          '?')[0]), // Remove query parameters
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: colorScheme.onSurfaceVariant,
+                                    );
+                                  },
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: user!.profileImageUrl!,
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                         )
-                      : null,
+                      : Icon(
+                          Icons.person,
+                          size: 45,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                 ),
               ),
 
@@ -850,21 +908,42 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Name and Bio
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                user?.firstName != null && user?.lastName != null
-                    ? '${user!.firstName} ${user!.lastName}'
-                    : user?.firstName ?? 'User',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
+              Row(
+                children: [
+                  Text(
+                    user?.firstName != null && user?.lastName != null
+                        ? '${user!.firstName} ${user!.lastName}'
+                        : user?.firstName ?? 'User',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'User',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               // if (user?.email != null) ...[
               //   const SizedBox(height: 4),
@@ -879,7 +958,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // Action Buttons
           Row(
@@ -888,7 +967,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: _buildActionButton(
                   'Edit Profile',
                   colorScheme,
+                  icon: Icons.edit_outlined,
                   onTap: () => _editProfile(context),
+                  isPrimary: true,
                 ),
               ),
             ],
@@ -927,16 +1008,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     IconData? icon,
     VoidCallback? onTap,
     bool isIconOnly = false,
+    bool isPrimary = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
+        height: 36,
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: isPrimary
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: colorScheme.outline.withOpacity(0.3),
+            color: isPrimary
+                ? colorScheme.primary
+                : colorScheme.outline.withOpacity(0.3),
             width: 0.5,
           ),
         ),
@@ -944,16 +1030,34 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: isIconOnly
               ? Icon(
                   icon,
-                  size: 16,
-                  color: colorScheme.onSurface,
+                  size: 18,
+                  color:
+                      isPrimary ? colorScheme.onPrimary : colorScheme.onSurface,
                 )
-              : Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: 16,
+                        color: isPrimary
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isPrimary
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
         ),
       ),
@@ -967,29 +1071,81 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildTabBar(BuildContext context, ColorScheme colorScheme) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.2),
-            width: 0.5,
-          ),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TabBar(
         controller: _tabController,
-        indicatorColor: colorScheme.onSurface,
-        indicatorWeight: 1,
-        labelColor: colorScheme.onSurface,
+        indicator: BoxDecoration(
+          color: colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: const EdgeInsets.all(4),
+        dividerColor: Colors.transparent,
+        labelColor: colorScheme.onPrimaryContainer,
         unselectedLabelColor: colorScheme.onSurfaceVariant,
-        tabs: const [
+        tabs: [
           Tab(
-            icon: Icon(Icons.grid_on, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.grid_on, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Posts',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           Tab(
-            icon: Icon(Icons.video_library_outlined, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.video_library_outlined, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Videos',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           Tab(
-            icon: Icon(Icons.bookmark_border, size: 22),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.bookmark_border, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Saved',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1001,17 +1157,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       height: 400,
       child: GridView.builder(
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          crossAxisSpacing: 2,
-          mainAxisSpacing: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
           childAspectRatio: 1.0,
         ),
         itemCount: 9,
         itemBuilder: (context, index) {
           return Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
@@ -1020,6 +1179,61 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.photo_library_outlined,
+              size: 48,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No posts yet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Share your first post to get started!',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => _showCreateMenu(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Post'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1044,7 +1258,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -1181,14 +1408,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Navigator.pop(context);
                       context.push('/create-post');
                     }),
-                    _buildCreateOption(
-                        context, Icons.video_call_outlined, 'Reel', () {
-                      Navigator.pop(context);
-                    }),
-                    _buildCreateOption(
-                        context, Icons.add_circle_outline, 'Story', () {
-                      Navigator.pop(context);
-                    }),
                   ],
                 ),
               ),
@@ -1247,7 +1466,22 @@ class _ProfileScreenState extends State<ProfileScreen>
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuOption(context, Icons.edit_outlined, 'Edit Profile',
+                      () {
+                    Navigator.pop(context);
+                    _editProfile(context);
+                  }),
                   _buildMenuOption(context, Icons.settings_outlined, 'Settings',
                       () {
                     Navigator.pop(context);
@@ -1257,6 +1491,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Navigator.pop(context);
                     _showLogoutDialog(context, authProvider);
                   }),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -1296,57 +1531,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         // This will trigger a rebuild and reload user data
       });
     }
-  }
-
-  Widget _buildEmptyPostsState(BuildContext context, ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(48.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.photo_camera_outlined,
-            size: 80,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No Posts Yet',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'When you share photos and videos, they\'ll appear on your profile.',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: () {
-              // Navigate to create post screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Create Post coming soon!')),
-              );
-            },
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Share Your First Post'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              side: BorderSide(color: colorScheme.primary),
-              foregroundColor: colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

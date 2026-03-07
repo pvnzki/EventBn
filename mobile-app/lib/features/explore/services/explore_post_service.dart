@@ -686,6 +686,56 @@ class ExplorePostService {
     }
   }
 
+  // Get posts for a specific event (paginated)
+  Future<Map<String, dynamic>> getPostsForEvent({
+    required String eventId,
+    int page = 1,
+    int limit = 3,
+  }) async {
+    try {
+      final token = await _getAuthToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final uri = Uri.parse('$_postServiceUrl/api/posts/explore').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'limit': limit.toString(),
+          'eventId': eventId,
+        },
+      );
+
+      print(
+          '🎫 [EVENT_POSTS] Fetching posts for event $eventId (page: $page, limit: $limit)');
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['posts'] is List) {
+          final postsList = data['posts'] as List;
+          final posts =
+              postsList.map((json) => ExplorePost.fromJson(json)).toList();
+          final pagination = data['pagination'];
+          final hasMore = pagination != null
+              ? pagination['page'] < pagination['totalPages']
+              : posts.length >= limit;
+          print(
+              '✅ [EVENT_POSTS] Fetched ${posts.length} posts for event $eventId (hasMore: $hasMore)');
+          return {'posts': posts, 'hasMore': hasMore};
+        }
+      }
+
+      print(
+          '❌ [EVENT_POSTS] Failed to fetch posts for event $eventId: ${response.statusCode}');
+      return {'posts': <ExplorePost>[], 'hasMore': false};
+    } catch (e) {
+      print('💥 [EVENT_POSTS] Error fetching posts for event $eventId: $e');
+      return {'posts': <ExplorePost>[], 'hasMore': false};
+    }
+  }
+
   // Get posts for a specific user
   Future<List<ExplorePost>> getExplorePostsForUser({
     required String userId,
@@ -734,17 +784,31 @@ class ExplorePostService {
 
   // Get a single post by ID
   Future<ExplorePost?> getPostById(String postId) async {
+    print('🚀 [GET_POST] Method called with postId: $postId');
+    print('🚀 [GET_POST] PostId type: ${postId.runtimeType}');
+    print('🚀 [GET_POST] PostId length: ${postId.length}');
+    print('🚀 [GET_POST] Starting getPostById for postId: $postId');
     try {
+      print('🔑 [GET_POST] Getting auth token...');
       final token = await _getAuthToken();
+      print('🔑 [GET_POST] Token obtained: ${token != null ? "YES" : "NO"}');
+
       final headers = {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
+      final url = '$_postServiceUrl/api/posts/$postId';
+      print('🌐 [GET_POST] Making request to: $url');
+      print('📤 [GET_POST] Headers: $headers');
+
       final response = await http.get(
-        Uri.parse('$_postServiceUrl/api/posts/$postId'),
+        Uri.parse(url),
         headers: headers,
       );
+
+      print('📥 [GET_POST] Response status: ${response.statusCode}');
+      print('📄 [GET_POST] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

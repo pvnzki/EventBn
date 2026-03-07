@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const queueService = require('../services/core-service/seat-locks/queueService');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('../auth/index.js');
 
 // Add seat lock request to queue
 router.post('/events/:eventId/seats/:seatId/queue/lock', authenticateToken, async (req, res) => {
   try {
     const { eventId, seatId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     const requestId = await queueService.enqueueRequest({
       eventId,
@@ -41,7 +41,7 @@ router.post('/events/:eventId/seats/:seatId/queue/lock', authenticateToken, asyn
 router.put('/events/:eventId/seats/:seatId/queue/extend', authenticateToken, async (req, res) => {
   try {
     const { eventId, seatId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     const requestId = await queueService.enqueueRequest({
       eventId,
@@ -75,7 +75,7 @@ router.put('/events/:eventId/seats/:seatId/queue/extend', authenticateToken, asy
 router.delete('/events/:eventId/seats/:seatId/queue/release', authenticateToken, async (req, res) => {
   try {
     const { eventId, seatId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     const requestId = await queueService.enqueueRequest({
       eventId,

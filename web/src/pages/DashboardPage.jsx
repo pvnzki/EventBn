@@ -1,13 +1,41 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Sidebar from "../components/layout/Sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
-import { Button } from "../components/ui/button"
-import { Calendar, Users, DollarSign, TrendingUp, Eye, Edit, Trash2 } from "lucide-react"
-import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../components/ui/chart"
+import { useState, useEffect } from "react";
+import Sidebar from "../components/layout/Sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import {
+  Calendar,
+  Users,
+  DollarSign,
+  TrendingUp,
+  Eye,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "../../components/ui/chart";
 
 const salesData = [
   { month: "Jan", sales: 4000, events: 12 },
@@ -16,26 +44,54 @@ const salesData = [
   { month: "Apr", sales: 4500, events: 11 },
   { month: "May", sales: 6000, events: 18 },
   { month: "Jun", sales: 5500, events: 16 },
-]
+];
 
 const recentEvents = [
-  { id: 1, name: "Tech Conference 2024", date: "2024-03-15", status: "active", attendees: 250, revenue: 12500 },
-  { id: 2, name: "Music Festival", date: "2024-03-20", status: "sold-out", attendees: 500, revenue: 25000 },
-  { id: 3, name: "Business Workshop", date: "2024-03-25", status: "active", attendees: 80, revenue: 4000 },
-  { id: 4, name: "Art Exhibition", date: "2024-04-01", status: "draft", attendees: 0, revenue: 0 },
-]
+  {
+    id: 1,
+    name: "Tech Conference 2024",
+    date: "2024-03-15",
+    status: "active",
+    attendees: 250,
+    revenue: 12500,
+  },
+  {
+    id: 2,
+    name: "Music Festival",
+    date: "2024-03-20",
+    status: "sold-out",
+    attendees: 500,
+    revenue: 25000,
+  },
+  {
+    id: 3,
+    name: "Business Workshop",
+    date: "2024-03-25",
+    status: "active",
+    attendees: 80,
+    revenue: 4000,
+  },
+  {
+    id: 4,
+    name: "Art Exhibition",
+    date: "2024-04-01",
+    status: "draft",
+    attendees: 0,
+    revenue: 0,
+  },
+];
 
 const DashboardPage = () => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
+    const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(JSON.parse(userData));
     }
-  }, [])
+  }, []);
 
-  const isAdmin = user?.role === "admin"
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -45,9 +101,13 @@ const DashboardPage = () => {
         <div className="p-6 lg:p-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">{isAdmin ? "Admin Dashboard" : "Organizer Dashboard"}</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isAdmin ? "Admin Dashboard" : "Organizer Dashboard"}
+            </h1>
             <p className="text-gray-600 mt-2">
-              {isAdmin ? "Overview of all platform activities and metrics" : "Manage your events and track performance"}
+              {isAdmin
+                ? "Overview of all platform activities and metrics"
+                : "Manage your events and track performance"}
             </p>
           </div>
 
@@ -55,24 +115,36 @@ const DashboardPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{isAdmin ? "Total Events" : "My Events"}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {isAdmin ? "Total Events" : "My Events"}
+                </CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{isAdmin ? "1,2222" : "12"}</div>
+                <div className="text-2xl font-bold">
+                  {isAdmin ? "1,2222" : "12"}
+                </div>
 
-                <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  +20.1% from last month
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{isAdmin ? "Total Attendees" : "My Attendees"}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {isAdmin ? "Total Attendees" : "My Attendees"}
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{isAdmin ? "45,231" : "1,830"}</div>
-                <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+                <div className="text-2xl font-bold">
+                  {isAdmin ? "45,231" : "1,830"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  +180.1% from last month
+                </p>
               </CardContent>
             </Card>
 
@@ -82,19 +154,27 @@ const DashboardPage = () => {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{isAdmin ? "$573,430" : "$41,500"}</div>
-                <p className="text-xs text-muted-foreground">+19% from last month</p>
+                <div className="text-2xl font-bold">
+                  {isAdmin ? "$573,430" : "$41,500"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  +19% from last month
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Growth Rate
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">+12.5%</div>
-                <p className="text-xs text-muted-foreground">+2.1% from last month</p>
+                <p className="text-xs text-muted-foreground">
+                  +2.1% from last month
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -104,7 +184,9 @@ const DashboardPage = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Revenue Overview</CardTitle>
-                <CardDescription>Monthly revenue and event count</CardDescription>
+                <CardDescription>
+                  Monthly revenue and event count
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer
@@ -127,8 +209,16 @@ const DashboardPage = () => {
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Legend />
-                      <Bar dataKey="sales" fill="var(--color-sales)" name="Revenue ($)" />
-                      <Bar dataKey="events" fill="var(--color-events)" name="Events" />
+                      <Bar
+                        dataKey="sales"
+                        fill="var(--color-sales)"
+                        name="Revenue ($)"
+                      />
+                      <Bar
+                        dataKey="events"
+                        fill="var(--color-events)"
+                        name="Events"
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -173,21 +263,36 @@ const DashboardPage = () => {
           {/* Recent Events */}
           <Card>
             <CardHeader>
-              <CardTitle>{isAdmin ? "Recent Events" : "My Recent Events"}</CardTitle>
+              <CardTitle>
+                {isAdmin ? "Recent Events" : "My Recent Events"}
+              </CardTitle>
               <CardDescription>
-                {isAdmin ? "Latest events across the platform" : "Your latest event activities"}
+                {isAdmin
+                  ? "Latest events across the platform"
+                  : "Your latest event activities"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recentEvents.map((event) => (
-                  <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{event.name}</h3>
-                      <p className="text-sm text-gray-600">Date: {event.date}</p>
+                      <h3 className="font-semibold text-gray-900">
+                        {event.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Date: {event.date}
+                      </p>
                       <div className="flex items-center space-x-4 mt-2">
-                        <span className="text-sm text-gray-600">Attendees: {event.attendees}</span>
-                        <span className="text-sm text-gray-600">Revenue: ${event.revenue.toLocaleString()}</span>
+                        <span className="text-sm text-gray-600">
+                          Attendees: {event.attendees}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          Revenue: ${event.revenue.toLocaleString()}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -196,8 +301,8 @@ const DashboardPage = () => {
                           event.status === "active"
                             ? "default"
                             : event.status === "sold-out"
-                              ? "destructive"
-                              : "secondary"
+                            ? "destructive"
+                            : "secondary"
                         }
                       >
                         {event.status}
@@ -222,7 +327,7 @@ const DashboardPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DashboardPage
+export default DashboardPage;

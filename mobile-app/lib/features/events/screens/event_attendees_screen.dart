@@ -422,7 +422,10 @@ class _EventAttendeesScreenState extends State<EventAttendeesScreen> {
                     color: theme.colorScheme.onPrimaryContainer,
                   )
                 : null,
-            onBackgroundImageError: (exception, stackTrace) => {},
+            onBackgroundImageError:
+                (attendee['avatar'] != null && attendee['avatar'].isNotEmpty)
+                    ? (exception, stackTrace) => {}
+                    : null,
           ),
           const SizedBox(width: 12),
           Expanded(

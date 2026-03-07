@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useRouter, usePathname } from "next/navigation"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, Ticket, UserCheck, Shield } from "lucide-react"
@@ -9,8 +9,8 @@ import { Calendar, Users, BarChart3, Settings, LogOut, Menu, X, Ticket, UserChec
 const Sidebar = () => {
   const [user, setUser] = useState(null)
   const [isOpen, setIsOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
+  const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -21,7 +21,7 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("user")
-    navigate("/login")
+    router.push("/login")
   }
 
   const organizerNavItems = [
@@ -80,21 +80,23 @@ const Sidebar = () => {
           <nav className="flex-1 p-4 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.href
+              const isActive = pathname === item.href
 
               return (
-                <Link
+                <button
                   key={item.href}
-                  to={item.href}
+                  onClick={() => {
+                    router.push(item.href)
+                    setIsOpen(false)
+                  }}
                   className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full text-left",
                     isActive ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                   )}
-                  onClick={() => setIsOpen(false)}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                </Link>
+                </button>
               )
             })}
           </nav>

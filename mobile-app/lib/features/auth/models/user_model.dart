@@ -10,6 +10,8 @@ class User {
   final String email;
   final String? phoneNumber;
   final String? profileImageUrl;
+  final String? coverPhotoUrl;
+  final String? gender;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -39,6 +41,8 @@ class User {
     required this.email,
     this.phoneNumber,
     this.profileImageUrl,
+    this.coverPhotoUrl,
+    this.gender,
     required this.createdAt,
     required this.updatedAt,
     this.billingAddress,
@@ -81,6 +85,8 @@ class User {
       email: json['email'] ?? '',
       phoneNumber: json['phone_number'] ?? json['phoneNumber'],
       profileImageUrl: json['profile_picture'] ?? json['profileImageUrl'],
+      coverPhotoUrl: json['cover_photo'] ?? json['coverPhotoUrl'],
+      gender: json['gender'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : (json['createdAt'] != null
@@ -114,6 +120,8 @@ class User {
       'email': email,
       'phone_number': phoneNumber,
       'profile_picture': profileImageUrl,
+      'cover_photo': coverPhotoUrl,
+      'gender': gender,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'billing_address': billingAddress,
@@ -151,6 +159,8 @@ class User {
     String? email,
     String? phoneNumber,
     String? profileImageUrl,
+    String? coverPhotoUrl,
+    String? gender,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? billingAddress,
@@ -174,6 +184,8 @@ class User {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
+      gender: gender ?? this.gender,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       billingAddress: billingAddress ?? this.billingAddress,

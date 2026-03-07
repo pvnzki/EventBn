@@ -5,25 +5,25 @@
  */
 
 const { execSync } = require('child_process');
+const path = require('path');
+const dotenv = require('dotenv');
 
 module.exports = async () => {
   console.log('🔧 Setting up integration test environment...');
   
   // Set test environment
   process.env.NODE_ENV = 'test';
+  // Load test env vars for Prisma and server
+  const testEnvPath = path.join(__dirname, '../../.env.test');
+  dotenv.config({ path: testEnvPath });
   
   try {
     // Ensure test database exists and is clean
     console.log('📦 Preparing test database...');
     
-    // Note: In a real setup, you might want to:
-    // 1. Create a separate test database
-    // 2. Run migrations
-    // 3. Set up test data seeds
-    
-    // For now, we'll rely on the setup in individual tests
-    // execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-    // execSync('npx prisma db seed', { stdio: 'inherit' });
+    // Sync Prisma schema for DB-backed tests
+    // Using db push to keep test setup fast and simple
+    execSync('npx prisma db push --force-reset', { stdio: 'inherit' });
     
     console.log('✅ Integration test environment ready');
   } catch (error) {

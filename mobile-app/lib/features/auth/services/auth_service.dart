@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
@@ -7,14 +9,21 @@ import '../../../core/config/app_config.dart';
 import '../../../core/constants.dart';
 
 class AuthService {
-  final String baseUrl = AppConfig.baseUrl;
+  late final String baseUrl;
+  final http.Client? _client;
+
+  AuthService({http.Client? client, String? baseUrl})
+      : _client = client,
+        baseUrl = baseUrl ?? AppConfig.baseUrl;
+
+  http.Client get client => _client ?? http.Client();
 
   // Login user
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       print('🔄 [AUTH_SERVICE] Logging in user: $email');
 
-      final response = await http.post(
+      final response = await client.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
@@ -118,6 +127,7 @@ class AuthService {
     required String email,
     required String password,
     required String phoneNumber,
+    DateTime? dateOfBirth,
   }) async {
     try {
       print('🔄 [AUTH_SERVICE] Registering user: $email');
@@ -127,11 +137,15 @@ class AuthService {
         'email': email,
         'password': password,
         if (phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
+        if (dateOfBirth != null)
+          'date_of_birth': dateOfBirth
+              .toIso8601String()
+              .split('T')[0], // Send as YYYY-MM-DD format
       };
 
       print('🔄 [AUTH_SERVICE] Request body: $requestBody');
 
-      final response = await http.post(
+      final response = await client.post(
         Uri.parse('$baseUrl${Constants.authEndpoint}/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
@@ -201,7 +215,7 @@ class AuthService {
       }
 
       print('🔍 [AUTH_SERVICE] Token found, calling /me endpoint');
-      final response = await http.get(
+      final response = await client.get(
         Uri.parse('$baseUrl${Constants.authEndpoint}/me'),
         headers: {
           'Content-Type': 'application/json',
@@ -268,7 +282,7 @@ class AuthService {
 
       for (final url in services) {
         try {
-          final response = await http.get(
+          final response = await client.get(
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
           ).timeout(const Duration(seconds: 5));
@@ -393,7 +407,7 @@ class AuthService {
       if (lastName != null) body['lastName'] = lastName;
       if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl${Constants.authEndpoint}/profile'),
         headers: {
           'Content-Type': 'application/json',
@@ -460,6 +474,9 @@ class AuthService {
         phoneNumber: updatedUser.phoneNumber ?? currentUser.phoneNumber,
         profileImageUrl:
             updatedUser.profileImageUrl ?? currentUser.profileImageUrl,
+        coverPhotoUrl:
+            updatedUser.coverPhotoUrl ?? currentUser.coverPhotoUrl,
+        gender: updatedUser.gender ?? currentUser.gender,
         billingAddress:
             updatedUser.billingAddress ?? currentUser.billingAddress,
         billingCity: updatedUser.billingCity ?? currentUser.billingCity,
@@ -500,7 +517,7 @@ class AuthService {
       print('🔍 [AUTH_SERVICE] Sending profile data: $body');
 
       // **CRITICAL FIX**: Use proper user endpoint instead of non-existent auth/profile
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/users/${currentUser.id}'),
         headers: {
           'Content-Type': 'application/json',
@@ -572,6 +589,104 @@ class AuthService {
     }
   }
 
+  // Upload a profile image file to Cloudinary via the backend
+  Future<Map<String, dynamic>> uploadProfileImageFile(File imageFile) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final user = await getStoredUser();
+      if (user == null) {
+        return {'success': false, 'message': 'User not found'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Uploading profile image file...');
+
+      final uri =
+          Uri.parse('$baseUrl/api/users/${user.id}/upload-profile-image');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      print(
+          '🔍 [AUTH_SERVICE] Upload response: ${streamedResponse.statusCode}');
+
+      if (streamedResponse.statusCode == 200 && data['success'] == true) {
+        final imageUrl = data['imageUrl'] as String?;
+        print('✅ [AUTH_SERVICE] Profile image uploaded: $imageUrl');
+        return {'success': true, 'imageUrl': imageUrl};
+      } else {
+        print('❌ [AUTH_SERVICE] Upload failed: ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error uploading profile image: $e');
+      return {'success': false, 'message': 'Upload error: $e'};
+    }
+  }
+
+  // Upload a cover photo file to Cloudinary via the backend
+  Future<Map<String, dynamic>> uploadCoverPhotoFile(File imageFile) async {
+    try {
+      final token = await getStoredToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Not authenticated'};
+      }
+
+      final user = await getStoredUser();
+      if (user == null) {
+        return {'success': false, 'message': 'User not found'};
+      }
+
+      print('🔄 [AUTH_SERVICE] Uploading cover photo file...');
+
+      final uri =
+          Uri.parse('$baseUrl/api/users/${user.id}/upload-cover-photo');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      print(
+          '🔍 [AUTH_SERVICE] Cover upload response: ${streamedResponse.statusCode}');
+
+      if (streamedResponse.statusCode == 200 && data['success'] == true) {
+        final imageUrl = data['imageUrl'] as String?;
+        print('✅ [AUTH_SERVICE] Cover photo uploaded: $imageUrl');
+        return {'success': true, 'imageUrl': imageUrl};
+      } else {
+        print('❌ [AUTH_SERVICE] Cover upload failed: ${data['message']}');
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Upload failed',
+        };
+      }
+    } catch (e) {
+      print('❌ [AUTH_SERVICE] Error uploading cover photo: $e');
+      return {'success': false, 'message': 'Upload error: $e'};
+    }
+  }
+
   // Update profile image with Cloudinary URL
   Future<Map<String, dynamic>> updateProfileImage({
     required String imageUrl,
@@ -593,7 +708,7 @@ class AuthService {
         'avatarUrl': imageUrl,
       };
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl/api/users/${user.id}/profile'),
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +757,7 @@ class AuthService {
         return {'success': false, 'message': 'Not authenticated'};
       }
 
-      final response = await http.put(
+      final response = await client.put(
         Uri.parse('$baseUrl${Constants.authEndpoint}/change-password'),
         headers: {
           'Content-Type': 'application/json',
