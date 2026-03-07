@@ -197,6 +197,7 @@ jobs:
             "${{ secrets.PAYHERE_MERCHANT_SECRET }}" \
             "${{ secrets.PAYHERE_NOTIFY_URL }}" \
             "${{ secrets.PAYHERE_SANDBOX }}" \
+            "${{ secrets.NOTIFICATION_SERVICE_URL }}" \
             "${{ secrets.POST_SERVICE_URL }}" > .env
 
             flutter clean
