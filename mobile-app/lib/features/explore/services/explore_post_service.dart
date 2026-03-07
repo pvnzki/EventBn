@@ -105,51 +105,12 @@ class ExplorePostService {
         queryParameters: queryParams,
       );
 
-      print('🌐 [DEBUG] Making request to: $uri');
-      print('📤 [DEBUG] Request headers: $headers');
-      print('🔑 [DEBUG] Post service URL: $_postServiceUrl');
-
-      // Test basic connectivity first with improved error handling
-      try {
-        print(
-            '🔍 [DEBUG] Testing connectivity to $_postServiceUrl/api/health...');
-        final healthResponse = await http.get(
-          Uri.parse('$_postServiceUrl/api/health'),
-          headers: {'Content-Type': 'application/json'},
-        ).timeout(const Duration(seconds: 8), onTimeout: () {
-          throw Exception(
-              'Health check timeout after 8 seconds - backend service may not be running');
-        });
-        print('🏥 [DEBUG] Health check status: ${healthResponse.statusCode}');
-        print('🏥 [DEBUG] Health check response: ${healthResponse.body}');
-
-        // Also test the test endpoint
-        print(
-            '🧪 [DEBUG] Testing connectivity to $_postServiceUrl/api/test...');
-        final testResponse = await http.get(
-          Uri.parse('$_postServiceUrl/api/test'),
-          headers: {'Content-Type': 'application/json'},
-        ).timeout(const Duration(seconds: 8), onTimeout: () {
-          throw Exception(
-              'Test endpoint timeout after 8 seconds - backend service may not be running');
-        });
-        print('🧪 [DEBUG] Test endpoint status: ${testResponse.statusCode}');
-        print('🧪 [DEBUG] Test endpoint response: ${testResponse.body}');
-      } catch (connectivityError) {
-        print('❌ [DEBUG] Connectivity test failed: $connectivityError');
-        print('❌ [DEBUG] Backend URL: $_postServiceUrl');
-        print(
-            '❌ [DEBUG] If using emulator, ensure backend is running on host machine');
-        print(
-            '❌ [DEBUG] If using physical device, check WiFi and IP configuration');
-        throw Exception(
-            'Backend connection failed: ${connectivityError.toString()}. Check if backend services are running.');
-      }
+      print('🌐 [EXPLORE] Fetching posts from: $uri');
 
       final response = await http
           .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 15), onTimeout: () {
-        throw Exception('Posts API request timeout after 15 seconds');
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw Exception('Posts API request timeout after 30 seconds');
       });
 
       print('📥 Response status: ${response.statusCode}');

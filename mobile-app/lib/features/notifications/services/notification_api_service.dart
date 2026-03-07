@@ -53,7 +53,7 @@ class NotificationApiService {
 
       final response = await client
           .get(uri, headers: _headers(token))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -89,7 +89,7 @@ class NotificationApiService {
             Uri.parse('$_notificationBaseUrl/api/notifications/unread-count'),
             headers: _headers(token),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -114,7 +114,7 @@ class NotificationApiService {
                 '$_notificationBaseUrl/api/notifications/$notificationId/read'),
             headers: _headers(token),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       return response.statusCode == 200;
     } catch (e) {
@@ -134,7 +134,7 @@ class NotificationApiService {
             Uri.parse('$_notificationBaseUrl/api/notifications/read-all'),
             headers: _headers(token),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       return response.statusCode == 200;
     } catch (e) {
@@ -175,7 +175,7 @@ class NotificationApiService {
                 '$_notificationBaseUrl/api/notifications/$notificationId'),
             headers: _headers(token),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 15));
 
       return response.statusCode == 200;
     } catch (e) {

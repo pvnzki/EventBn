@@ -9,16 +9,21 @@ import FirebaseMessaging
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FirebaseApp.configure()
+    // Only configure Firebase if GoogleService-Info.plist exists
+    if let _ = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") {
+      FirebaseApp.configure()
 
-    // Request APNs permission (iOS 10+)
-    UNUserNotificationCenter.current().delegate = self
-    let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-    UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { _, _ in }
-    application.registerForRemoteNotifications()
+      // Request APNs permission (iOS 10+)
+      UNUserNotificationCenter.current().delegate = self
+      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+      UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { _, _ in }
+      application.registerForRemoteNotifications()
 
-    // Set FCM messaging delegate
-    Messaging.messaging().delegate = self
+      // Set FCM messaging delegate
+      Messaging.messaging().delegate = self
+    } else {
+      print("⚠️ [FCM] GoogleService-Info.plist not found — Firebase disabled")
+    }
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
