@@ -21,9 +21,18 @@ function initializeFirebase() {
 
   try {
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
 
-    if (serviceAccountPath) {
-      // Resolve relative to the project root (where server.js lives), not this file
+    if (serviceAccountBase64) {
+      // Cloud deployment: credentials passed as base64-encoded JSON env var
+      const serviceAccount = JSON.parse(
+        Buffer.from(serviceAccountBase64, "base64").toString("utf-8")
+      );
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } else if (serviceAccountPath) {
+      // Local development: credentials loaded from a file
       const resolvedPath = path.resolve(process.cwd(), serviceAccountPath);
       const serviceAccount = require(resolvedPath);
       admin.initializeApp({

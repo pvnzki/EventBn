@@ -476,6 +476,7 @@ app.listen(PORT, HOST, async () => {
   const keepAliveTargets = [
     process.env.RENDER_EXTERNAL_URL,
     process.env.POST_SERVICE_URL,
+    process.env.NOTIFICATION_SERVICE_URL,
   ].filter(Boolean);
 
   if (keepAliveTargets.length > 0) {
