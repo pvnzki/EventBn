@@ -696,6 +696,9 @@ router.post("/auth/2fa/generate", authenticateUser, async (req, res) => {
       secret: secret.base32,
       backupCodes: backupCodes,
     });
+
+    // Fire-and-forget: notify 2FA enabled
+    publishNotificationEvent("TWO_FACTOR_ENABLED", { userId }, { userId }).catch(() => {});
   } catch (error) {
     console.error("[API] 2FA Setup error:", error);
     res.status(500).json({ success: false, error: "2FA setup failed" });
@@ -783,6 +786,9 @@ router.post("/auth/2fa/disable", authenticateUser, async (req, res) => {
     });
 
     res.json({ success: true, message: "2FA disabled successfully" });
+
+    // Fire-and-forget: notify 2FA disabled
+    publishNotificationEvent("TWO_FACTOR_DISABLED", { userId }, { userId }).catch(() => {});
   } catch (error) {
     console.error("[API] 2FA Disable error:", error);
     res.status(500).json({ success: false, message: "2FA disable failed" });
@@ -1080,6 +1086,9 @@ router.post("/auth/change-password", authenticateUser, async (req, res) => {
 
     console.log("[API] ✅ Password changed successfully");
     res.json({ success: true, message: "Password changed successfully" });
+
+    // Fire-and-forget: notify password change
+    publishNotificationEvent("PASSWORD_CHANGED", { userId }, { userId }).catch(() => {});
   } catch (error) {
     console.error("[API] ❌ Change password error:", error);
     res.status(500).json({ success: false, error: "Password change failed" });

@@ -202,6 +202,10 @@ app.use("/api/analytics", analyticsRoutes);
 const postServiceRoutes = require("./services/post-service/routes/api");
 app.use("/api", postServiceRoutes);
 
+// Mount notification service routes
+const notificationRoutes2 = require("./services/notification-service/routes/notifications");
+app.use("/api/notifications", notificationRoutes2);
+
 // Service health endpoints (prepare for microservice separation)
 app.get("/api/services/core/health", async (req, res) => {
   try {

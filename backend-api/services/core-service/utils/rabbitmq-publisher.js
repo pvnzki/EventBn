@@ -17,6 +17,7 @@ class RabbitMQPublisher {
       queues: {
         userEvents: process.env.RABBITMQ_USER_QUEUE || "user_events",
         eventEvents: process.env.RABBITMQ_EVENT_QUEUE || "event_events",
+        notificationEvents: process.env.RABBITMQ_NOTIFICATION_QUEUE || "notification_events",
       },
     };
   }
@@ -61,6 +62,12 @@ class RabbitMQPublisher {
         this.config.queues.eventEvents,
         this.config.exchange,
         "event.*"
+      );
+
+      await this.channel.bindQueue(
+        this.config.queues.notificationEvents,
+        this.config.exchange,
+        "notification.*"
       );
 
       // Setup connection error handlers
@@ -194,6 +201,15 @@ class RabbitMQPublisher {
     );
   }
 
+  async publishNotificationEvent(eventType, notificationData, options = {}) {
+    return this.publishEvent(
+      "notification.events",
+      eventType,
+      notificationData,
+      options
+    );
+  }
+
   // Utility methods
   generateEventId() {
     return `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -261,6 +277,8 @@ module.exports = {
     rabbitmqPublisher.publishEventEvent(eventType, eventData, options),
   publishAnalyticsEvent: (eventType, analyticsData, options) =>
     rabbitmqPublisher.publishAnalyticsEvent(eventType, analyticsData, options),
+  publishNotificationEvent: (eventType, notificationData, options) =>
+    rabbitmqPublisher.publishNotificationEvent(eventType, notificationData, options),
   getRabbitMQHealth: () => rabbitmqPublisher.healthCheck(),
   closeRabbitMQ: () => rabbitmqPublisher.close(),
 };
