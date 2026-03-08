@@ -55,6 +55,33 @@ class FcmService {
 
     print('✅ [FCM] Permission: ${settings.authorizationStatus}');
 
+    // iOS: Tell the OS to present push alerts/badges/sound even in foreground.
+    // Without this, iOS silently swallows pushes when the app is in foreground.
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // iOS: Wait for the APNs token before requesting the FCM token.
+    // FCM on iOS depends on an APNs token; without it getToken() returns null.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      String? apnsToken;
+      // APNs token may take a moment after registerForRemoteNotifications()
+      for (int i = 0; i < 10; i++) {
+        apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken != null) break;
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      if (apnsToken == null) {
+        print('⚠️ [FCM] APNs token not available — iOS push will NOT work');
+        print('   Ensure Push Notifications capability is enabled in Xcode');
+        print('   and APNs key is uploaded in Firebase Console');
+      } else {
+        print('✅ [FCM] APNs token acquired');
+      }
+    }
+
     // Get the FCM token
     try {
       _currentToken = await _messaging.getToken();
